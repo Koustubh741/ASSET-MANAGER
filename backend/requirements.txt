@@ -12,3 +12,5 @@ python-jose[cryptography]
 pypdf
 asyncpg
 greenlet
+pysnmp-lextudio
+scapy

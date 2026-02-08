@@ -105,6 +105,9 @@ export default function ITSupportDashboard() {
     // Disposal Queue: Assets marked for scrap
     const disposalItems = assets.filter(a => a.status === ASSET_STATUS.SCRAP_CANDIDATE);
 
+    // Discovery Queue: Assets found by agent
+    const discoveredAssets = assets.filter(a => a.status === ASSET_STATUS.DISCOVERED);
+
     // Legacy fallback states (if we need to write to anything local, but ideally we write to context)
     // We don't need setPendingQueue anymore as it drives from Context.
 
@@ -171,7 +174,7 @@ export default function ITSupportDashboard() {
         setResolutionNotes(ticket.resolution_notes || '');
         setResolutionType('Fixed');
         // Reset Wizard but keep existing checklist
-        setConfigStep(1); 
+        setConfigStep(1);
         setActiveChecklist(ticket.resolution_checklist || []);
         setActiveModal('RESOLVE_TICKET');
     };
@@ -181,7 +184,7 @@ export default function ITSupportDashboard() {
             alert("Please enter troubleshooting notes.");
             return;
         }
-        
+
         // Calculate Percentage
         const total = activeChecklist.length;
         const checked = activeChecklist.filter(i => i.checked).length;
@@ -199,7 +202,7 @@ export default function ITSupportDashboard() {
             alert("Please add notes or checklist items to update progress.");
             return;
         }
-        
+
         // Calculate Percentage
         const total = activeChecklist.length;
         const checked = activeChecklist.filter(i => i.checked).length;
@@ -208,7 +211,7 @@ export default function ITSupportDashboard() {
         // Update Progress
         updateProgress(selectedItem.id, resolutionNotes, activeChecklist, percentage);
     };
-    
+
     // Ticket Actions
     const acknowledgeTicket = async (ticketId) => {
         try {
@@ -222,7 +225,7 @@ export default function ITSupportDashboard() {
             alert("Failed to acknowledge ticket: " + error.message);
         }
     };
-    
+
     const resolveTicket = async (ticketId, notes, checklist, percentage) => {
         try {
             await apiClient.resolveTicket(ticketId, user.id, notes, checklist, percentage);
@@ -239,10 +242,10 @@ export default function ITSupportDashboard() {
     const updateProgress = async (ticketId, notes, checklist, percentage, silent = false) => {
         try {
             await apiClient.updateTicketProgress(ticketId, user.id, notes, checklist, percentage);
-             // Refresh tickets
-             const fetchedTickets = await apiClient.getTickets();
-             setTickets(fetchedTickets);
-             if (!silent) alert("Progress updated and user notified!");
+            // Refresh tickets
+            const fetchedTickets = await apiClient.getTickets();
+            setTickets(fetchedTickets);
+            if (!silent) alert("Progress updated and user notified!");
         } catch (error) {
             console.error("Failed to update progress:", error);
             if (!silent) alert("Failed to update progress: " + error.message);
@@ -282,7 +285,7 @@ export default function ITSupportDashboard() {
             </header>
 
             {/* --- METRIC CARDS --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
 
                 {/* 1. PENDING SETUP */}
                 <div
@@ -337,6 +340,20 @@ export default function ITSupportDashboard() {
                     <h3 className="text-3xl font-bold text-white mt-1">{disposalItems.length}</h3>
                     <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                         <Trash2 size={12} /> Pending Data Wipe
+                    </div>
+                </div>
+
+                {/* 5. DISCOVERY */}
+                <div
+                    onClick={() => window.location.href = '/assets?status=Discovered'}
+                    className="glass-card p-5 bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 cursor-pointer hover:border-purple-400/50 transition-all hover:scale-[1.02]"
+                >
+                    <p className="text-purple-300 text-xs font-bold uppercase flex justify-between">
+                        Discovered Assets <ChevronRight size={14} className="opacity-50" />
+                    </p>
+                    <h3 className="text-3xl font-bold text-white mt-1">{discoveredAssets.length}</h3>
+                    <div className="mt-2 text-xs text-purple-200/70 flex items-center gap-1">
+                        <Activity size={12} /> Found by Auto-Agent
                     </div>
                 </div>
             </div>
@@ -760,7 +777,7 @@ export default function ITSupportDashboard() {
                             </div>
 
                             <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                                
+
                                 {/* STEP 1: DIAGNOSIS */}
                                 {configStep === 1 && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
@@ -784,11 +801,11 @@ export default function ITSupportDashboard() {
                                             <h4 className="text-md font-bold text-white">2. Create Resolution Checklist</h4>
                                             <span className="text-xs text-indigo-400 font-bold">{activeChecklist.length > 0 ? Math.round((activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100) : 0}% Complete</span>
                                         </div>
-                                        
+
                                         {/* Add Item Input */}
                                         <div className="flex gap-2 mb-4">
-                                            <input 
-                                                type="text" 
+                                            <input
+                                                type="text"
                                                 placeholder="Add verification step..."
                                                 className="flex-1 bg-slate-950 border border-white/10 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                                                 onKeyDown={(e) => {
@@ -799,7 +816,7 @@ export default function ITSupportDashboard() {
                                                 }}
                                                 id="checklist-input"
                                             />
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     const input = document.getElementById('checklist-input');
                                                     if (input && input.value.trim()) {
@@ -815,7 +832,7 @@ export default function ITSupportDashboard() {
 
                                         {/* Progress Bar */}
                                         <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-4">
-                                            <div 
+                                            <div
                                                 className="h-full bg-indigo-500 transition-all duration-500"
                                                 style={{ width: `${activeChecklist.length > 0 ? (activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100 : 0}%` }}
                                             ></div>
@@ -831,21 +848,21 @@ export default function ITSupportDashboard() {
                                             {activeChecklist.map((item, idx) => (
                                                 <div key={idx} className={`flex items-start gap-3 p-3 rounded border transition-colors group ${item.checked ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-slate-800 border-white/5 hover:border-white/10'}`}>
                                                     <label className="flex items-start gap-3 flex-1 cursor-pointer">
-                                                        <input 
-                                                            type="checkbox" 
-                                                            checked={item.checked} 
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={item.checked}
                                                             onChange={() => {
                                                                 const newChecklist = [...activeChecklist];
                                                                 newChecklist[idx].checked = !newChecklist[idx].checked;
                                                                 setActiveChecklist(newChecklist);
                                                             }}
-                                                            className="mt-1 w-4 h-4 rounded text-indigo-600 bg-slate-700 border-slate-600 focus:ring-indigo-500" 
+                                                            className="mt-1 w-4 h-4 rounded text-indigo-600 bg-slate-700 border-slate-600 focus:ring-indigo-500"
                                                         />
                                                         <div>
                                                             <div className={`text-sm font-medium ${item.checked ? 'text-white' : 'text-slate-300'}`}>{item.text}</div>
                                                         </div>
                                                     </label>
-                                                    <button 
+                                                    <button
                                                         onClick={() => {
                                                             const newChecklist = [...activeChecklist];
                                                             newChecklist.splice(idx, 1);
@@ -898,7 +915,7 @@ export default function ITSupportDashboard() {
                             <div className="p-6 border-t border-white/10 flex justify-between items-center bg-white/5 shrink-0">
                                 <div className="flex gap-2">
                                     <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancel</button>
-                                    <button 
+                                    <button
                                         onClick={saveDraft}
                                         className="px-4 py-2 text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/5"
                                     >
@@ -908,7 +925,7 @@ export default function ITSupportDashboard() {
 
                                 <div className="flex gap-3">
                                     {configStep === 1 && (
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 if (!resolutionNotes) return alert("Please enter a diagnosis.");
                                                 // Save progress silently when moving to next step
@@ -924,13 +941,13 @@ export default function ITSupportDashboard() {
                                     {configStep === 2 && (
                                         <>
                                             <button onClick={() => setConfigStep(1)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Back</button>
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     const total = activeChecklist.length;
                                                     const checked = activeChecklist.filter(i => i.checked).length;
                                                     const percentage = total > 0 ? Math.max(10, (checked / total) * 100) : 10;
                                                     updateProgress(selectedItem.id, resolutionNotes, activeChecklist, percentage, true);
-                                                    
+
                                                     if (activeChecklist.some(i => !i.checked)) {
                                                         if (!confirm("Checklist is incomplete. Do you want to proceed to final verification?")) return;
                                                     }
@@ -945,13 +962,13 @@ export default function ITSupportDashboard() {
                                     {configStep === 3 && (
                                         <>
                                             <button onClick={() => setConfigStep(2)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Back</button>
-                                            <button 
+                                            <button
                                                 onClick={submitProgress}
                                                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-500/20"
                                             >
                                                 Update Progress & Notify
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={submitResolution}
                                                 className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold shadow-lg shadow-emerald-500/20 flex items-center gap-2"
                                             >
@@ -996,7 +1013,7 @@ export default function ITSupportDashboard() {
                                         ))}
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={async () => {
                                         if (confirm(`Confirm MDM unenrollment and data wipe for BYOD devices belonging to ${req.user_id}?`)) {
                                             await processExitByod(req.id);

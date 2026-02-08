@@ -8,7 +8,8 @@ export const ASSET_STATUS = {
     IN_USE: 'In Use',
     AVAILABLE: 'Available',
     RETIRED: 'Retired',
-    MAINTENANCE: 'Maintenance'
+    MAINTENANCE: 'Maintenance',
+    DISCOVERED: 'Discovered'
 };
 
 export const OWNER_ROLE = {
@@ -50,14 +51,14 @@ export function AssetProvider({ children }) {
         switch (status) {
             case REQUEST_STATUS.REQUESTED: return OWNER_ROLE.MANAGER;
             case REQUEST_STATUS.MANAGER_APPROVED: return OWNER_ROLE.IT_MANAGEMENT;
-            case REQUEST_STATUS.IT_APPROVED: 
+            case REQUEST_STATUS.IT_APPROVED:
                 return assetType === 'BYOD' ? OWNER_ROLE.IT_MANAGEMENT : OWNER_ROLE.ASSET_INVENTORY_MANAGER;
             case REQUEST_STATUS.PROCUREMENT_REQUIRED:
                 if (procurementStage === 'PO_CREATED' || procurementStage === 'PO_UPLOADED') return OWNER_ROLE.FINANCE;
                 if (procurementStage === 'FINANCE_APPROVED') return OWNER_ROLE.PROCUREMENT; // Back to procurement for delivery
                 return OWNER_ROLE.PROCUREMENT; // Default to procurement for initial PO creation
             case 'PROCUREMENT_APPROVED': return OWNER_ROLE.PROCUREMENT;
-            case 'QC_PENDING': return OWNER_ROLE.ASSET_INVENTORY_MANAGER; 
+            case 'QC_PENDING': return OWNER_ROLE.ASSET_INVENTORY_MANAGER;
             case REQUEST_STATUS.FULFILLED: return OWNER_ROLE.END_USER;
             case REQUEST_STATUS.REJECTED: return OWNER_ROLE.END_USER;
             default: return OWNER_ROLE.IT_MANAGEMENT;
@@ -93,11 +94,11 @@ export function AssetProvider({ children }) {
             try {
                 let apiAssetRequests = [];
                 let apiTickets = [];
-                
+
                 // Domain-based filtering logic
-                if (currentRole?.slug === 'ADMIN' || 
-                    currentRole?.slug === 'ASSET_MANAGER' || 
-                    currentRole?.slug === 'FINANCE' || 
+                if (currentRole?.slug === 'ADMIN' ||
+                    currentRole?.slug === 'ASSET_MANAGER' ||
+                    currentRole?.slug === 'FINANCE' ||
                     currentRole?.slug === 'IT_MANAGEMENT'
                 ) {
                     // Admin-level/Centralized roles see EVERYTHING
@@ -107,7 +108,7 @@ export function AssetProvider({ children }) {
                     // Managers see their DOMAIN'S requests + their OWN requests
                     const domainRequests = await apiClient.getAssetRequests({ domain: user.domain });
                     const myRequests = await apiClient.getAssetRequests({ requester_id: user.id });
-                    
+
                     // Merge and deduplicate
                     const combinedAssets = [...domainRequests, ...myRequests];
                     const seenAssets = new Set();
@@ -134,13 +135,13 @@ export function AssetProvider({ children }) {
                     if (rawStatus === 'MANAGER_REJECTED' || rawStatus === 'IT_REJECTED' || rawStatus === 'PROCUREMENT_REJECTED' || rawStatus === 'USER_REJECTED') status = 'REJECTED';
 
                     const procurementStage = r.procurement_finance_status === 'APPROVED' ? 'FINANCE_APPROVED' : (r.procurement_finance_status || 'AWAITING_DECISION');
-                    
+
                     return {
                         ...r,
                         status: status,
                         assetType: r.asset_type || r.type || 'Standard',
                         justification: r.justification || r.business_justification || '',
-                        requestedBy: { 
+                        requestedBy: {
                             name: r.requester_name || r.requester_id || 'Employee',
                             email: r.requester_email || ''
                         },
@@ -170,10 +171,10 @@ export function AssetProvider({ children }) {
                 });
 
                 setRequests([...mappedAssetRequests, ...mappedTickets]);
-                
+
                 // 3) Load exit requests (only for relevant roles)
-                if (currentRole?.slug === 'ADMIN' || 
-                    currentRole?.slug === 'ASSET_MANAGER' || 
+                if (currentRole?.slug === 'ADMIN' ||
+                    currentRole?.slug === 'ASSET_MANAGER' ||
                     currentRole?.slug === 'IT_MANAGEMENT' ||
                     currentRole?.slug === 'ASSET_INVENTORY_MANAGER'
                 ) {
@@ -227,7 +228,7 @@ export function AssetProvider({ children }) {
                 serial_number: data.deviceDetails?.serial || data.serialNumber || null,
                 os_version: data.deviceDetails?.os || data.osVersion || null,
                 justification: data.justification,
-                business_justification: data.deviceDetails 
+                business_justification: data.deviceDetails
                     ? `${data.justification || 'BYOD Registration'}\n\nDevice Details:\n- Model: ${data.deviceDetails.model}\n- OS: ${data.deviceDetails.os}\n- Serial: ${data.deviceDetails.serial}`
                     : (data.businessJustification || data.justification),
                 cost_estimate: data.costEstimate || null
@@ -314,7 +315,7 @@ export function AssetProvider({ children }) {
                     }]
                 };
             }));
-            
+
             console.log(`[Manager] ✅ Request ${reqId} successfully rejected`);
         } catch (e) {
             console.error('[Manager] ❌ Failed to reject request:', e);
@@ -505,9 +506,9 @@ export function AssetProvider({ children }) {
                 console.log(`[Inventory] Request state updated`);
                 return updated;
             });
-            
+
             console.log(`[Inventory] ✅ Asset allocated. Request ${reqId} status changed to FULFILLED`);
-            
+
             // Refresh assets list to show newly assigned asset
             try {
                 const refreshedAssets = await apiClient.getAssets();
@@ -573,7 +574,7 @@ export function AssetProvider({ children }) {
     const procurementApprove = async (reqId, poNumber, procurementOfficer) => {
         try {
             const poId = poNumber || `PO-${Math.floor(Math.random() * 10000)}`;
-            
+
             // Call backend API to persist the approval
             await apiClient.procurementApproveRequest(reqId, {
                 reviewer_id: user?.id,
@@ -602,7 +603,7 @@ export function AssetProvider({ children }) {
                     ]
                 };
             }));
-            
+
             console.log(`[Procurement] ✅ Request ${reqId} approved with PO ${poId}`);
         } catch (error) {
             console.error('[Procurement] ❌ Failed to approve request:', error);
@@ -620,7 +621,7 @@ export function AssetProvider({ children }) {
 
             // Refresh data to reflect status changes
             loadData();
-            
+
             return response;
 
         } catch (error) {
@@ -657,7 +658,7 @@ export function AssetProvider({ children }) {
                     timeline: [...(req.timeline || []), { role: 'PROCUREMENT', action: 'REJECTED', timestamp: new Date().toISOString(), comment: `Rejected: ${reason}` }]
                 };
             }));
-            
+
             console.log(`[Procurement] ✅ Request ${reqId} successfully rejected`);
         } catch (error) {
             console.error('[Procurement] ❌ Failed to reject request:', error);
@@ -838,7 +839,7 @@ export function AssetProvider({ children }) {
     const processExitAssets = async (requestId) => {
         try {
             await apiClient.processExitAssets(requestId);
-            setExitRequests(prev => prev.map(req => 
+            setExitRequests(prev => prev.map(req =>
                 req.id === requestId ? { ...req, status: 'ASSETS_PROCESSED' } : req
             ));
             // Refresh assets because they were returned to stock
@@ -853,7 +854,7 @@ export function AssetProvider({ children }) {
     const processExitByod = async (requestId) => {
         try {
             await apiClient.processExitByod(requestId);
-            setExitRequests(prev => prev.map(req => 
+            setExitRequests(prev => prev.map(req =>
                 req.id === requestId ? { ...req, status: 'BYOD_PROCESSED' } : req
             ));
         } catch (e) {

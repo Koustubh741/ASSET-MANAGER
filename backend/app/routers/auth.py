@@ -17,6 +17,13 @@ router = APIRouter(
     tags=["auth"]
 )
 
+# Simulated SSO Secret (In production, use Env variables)
+SSO_CONFIG = {
+    "google": {"client_id": "google_id", "auth_url": "https://accounts.google.com/o/oauth2/v2/auth"},
+    "azure": {"client_id": "azure_id", "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"},
+    "okta": {"client_id": "okta_id", "auth_url": "https://okta.com/oauth2/default/v1/authorize"}
+}
+
 async def check_system_admin(
     current_user = Depends(auth_utils.get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -174,6 +181,72 @@ async def get_current_user_info(current_user = Depends(auth_utils.get_current_us
     Returns the user object associated with the provided JWT token.
     """
     return current_user
+
+
+@router.get("/sso/login/{provider}")
+async def sso_login(provider: str):
+    """
+    Initiate SSO login by redirecting to the provider.
+    """
+    if provider not in SSO_CONFIG:
+        raise HTTPException(status_code=400, detail="Unsupported SSO provider")
+    
+    # In a real app, we would return a RedirectResponse here
+    # return RedirectResponse(url=f"{SSO_CONFIG[provider]['auth_url']}?client_id=...")
+    return {
+        "provider": provider,
+        "redirect_url": f"{SSO_CONFIG[provider]['auth_url']}?client_id={SSO_CONFIG[provider]['client_id']}&response_type=code&scope=openid%20profile%20email"
+    }
+
+
+@router.get("/sso/callback/{provider}", response_model=LoginResponse)
+async def sso_callback(
+    provider: str, 
+    code: str = Query(...), 
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Handle SSO callback after user authenticates with provider.
+    """
+    if provider not in SSO_CONFIG:
+        raise HTTPException(status_code=400, detail="Unsupported SSO provider")
+    
+    # SIMULATION: In a real app, we would exchange the 'code' for an 'id_token' and 'access_token'
+    # For this implementation, we simulate the user data returned by the provider
+    if code == "MOCK_SUCCESS_CODE":
+        user_info = {
+            "sso_id": f"sso_{provider}_12345",
+            "email": "sso_user@example.com",
+            "full_name": "SSO Test User"
+        }
+    else:
+        # In mock mode, we'll allow the code to be the email for testing
+        user_info = {
+            "sso_id": f"sso_{provider}_{code}",
+            "email": code if "@" in code else f"{code}@example.com",
+            "full_name": f"SSO {code}"
+        }
+
+    # Sync user with our database
+    user = await user_service.sync_sso_user(
+        db, 
+        sso_provider=provider,
+        sso_id=user_info["sso_id"],
+        email=user_info["email"],
+        full_name=user_info["full_name"]
+    )
+
+    # Create tokens (standard JWT flow)
+    token_data = {"sub": user.email, "user_id": str(user.id), "role": user.role}
+    access_token = auth_utils.create_access_token(data=token_data)
+    refresh_token = auth_utils.create_refresh_token(data=token_data)
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": user
+    }
 
 
 @router.post("/users/{user_id}/activate", response_model=UserResponse)

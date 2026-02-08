@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { LayoutDashboard, Server, Settings, User, RotateCcw, ShoppingBag, Trash2, Sparkles, ChevronUp, Check } from 'lucide-react'
+import { LayoutDashboard, Server, Settings, User, RotateCcw, ShoppingBag, Trash2, Sparkles, Monitor, MapPin, ChevronUp, Check } from 'lucide-react'
 import { useRole } from '@/contexts/RoleContext'
 
 const ROLES = [
@@ -43,6 +43,8 @@ export default function Layout({ children }) {
         { label: 'Dashboard', href: dashboardPath, icon: LayoutDashboard },
         { label: 'Enterprise', href: '/enterprise', icon: Sparkles },
         { label: 'Assets', href: '/assets', icon: Server },
+        { label: 'Software', href: '/software', icon: Monitor },
+        { label: 'Locations', href: '/locations', icon: MapPin },
         { label: 'Renewals', href: '/renewals', icon: RotateCcw },
         { label: 'Procurement', href: '/procurement', icon: ShoppingBag },
         { label: 'Disposal', href: '/disposal', icon: Trash2 },

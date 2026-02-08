@@ -22,10 +22,10 @@ def print_section(title):
     print(f"{Colors.BLUE}{'='*70}{Colors.END}\n")
 
 def print_success(msg):
-    print(f"{Colors.GREEN}✓ {msg}{Colors.END}")
+    print(f"{Colors.GREEN}[OK] {msg}{Colors.END}")
 
 def print_error(msg):
-    print(f"{Colors.RED}✗ {msg}{Colors.END}")
+    print(f"{Colors.RED}[FAIL] {msg}{Colors.END}")
 
 def print_warning(msg):
     print(f"{Colors.YELLOW}⚠ {msg}{Colors.END}")
@@ -233,7 +233,10 @@ def test_router_registration():
     print_section("6. ROUTER REGISTRATION")
     
     try:
-        from main import app
+        try:
+            from main import app
+        except ImportError:
+            from app.main import app
         
         routes = []
         for route in app.routes:
@@ -290,10 +293,10 @@ def generate_summary(results):
     print(f"{Colors.BLUE}{'='*70}{Colors.END}\n")
     
     if failed_tests == 0:
-        print(f"{Colors.GREEN}✓ All tests passed! Backend is working properly.{Colors.END}\n")
+        print(f"{Colors.GREEN}[OK] All tests passed! Backend is working properly.{Colors.END}\n")
         return True
     else:
-        print(f"{Colors.RED}✗ Some tests failed. Please review the errors above.{Colors.END}\n")
+        print(f"{Colors.RED}[FAIL] Some tests failed. Please review the errors above.{Colors.END}\n")
         return False
 
 if __name__ == "__main__":

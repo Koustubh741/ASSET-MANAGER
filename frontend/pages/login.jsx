@@ -9,6 +9,44 @@ export default function Login() {
     const { login, ROLES } = useRole();
     const [isLoginMode, setIsLoginMode] = useState(true);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // SSO Callback Effect
+    useEffect(() => {
+        const { provider, code } = router.query;
+        if (code && provider) {
+            handleSSOCallback(provider, code);
+        }
+    }, [router.query]);
+
+    const handleSSOCallback = async (provider, code) => {
+        setIsLoading(true);
+        setError('');
+        try {
+            const authResponse = await apiClient.ssoCallback(provider, code);
+            const userData = {
+                id: authResponse.user.id,
+                userName: authResponse.user.full_name || authResponse.user.email.split('@')[0],
+                role: authResponse.user.role,
+                location: authResponse.user.location,
+                email: authResponse.user.email,
+                position: authResponse.user.position,
+                domain: authResponse.user.domain,
+                company: authResponse.user.company,
+                createdAt: authResponse.user.created_at
+            };
+            login(userData);
+            router.push('/');
+        } catch (err) {
+            setError('SSO Authentication failed: ' + (err.message || 'Unknown error'));
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSSOLogin = (provider) => {
+        apiClient.ssoLogin(provider);
+    };
 
     const DOMAINS = [
         { label: 'Data/AI', value: 'data/ai' },
@@ -83,7 +121,7 @@ export default function Login() {
                     location: formData.location,
                     position: formData.isManager ? 'MANAGER' : 'TEAM_MEMBER'
                 };
-                
+
                 try {
                     await apiClient.register(registerData);
                     console.log("Registration successful!");
@@ -119,7 +157,7 @@ export default function Login() {
         } catch (e) {
             console.warn("Real backend auth failed:", e);
             setError(e.message || 'Authentication failed. Please check your credentials.');
-            
+
             // Optional: Keep mock fallback for demonstration if desired, but user specifically asked for DB reflection
             /*
             const mockUserData = {
@@ -404,16 +442,45 @@ export default function Login() {
                                 <p className="text-emerald-400 text-xs mt-2 text-center animate-bounce">{successMsg}</p>
                             )}
 
-                            <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 ${glowBg} ${glowShadow}`}
-                                >
-                                    {isLoginMode ? 'Login' : 'create Account'} <ArrowRight size={18} />
-                                </button>
-                            </div>
-
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 ${glowBg} ${glowShadow} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isLoading ? 'Processing...' : (isLoginMode ? 'Login' : 'Create Account')} <ArrowRight size={18} />
+                            </button>
                         </form>
+
+                        {/* SSO Section */}
+                        {isLoginMode && (
+                            <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                                <div className="relative flex items-center">
+                                    <div className="flex-grow border-t border-white/10"></div>
+                                    <span className="flex-shrink mx-4 text-xs font-semibold text-slate-500 uppercase">Or continue with SSO</span>
+                                    <div className="flex-grow border-t border-white/10"></div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <button
+                                        onClick={() => handleSSOLogin('google')}
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-white/5 transition-all group"
+                                    >
+                                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Google" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleSSOLogin('azure')}
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-white/5 transition-all group"
+                                    >
+                                        <img src="https://img.icons8.com/color/48/000000/azure-1.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Azure" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleSSOLogin('okta')}
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-white/5 transition-all group"
+                                    >
+                                        <img src="https://img.icons8.com/color/48/000000/okta.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Okta" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {isLoginMode && (
                             <div className="mt-4 text-center">
@@ -449,7 +516,7 @@ export default function Login() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <style jsx>{`
                 @keyframes cord-sway {
@@ -468,7 +535,7 @@ export default function Login() {
                     animation: cord-pull 0.3s ease-in-out;
                 }
             `}</style>
-        </div>
+        </div >
     );
 }
 

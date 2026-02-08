@@ -9,6 +9,7 @@ export default function AssetTable({ assets }) {
             case 'In Stock': return 'bg-blue-500/10 text-blue-400 ring-blue-500/20'
             case 'Repair': return 'bg-orange-500/10 text-orange-400 ring-orange-500/20'
             case 'Retired': return 'bg-slate-500/10 text-slate-400 ring-slate-500/20'
+            case 'Discovered': return 'bg-purple-500/10 text-purple-400 ring-purple-500/20'
             default: return 'bg-slate-500/10 text-slate-400 ring-slate-500/20'
         }
     }

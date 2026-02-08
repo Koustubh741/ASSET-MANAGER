@@ -79,3 +79,41 @@ async def get_users(db: AsyncSession, status: str = None):
         query = query.filter(User.status == status)
     result = await db.execute(query)
     return result.scalars().all()
+
+async def sync_sso_user(db: AsyncSession, sso_provider: str, sso_id: str, email: str, full_name: str):
+    """
+    Sync a user from an SSO provider.
+    1. Check if user exists with sso_id.
+    2. Check if user exists with email.
+    3. Update or create user.
+    """
+    # 1. Try to find by SSO ID
+    result = await db.execute(select(User).filter(User.sso_provider == sso_provider, User.sso_id == sso_id))
+    user = result.scalars().first()
+    
+    if not user:
+        # 2. Try to find by email
+        result = await db.execute(select(User).filter(User.email == email))
+        user = result.scalars().first()
+        
+        if user:
+            # Link existing user to SSO
+            user.sso_provider = sso_provider
+            user.sso_id = sso_id
+        else:
+            # 3. Create new user
+            user = User(
+                id=uuid.uuid4(),
+                email=email,
+                full_name=full_name,
+                password_hash="SSO_MANAGED_" + str(uuid.uuid4()), # Placeholder
+                sso_provider=sso_provider,
+                sso_id=sso_id,
+                status="ACTIVE", # SSO users are usually pre-authenticated
+                role="END_USER"
+            )
+            db.add(user)
+    
+    await db.commit()
+    await db.refresh(user)
+    return user

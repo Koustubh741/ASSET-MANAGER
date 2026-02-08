@@ -59,6 +59,11 @@ class AssetResponse(AssetBase):
     created_at: datetime
     updated_at: datetime
     assignment_date: Optional[date] = None
+    
+    # Phase 2 Fields
+    location_id: Optional[UUID] = None
+    assigned_to_id: Optional[UUID] = None
+    assigned_to_name: Optional[str] = None
 
     class Config:
         json_encoders = {

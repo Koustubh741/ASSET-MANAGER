@@ -105,7 +105,7 @@ export default function AssetsPage() {
             }
 
             // 2. SEMANTIC VALIDATION
-            const validStatuses = ['active', 'in use', 'in stock', 'repair', 'maintenance', 'retired', 'available'];
+            const validStatuses = ['active', 'in use', 'in stock', 'repair', 'maintenance', 'retired', 'available', 'discovered'];
             parsed = parsed.filter(a => {
                 if (!a.status) return false;
                 const s = a.status.toLowerCase();
@@ -205,14 +205,14 @@ export default function AssetsPage() {
                     <h2 className="text-3xl font-bold text-white tracking-tight">Asset Inventory</h2>
                     <p className="text-slate-400 mt-1">Manage and track all hardware and software assets</p>
                 </div>
-                <Link href="/assets/add" className="btn btn-primary flex items-center space-x-2">
+                <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
                     <Plus size={20} />
                     <span>Add Asset</span>
                 </Link>
             </div>
 
             {/* Filters */}
-            <div className="glass-panel p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
                     <input
@@ -230,7 +230,7 @@ export default function AssetsPage() {
                     </div>
 
                     <select
-                        className="input-field w-36 bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-800/50"
                         value={filterSegment}
                         onChange={(e) => setFilterSegment(e.target.value)}
                     >
@@ -240,7 +240,7 @@ export default function AssetsPage() {
                     </select>
 
                     <select
-                        className="input-field w-36 bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-800/50"
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                     >
@@ -252,7 +252,7 @@ export default function AssetsPage() {
                     </select>
 
                     <select
-                        className="input-field w-40 bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-800/50"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
@@ -261,6 +261,7 @@ export default function AssetsPage() {
                         <option value="In Stock" className="bg-slate-900 text-white">In Stock</option>
                         <option value="Repair" className="bg-slate-900 text-white">Repair</option>
                         <option value="Maintenance" className="bg-slate-900 text-white">Maintenance</option>
+                        <option value="Discovered" className="bg-slate-900 text-white">Discovered</option>
                         <option value="Retired" className="bg-slate-900 text-white">Retired</option>
                     </select>
 

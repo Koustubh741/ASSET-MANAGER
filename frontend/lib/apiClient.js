@@ -101,12 +101,12 @@ class ApiClient {
         }
 
         if (config.body instanceof FormData) {
-             delete headers['Content-Type'];
+            delete headers['Content-Type'];
         }
 
         try {
             const response = await fetch(url, config);
-            
+
             // Handle 401 Unauthorized - attempt token refresh
             if (response.status === 401 && retryOnUnauthorized && this.refreshToken) {
                 if (!this.isRefreshing) {
@@ -139,7 +139,7 @@ class ApiClient {
                     });
                 }
             }
-            
+
             // Handle empty responses
             const contentType = response.headers.get('content-type');
             let data;
@@ -180,6 +180,27 @@ class ApiClient {
         if (!response.ok) {
             throw new Error(data.detail || 'Login failed');
         }
+
+        this.setToken(data.access_token);
+        if (data.refresh_token) {
+            this.setRefreshToken(data.refresh_token);
+        }
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(data.user));
+        }
+
+        return data;
+    }
+
+    async ssoLogin(provider) {
+        const data = await this.request(`/auth/sso/login/${provider}`);
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+        }
+    }
+
+    async ssoCallback(provider, code) {
+        const data = await this.request(`/auth/sso/callback/${provider}?code=${code}`);
 
         this.setToken(data.access_token);
         if (data.refresh_token) {
@@ -360,7 +381,7 @@ class ApiClient {
         // Checking backend: @router.post("/po/{request_id}") async def upload_po(request_id: str, uploader_id: str, file: UploadFile = File(...))
         // FastApi expects query params for simple types unless Form(...) is used.
         // Let's assume uploader_id is a query param based on typical FastAPI behavior when mixed with File upload.
-        
+
         return this.request(`/upload/po/${requestId}?uploader_id=${uploaderId}`, {
             method: 'POST',
             body: formData,
@@ -644,6 +665,18 @@ class ApiClient {
 
     async syncAuditLogs() {
         return this.request('/audit/sync', { method: 'POST' });
+    }
+
+    // Network Discovery
+    async triggerNetworkScan(cidr = '192.168.1.0/24', community = 'public') {
+        return this.request('/collect/scan', {
+            method: 'POST',
+            body: { cidr, community }
+        });
+    }
+
+    async getDiscoveredSoftware() {
+        return this.request('/software/discovered');
     }
 }
 

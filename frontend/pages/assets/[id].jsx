@@ -36,11 +36,11 @@ export default function AssetDetail() {
                     apiClient.getAsset(id),
                     apiClient.getAssetEvents(id)
                 ]);
-                
+
                 setAsset(assetData);
                 setEvents(eventsData || []);
                 setLoading(false);
-                
+
                 // Initialize warranty form data
                 if (assetData) {
                     setWarrantyFormData({
@@ -56,17 +56,17 @@ export default function AssetDetail() {
 
         fetchAsset();
     }, [id]);
-    
+
     // Check if user can edit warranty (Admin or Asset Inventory Manager)
     // Backend accepts both ASSET_MANAGER and ASSET_INVENTORY_MANAGER
-    const canEditWarranty = currentRole?.slug === 'ADMIN' || 
-                           currentRole?.slug === 'ASSET_MANAGER' || 
-                           currentRole?.slug === 'ASSET_INVENTORY_MANAGER';
-    
+    const canEditWarranty = currentRole?.slug === 'ADMIN' ||
+        currentRole?.slug === 'ASSET_MANAGER' ||
+        currentRole?.slug === 'ASSET_INVENTORY_MANAGER';
+
     const handleEditWarranty = () => {
         setIsEditingWarranty(true);
     };
-    
+
     const handleCancelEditWarranty = () => {
         // Reset form data to original asset values
         if (asset) {
@@ -77,21 +77,21 @@ export default function AssetDetail() {
         }
         setIsEditingWarranty(false);
     };
-    
+
     const handleSaveWarranty = async () => {
         if (!asset) return;
-        
+
         setSavingWarranty(true);
         try {
             const updateData = {
                 purchase_date: warrantyFormData.purchase_date || null,
                 warranty_expiry: warrantyFormData.warranty_expiry || null
             };
-            
+
             const updatedAsset = await apiClient.updateAsset(asset.id, updateData);
             setAsset(updatedAsset);
             setIsEditingWarranty(false);
-            
+
             // Show success message (you can replace with a toast notification)
             alert('Warranty information updated successfully!');
         } catch (error) {
@@ -135,7 +135,7 @@ export default function AssetDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Info */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="glass-panel p-6">
+                    <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                         <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                             <Server className="mr-3 text-blue-400" size={20} />
                             Specifications
@@ -159,11 +159,11 @@ export default function AssetDetail() {
                             </div>
                             <div>
                                 <p className="text-sm text-slate-400 mb-1">Processor</p>
-                                <p className="font-medium text-slate-100">{asset.specifications?.Processor || 'N/A'}</p>
+                                <p className="font-medium text-slate-100">{asset.specifications?.Processor || asset.specifications?.cpu || 'N/A'}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-slate-400 mb-1">RAM</p>
-                                <p className="font-medium text-slate-100">{asset.specifications?.RAM || 'N/A'}</p>
+                                <p className="font-medium text-slate-100">{asset.specifications?.RAM || (asset.specifications?.ram_mb ? `${asset.specifications.ram_mb} MB` : 'N/A')}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-slate-400 mb-1">Storage</p>
@@ -171,16 +171,18 @@ export default function AssetDetail() {
                             </div>
                             <div>
                                 <p className="text-sm text-slate-400 mb-1">OS</p>
-                                <p className="font-medium text-slate-100">{asset.specifications?.OS || 'N/A'}</p>
+                                <p className="font-medium text-slate-100">{asset.specifications?.OS || asset.specifications?.os_name || 'N/A'}</p>
                             </div>
                             <div>
                                 <p className="text-sm text-slate-400 mb-1">Condition</p>
-                                <p className="font-medium text-emerald-400">Excellent</p>
+                                <p className={`font-medium ${asset.specifications?.Condition === 'Fair' ? 'text-orange-400' : 'text-emerald-400'}`}>
+                                    {asset.specifications?.Condition || 'Excellent'}
+                                </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="glass-panel p-6 relative overflow-hidden">
+                    <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 relative overflow-hidden">
                         {/* Background Animation for entire card */}
                         <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none"></div>
 
@@ -247,7 +249,7 @@ export default function AssetDetail() {
 
                     {/* Renewal & Service Request Section - Conditions: Retired, Repair, Maintenance OR Warranty Expired */}
                     {['Retired', 'Repair', 'Maintenance'].includes(asset.status) || (asset.warranty_expiry && new Date(asset.warranty_expiry) <= new Date()) ? (
-                        <div className="glass-panel p-6 border-l-4 border-l-orange-500">
+                        <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 border-l-4 border-l-orange-500">
                             <h3 className="text-xl font-bold text-white mb-4 flex items-center">
                                 <AlertCircle className="mr-3 text-orange-400" size={24} />
                                 Renewal & Service Request
@@ -319,7 +321,7 @@ export default function AssetDetail() {
                                             />
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full btn btn-primary py-2.5 mt-2">
+                                    <button type="submit" className="w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 backdrop-blur-sm py-2.5 mt-2">
                                         Send Request to Department
                                     </button>
                                 </form>
@@ -330,7 +332,7 @@ export default function AssetDetail() {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <div className="glass-panel p-6">
+                    <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                         <h3 className="text-xl font-bold text-white mb-6 flex items-center">
                             <User className="mr-3 text-purple-400" size={20} />
                             Ownership

@@ -37,10 +37,12 @@ class Asset(Base):
 
     # Status and Location
     status = Column(String(50), nullable=False, index=True)
-    location = Column(String(255), nullable=True)
+    location_id = Column(UUID(as_uuid=True), ForeignKey("asset.locations.id"), nullable=True)
+    location_text = Column(String(255), nullable=True) # Fallback / Legacy
 
     # Assignment
-    assigned_to = Column(String(255), nullable=True)
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
+    assigned_to_name = Column(String(255), nullable=True) # Denormalized for display
     assigned_by = Column(String(255), nullable=True)
 
     # Specifications
@@ -122,6 +124,11 @@ class User(Base):
     location = Column(String(100), nullable=True)
     phone = Column(String(20), nullable=True)
     company = Column(String(255), nullable=True) # New field
+    
+    # SSO Integration
+    sso_provider = Column(String(50), nullable=True) # google, azure, okta
+    sso_id = Column(String(255), nullable=True, index=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -326,6 +333,64 @@ class ExitRequest(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
+class Location(Base):
+    """
+    Hierarchical location model for sites, buildings, and floors
+    """
+    __tablename__ = "locations"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("asset.locations.id"), nullable=True)
+    name = Column(String(255), nullable=False)
+    address = Column(String(500), nullable=True)
+    timezone = Column(String(100), default="UTC")
+    metadata_ = Column(JSONB, nullable=True, default={})
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class SoftwareLicense(Base):
+    """
+    Enterprise software license tracking
+    """
+    __tablename__ = "software_licenses"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String(255), nullable=False)
+    vendor = Column(String(255), nullable=False)
+    license_key = Column(String(500), nullable=True)
+    seat_count = Column(Float, default=1.0) # Float for partial seats or consumption based
+    purchase_date = Column(Date, nullable=True)
+    expiry_date = Column(Date, nullable=True, index=True)
+    cost = Column(Float, default=0.0)
+    status = Column(String(50), default="Active") # Active, Expired, Retired
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class MaintenanceRecord(Base):
+    """
+    Hardware maintenance and repair logs
+    """
+    __tablename__ = "maintenance_records"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, index=True)
+    maintenance_type = Column(String(100), nullable=False) # Repair, Preventive, Upgrade
+    description = Column(Text, nullable=False)
+    technician = Column(String(255), nullable=True)
+    cost = Column(Float, default=0.0)
+    scheduled_date = Column(DateTime, nullable=True)
+    completed_date = Column(DateTime, nullable=True)
+    status = Column(String(50), default="Scheduled") # Scheduled, In Progress, Completed
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
 class AuditLog(Base):
     """
     Audit Log for system events
@@ -430,3 +495,18 @@ class AssetRelationship(Base):
 
     def __repr__(self):
         return f"<AssetRelationship(id={self.id}, {self.source_asset_id} -> {self.relationship_type} -> {self.target_asset_id})>"
+
+class DiscoveredSoftware(Base):
+    """
+    Discovered software found on assets via agent discovery
+    """
+    __tablename__ = "discovered_software"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    asset_id = Column(UUID(as_uuid=True), nullable=False, index=True) # Linked to Asset ID
+    name = Column(String(255), nullable=False, index=True)
+    version = Column(String(100), nullable=True)
+    vendor = Column(String(255), nullable=True)
+    first_seen = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

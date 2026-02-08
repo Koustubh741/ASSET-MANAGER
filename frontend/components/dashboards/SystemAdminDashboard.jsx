@@ -19,6 +19,7 @@ export default function SystemAdminDashboard() {
     const [trendView, setTrendView] = useState('monthly')
     const [timeRange, setTimeRange] = useState('Overview') // Overview, Analytics, Requests
     const [pendingUsers, setPendingUsers] = useState([])
+    const [scanning, setScanning] = useState(false)
 
 
 
@@ -97,6 +98,25 @@ export default function SystemAdminDashboard() {
         } catch (error) {
             console.error('Failed to deny user:', error);
             alert('Failed to deny user: ' + error.message);
+        }
+    }
+
+    const handleNetworkScan = async () => {
+        const cidr = prompt("Enter Network Range to Scan (CIDR):", "192.168.1.0/24");
+        if (!cidr) return;
+
+        setScanning(true);
+        try {
+            const result = await apiClient.triggerNetworkScan(cidr);
+            alert(`Scan Complete: ${result.message}`);
+            // Refresh assets
+            const apiAssets = await apiClient.getAssets();
+            setAllAssets(apiAssets.map(sanitizeAsset));
+        } catch (error) {
+            console.error('Scan failed:', error);
+            alert('Scan failed: ' + error.message);
+        } finally {
+            setScanning(false);
         }
     }
 
@@ -194,7 +214,7 @@ export default function SystemAdminDashboard() {
     )
 
     const StatCard = ({ title, value, subtext, icon: Icon, colorClass, gradient, trend }) => (
-        <div className={`glass-card p-6 relative overflow-hidden group cursor-pointer hover:border-blue-500/30 hover:bg-white/5 transition-all duration-300`}>
+        <div className={`backdrop-blur-sm bg-white/5 border border-white/10 shadow-lg rounded-xl transition-all duration-300 hover:border-blue-500/30 hover:-translate-y-1 p-6 relative overflow-hidden group cursor-pointer hover:bg-white/5 transition-all duration-300`}>
             <div className={`absolute -right-6 -top-6 p-8 rounded-full ${gradient} opacity-5 group-hover:opacity-10 transition-all duration-500 blur-2xl`}></div>
             <div className="relative z-10 flex justify-between items-start">
                 <div>
@@ -271,12 +291,20 @@ export default function SystemAdminDashboard() {
 
                     {/* Actions */}
                     <div className="flex space-x-2">
-                        <button onClick={handleExport} className="btn bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-2 px-4 py-2.5 rounded-xl">
+                        <button
+                            onClick={handleNetworkScan}
+                            disabled={scanning}
+                            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${scanning ? 'bg-purple-900/50 cursor-not-allowed' : 'bg-purple-600/10 hover:bg-purple-600/20'} text-purple-400 border border-purple-500/30 flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all`}
+                        >
+                            <Activity size={18} className={scanning ? 'animate-pulse' : ''} />
+                            <span className="hidden md:inline">{scanning ? 'Scanning...' : 'Scan Network'}</span>
+                        </button>
+                        <button onClick={handleExport} className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-2 px-4 py-2.5 rounded-xl">
                             <Download size={18} />
                             <span className="hidden md:inline">Export</span>
                         </button>
                         <Link href="/assets/add">
-                            <button className="btn bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-none shadow-lg shadow-blue-500/25 flex items-center space-x-2 px-6 py-2.5 rounded-xl">
+                            <button className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-none shadow-lg shadow-blue-500/25 flex items-center space-x-2 px-6 py-2.5 rounded-xl">
                                 <Plus size={18} />
                                 <span className="hidden md:inline">Add Asset</span>
                             </button>
@@ -328,6 +356,17 @@ export default function SystemAdminDashboard() {
                         colorClass="text-rose-500"
                         gradient="bg-gradient-to-br from-rose-500 to-pink-600"
                         trend="+2"
+                    />
+                </Link>
+                <Link href="/assets?status=Discovered">
+                    <StatCard
+                        title="Discovered"
+                        value={stats?.discovered || 0}
+                        subtext="Found by auto-agent"
+                        icon={Activity}
+                        colorClass="text-purple-500"
+                        gradient="bg-gradient-to-br from-purple-500 to-indigo-600"
+                        trend="New"
                     />
                 </Link>
                 <Link href="/assets?status=In Stock">
@@ -419,7 +458,7 @@ export default function SystemAdminDashboard() {
                         {/* Left Column: Charts */}
                         <div className="xl:col-span-2 space-y-6">
                             {/* Primary Chart */}
-                            <div className="glass-panel p-6 min-h-[400px]">
+                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 min-h-[400px]">
                                 <div className="flex justify-between items-center mb-6">
                                     <div>
                                         <h3 className="text-xl font-bold text-white">Asset Analytics</h3>
@@ -447,7 +486,7 @@ export default function SystemAdminDashboard() {
                             </div>
 
                             {/* Secondary Chart: Trends */}
-                            <div className="glass-panel p-6">
+                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <div className="flex justify-between items-center mb-6">
                                     <div>
                                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -473,12 +512,12 @@ export default function SystemAdminDashboard() {
                         {/* Right Column: Alerts & Recent */}
                         <div className="xl:col-span-1 space-y-6">
                             {/* Alerts Feed */}
-                            <div className="glass-panel p-6">
+                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <AlertsFeed />
                             </div>
 
                             {/* Recent Assets Mini Table */}
-                            <div className="glass-panel p-6">
+                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-bold text-white">New Arrivals</h3>
                                     <Link href="/assets?sort=newest" className="text-xs text-blue-400 hover:text-blue-300 font-medium">View All</Link>
@@ -497,7 +536,8 @@ export default function SystemAdminDashboard() {
                                             </div>
                                             <div className={`px-2 py-1 rounded text-[10px] font-medium border ${asset.status === 'In Use' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                 asset.status === 'Repair' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
-                                                    'bg-slate-700 text-slate-300 border-slate-600'
+                                                    asset.status === 'Discovered' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                                                        'bg-slate-700 text-slate-300 border-slate-600'
                                                 }`}>
                                                 {asset.status}
                                             </div>
@@ -511,7 +551,7 @@ export default function SystemAdminDashboard() {
                     /* ANALYTICS VIEW LAYOUT */
                     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="glass-panel p-6">
+                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <h3 className="text-xl font-bold text-white mb-4">Lifecycle Status Distribution</h3>
                                 <div className="h-80 w-full flex items-center justify-center">
                                     <PieChart
@@ -520,7 +560,7 @@ export default function SystemAdminDashboard() {
                                     />
                                 </div>
                             </div>
-                            <div className="glass-panel p-6">
+                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <h3 className="text-xl font-bold text-white mb-4">Asset Type Breakdown</h3>
                                 <div className="h-80 w-full flex items-center justify-center">
                                     <PieChart
@@ -549,7 +589,7 @@ export default function SystemAdminDashboard() {
                     </div>
                 ) : (
                     /* REQUESTS / ACCESS CONTROL VIEW */
-                    <div className="glass-panel p-8 animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-8 animate-in slide-in-from-bottom-4 duration-500">
                         <div className="flex justify-between items-center mb-8">
                             <div>
                                 <h3 className="text-2xl font-bold text-white">Access Requests</h3>
@@ -639,7 +679,7 @@ export default function SystemAdminDashboard() {
                                     )}
                                 </h3>
                                 <p className="text-slate-400 text-sm mt-1">Users currently in the process of leaving the organization. Reclaim assets before finalizing.</p>
-                                
+
                                 {/* Notification Alert for Processed Assets */}
                                 {exitRequests.filter(req => req.status === 'ASSETS_PROCESSED' || req.status === 'BYOD_PROCESSED').length > 0 && (
                                     <div className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-start gap-3">
@@ -649,13 +689,13 @@ export default function SystemAdminDashboard() {
                                         <div className="flex-1">
                                             <h4 className="text-emerald-400 font-bold text-sm">Assets Processed - Action Required</h4>
                                             <p className="text-slate-300 text-xs mt-1">
-                                                The Asset Manager has completed asset reclamation for {exitRequests.filter(req => req.status === 'ASSETS_PROCESSED' || req.status === 'BYOD_PROCESSED').length} exit request(s). 
+                                                The Asset Manager has completed asset reclamation for {exitRequests.filter(req => req.status === 'ASSETS_PROCESSED' || req.status === 'BYOD_PROCESSED').length} exit request(s).
                                                 Please review and finalize the deactivation process below.
                                             </p>
                                         </div>
                                     </div>
                                 )}
-                                
+
                                 <div className="mt-6 overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
@@ -670,22 +710,21 @@ export default function SystemAdminDashboard() {
                                             {exitRequests.map((req) => {
                                                 const hasPendingAssets = (req.assets_snapshot?.length > 0) && (req.status === 'OPEN' || req.status === 'BYOD_PROCESSED');
                                                 const hasPendingByod = (req.byod_snapshot?.length > 0) && (req.status === 'OPEN' || req.status === 'ASSETS_PROCESSED');
-                                                const isReady = req.status === 'READY_FOR_COMPLETION' || 
-                                                               (req.status === 'ASSETS_PROCESSED' && (req.byod_snapshot?.length || 0) === 0) ||
-                                                               (req.status === 'BYOD_PROCESSED' && (req.assets_snapshot?.length || 0) === 0) ||
-                                                               (req.status === 'OPEN' && (req.assets_snapshot?.length || 0) === 0 && (req.byod_snapshot?.length || 0) === 0);
+                                                const isReady = req.status === 'READY_FOR_COMPLETION' ||
+                                                    (req.status === 'ASSETS_PROCESSED' && (req.byod_snapshot?.length || 0) === 0) ||
+                                                    (req.status === 'BYOD_PROCESSED' && (req.assets_snapshot?.length || 0) === 0) ||
+                                                    (req.status === 'OPEN' && (req.assets_snapshot?.length || 0) === 0 && (req.byod_snapshot?.length || 0) === 0);
 
                                                 return (
                                                     <tr key={req.id} className="group hover:bg-white/[0.02] transition-colors">
                                                         <td className="py-4 font-mono text-xs text-slate-300">{req.user_id}</td>
                                                         <td className="py-4">
-                                                            <span className={`px-2 py-1 rounded text-[10px] font-bold ${
-                                                                req.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400' : 
+                                                            <span className={`px-2 py-1 rounded text-[10px] font-bold ${req.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400' :
                                                                 req.status === 'READY_FOR_COMPLETION' ? 'bg-indigo-500/10 text-indigo-400' :
-                                                                req.status === 'ASSETS_PROCESSED' ? 'bg-blue-500/10 text-blue-400' :
-                                                                req.status === 'BYOD_PROCESSED' ? 'bg-sky-500/10 text-sky-400' :
-                                                                'bg-orange-500/10 text-orange-400'
-                                                            }`}>
+                                                                    req.status === 'ASSETS_PROCESSED' ? 'bg-blue-500/10 text-blue-400' :
+                                                                        req.status === 'BYOD_PROCESSED' ? 'bg-sky-500/10 text-sky-400' :
+                                                                            'bg-orange-500/10 text-orange-400'
+                                                                }`}>
                                                                 {req.status.replace(/_/g, ' ')}
                                                             </span>
                                                         </td>
@@ -705,13 +744,12 @@ export default function SystemAdminDashboard() {
                                                             <button
                                                                 onClick={() => handleCompleteExit(req.id)}
                                                                 disabled={req.status === 'COMPLETED' || (!isReady && req.status !== 'COMPLETED')}
-                                                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                                                                    req.status === 'COMPLETED' 
-                                                                    ? 'bg-emerald-500/10 text-emerald-500 cursor-not-allowed border border-emerald-500/20' 
-                                                                    : isReady 
+                                                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${req.status === 'COMPLETED'
+                                                                    ? 'bg-emerald-500/10 text-emerald-500 cursor-not-allowed border border-emerald-500/20'
+                                                                    : isReady
                                                                         ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                                                                         : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'
-                                                                }`}
+                                                                    }`}
                                                                 title={req.status === 'COMPLETED' ? "Workflow Finished" : (!isReady ? "All assets and BYOD devices must be processed before final deactivation." : "")}
                                                             >
                                                                 {req.status === 'COMPLETED' ? 'Deactivated' : (isReady ? 'Finalize Deactivation' : 'Waiting for Managers')}
@@ -767,7 +805,7 @@ export default function SystemAdminDashboard() {
                                                     </span>
                                                 </td>
                                                 <td className="py-4 text-sm text-slate-400">{user.location || 'N/A'}</td>
-                                                 <td className="py-4 text-right">
+                                                <td className="py-4 text-right">
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => handleInitiateExit(user.id)}

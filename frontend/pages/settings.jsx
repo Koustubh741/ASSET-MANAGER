@@ -80,15 +80,20 @@ export default function Settings() {
 
     // Apply Theme
     const applyTheme = (themeName) => {
-        const root = document.body
+        const root = document.documentElement;
         if (themeName === 'light') {
-            root.classList.add('light-mode')
+            root.classList.remove('dark');
+            root.classList.add('light');
         } else if (themeName === 'dark') {
-            root.classList.remove('light-mode')
+            root.classList.add('dark');
+            root.classList.remove('light');
         } else if (themeName === 'system') {
-            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-            if (systemDark) root.classList.remove('light-mode')
-            else root.classList.add('light-mode')
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (systemDark) root.classList.add('dark');
+            else {
+                root.classList.remove('dark');
+                root.classList.add('light');
+            }
         }
     }
 

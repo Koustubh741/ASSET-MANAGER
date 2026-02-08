@@ -38,22 +38,6 @@ export default function App({ Component, pageProps }) {
         };
     }, [router]);
 
-    // Theme Persistence
-    useEffect(() => {
-        const savedSettings = localStorage.getItem('appSettings');
-        if (savedSettings) {
-            try {
-                const { theme } = JSON.parse(savedSettings);
-                const root = document.body;
-                if (theme === 'light') root.classList.add('light-mode');
-                else if (theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches) root.classList.add('light-mode');
-                else root.classList.remove('light-mode');
-            } catch (e) {
-                console.error("Theme load failed", e);
-            }
-        }
-    }, []);
-
     return (
         <RoleProvider>
             <AssetProvider>

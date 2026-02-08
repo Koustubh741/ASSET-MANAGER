@@ -13,6 +13,7 @@ export function sanitizeAsset(a) {
     // Clean status string first
     let st = cleanStr(a.status);
     if (st && (st.match(/active/i) || st.match(/in use/i))) st = 'In Use';
+    if (st && st.match(/discovered/i)) st = 'Discovered';
 
     // COST PATCHING: If cost is 0, assign realistic mock value based on type
     let finalCost = parseVal(a.cost);
@@ -80,6 +81,7 @@ export function calculateDashboardStats(allAssets) {
         maintenance: 0,
         retired: 0,
         in_stock: 0,
+        discovered: 0,
         it: 0,
         non_it: 0,
         total: allAssets.length,
@@ -105,6 +107,7 @@ export function calculateDashboardStats(allAssets) {
         else if (statusLower.includes('maintenance')) totals.maintenance++;
         else if (statusLower.includes('retired')) totals.retired++;
         else if (statusLower.includes('stock')) totals.in_stock++;
+        else if (statusLower.includes('discovered')) totals.discovered++;
 
         const segmentLower = (asset.segment || '').toLowerCase();
         if (segmentLower === 'it') totals.it++;
@@ -135,7 +138,8 @@ export function calculateDashboardStats(allAssets) {
         { name: 'In Use', value: totals.active },
         { name: 'Repair', value: totals.repair },
         { name: 'Retired', value: totals.retired },
-        { name: 'In Stock', value: totals.in_stock }
+        { name: 'In Stock', value: totals.in_stock },
+        { name: 'Discovered', value: totals.discovered }
     ];
 
     const quarterlyTrends = [
