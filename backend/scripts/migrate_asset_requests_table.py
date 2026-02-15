@@ -1,7 +1,7 @@
 """
 Migration script to update asset_requests table to match the model
 """
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def migrate_asset_requests_table():

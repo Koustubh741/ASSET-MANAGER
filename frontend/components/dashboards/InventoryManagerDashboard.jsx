@@ -1,30 +1,33 @@
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Archive, TrendingDown, AlertOctagon, CheckCircle, Package } from 'lucide-react';
+import { Archive, TrendingDown, AlertOctagon, CheckCircle, Package, Eye, X, ShieldCheck } from 'lucide-react';
 import { useAssetContext } from '@/contexts/AssetContext';
 import { useRole } from '@/contexts/RoleContext';
 
 export default function InventoryManagerDashboard() {
     const { user } = useRole();
-    const { requests, inventoryCheckAvailable, inventoryCheckNotAvailable, inventoryAllocateDelivered, assets, exitRequests, processExitAssets } = useAssetContext();
+    const { requests, inventoryCheckAvailable, inventoryCheckNotAvailable, inventoryAllocateDelivered, performQC, assets, exitRequests, processExitAssets } = useAssetContext();
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [selectedForQC, setSelectedForQC] = useState(null);
 
     // ENTERPRISE: Requests awaiting inventory check (exclude fulfilled/closed)
     const awaitingStockCheck = requests.filter(r => {
-        const shouldShow = r.currentOwnerRole === 'ASSET_INVENTORY_MANAGER' && 
-            r.status !== 'FULFILLED' && 
+        const shouldShow = r.currentOwnerRole === 'ASSET_INVENTORY_MANAGER' &&
+            r.status !== 'FULFILLED' &&
             r.status !== 'CLOSED' &&
             r.procurementStage !== 'DELIVERED';
-        
+
         // Debug logging
         if (r.currentOwnerRole === 'ASSET_INVENTORY_MANAGER') {
             console.log(`[Inventory Filter] Request ${r.id}: status=${r.status}, shouldShow=${shouldShow}`);
         }
-        
+
         return shouldShow;
     });
 
     // ENTERPRISE: Delivered items awaiting final allocation (exclude fulfilled/closed)
-    const awaitingAllocation = requests.filter(r => 
-        (r.currentOwnerRole === 'ASSET_INVENTORY_MANAGER' && r.procurementStage === 'DELIVERED') || 
+    const awaitingAllocation = requests.filter(r =>
+        (r.currentOwnerRole === 'ASSET_INVENTORY_MANAGER' && r.procurementStage === 'DELIVERED') ||
         (r.status === 'QC_PENDING')
     ).filter(r => r.status !== 'FULFILLED' && r.status !== 'CLOSED');
 
@@ -135,6 +138,13 @@ export default function InventoryManagerDashboard() {
                                         <td className="p-3 text-right">
                                             <div className="flex justify-end gap-2">
                                                 <button
+                                                    onClick={() => setSelectedRequest(req)}
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10"
+                                                    title="View Details"
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+                                                <button
                                                     onClick={async () => {
                                                         const assetId = prompt(`Enter available asset ID for ${req.assetType}:`, "AST-" + Math.floor(Math.random() * 1000));
                                                         if (assetId) await inventoryCheckAvailable(req.id, assetId, user.name || 'Inventory Manager');
@@ -197,15 +207,34 @@ export default function InventoryManagerDashboard() {
                                             </span>
                                         </td>
                                         <td className="p-3 text-right">
-                                            <button
-                                                onClick={async () => {
-                                                    const assetId = prompt(`Enter asset ID to allocate for ${req.assetType}:`, req.assetId || ("AST-" + Math.floor(Math.random() * 1000)));
-                                                    if (assetId) await inventoryAllocateDelivered(req.id, assetId, user.name || 'Inventory Manager');
-                                                }}
-                                                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2 ml-auto"
-                                            >
-                                                <CheckCircle size={14} /> Allocate Asset → Complete
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => setSelectedRequest(req)}
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10"
+                                                    title="View Details"
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+
+                                                {req.status === 'QC_PENDING' ? (
+                                                    <button
+                                                        onClick={() => setSelectedForQC(req)}
+                                                        className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2"
+                                                    >
+                                                        <ShieldCheck size={14} /> Perform QC Check
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={async () => {
+                                                            const assetId = prompt(`Enter asset ID to allocate for ${req.assetType}:`, req.assetId || ("AST-" + Math.floor(Math.random() * 1000)));
+                                                            if (assetId) await inventoryAllocateDelivered(req.id, assetId, user.name || 'Inventory Manager');
+                                                        }}
+                                                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
+                                                    >
+                                                        <CheckCircle size={14} /> Allocate Asset → Complete
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -220,11 +249,11 @@ export default function InventoryManagerDashboard() {
                 <div className="glass-panel p-6">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                             <Archive className="text-orange-400" />
-                             Asset Reclamation (Employee Exit)
-                             <span className="bg-orange-500/10 text-orange-400 text-xs px-2 py-0.5 rounded-full border border-orange-500/20">
-                                 {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'BYOD_PROCESSED').length}
-                             </span>
+                            <Archive className="text-orange-400" />
+                            Asset Reclamation (Employee Exit)
+                            <span className="bg-orange-500/10 text-orange-400 text-xs px-2 py-0.5 rounded-full border border-orange-500/20">
+                                {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'BYOD_PROCESSED').length}
+                            </span>
                         </h3>
                     </div>
 
@@ -323,6 +352,168 @@ export default function InventoryManagerDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* REQUEST DETAILS MODAL */}
+            {selectedRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <Eye className="text-blue-400" size={20} />
+                                    Request Details
+                                </h3>
+                                <p className="text-xs text-slate-400 mt-1 font-mono">{selectedRequest.id}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedRequest(null)}
+                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-6">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Asset Type</p>
+                                    <p className="text-white font-medium">{selectedRequest.assetType}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Urgency</p>
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedRequest.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300'}`}>
+                                        {selectedRequest.urgency || 'Standard'}
+                                    </span>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Requester</p>
+                                    <p className="text-white">{selectedRequest.requestedBy?.name}</p>
+                                    <p className="text-xs text-slate-500">{selectedRequest.requestedBy?.department} • {selectedRequest.requestedBy?.position || selectedRequest.requestedBy?.role}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Status</p>
+                                    <p className="text-blue-400 font-medium">{selectedRequest.status}</p>
+                                    <p className="text-[10px] text-slate-500">{selectedRequest.procurementStage}</p>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Business Justification</p>
+                                <p className="text-slate-300 text-sm italic leading-relaxed">
+                                    "{selectedRequest.justification || 'No justification provided.'}"
+                                </p>
+                            </div>
+
+                            {selectedRequest.assetId && (
+                                <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] uppercase tracking-wider font-bold text-emerald-500/70 mb-1">Pre-Allocated Asset ID</p>
+                                        <p className="text-emerald-400 font-mono font-bold">{selectedRequest.assetId}</p>
+                                    </div>
+                                    <CheckCircle size={24} className="text-emerald-500/30" />
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-6 bg-slate-950/50 border-t border-white/5 flex justify-end gap-3">
+                            <button
+                                onClick={() => setSelectedRequest(null)}
+                                className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* QC PERFORMANCE MODAL */}
+            {selectedForQC && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/10">
+                            <div>
+                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <ShieldCheck className="text-blue-400" size={20} />
+                                    Perform Quality Control
+                                </h3>
+                                <p className="text-xs text-blue-300/60 mt-1 font-mono">{selectedForQC.id}</p>
+                            </div>
+                            <button
+                                onClick={() => setSelectedForQC(null)}
+                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.target);
+                            const status = formData.get('qc_status');
+                            const notes = formData.get('qc_notes');
+                            if (confirm(`Confirm ${status} result for ${selectedForQC.assetType}?`)) {
+                                await performQC(selectedForQC.id, status, notes);
+                                setSelectedForQC(null);
+                            }
+                        }} className="p-6 space-y-6">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Inspection Outcome</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className="relative flex items-center p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-emerald-500/50 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/10 transition-all group">
+                                            <input type="radio" name="qc_status" value="PASSED" defaultChecked className="hidden" />
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-4 h-4 rounded-full border border-white/20 group-has-[:checked]:border-emerald-500 group-has-[:checked]:border-4 transition-all" />
+                                                <span className="font-bold text-white">PASSED</span>
+                                            </div>
+                                        </label>
+                                        <label className="relative flex items-center p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-rose-500/50 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/10 transition-all group">
+                                            <input type="radio" name="qc_status" value="FAILED" className="hidden" />
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-4 h-4 rounded-full border border-white/20 group-has-[:checked]:border-rose-500 group-has-[:checked]:border-4 transition-all" />
+                                                <span className="font-bold text-white">FAILED</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Technical Inspection Notes</label>
+                                    <textarea
+                                        name="qc_notes"
+                                        required
+                                        rows={4}
+                                        placeholder="Note any physical damage, hardware variations, or setup steps performed..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all resize-none"
+                                    ></textarea>
+                                </div>
+                            </div>
+
+                            <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-xl flex gap-3 text-xs text-amber-300">
+                                <AlertOctagon size={16} className="shrink-0" />
+                                <p>Checking "PASSED" will move this asset to "User Acceptance Pending". Checking "FAILED" will require further procurement action.</p>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedForQC(null)}
+                                    className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20"
+                                >
+                                    Submit Result
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

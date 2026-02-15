@@ -5,12 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import cast, String
 from ..database.database import get_db
-from ..schemas.user_schema import UserCreate, UserResponse, LoginRequest, LoginResponse, RefreshTokenRequest, RefreshTokenResponse
+from ..schemas.user_schema import (
+    UserCreate, UserResponse, LoginRequest, LoginResponse, 
+    RefreshTokenRequest, ForgotPasswordRequest, ResetPasswordRequest
+)
 from ..schemas.exit_schema import ExitRequestResponse
 from ..services import user_service, exit_service
 from ..utils import auth_utils
-from ..models.models import AssetAssignment, ByodDevice, ExitRequest, Asset
-from datetime import datetime
+from ..models.models import AssetAssignment, ByodDevice, ExitRequest, Asset, PasswordResetToken, User
+from datetime import datetime, timedelta
+import secrets
 
 router = APIRouter(
     prefix="/auth",
@@ -24,17 +28,32 @@ SSO_CONFIG = {
     "okta": {"client_id": "okta_id", "auth_url": "https://okta.com/oauth2/default/v1/authorize"}
 }
 
-async def check_system_admin(
+async def check_user_list_access(
     current_user = Depends(auth_utils.get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Verify user is SYSTEM_ADMIN or ADMIN via JWT token (Asynchronous).
+    Verify user is authorized to view user list.
+    SYSTEM_ADMIN/ADMIN see all. MANAGER sees department.
+    """
+    if current_user.role in ["ADMIN", "SYSTEM_ADMIN"] or current_user.position == "MANAGER":
+        return current_user
+        
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Only ADMIN, SYSTEM_ADMIN, or Managers can view the user list"
+    )
+
+async def check_system_admin(
+    current_user = Depends(auth_utils.get_current_user)
+):
+    """
+    Dependency to verify user is an Admin or System Admin.
     """
     if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only SYSTEM_ADMIN or ADMIN can perform this action"
+            detail="Requires Admin or System Admin privileges"
         )
     return current_user
 
@@ -42,12 +61,17 @@ async def check_system_admin(
 async def get_users(
     status: str = None,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    current_user = Depends(check_user_list_access)
 ):
     """
-    Get all users, optionally filtered by status (Asynchronous).
+    Get users, optionally filtered by status (Asynchronous).
+    Managers only see their department.
     """
-    users = await user_service.get_users(db, status=status)
+    department = None
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+        department = current_user.department or current_user.domain
+        
+    users = await user_service.get_users(db, status=status, department=department)
     return users
 
 
@@ -113,7 +137,7 @@ async def login(
     }
 
 
-@router.post("/refresh", response_model=RefreshTokenResponse)
+@router.post("/refresh", response_model=dict)
 async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
     """
     Refresh the access token using a valid refresh token.
@@ -213,14 +237,14 @@ async def sso_callback(
     
     # SIMULATION: In a real app, we would exchange the 'code' for an 'id_token' and 'access_token'
     # For this implementation, we simulate the user data returned by the provider
-    if code == "MOCK_SUCCESS_CODE":
+    if code == "SUCCESS_CODE":
         user_info = {
             "sso_id": f"sso_{provider}_12345",
             "email": "sso_user@example.com",
             "full_name": "SSO Test User"
         }
     else:
-        # In mock mode, we'll allow the code to be the email for testing
+        # For simulation, we'll allow the code to be the email for testing
         user_info = {
             "sso_id": f"sso_{provider}_{code}",
             "email": code if "@" in code else f"{code}@example.com",
@@ -336,8 +360,8 @@ async def initiate_exit(
         ]
 
         exit_request = ExitRequest(
-            id=str(uuid.uuid4()),
-            user_id=str(user_id),
+            id=uuid.uuid4(),
+            user_id=user_id,
             status="OPEN",
             assets_snapshot=assets_snapshot,
             byod_snapshot=byod_snapshot,
@@ -348,6 +372,10 @@ async def initiate_exit(
 
         return user
     except Exception as e:
+        import traceback
+        with open("d:/ASSET-MANAGER/debug_errors.log", "a") as f:
+            f.write(f"\n--- INITIATE EXIT ERROR ---\n{str(e)}\n")
+            traceback.print_exc(file=f)
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
@@ -408,11 +436,38 @@ async def get_exit_requests(
     db: AsyncSession = Depends(get_db),
     admin_user = Depends(check_exit_access)
 ):
-    query = select(ExitRequest)
-    if status:
-        query = query.filter(ExitRequest.status == status)
-    result = await db.execute(query)
-    return result.scalars().all()
+    try:
+        print(f"DEBUG: get_exit_requests called by {admin_user.email} role={admin_user.role}")
+        # Join with User to get details
+        query = select(ExitRequest, User).join(User, ExitRequest.user_id == User.id)
+        if status:
+            query = query.filter(ExitRequest.status == status)
+        result = await db.execute(query)
+        rows = result.all()
+        
+        res = []
+        for exit_req, user in rows:
+            res.append({
+                "id": exit_req.id,
+                "user_id": exit_req.user_id,
+                "status": exit_req.status,
+                "assets_snapshot": exit_req.assets_snapshot,
+                "byod_snapshot": exit_req.byod_snapshot,
+                "created_at": exit_req.created_at,
+                "updated_at": exit_req.updated_at,
+                "user_name": user.full_name,
+                "user_email": user.email,
+                "user_department": user.department
+            })
+            
+        print(f"DEBUG: Found {len(res)} exit requests")
+        return res
+    except Exception as e:
+        import traceback
+        with open("d:/ASSET-MANAGER/debug_errors.log", "a") as f:
+            f.write(f"\n--- EXIT REQ ERROR ---\n{str(e)}\n")
+            traceback.print_exc(file=f)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/exit-requests/{exit_request_id}/process-assets")
@@ -425,7 +480,7 @@ async def process_exit_assets(
     if manager.role not in allowed_roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
-    result = await db.execute(select(ExitRequest).filter(cast(ExitRequest.id, String) == str(exit_request_id)))
+    result = await db.execute(select(ExitRequest).filter(ExitRequest.id == exit_request_id))
     exit_request = result.scalars().first()
     if not exit_request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exit request not found")
@@ -463,7 +518,7 @@ async def process_exit_byod(
     if it_manager.role not in ["IT_MANAGEMENT", "SYSTEM_ADMIN", "ADMIN"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
-    result = await db.execute(select(ExitRequest).filter(cast(ExitRequest.id, String) == str(exit_request_id)))
+    result = await db.execute(select(ExitRequest).filter(ExitRequest.id == exit_request_id))
     exit_request = result.scalars().first()
     if not exit_request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exit request not found")
@@ -499,7 +554,7 @@ async def complete_exit_request(
     if not exit_request:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     
-    user = await user_service.get_user(db, UUID(exit_request.user_id))
+    user = await user_service.get_user(db, exit_request.user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -539,3 +594,69 @@ async def finalize_user_exit(
         return {"status": "success", "summary": summary}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Handle forgot password request. 
+    Generates a secure token and saves it. 
+    In professional production, this would send an email.
+    """
+    user = await user_service.get_user_by_email(db, request.email)
+    if not user:
+        # For security, we don't reveal if the user exists
+        return {"message": "If this email is registered, you will receive a reset link."}
+    
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+    
+    # Check for existing valid tokens and mark them as used/inactive? 
+    # For now, just create a new one.
+    reset_token = PasswordResetToken(
+        id=uuid.uuid4(),
+        user_id=user.id,
+        token=token,
+        expires_at=expires_at
+    )
+    db.add(reset_token)
+    await db.commit()
+    
+    # SIMULATION: Log the token so we can use it in Dev/MVP without email server
+    print(f"DEBUG: Password reset token for {user.email}: {token}")
+    
+    return {
+        "message": "If this email is registered, you will receive a reset link.",
+        "debug_token": token # Return in MVP for easier testing
+    }
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Reset password using a token.
+    """
+    # Find token
+    result = await db.execute(
+        select(PasswordResetToken).filter(
+            PasswordResetToken.token == request.token,
+            PasswordResetToken.is_used == False,
+            PasswordResetToken.expires_at > datetime.utcnow()
+        )
+    )
+    db_token = result.scalars().first()
+    
+    if not db_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token"
+        )
+    
+    # Update password
+    success = await user_service.update_user_password(db, db_token.user_id, request.new_password)
+    if not success:
+         raise HTTPException(status_code=500, detail="Failed to update password")
+    
+    # Mark token as used
+    db_token.is_used = True
+    await db.commit()
+    
+    return {"status": "success", "message": "Password has been reset successfully"}

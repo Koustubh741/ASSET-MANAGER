@@ -2,7 +2,7 @@
 Migration script to add workflow completion fields to asset_requests table
 Run this after updating models.py
 """
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def migrate_workflow_completion():

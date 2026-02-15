@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { LayoutDashboard, Server, Settings, User, RotateCcw, ShoppingBag, Trash2, Sparkles, Monitor, MapPin, ChevronUp, Check } from 'lucide-react'
+import { LayoutDashboard, Server, Settings, User, RotateCcw, ShoppingBag, Trash2, Sparkles, Monitor, MapPin, ChevronUp, Check, Cpu, Network, DollarSign } from 'lucide-react'
 import { useRole } from '@/contexts/RoleContext'
 
 const ROLES = [
@@ -42,19 +42,22 @@ export default function Layout({ children }) {
     const allNavItems = [
         { label: 'Dashboard', href: dashboardPath, icon: LayoutDashboard },
         { label: 'Enterprise', href: '/enterprise', icon: Sparkles },
+        { label: 'Topology', href: '/network-topology', icon: Network },
         { label: 'Assets', href: '/assets', icon: Server },
         { label: 'Software', href: '/software', icon: Monitor },
         { label: 'Locations', href: '/locations', icon: MapPin },
+        { label: 'Agents', href: '/agents', icon: Cpu },
         { label: 'Renewals', href: '/renewals', icon: RotateCcw },
         { label: 'Procurement', href: '/procurement', icon: ShoppingBag },
         { label: 'Disposal', href: '/disposal', icon: Trash2 },
+        { label: 'Pricing', href: '/pricing', icon: DollarSign },
         { label: 'Settings', href: '/settings', icon: Settings },
     ]
 
     const fullAccessRoles = ['System Admin', 'Asset & Inventory Manager', 'Asset Manager', 'Inventory Manager'];
     const navItems = fullAccessRoles.includes(currentRole.label)
         ? allNavItems
-        : allNavItems.filter(item => item.label === 'Dashboard' || item.label === 'Enterprise'); // Allow Enterprise portal for others too if desired
+        : allNavItems.filter(item => ['Dashboard', 'Enterprise', 'Pricing'].includes(item.label)); // Allow Enterprise and Pricing portal for others too
 
     return (
         <div className="min-h-screen flex text-slate-100 font-sans">
@@ -118,9 +121,11 @@ export default function Layout({ children }) {
                                         </div>
                                         <div className="text-sm overflow-hidden">
                                             <p className="text-white font-semibold truncate">
-                                                {user?.position === 'MANAGER' ? 'Manager' : currentRole.label}
+                                                {user?.name || 'User'}
                                             </p>
-                                            <p className="text-indigo-300/60 text-xs truncate">{currentRole.dept}</p>
+                                            <p className="text-indigo-300/60 text-xs truncate">
+                                                {currentRole.label} • {user?.department || "General"}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -144,7 +149,7 @@ export default function Layout({ children }) {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 md:ml-28 p-6 md:p-8 animate-in fade-in duration-700">
+            <main className="flex-1 md:ml-28 p-6 md:p-8 animate-in fade-in duration-700 overflow-auto">
                 {/* System Update Banner (Mock) - Controlled by Settings */}
                 {(() => {
                     if (typeof window !== 'undefined') {

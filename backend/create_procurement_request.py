@@ -4,8 +4,8 @@ import uuid
 
 sys.path.append(os.path.join(os.getcwd(), "app"))
 
-from database import SessionLocal
-from models import User, AssetRequest
+from app.database.database import SessionLocal
+from app.models.models import User, AssetRequest
 
 db = SessionLocal()
 

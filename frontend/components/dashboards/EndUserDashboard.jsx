@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Laptop, Ticket, RefreshCw, User, Briefcase, MapPin, Calendar, Building2, Cpu, X, CheckCircle, AlertCircle, Settings, Sparkles, ChevronUp, Smartphone, LogOut } from 'lucide-react';
+import { Laptop, Ticket, RefreshCw, User, Briefcase, MapPin, Calendar, Building2, Cpu, X, CheckCircle, AlertCircle, Settings, Sparkles, ChevronUp, Smartphone, LogOut, Eye } from 'lucide-react';
 import { useRole } from '@/contexts/RoleContext';
-import { useAssetContext, ASSET_STATUS } from '@/contexts/AssetContext';
+import { useAssetContext, ASSET_STATUS, OWNER_ROLE, REQUEST_STATUS } from '@/contexts/AssetContext';
 import apiClient from '@/lib/apiClient';
 
 export default function EndUserDashboard() {
     const { currentRole, setCurrentRole, ROLES, logout, user } = useRole();
-    const { assets, requests, createRequest, managerApproveRequest, managerRejectRequest, refreshData } = useAssetContext();
+    const { assets, requests, tickets, createRequest, managerApproveRequest, managerRejectRequest, managerConfirmIT, userAcceptAsset, refreshData } = useAssetContext();
     const [activeModal, setActiveModal] = useState(null); // 'asset' | 'ticket' | 'profile' | null
     const [showSuccess, setShowSuccess] = useState(null); // 'asset-success' | 'ticket-success' | null
     const [selectedRequest, setSelectedRequest] = useState(null); // For viewing details
@@ -16,17 +16,11 @@ export default function EndUserDashboard() {
         e.preventDefault();
         const formData = new FormData(e.target);
 
-        const requesterInfo = {
-            id: user?.id,
-            name: user?.name || 'Alex Johnson',
-            role: 'End User'
-        };
 
         if (type === 'asset' || type === 'byod') {
             createRequest({
                 assetType: type === 'byod' ? 'BYOD' : (formData.get('type') || 'Laptop'),
                 justification: formData.get('reason') || 'No justification provided',
-                requestedBy: requesterInfo,
                 assetOwnershipType: type === 'byod' ? 'BYOD' : 'COMPANY_OWNED',
                 // For BYOD registration, we can include extra details in justification or wait for the registration step
                 deviceDetails: type === 'byod' ? {
@@ -43,11 +37,10 @@ export default function EndUserDashboard() {
                     category: formData.get('category') || 'Other',
                     description: formData.get('description') || 'No description provided',
                     priority: formData.get('priority') || 'MEDIUM',
-                    requestor_id: user?.id,
                     related_asset_id: null, // Can be linked to an asset if needed
                     status: 'OPEN'
                 };
-                
+
                 await apiClient.createTicket(ticketData);
                 console.log('[End User] Ticket created successfully');
             } catch (error) {
@@ -70,7 +63,8 @@ export default function EndUserDashboard() {
         doj: user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Recently Joined",
         location: user?.location || "New York HQ, Floor 4",
         email: user?.email || "alex.j@acmecorp.com",
-        domain: user?.domain || "General"
+        domain: user?.domain || "General",
+        department: user?.department || "General"
     };
 
     // Filter assets assigned to current user and sort by latest assignment first
@@ -93,7 +87,7 @@ export default function EndUserDashboard() {
     const assignedAssets = assets
         .filter(a => {
             const matches = (a.assigned_to?.toLowerCase() === (user?.name || 'Alex Johnson').toLowerCase()) &&
-                            (a.status === ASSET_STATUS.IN_USE || a.status === 'Active');
+                (a.status === ASSET_STATUS.IN_USE || a.status === 'Active' || a.status === 'Reserved');
             return matches;
         })
         .sort((a, b) => {
@@ -179,8 +173,12 @@ export default function EndUserDashboard() {
                                 <p className="text-white font-semibold text-sm">{displayProfile.location}</p>
                             </div>
                             <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><Briefcase size={12} className="text-blue-400" /> Department</p>
+                                <p className="text-white font-semibold text-sm uppercase">{displayProfile.department}</p>
+                            </div>
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                                 <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><Sparkles size={12} className="text-purple-400" /> Domain</p>
-                                <p className="text-white font-semibold text-sm uppercase">{displayProfile.domain.replace('/', ' / ')}</p>
+                                <p className="text-white font-semibold text-sm uppercase">{displayProfile.domain?.replace('/', ' / ')}</p>
                             </div>
                         </div>
                     </div>
@@ -298,12 +296,13 @@ export default function EndUserDashboard() {
 
                 {/* Sidebar Widgets */}
                 <div className="space-y-6">
-                    {/* Support Tickets & Requests Unified List */}
+                    {/* Asset Procurement Requests List */}
                     <div className="glass-panel p-6">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
-                                <h3 className="text-lg font-bold text-white">Requests & Tickets</h3>
-                                <button 
+                                <Laptop size={20} className="text-blue-400" />
+                                <h3 className="text-lg font-bold text-white">Asset Procurement Requests</h3>
+                                <button
                                     onClick={() => refreshData?.()}
                                     className="p-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/5 active:scale-90 group"
                                     title="Refresh Data"
@@ -327,7 +326,7 @@ export default function EndUserDashboard() {
                             </div>
                         </div>
 
-                        <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                             {requests.filter(req => {
                                 const isCompleted = ['FULFILLED', 'REJECTED', 'CLOSED', 'CANCELLED'].includes(req.status);
                                 return requestFilter === 'active' ? !isCompleted : isCompleted;
@@ -336,7 +335,7 @@ export default function EndUserDashboard() {
                                     <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3 border border-white/5">
                                         <Briefcase className="text-slate-600" size={20} />
                                     </div>
-                                    <p className="text-slate-500 text-xs">No {requestFilter} requests found.</p>
+                                    <p className="text-slate-500 text-xs">No {requestFilter} asset requests found.</p>
                                 </div>
                             ) : requests
                                 .filter(req => {
@@ -345,64 +344,179 @@ export default function EndUserDashboard() {
                                 })
                                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                                 .map(req => (
-                                <div
-                                    key={req.id}
-                                    onClick={() => setSelectedRequest(req)}
-                                    className={`p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:shadow-md hover:bg-white/[0.07] transition-all cursor-pointer group relative overflow-hidden`}
-                                >
-                                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/5 to-transparent rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                    
-                                    <div className="flex justify-between items-start mb-2 relative z-10">
-                                        <div className="flex flex-col items-end">
-                                            <span className={`px-2 py-0.5 text-[10px] rounded font-medium border 
-                                                ${req.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                    req.status === 'IT_APPROVED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                                        req.status === 'IN_PROGRESS' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
-                                                            req.status === 'PROCUREMENT_REQUIRED' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                                req.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                                                    'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
-                                                {req.status}
-                                            </span>
-                                            {req.assetType === 'Ticket' && req.resolution_percentage > 0 && (
-                                                <span className="text-[9px] text-indigo-400 font-bold mt-1">
-                                                    {Math.round(req.resolution_percentage)}% Fixed
+                                    <div
+                                        key={req.id}
+                                        onClick={() => setSelectedRequest(req)}
+                                        className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:shadow-md hover:bg-white/[0.07] transition-all cursor-pointer group relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/5 to-transparent rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                                        <div className="flex justify-between items-start mb-2 relative z-10">
+                                            <div className="flex flex-col items-end">
+                                                <span className={`px-2 py-0.5 text-[10px] rounded font-medium border 
+                                                    ${req.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                        req.status === 'IT_APPROVED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                            req.status === 'IN_PROGRESS' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
+                                                                req.status === 'PROCUREMENT_REQUIRED' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                                    req.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                                                        'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
+                                                    {req.status}
                                                 </span>
-                                            )}
+                                            </div>
+                                            <span className="text-[10px] text-slate-500 font-mono">{new Date(req.createdAt).toLocaleDateString()}</span>
                                         </div>
-                                        <span className="text-[10px] text-slate-500 font-mono">{new Date(req.createdAt).toLocaleDateString()}</span>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-2 mb-1.5 relative z-10">
-                                        <div className={`p-1.5 rounded-lg ${req.assetType === 'Ticket' ? 'bg-rose-500/10 text-rose-400' : 'bg-blue-500/10 text-blue-400'}`}>
-                                            {req.assetType === 'Ticket' ? <Ticket size={14} /> : <Laptop size={14} />}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-bold text-white leading-tight">{req.assetType} Request</h4>
-                                            <p className="text-[10px] text-slate-500 truncate max-w-[150px]">{req.id.split('-')[0]}</p>
-                                        </div>
-                                    </div>
 
-                                    {req.justification && (
-                                        <p className="text-[11px] text-slate-400 mb-2 line-clamp-2 bg-slate-900/30 p-2 rounded-lg border border-white/5">
-                                            {req.justification}
-                                        </p>
-                                    )}
-
-                                    {/* Action Footers */}
-                                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 relative z-10">
-                                        <div className="flex items-center gap-1.5">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-                                            <span className="text-[10px] text-indigo-300 font-medium">With: {req.currentOwnerRole}</span>
+                                        <div className="flex items-center gap-2 mb-1.5 relative z-10">
+                                            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+                                                <Laptop size={14} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-white leading-tight">{req.assetType} Request</h4>
+                                                <div className="flex flex-col mt-0.5">
+                                                    <p className="text-[10px] font-medium text-slate-300">
+                                                        {req.requestedBy?.name || req.requester_name}
+                                                    </p>
+                                                    <p className="text-[9px] text-slate-500 truncate max-w-[150px] italic">
+                                                        {req.requestedBy?.email || req.requester_email || req.id.split('-')[0]}
+                                                    </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        {/* Status Indicators */}
-                                        {req.procurementStage && req.status !== 'FULFILLED' && (
-                                            <span className="text-[10px] flex items-center gap-1 text-amber-400">
-                                               <Building2 size={10} /> Procurement
-                                            </span>
+
+                                        {req.justification && (
+                                            <p className="text-[11px] text-slate-400 mb-2 line-clamp-2 bg-slate-900/30 p-2 rounded-lg border border-white/5">
+                                                {req.justification}
+                                            </p>
                                         )}
+
+                                        {req.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING && (
+                                            <div className="mt-3 relative z-10">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (confirm(`Confirm you have received the ${req.assetType}?`)) {
+                                                            userAcceptAsset(req.id);
+                                                        }
+                                                    }}
+                                                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                                                >
+                                                    <CheckCircle size={14} /> Confirm Acceptance
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 relative z-10">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                                                <span className="text-[10px] text-indigo-300 font-medium">With: {req.currentOwnerRole}</span>
+                                                {req.requester_department && (
+                                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-slate-400 border border-white/5">
+                                                        Dept: {req.requester_department}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {req.procurementStage &&
+                                                req.procurementStage !== 'AWAITING_DECISION' &&
+                                                req.status !== 'FULFILLED' && (
+                                                    <span className="text-[10px] flex items-center gap-1 text-amber-400">
+                                                        <Building2 size={10} /> Procurement
+                                                    </span>
+                                                )}
+                                        </div>
                                     </div>
+                                ))}
+                        </div>
+                    </div>
+
+                    {/* Support & Technical Tickets List */}
+                    <div className="glass-panel p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <Ticket size={20} className="text-rose-400" />
+                                <h3 className="text-lg font-bold text-white">Support & Technical Tickets</h3>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                            {tickets.filter(t => {
+                                const isCompleted = ['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(t.status?.toUpperCase());
+                                return requestFilter === 'active' ? !isCompleted : isCompleted;
+                            }).length === 0 ? (
+                                <div className="text-center py-8">
+                                    <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3 border border-white/5">
+                                        <Ticket className="text-slate-600" size={20} />
+                                    </div>
+                                    <p className="text-slate-500 text-xs">No {requestFilter} support tickets found.</p>
                                 </div>
-                            ))}
+                            ) : tickets
+                                .filter(t => {
+                                    const isCompleted = ['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(t.status?.toUpperCase());
+                                    return requestFilter === 'active' ? !isCompleted : isCompleted;
+                                })
+                                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                                .map(ticket => (
+                                    <div
+                                        key={ticket.id}
+                                        onClick={() => setSelectedRequest(ticket)}
+                                        className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-rose-500/30 hover:shadow-md hover:bg-white/[0.07] transition-all cursor-pointer group relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/5 to-transparent rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                                        <div className="flex justify-between items-start mb-2 relative z-10">
+                                            <div className="flex flex-col items-end">
+                                                <span className={`px-2 py-0.5 text-[10px] rounded font-medium border 
+                                                    ${ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                        ticket.status === 'OPEN' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                            ticket.status === 'IN_PROGRESS' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
+                                                                'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                                                    {ticket.status}
+                                                </span>
+                                                {ticket.resolution_percentage > 0 && (
+                                                    <span className="text-[9px] text-indigo-400 font-bold mt-1">
+                                                        {Math.round(ticket.resolution_percentage)}% Fixed
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="text-[10px] text-slate-500 font-mono">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 mb-1.5 relative z-10">
+                                            <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400">
+                                                <Ticket size={14} />
+                                            </div>
+                                            <div>
+                                                <h4 className="text-sm font-bold text-white leading-tight">{ticket.subject || 'Support Ticket'}</h4>
+                                                <div className="flex flex-col mt-0.5">
+                                                    <p className="text-[10px] font-medium text-slate-300">
+                                                        {ticket.requestor_name || 'Anonymous User'}
+                                                    </p>
+                                                    <p className="text-[9px] text-rose-400/70 truncate max-w-[150px] italic">
+                                                        {ticket.requestor_email || ticket.id.split('-')[0]}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {ticket.description && (
+                                            <p className="text-[11px] text-slate-400 mb-2 line-clamp-2 bg-slate-900/30 p-2 rounded-lg border border-white/5">
+                                                {ticket.description}
+                                            </p>
+                                        )}
+
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 relative z-10">
+                                            <div className="flex items-center gap-1.5">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${ticket.priority === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'} animate-pulse`}></div>
+                                                <span className="text-[10px] text-slate-300 font-medium">Priority: {ticket.priority}</span>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <span className="text-[10px] text-slate-500">{ticket.category}</span>
+                                                {ticket.requestor_department && (
+                                                    <span className="text-[9px] text-rose-400 font-medium">Dept: {ticket.requestor_department}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                         </div>
                     </div>
 
@@ -434,11 +548,11 @@ export default function EndUserDashboard() {
                         <Briefcase className="text-indigo-400" /> Team Approvals Needed
                     </h3>
 
-                    {requests.filter(r => r.status === 'REQUESTED').length === 0 ? (
+                    {requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).length === 0 ? (
                         <p className="text-slate-400 text-sm">No pending approvals for your team.</p>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {requests.filter(r => r.status === 'REQUESTED').map(req => (
+                            {requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).map(req => (
                                 <div key={req.id} className="p-4 bg-slate-800 rounded-xl border border-white/10 flex justify-between items-center group hover:border-indigo-500/50 transition-all">
                                     <div>
                                         <div className="flex items-center justify-between gap-2">
@@ -450,11 +564,19 @@ export default function EndUserDashboard() {
                                         </div>
                                         <div className="mt-2 space-y-0.5">
                                             <p className="text-xs text-slate-400">Sent by: <span className="text-indigo-300 font-semibold">{req.requestedBy?.name || req.requester_name}</span></p>
-                                            {req.requestedBy?.email && <p className="text-[10px] text-slate-500 italic">{req.requestedBy.email}</p>}
+                                            <p className="text-[10px] text-slate-500 font-medium">Department: <span className="text-slate-300">{req.requester_department || 'General'}</span></p>
+                                            <p className="text-[10px] text-slate-500 italic">{req.requestedBy?.email || req.requester_email || 'No email provided'}</p>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">{req.justification || req.reason || 'No justification'}</p>
                                     </div>
                                     <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setSelectedRequest(req)}
+                                            className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                                            title="View Details"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
                                         <button
                                             onClick={() => {
                                                 const reason = prompt("Reason for rejection:");
@@ -465,14 +587,26 @@ export default function EndUserDashboard() {
                                             className="p-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors" title="Reject">
                                             <X size={18} />
                                         </button>
-                                        <button
-                                            onClick={() => {
-                                                managerApproveRequest(req.id, user.id, user.name);
-                                            }}
-                                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-500/20"
-                                        >
-                                            Approve
-                                        </button>
+
+                                        {req.status === REQUEST_STATUS.IT_APPROVED ? (
+                                            <button
+                                                onClick={() => {
+                                                    managerConfirmIT(req.id, 'CONFIRM', 'IT technical decision confirmed by manager');
+                                                }}
+                                                className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-sky-500/20"
+                                            >
+                                                Confirm IT Decision
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    managerApproveRequest(req.id, user.id, user.name);
+                                                }}
+                                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-500/20"
+                                            >
+                                                Approve
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -483,9 +617,9 @@ export default function EndUserDashboard() {
                     <div className="mt-8 pt-6 border-t border-white/5">
                         <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Request History</h4>
                         <div className="space-y-3">
-                            {requests.filter(r => r.status !== 'REQUESTED' && r.status !== 'PENDING').length === 0 ? (
+                            {requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).length === 0 ? (
                                 <p className="text-slate-500 text-xs italic">No history available.</p>
-                            ) : requests.filter(r => r.status !== 'REQUESTED' && r.status !== 'PENDING').map(req => (
+                            ) : requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).map(req => (
                                 <div key={req.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 opacity-75 hover:opacity-100 transition-opacity">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-2 h-2 rounded-full ${req.status === 'REJECTED' ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
@@ -493,7 +627,13 @@ export default function EndUserDashboard() {
                                             <p className="text-sm font-medium text-white">{req.assetType} Request</p>
                                             <div className="flex flex-col mt-0.5">
                                                 <p className="text-xs text-slate-400">Sent by: <span className="text-slate-200">{req.requestedBy?.name || req.requester_name}</span></p>
-                                                <span className="text-[10px] text-slate-600">{new Date(req.createdAt).toLocaleString()}</span>
+                                                <div className="flex flex-col mt-0.5">
+                                                    <p className="text-[10px] text-slate-500 truncate max-w-[180px] italic">{req.requestedBy?.email || req.requester_email}</p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <span className="text-[10px] text-indigo-400 font-medium">Dept: {req.requester_department || 'General'}</span>
+                                                        <span className="text-[10px] text-slate-600">{new Date(req.createdAt).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -694,7 +834,7 @@ export default function EndUserDashboard() {
                                         <div className="flex-1 text-center md:text-left">
                                             <h3 className="text-2xl font-bold text-white mb-1">Alex Johnson</h3>
                                             <p className="text-blue-100 mb-0.5">alex.j@acmecorp.com</p>
-                                            <p className="text-blue-200 text-sm opacity-80">{currentRole.dept} • {currentRole.label}</p>
+                                            <p className="text-blue-200 text-sm opacity-80">{user?.department || "General"} • {currentRole.label}</p>
                                         </div>
                                         <div className="flex gap-3 relative z-10">
                                             <button className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-semibold backdrop-blur-sm border border-white/10 transition-colors">
@@ -833,10 +973,10 @@ export default function EndUserDashboard() {
                                                 </label>
                                                 <span className="text-sm font-bold text-white">{Math.round(selectedRequest.resolution_percentage)}%</span>
                                             </div>
-                                            
+
                                             {/* Progress Bar */}
                                             <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                                                <div 
+                                                <div
                                                     className="h-full bg-indigo-500 transition-all duration-1000"
                                                     style={{ width: `${selectedRequest.resolution_percentage}%` }}
                                                 ></div>
@@ -877,11 +1017,11 @@ export default function EndUserDashboard() {
                                             <div key={idx} className="relative pl-8">
                                                 <div className={`absolute left-0 top-1 w-4 h-4 rounded-full border-2 border-slate-900 
                                                 ${(log.action || '').includes('CREATED') ? 'bg-blue-500' :
-                                                    (log.action || '').includes('ACK') ? 'bg-sky-500' :
-                                                        (log.action || '').includes('PROGRESS') ? 'bg-indigo-500' :
-                                                            (log.action || '').includes('APPROVE') || (log.action || '').includes('RESOLVE') ? 'bg-emerald-500' :
-                                                                (log.action || '').includes('REJECT') ? 'bg-rose-500' :
-                                                                    'bg-slate-500'}`}></div>
+                                                        (log.action || '').includes('ACK') ? 'bg-sky-500' :
+                                                            (log.action || '').includes('PROGRESS') ? 'bg-indigo-500' :
+                                                                (log.action || '').includes('APPROVE') || (log.action || '').includes('RESOLVE') ? 'bg-emerald-500' :
+                                                                    (log.action || '').includes('REJECT') ? 'bg-rose-500' :
+                                                                        'bg-slate-500'}`}></div>
                                                 <div className="flex flex-col">
                                                     <span className="text-xs text-slate-500">{new Date(log.timestamp || log.date).toLocaleString()}</span>
                                                     <div className="flex justify-between items-start">
@@ -910,7 +1050,20 @@ export default function EndUserDashboard() {
                             </div>
 
                             {/* Footer */}
-                            <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end">
+                            <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                                {selectedRequest.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING && (
+                                    <button
+                                        onClick={() => {
+                                            if (confirm(`Confirm you have received the ${selectedRequest.assetType}?`)) {
+                                                userAcceptAsset(selectedRequest.id);
+                                                setSelectedRequest(null);
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-2"
+                                    >
+                                        <CheckCircle size={18} /> Confirm Acceptance
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => setSelectedRequest(null)}
                                     className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-semibold transition-colors"

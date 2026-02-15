@@ -1,27 +1,37 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Package, CheckCircle, AlertTriangle, Clock, Activity, Download, Plus, Layers, LayoutGrid, Calendar, ArrowUpRight, DollarSign, TrendingDown, ShoppingBag, LogOut, Trash, FileText, Filter, Search, UserPlus, Users, Settings } from 'lucide-react'
+import { Package, CheckCircle, AlertTriangle, Clock, Activity, Download, Plus, Layers, LayoutGrid, Calendar, ArrowUpRight, DollarSign, TrendingDown, ShoppingBag, LogOut, Trash, FileText, Filter, Search, UserPlus, Users, Settings, Scan, RefreshCw, Eye, ShieldCheck, X, Terminal, AlertCircle, ChevronRight } from 'lucide-react'
 import BarChart from '@/components/BarChart'
 import PieChart from '@/components/PieChart'
 import TrendLineChart from '@/components/TrendLineChart'
 import AlertsFeed from '@/components/AlertsFeed'
 import WorkflowVisualizer from '@/components/WorkflowVisualizer'
+import QuickScanner from '@/components/Scanner/QuickScanner';
 import apiClient from '@/lib/apiClient';
 import { useRole } from '@/contexts/RoleContext';
+import { useAssetContext } from '@/contexts/AssetContext'; // Added context
 import { sanitizeAsset, calculateDashboardStats } from '@/utils/assetNormalizer';
 
 export default function SystemAdminDashboard() {
     const router = useRouter()
     const { ROLES, user: currentUser } = useRole()
+    // Asset Context for Requests
+    const { incomingRequests, activeTickets, itApproveRequest, itRejectRequest, registerByod } = useAssetContext();
+
     const [loading, setLoading] = useState(true)
     const [chartMetric, setChartMetric] = useState('location')
     const [trendView, setTrendView] = useState('monthly')
     const [timeRange, setTimeRange] = useState('Overview') // Overview, Analytics, Requests
     const [pendingUsers, setPendingUsers] = useState([])
     const [scanning, setScanning] = useState(false)
+    const [adSyncing, setAdSyncing] = useState(false)
+    const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false)
 
-
+    // Modal State
+    const [activeModal, setActiveModal] = useState(null)
+    const [selectedItem, setSelectedItem] = useState(null)
+    const [configStep, setConfigStep] = useState(1); // For config modal if needed
 
     const [allAssets, setAllAssets] = useState([]);
 
@@ -31,6 +41,7 @@ export default function SystemAdminDashboard() {
         repair: 0,
         warranty_risk: 0,
         total_value: 0,
+        discovered: 0, // Added discovered count here
         by_status: [],
         by_segment: [],
         by_type: [],
@@ -38,19 +49,38 @@ export default function SystemAdminDashboard() {
         trends: { monthly: [], quarterly: [] }
     });
 
+    const [saasStats, setSaasStats] = useState({
+        total_licenses: 0,
+        monthly_spend: 0,
+        discovered_count: 0
+    });
+
     useEffect(() => {
-        const loadAssets = async () => {
+        const loadDashboardData = async () => {
             try {
-                const apiAssets = await apiClient.getAssets();
+                const [apiAssets, apiLicenses] = await Promise.all([
+                    apiClient.getAssets(),
+                    apiClient.getSoftwareLicenses()
+                ]);
+
                 setAllAssets(apiAssets.map(sanitizeAsset));
+
+                // Calculate SaaS stats
+                const sStats = {
+                    total_licenses: apiLicenses.length,
+                    monthly_spend: apiLicenses.reduce((acc, curr) => acc + (curr.cost || 0), 0),
+                    discovered_count: apiLicenses.filter(l => l.is_discovered).length
+                };
+                setSaasStats(sStats);
+
                 setLoading(false);
             } catch (error) {
-                console.error('Failed to load assets:', error);
+                console.error('Failed to load dashboard data:', error);
                 setAllAssets([]);
                 setLoading(false);
             }
         };
-        loadAssets();
+        loadDashboardData();
     }, []);
 
     const [activeUsers, setActiveUsers] = useState([])
@@ -117,6 +147,19 @@ export default function SystemAdminDashboard() {
             alert('Scan failed: ' + error.message);
         } finally {
             setScanning(false);
+        }
+    }
+
+    const handleAdSync = async () => {
+        setAdSyncing(true);
+        try {
+            const result = await apiClient.triggerAdSync();
+            alert(`AD Sync Complete: ${result.message}`);
+        } catch (error) {
+            console.error('AD Sync failed:', error);
+            alert('AD Sync failed: ' + error.message);
+        } finally {
+            setAdSyncing(false);
         }
     }
 
@@ -292,6 +335,14 @@ export default function SystemAdminDashboard() {
                     {/* Actions */}
                     <div className="flex space-x-2">
                         <button
+                            onClick={handleAdSync}
+                            disabled={adSyncing}
+                            className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${adSyncing ? 'bg-blue-900/50 cursor-not-allowed' : 'bg-blue-600/10 hover:bg-blue-600/20'} text-blue-400 border border-blue-500/30 flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all`}
+                        >
+                            <RefreshCw size={18} className={adSyncing ? 'animate-spin' : ''} />
+                            <span className="hidden md:inline">{adSyncing ? 'Syncing...' : 'Sync Directory'}</span>
+                        </button>
+                        <button
                             onClick={handleNetworkScan}
                             disabled={scanning}
                             className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 ${scanning ? 'bg-purple-900/50 cursor-not-allowed' : 'bg-purple-600/10 hover:bg-purple-600/20'} text-purple-400 border border-purple-500/30 flex items-center space-x-2 px-4 py-2.5 rounded-xl transition-all`}
@@ -302,6 +353,13 @@ export default function SystemAdminDashboard() {
                         <button onClick={handleExport} className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-2 px-4 py-2.5 rounded-xl">
                             <Download size={18} />
                             <span className="hidden md:inline">Export</span>
+                        </button>
+                        <button
+                            onClick={() => setBarcodeScannerOpen(true)}
+                            className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-orange-600/10 hover:bg-orange-600/20 text-orange-400 border border-orange-500/30 flex items-center space-x-2 px-4 py-2.5 rounded-xl"
+                        >
+                            <Scan size={18} />
+                            <span className="hidden md:inline">Quick Scan</span>
                         </button>
                         <Link href="/assets/add">
                             <button className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white border-none shadow-lg shadow-blue-500/25 flex items-center space-x-2 px-6 py-2.5 rounded-xl">
@@ -441,6 +499,27 @@ export default function SystemAdminDashboard() {
                         colorClass="text-amber-400"
                         gradient="bg-gradient-to-br from-amber-500 to-orange-500"
                         trend="+15%"
+                    />
+                </Link>
+                <Link href="/software">
+                    <StatCard
+                        title="Active Licenses"
+                        value={saasStats.total_licenses}
+                        subtext={`${saasStats.discovered_count} discovered via agent`}
+                        icon={Layers}
+                        colorClass="text-emerald-400"
+                        gradient="bg-gradient-to-br from-emerald-500 to-teal-500"
+                        trend="Live"
+                    />
+                </Link>
+                <Link href="/software">
+                    <StatCard
+                        title="SaaS Spend"
+                        value={`₹${saasStats.monthly_spend.toLocaleString()}`}
+                        subtext="Extracted subscription cost"
+                        icon={DollarSign}
+                        colorClass="text-violet-400"
+                        gradient="bg-gradient-to-br from-violet-500 to-fuchsia-500"
                     />
                 </Link>
             </div>
@@ -590,6 +669,67 @@ export default function SystemAdminDashboard() {
                 ) : (
                     /* REQUESTS / ACCESS CONTROL VIEW */
                     <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-8 animate-in slide-in-from-bottom-4 duration-500">
+                        {/* ---- PENDING ASSET REQUESTS SECTION (NEW) ---- */}
+                        <div className="mb-12 border-b border-white/5 pb-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white">Pending Asset Requests</h3>
+                                    <p className="text-slate-400 text-sm mt-1">Review and approve hardware/software allocation requests.</p>
+                                </div>
+                                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400 text-sm font-medium">
+                                    <Package size={16} />
+                                    {(incomingRequests || []).length} Pending
+                                </div>
+                            </div>
+
+                            {(!incomingRequests || incomingRequests.length === 0) ? (
+                                <div className="p-8 bg-slate-800/20 border border-white/5 rounded-2xl text-center">
+                                    <p className="text-slate-500 text-sm italic">No pending asset requests.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="border-b border-white/5">
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset / ID</th>
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">User</th>
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                                                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {(incomingRequests || []).map((req) => (
+                                                <tr key={req.id} className="group hover:bg-white/[0.02] transition-colors">
+                                                    <td className="py-4">
+                                                        <div className="font-bold text-white text-sm">{req.assetType || req.title}</div>
+                                                        <div className="text-xs text-slate-500 font-mono">{req.id?.substring(0, 8)}...</div>
+                                                    </td>
+                                                    <td className="py-4">
+                                                        <div className="text-sm text-slate-300 font-medium">{req.requestedBy?.name}</div>
+                                                        <div className="text-xs text-slate-500">{req.requestedBy?.department || 'N/A'}</div>
+                                                    </td>
+                                                    <td className="py-4">
+                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300'}`}>
+                                                            {req.urgency || 'STANDARD'}
+                                                        </span>
+                                                        <div className="text-[10px] text-slate-500 mt-1">{req.status}</div>
+                                                    </td>
+                                                    <td className="py-4 text-right">
+                                                        <button
+                                                            onClick={() => { setSelectedItem(req); setActiveModal('REQUEST_DETAILS'); }}
+                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors ml-auto"
+                                                        >
+                                                            <Eye size={14} /> View Details
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="flex justify-between items-center mb-8">
                             <div>
                                 <h3 className="text-2xl font-bold text-white">Access Requests</h3>
@@ -831,6 +971,159 @@ export default function SystemAdminDashboard() {
                 )
             }
 
-        </div >
+            {/* ===================================================================================== */}
+            {/* MODALS */}
+            {/* ===================================================================================== */}
+
+            {activeModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+
+                    {/* ---- REQUEST DETAILS MODAL ---- */}
+                    {activeModal === 'REQUEST_DETAILS' && selectedItem && (
+                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="bg-slate-800 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <FileText size={20} className="text-indigo-400" />
+                                        Request Details
+                                    </h2>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">{selectedItem.id}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300'}`}>
+                                            {selectedItem.urgency || 'STANDARD'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white p-2">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                                {/* Requester Info */}
+                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5">
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Requester</label>
+                                        <div className="text-white font-medium">{selectedItem.requestedBy?.name}</div>
+                                        <div className="text-xs text-slate-400">{selectedItem.requestedBy?.email}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Department</label>
+                                        <div className="text-white font-medium">{selectedItem.requestedBy?.department || 'N/A'}</div>
+                                        <div className="text-xs text-slate-400">{selectedItem.requestedBy?.position || 'Employee'}</div>
+                                    </div>
+                                </div>
+
+                                {/* Asset Details */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Asset Information</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs text-slate-500 uppercase block mb-1">Asset Type</label>
+                                            <div className="text-white">{selectedItem.assetType}</div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-500 uppercase block mb-1">Model / Specs</label>
+                                            <div className="text-white">{selectedItem.asset_model || selectedItem.details || 'Standard Configuration'}</div>
+                                        </div>
+                                        {selectedItem.os_version && (
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase block mb-1">OS Version</label>
+                                                <div className="text-white">{selectedItem.os_version}</div>
+                                            </div>
+                                        )}
+                                        {selectedItem.cost_estimate && (
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase block mb-1">Cost Estimate</label>
+                                                <div className="text-emerald-400 font-mono font-bold">${selectedItem.cost_estimate}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Justification */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Business Case</h3>
+                                    <div className="bg-slate-800 p-4 rounded-lg border border-white/5">
+                                        <label className="text-xs text-slate-500 uppercase block mb-2">Justification</label>
+                                        <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                                            {selectedItem.justification || "No justification provided."}
+                                        </div>
+                                        {selectedItem.business_justification && selectedItem.business_justification !== selectedItem.justification && (
+                                            <div className="mt-4 pt-4 border-t border-white/5">
+                                                <label className="text-xs text-slate-500 uppercase block mb-2">Detailed Business Justification</label>
+                                                <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                                                    {selectedItem.business_justification}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Approval History */}
+                                {selectedItem.manager_approvals && selectedItem.manager_approvals.length > 0 && (
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Approval History</h3>
+                                        <div className="space-y-2">
+                                            {selectedItem.manager_approvals.map((approval, idx) => (
+                                                <div key={idx} className="flex justify-between items-start text-xs bg-slate-800/30 p-2 rounded">
+                                                    <div>
+                                                        <span className="font-bold text-slate-300">{approval.reviewer_name}</span>
+                                                        <span className="text-slate-500 mx-1">({approval.type || 'Review'})</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className={`font-bold ${approval.decision?.includes('REJECT') ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                            {approval.decision}
+                                                        </div>
+                                                        <div className="text-slate-600">{new Date(approval.timestamp).toLocaleString()}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 bg-slate-800 border-t border-white/10 flex justify-end gap-3 shrink-0">
+                                <button
+                                    onClick={() => {
+                                        const reason = prompt("Enter rejection reason:");
+                                        if (reason) {
+                                            itRejectRequest(selectedItem.id, reason);
+                                            setActiveModal(null);
+                                        }
+                                    }}
+                                    className="px-4 py-2 text-rose-400 hover:text-white border border-rose-500/30 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                >
+                                    Reject Request
+                                </button>
+                                {selectedItem.status === 'IT_APPROVED' && selectedItem.assetType === 'BYOD' ? (
+                                    <button
+                                        onClick={() => {
+                                            registerByod(selectedItem.id);
+                                            setActiveModal(null);
+                                        }}
+                                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                                    >
+                                        <ShieldCheck size={18} /> Validate & Register BYOD
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            itApproveRequest(selectedItem.id);
+                                            setActiveModal(null);
+                                        }}
+                                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all flex items-center gap-2"
+                                    >
+                                        <CheckCircle size={18} /> Approve & Forward
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+        </div>
     )
 }

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import {
     Search, Eye, Split, Calendar, ClipboardCheck,
-    Ticket, Network, Users, DollarSign, Bot
+    Ticket, Network, Users, DollarSign, Bot, FileText
 } from 'lucide-react';
 import React, { useState } from 'react';
 import AIAssistantSidebar from '@/components/AIAssistantSidebar';
@@ -78,12 +78,21 @@ export default function EnterpriseFeatures() {
             title: "CMDB Visualizer",
             description: "Deep relationship visualization and impact analysis for any infrastructure asset.",
             icon: Network,
-            href: "/assets/cmdb-overview", 
+            href: "/assets/cmdb-overview",
             color: "text-pink-400",
             bg: "bg-pink-400/10",
             border: "border-pink-400/20"
         },
 
+        {
+            title: "Asset Requests",
+            description: "Centralized hub for approvals, procurement, and BYOD compliance.",
+            icon: FileText,
+            href: "/asset-requests",
+            color: "text-orange-400",
+            bg: "bg-orange-400/10",
+            border: "border-orange-400/20"
+        },
         {
             title: "AI Assistant",
             description: "Intelligent sidekick for asset queries.",

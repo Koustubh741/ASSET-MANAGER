@@ -1,6 +1,6 @@
 
 from sqlalchemy import text
-from database import engine
+from app.database.database import engine
 
 def find_fks_with_names():
     with engine.connect() as conn:

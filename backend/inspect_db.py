@@ -1,6 +1,6 @@
 from sqlalchemy import func
-from database import SessionLocal
-from models import Asset, User, ByodDevice, AssetRequest
+from app.database.database import SessionLocal
+from app.models.models import Asset, User, ByodDevice, AssetRequest
 import json
 
 def inspect():

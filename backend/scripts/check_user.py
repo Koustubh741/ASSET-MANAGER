@@ -1,5 +1,5 @@
-from database import SessionLocal
-from models import User
+from app.database.database import SessionLocal
+from app.models.models import User
 import json
 
 def check_user_role(user_id):

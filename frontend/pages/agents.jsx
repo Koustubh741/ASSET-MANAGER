@@ -1,0 +1,1653 @@
+import { useState, useEffect } from 'react';
+import {
+    Zap, Shield, Globe, Cpu, RefreshCw, Activity,
+    CheckCircle2, AlertCircle, Clock, Server,
+    Terminal, Play, Search, Filter, ArrowUpRight,
+    ExternalLink, Settings, Database, Cloud, Lock, Users,
+    X, Check, Package, Info, FileText, Calendar, Target, Layers, BarChart3
+} from 'lucide-react';
+import apiClient from '@/lib/apiClient';
+import cronstrue from 'cronstrue';
+import { AGENT_DETAILS } from '../data/agentDetails';
+
+export default function AgentsPage() {
+    const [agents, setAgents] = useState([
+        { id: 'agent-local', name: 'Local Discovery', role: 'Host Integrity', status: 'online', lastSync: '10 mins ago', type: 'System', health: 98, endpoint: '/collect/trigger' },
+        { id: 'agent-cloud', name: 'Cloud Monitor', role: 'AWS/Azure/Google Inspector', type: 'Cloud', status: 'online', health: 98, lastSync: '1h ago', endpoint: '/collect/cloud/sync' },
+        { id: 'agent-saas', name: 'SaaS Auditor', role: 'License & Access Review', type: 'API', status: 'online', health: 100, lastSync: '30m ago', endpoint: '/collect/saas/trigger' },
+        { id: 'agent-ad', name: 'AD Sync', role: 'Directory & User Identity', type: 'Directory', status: 'online', health: 95, lastSync: '2h ago', endpoint: '/collect/users/trigger' },
+        { id: 'agent-snmp', name: 'SNMP Scanner', role: 'Network Infrastructure', type: 'Network', status: 'standby', health: 0, lastSync: 'Never', endpoint: '/collect/scan' },
+        { id: 'agent-server', name: 'Server Scanner', role: 'Deep Inspection', status: 'standby', lastSync: 'N/A', type: 'Server', health: 0, endpoint: '/collect/server/scan' },
+    ]);
+    const [activity, setActivity] = useState([]);
+    const [stats, setStats] = useState({ totalAssets: '0', activeAgents: '0/5', networkHealth: '100%', cloudStatus: 'Standby' });
+    const [agentMetrics, setAgentMetrics] = useState({});
+    const [viewingMetrics, setViewingMetrics] = useState(null);
+
+    const fetchAgentMetrics = async (agentId) => {
+        try {
+            const agentIdMap = {
+                'agent-local': '00000000-0000-0000-0000-000000000001',
+                'agent-cloud': '00000000-0000-0000-0000-000000000002',
+                'agent-snmp': '00000000-0000-0000-0000-000000000000',
+                'agent-server': '00000000-0000-0000-0000-000000000005',
+                'agent-ad': 'agent-ad',
+                'agent-saas': 'agent-saas'
+            };
+
+            const realId = agentIdMap[agentId] || agentId;
+            const data = await apiClient.request(`/collect/metrics/${realId}`);
+            if (data.status === 'success') {
+                setAgentMetrics(prev => ({ ...prev, [agentId]: data.metrics }));
+            }
+        } catch (err) {
+            console.error(`Failed to fetch metrics for ${agentId}:`, err);
+        }
+    };
+    const [loading, setLoading] = useState(true);
+    const [activeSweeps, setActiveSweeps] = useState({});
+    const [toast, setToast] = useState(null);
+    const [testingConnection, setTestingConnection] = useState(false);
+    const [configAgent, setConfigAgent] = useState(null); // Agent currently being configured
+    const [selectedLog, setSelectedLog] = useState(null); // Audit log item being viewed in detail
+    const [selectedAgentDiscoveries, setSelectedAgentDiscoveries] = useState(null); // Agent whose discoveries are being viewed
+    const [discoveriesModalLoading, setDiscoveriesModalLoading] = useState(false);
+    const [selectedAgentDetails, setSelectedAgentDetails] = useState(null); // Agent whose details are being viewed
+
+    // Scan Progress State
+    const [scanProgress, setScanProgress] = useState({}); // { agentId: { percent: 0, status: 'running', message: '' } }
+
+    // SNMP Scanner Configuration
+    const [snmpConfig, setSnmpConfig] = useState({
+        networkRange: '192.168.1.0/24',
+        communityString: 'public',
+        snmpVersion: 'v2c',
+        exclusions: '',
+        username: '',
+        contextName: '',
+        authKey: '',
+        authProtocol: 'MD5',
+        privKey: '',
+        privProtocol: 'AES'
+    });
+
+    // Server Scanner Configuration
+    const [serverConfig, setServerConfig] = useState({
+        targets: '',
+        osType: 'linux',
+        username: '',
+        password: '',
+        privateKey: ''
+    });
+
+    const [scheduleConfig, setScheduleConfig] = useState({
+        cron_expression: '0 0 * * *',
+        is_enabled: false,
+        last_run: null,
+        next_run: null
+    });
+    const [activeTab, setActiveTab] = useState('config');
+
+    // Fetch Configs when opening settings
+    useEffect(() => {
+        if (configAgent) {
+            setActiveTab('config');
+
+            const fetchConfigs = async () => {
+                // SNMP Config
+                if (configAgent.type === 'Network') {
+                    try {
+                        const response = await apiClient.get(`/agents/${configAgent.id}/config`);
+                        if (response.data) {
+                            setSnmpConfig(prev => ({
+                                ...prev,
+                                networkRange: response.data.networkRange || '192.168.1.0/24',
+                                communityString: response.data.communityString || 'public',
+                                snmpVersion: response.data.snmpVersion || 'v2c',
+                                exclusions: response.data.exclusions || '',
+                                username: response.data.username || '',
+                                contextName: response.data.contextName || '',
+                                authKey: response.data.authKey || '',
+                                authProtocol: response.data.authProtocol || 'MD5',
+                                privKey: response.data.privKey || '',
+                                privProtocol: response.data.privProtocol || 'AES'
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch SNMP config:', error);
+                    }
+                } else if (configAgent.type === 'Server') {
+                    try {
+                        const response = await apiClient.get(`/agents/${configAgent.id}/config`);
+                        if (response.data) {
+                            setServerConfig(prev => ({
+                                ...prev,
+                                targets: response.data.targets || '',
+                                osType: response.data.osType || 'linux',
+                                username: response.data.username || '',
+                                password: response.data.password || '',
+                                privateKey: response.data.privateKey || ''
+                            }));
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch Server config:', error);
+                    }
+                }
+
+                // Schedule Config
+                try {
+                    const schResponse = await apiClient.get(`/agents/${configAgent.id}/schedule`);
+                    if (schResponse.data) {
+                        setScheduleConfig(schResponse.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch schedule:', error);
+                }
+            };
+            fetchConfigs();
+        }
+    }, [configAgent]);
+
+
+    const fetchAgentDiscoveries = async (agent) => {
+        setDiscoveriesModalLoading(true);
+        setSelectedAgentDiscoveries({ agent, data: [] }); // Set agent immediately
+        try {
+            let data = [];
+
+            if (agent.type === 'System' || agent.type === 'Cloud' || agent.type === 'Network' || agent.type === 'Server') {
+                const agentIdMap = {
+                    'agent-local': '00000000-0000-0000-0000-000000000001',
+                    'agent-cloud': '00000000-0000-0000-0000-000000000002',
+                    'agent-snmp': '00000000-0000-0000-0000-000000000000',
+                    'agent-server': '00000000-0000-0000-0000-000000000005'
+                };
+                const realId = agentIdMap[agent.id];
+                data = await apiClient.request(`/assets/by-agent/${realId}`) || [];
+            } else if (agent.type === 'API') { // SaaS
+                const allSoftware = await apiClient.request('/software') || [];
+                data = allSoftware.filter(s => s.is_discovered);
+            } else if (agent.type === 'Directory') { // AD
+                data = await apiClient.request('/users') || [];
+            }
+
+            setSelectedAgentDiscoveries({ agent, data });
+        } catch (err) {
+            console.error('Failed to fetch discoveries for agent:', err);
+            showToast(`Failed to load data for ${agent.name}`, 'error');
+        } finally {
+            setDiscoveriesModalLoading(false);
+        }
+    };
+
+    const fetchDashboardStats = async () => {
+        try {
+            const assetStats = await apiClient.request('/assets/stats');
+            if (assetStats) {
+                setStats({
+                    totalAssets: assetStats.total?.toLocaleString() || '0',
+                    activeAgents: `${agents.filter(a => a.status === 'online').length}/5`,
+                    networkHealth: assetStats.repair > 0 ? '94.2%' : '100%',
+                    cloudStatus: assetStats.active > 0 ? 'Active' : 'Standby'
+                });
+            }
+        } catch (err) {
+            console.error('Failed to fetch dashboard stats:', err);
+        }
+    };
+
+    const fetchAuditLogs = async () => {
+        try {
+            const logs = await apiClient.request('/audit/logs?limit=10&entity_type=Asset');
+            if (logs && Array.isArray(logs)) {
+                setActivity(logs.map(log => ({
+                    id: log.id,
+                    event: log.action.replace(/_/g, ' '),
+                    entity: log.details?.hostname || log.details?.name || 'Unknown Asset',
+                    time: new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    fullTime: new Date(log.timestamp).toLocaleString(),
+                    status: 'Success',
+                    details: log.details || {},
+                    user: log.performed_by || 'System'
+                })));
+            }
+        } catch (err) {
+            console.error('Failed to fetch audit logs:', err);
+        }
+    };
+
+    useEffect(() => {
+        const fetchData = async () => {
+            await Promise.all([
+                fetchAuditLogs(),
+                fetchDashboardStats(),
+                ...agents.map(a => fetchAgentMetrics(a.id))
+            ]);
+            setLoading(false);
+        };
+        fetchData();
+    }, []);
+
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 5000);
+    };
+
+    const triggerScan = async (agent) => {
+        const agentId = agent.id;
+        setActiveSweeps(prev => ({ ...prev, [agentId]: true }));
+
+        try {
+            // Map UI agent to real backend endpoints
+            let endpoint = agent.endpoint;
+            let method = 'POST';
+            let params = {};
+
+            if (agent.id === 'agent-snmp') {
+                // For SNMP we generally trigger existing db config, or pass if needed
+            } else if (agent.id === 'agent-server') {
+                // Pass the current UI state for Server Scanner
+                params = {
+                    targets: serverConfig.targets,
+                    os_type: serverConfig.osType,
+                    credentials: {
+                        username: serverConfig.username,
+                        password: serverConfig.password,
+                        private_key: serverConfig.privateKey
+                    }
+                };
+                // Basic validation
+                if (!params.targets || !params.credentials.username) {
+                    showToast('Target IP and Username are required for Server Scan', 'error');
+                    setActiveSweeps(prev => ({ ...prev, [agentId]: false }));
+                    return;
+                }
+            }
+
+
+            const response = await apiClient.request(endpoint, {
+                method: method,
+                body: Object.keys(params).length > 0 ? params : undefined
+            });
+
+            console.log('Discovery Trigger Response:', response);
+
+            if (response.status === 'success') {
+                showToast(response.message || 'Discovery mission launched successfully!', 'success');
+                if (response.count !== undefined) {
+                    console.log(`Scan Results: ${response.count} devices found`);
+                }
+
+                // Update agent status for visual feedback
+                setAgents(prev => prev.map(a =>
+                    a.id === agentId ? { ...a, status: 'online', lastSync: 'Just now' } : a
+                ));
+
+                // Handle Async Scan
+                if (response.async && response.scan_id) {
+                    console.log(`Async scan started: ${response.scan_id}`);
+                    setScanProgress(prev => ({
+                        ...prev,
+                        [agentId]: { percent: 0, status: 'running', message: 'Starting scan...', scanId: response.scan_id }
+                    }));
+                    pollScanStatus(agentId, response.scan_id);
+                }
+
+                // Handle server scan results specifically
+                if (response.results && response.results.length > 0) {
+                    console.log('Server Scan Details:', response.results);
+                }
+            } else {
+                showToast(response.message || 'Failed to start discovery.', 'error');
+            }
+            setTimeout(fetchAuditLogs, 2000);
+
+            // Update agent health/status in UI if it was standby
+            if (agentId === 'agent-snmp') {
+                setAgents(prev => prev.map(a =>
+                    a.id === 'agent-snmp' ? { ...a, status: 'online', health: 100, lastSync: 'Just now' } : a
+                ));
+            }
+        } catch (error) {
+            console.error('Trigger error:', error);
+            showToast(error.message || 'Failed to trigger discovery.', 'error');
+        } finally {
+            setActiveSweeps(prev => ({ ...prev, [agentId]: false }));
+        }
+    };
+
+    const pollScanStatus = async (agentId, scanId) => {
+        const interval = setInterval(async () => {
+            try {
+                const status = await apiClient.request(`/collect/scan/status/${scanId}`);
+                console.log('Scan Status:', status);
+
+                if (status.status === 'completed' || status.status === 'failed') {
+                    clearInterval(interval);
+                    setScanProgress(prev => ({
+                        ...prev,
+                        [agentId]: null
+                    }));
+
+                    if (status.status === 'completed') {
+                        showToast(`Scan complete: ${status.devices_found} devices found`, 'success');
+                        // Refresh listings
+                        fetchAgentMetrics(agentId);
+                        fetchDashboardStats();
+                    } else {
+                        showToast(`Scan failed: ${status.error || 'Unknown error'}`, 'error');
+                    }
+                    setActiveSweeps(prev => ({ ...prev, [agentId]: false }));
+                } else {
+                    setScanProgress(prev => ({
+                        ...prev,
+                        [agentId]: {
+                            percent: status.progress_percent,
+                            status: status.status,
+                            message: `Scanning... ${status.scanned_hosts}/${status.total_hosts} hosts`,
+                            scanId: scanId
+                        }
+                    }));
+                }
+            } catch (err) {
+                console.error('Poll error:', err);
+                clearInterval(interval);
+                setActiveSweeps(prev => ({ ...prev, [agentId]: false }));
+            }
+        }, 2000);
+    };
+
+    const testSNMPConnection = async () => {
+        setTestingConnection(true);
+        try {
+            // Extract first IP from network range for testing
+            const testIp = snmpConfig.networkRange.split('/')[0];
+
+            const response = await apiClient.request('/collect/scan/validate', {
+                method: 'POST',
+                body: {
+                    test_ip: testIp,
+                    community: snmpConfig.snmpVersion === 'v2c' ? snmpConfig.communityString : undefined
+                }
+            });
+
+            if (response.status === 'success') {
+                showToast(
+                    `✓ Connection successful! Found: ${response.device_info?.vendor || 'Unknown'} ${response.device_info?.type || 'Device'}`,
+                    'success'
+                );
+            } else {
+                showToast(response.message || '✗ Connection test failed', 'error');
+            }
+        } catch (error) {
+            console.error('Connection test error:', error);
+            showToast('Connection test failed: ' + (error.message || 'Unknown error'), 'error');
+        } finally {
+            setTestingConnection(false);
+        }
+    };
+
+    const triggerGlobalSync = async () => {
+        showToast('Initiating Global Infrastructure Sweep...', 'info');
+        // Trigger the two most critical ones in parallel
+        const snmpAgent = agents.find(a => a.id === 'agent-snmp');
+        const adAgent = agents.find(a => a.id === 'agent-ad');
+
+        await Promise.all([
+            triggerScan(snmpAgent),
+            triggerScan(adAgent)
+        ]);
+    };
+
+    const handleSaveConfig = async (updatedAgent) => {
+        if (updatedAgent.type === 'Network') {
+            // Validate CIDR
+            const cidrRegex = /^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$/;
+            if (!cidrRegex.test(snmpConfig.networkRange)) {
+                setToast({ message: 'Invalid Network Range CIDR format (e.g., 192.168.1.0/24)', type: 'error' });
+                return;
+            }
+            if (snmpConfig.snmpVersion === 'v3') {
+                if (!snmpConfig.username) {
+                    setToast({ message: 'Security Username is required for v3', type: 'error' });
+                    return;
+                }
+            } else {
+                if (!snmpConfig.communityString) {
+                    setToast({ message: 'Community String is required for v2c', type: 'error' });
+                    return;
+                }
+            }
+
+            // Save SNMP Config to Backend
+            try {
+                await apiClient.put(`/agents/${updatedAgent.id}/config`, {
+                    config: {
+                        ...snmpConfig,
+                        // Ensure contextName is included if version is v3
+                        contextName: snmpConfig.snmpVersion === 'v3' ? snmpConfig.contextName : ''
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to save SNMP config:', error);
+                setToast({ message: 'Failed to save configuration', type: 'error' });
+                return;
+            }
+        } else if (updatedAgent.type === 'Server') {
+            if (!serverConfig.targets || !serverConfig.username) {
+                setToast({ message: 'Target IPs and Username are required', type: 'error' });
+                return;
+            }
+
+            try {
+                await apiClient.put(`/agents/${updatedAgent.id}/config`, {
+                    config: serverConfig
+                });
+                showToast('Server Scanner configuration saved', 'success');
+            } catch (error) {
+                console.error('Failed to save Server config:', error);
+                showToast('Failed to save configuration', 'error');
+                return;
+            }
+        }
+
+        // Save Schedule
+        try {
+            await apiClient.post(`/agents/${updatedAgent.id}/schedule`, {
+                cron_expression: scheduleConfig.cron_expression,
+                is_enabled: scheduleConfig.is_enabled
+            });
+        } catch (error) {
+            console.error('Failed to save schedule:', error);
+            setToast({ message: 'Failed to save schedule', type: 'error' });
+            return;
+        }
+
+        setAgents(prev => prev.map(a => a.id === updatedAgent.id ? updatedAgent : a));
+        setConfigAgent(null);
+        showToast(`${updatedAgent.name} settings updated successfully`);
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed top-8 right-8 z-50 p-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-3 animate-in slide-in-from-right-8 duration-300 ${toast.type === 'error' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' :
+                    toast.type === 'info' ? 'bg-blue-500/20 border-blue-500/30 text-blue-300' :
+                        'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
+                    }`}>
+                    {toast.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
+                    <span className="text-sm font-bold">{toast.message}</span>
+                    <button onClick={() => setToast(null)} className="ml-2 hover:text-white transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
+
+            {/* Config Modal */}
+            {configAgent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                    <Settings size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white tracking-tight">Agent Configuration</h3>
+                                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{configAgent.name}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setConfigAgent(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-0 flex-1 overflow-y-auto custom-scrollbar">
+                            {/* Tabs */}
+                            <div className="flex border-b border-white/5 bg-white/5 px-8 pt-6 gap-6 sticky top-0 z-10 backdrop-blur-md">
+                                <button
+                                    onClick={() => setActiveTab('config')}
+                                    className={`pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'config' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-white'}`}
+                                >
+                                    General settings
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('schedule')}
+                                    className={`pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'schedule' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-white'}`}
+                                >
+                                    Automation Schedule
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                {activeTab === 'config' ? (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-300">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Display Name</label>
+                                            <input
+                                                type="text"
+                                                value={configAgent.name}
+                                                onChange={(e) => setConfigAgent({ ...configAgent, name: e.target.value })}
+                                                className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Agent Role</label>
+                                            <input
+                                                type="text"
+                                                value={configAgent.role}
+                                                onChange={(e) => setConfigAgent({ ...configAgent, role: e.target.value })}
+                                                className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                            />
+                                        </div>
+
+
+                                        {/* SNMP Scanner Specific Configuration */}
+                                        {configAgent.type === 'Network' && (
+                                            <div className="space-y-4 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Server className="text-blue-400" size={16} />
+                                                    <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider">SNMP Configuration</h4>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Network Range (CIDR)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={snmpConfig.networkRange}
+                                                        onChange={(e) => setSnmpConfig({ ...snmpConfig, networkRange: e.target.value })}
+                                                        placeholder="192.168.1.0/24"
+                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">SNMP Version</label>
+                                                    <select
+                                                        value={snmpConfig.snmpVersion}
+                                                        onChange={(e) => setSnmpConfig({ ...snmpConfig, snmpVersion: e.target.value })}
+                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                    >
+                                                        <option value="v2c">v2c (Standard)</option>
+                                                        <option value="v3">v3 (Secure USM)</option>
+                                                    </select>
+                                                </div>
+
+                                                {snmpConfig.snmpVersion === 'v3' ? (
+                                                    <div className="space-y-4 pt-2 animate-in slide-in-from-top-2 duration-300">
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Security Username</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={snmpConfig.username}
+                                                                    onChange={(e) => setSnmpConfig({ ...snmpConfig, username: e.target.value })}
+                                                                    placeholder="snmp-user"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight text-blue-400">Context Name <span className="text-[10px] lowercase opacity-60">(Optional)</span></label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={snmpConfig.contextName}
+                                                                    onChange={(e) => setSnmpConfig({ ...snmpConfig, contextName: e.target.value })}
+                                                                    placeholder="vlan-1"
+                                                                    className="w-full px-4 py-2.5 bg-blue-500/5 border border-blue-500/20 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Auth Protocol</label>
+                                                                <select
+                                                                    value={snmpConfig.authProtocol}
+                                                                    onChange={(e) => setSnmpConfig({ ...snmpConfig, authProtocol: e.target.value })}
+                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                                >
+                                                                    <option value="NONE">None</option>
+                                                                    <option value="MD5">MD5</option>
+                                                                    <option value="SHA">SHA</option>
+                                                                    <option value="SHA256">SHA256</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Auth Key</label>
+                                                                <input
+                                                                    type="password"
+                                                                    value={snmpConfig.authKey}
+                                                                    onChange={(e) => setSnmpConfig({ ...snmpConfig, authKey: e.target.value })}
+                                                                    placeholder="••••••••"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Priv Protocol</label>
+                                                                <select
+                                                                    value={snmpConfig.privProtocol}
+                                                                    onChange={(e) => setSnmpConfig({ ...snmpConfig, privProtocol: e.target.value })}
+                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                                >
+                                                                    <option value="NONE">None</option>
+                                                                    <option value="DES">DES</option>
+                                                                    <option value="3DES">3DES</option>
+                                                                    <option value="AES">AES (128)</option>
+                                                                    <option value="AES192">AES-192</option>
+                                                                    <option value="AES256">AES-256</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Priv Key</label>
+                                                                <input
+                                                                    type="password"
+                                                                    value={snmpConfig.privKey}
+                                                                    onChange={(e) => setSnmpConfig({ ...snmpConfig, privKey: e.target.value })}
+                                                                    placeholder="••••••••"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Community String</label>
+                                                        <input
+                                                            type="password"
+                                                            value={snmpConfig.communityString}
+                                                            onChange={(e) => setSnmpConfig({ ...snmpConfig, communityString: e.target.value })}
+                                                            placeholder="public"
+                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Exclusions (Optional)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={snmpConfig.exclusions}
+                                                        onChange={(e) => setSnmpConfig({ ...snmpConfig, exclusions: e.target.value })}
+                                                        placeholder="192.168.1.1, 192.168.1.254"
+                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                    />
+                                                </div>
+
+                                                {/* Test Connection Button */}
+                                                {configAgent.type === 'Network' && (
+                                                    <div className="pt-2">
+                                                        <button
+                                                            onClick={testSNMPConnection}
+                                                            disabled={testingConnection || !snmpConfig.networkRange}
+                                                            className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-slate-700 disabled:to-slate-700 text-white font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                        >
+                                                            {testingConnection ? (
+                                                                <>
+                                                                    <RefreshCw size={16} className="animate-spin" />
+                                                                    Testing Connection...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <CheckCircle2 size={16} />
+                                                                    Test Connection
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                        <p className="text-xs text-slate-500 mt-2 text-center">
+                                                            Tests credentials against {snmpConfig.networkRange.split('/')[0]}
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Server Scanner Specific Configuration */}
+                                        {configAgent.type === 'Server' && (
+                                            <div className="space-y-4 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Terminal className="text-indigo-400" size={16} />
+                                                    <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Remote Server Access</h4>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Target IPs</label>
+                                                    <textarea
+                                                        value={serverConfig.targets}
+                                                        onChange={(e) => setServerConfig({ ...serverConfig, targets: e.target.value })}
+                                                        placeholder="192.168.1.15, 10.0.0.50"
+                                                        rows={2}
+                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm resize-none"
+                                                    />
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">OS Type</label>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => setServerConfig({ ...serverConfig, osType: 'linux', username: 'root' })}
+                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'linux' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-transparent text-slate-500 hover:text-white'}`}
+                                                        >
+                                                            Linux (SSH)
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setServerConfig({ ...serverConfig, osType: 'windows', username: 'Administrator' })}
+                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'windows' ? 'bg-blue-500/20 border-blue-500 text-blue-300' : 'bg-white/5 border-transparent text-slate-500 hover:text-white'}`}
+                                                        >
+                                                            Windows (WinRM)
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Username</label>
+                                                        <input
+                                                            type="text"
+                                                            value={serverConfig.username}
+                                                            onChange={(e) => setServerConfig({ ...serverConfig, username: e.target.value })}
+                                                            placeholder={serverConfig.osType === 'linux' ? 'root' : 'Administrator'}
+                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Password</label>
+                                                        <input
+                                                            type="password"
+                                                            value={serverConfig.password}
+                                                            onChange={(e) => setServerConfig({ ...serverConfig, password: e.target.value })}
+                                                            placeholder="••••••••"
+                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {serverConfig.osType === 'linux' && (
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Private Key (PEM)</label>
+                                                        <textarea
+                                                            value={serverConfig.privateKey}
+                                                            onChange={(e) => setServerConfig({ ...serverConfig, privateKey: e.target.value })}
+                                                            placeholder="-----BEGIN RSA PRIVATE KEY-----"
+                                                            rows={3}
+                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-[10px] resize-none"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-blue-500/20 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                                                    <Clock size={20} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-white">Automated Scanning</h4>
+                                                    <p className="text-[10px] text-slate-500 font-medium tracking-tight">Run discovery automatically on a schedule</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setScheduleConfig({ ...scheduleConfig, is_enabled: !scheduleConfig.is_enabled })}
+                                                className={`w-12 h-6 rounded-full transition-all relative ${scheduleConfig.is_enabled ? 'bg-blue-600' : 'bg-slate-700'}`}
+                                            >
+                                                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${scheduleConfig.is_enabled ? 'left-7' : 'left-1'}`} />
+                                            </button>
+                                        </div>
+
+                                        <div className={`space-y-4 transition-all duration-300 ${scheduleConfig.is_enabled ? 'opacity-100' : 'opacity-50 pointer-events-none grayscale'}`}>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Quick Presets</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {[
+                                                        { label: 'Every Hour', value: '0 * * * *' },
+                                                        { label: 'Daily (Midnight)', value: '0 0 * * *' },
+                                                        { label: 'Weekly (Mon)', value: '0 0 * * 1' },
+                                                        { label: 'Monthly (1st)', value: '0 0 1 * *' },
+                                                    ].map(preset => (
+                                                        <button
+                                                            key={preset.value}
+                                                            onClick={() => setScheduleConfig({ ...scheduleConfig, cron_expression: preset.value })}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${scheduleConfig.cron_expression === preset.value
+                                                                ? 'bg-blue-600/20 border-blue-500 text-blue-400'
+                                                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                                                }`}
+                                                        >
+                                                            {preset.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Cron Schedule (Advanced)</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={scheduleConfig.cron_expression}
+                                                        onChange={(e) => setScheduleConfig({ ...scheduleConfig, cron_expression: e.target.value })}
+                                                        placeholder="0 0 * * *"
+                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm pr-10"
+                                                    />
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+                                                        <Clock size={14} />
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                                                    <Info size={14} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-0.5">Schedule Preview</p>
+                                                        <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                                                            {(() => {
+                                                                try {
+                                                                    return scheduleConfig.cron_expression ? cronstrue.toString(scheduleConfig.cron_expression) : "No schedule set";
+                                                                } catch (e) {
+                                                                    return "Invalid cron expression format";
+                                                                }
+                                                            })()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 pt-4">
+                                            <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                                <span className="text-[10px] uppercase font-black text-slate-500 block mb-1">Last Run</span>
+                                                <span className="text-sm font-mono text-slate-300">
+                                                    {scheduleConfig.last_run ? new Date(scheduleConfig.last_run).toLocaleString() : 'Never'}
+                                                </span>
+                                            </div>
+                                            <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                                <span className="text-[10px] uppercase font-black text-slate-500 block mb-1">Next Run</span>
+                                                <span className="text-sm font-mono text-blue-400 font-bold">
+                                                    {scheduleConfig.next_run ? new Date(scheduleConfig.next_run).toLocaleString() : 'Pending...'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                            <button
+                                onClick={() => setConfigAgent(null)}
+                                className="flex-1 py-3 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleSaveConfig(configAgent)}
+                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-95 text-sm"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div >
+            )
+            }
+
+            {/* Selected Log Details Modal */}
+            {
+                selectedLog && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+                        <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-purple-500/20 shadow-purple-500/10 flex flex-col max-h-[90vh]">
+                            <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-purple-500/10 to-transparent">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
+                                        <Activity size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white tracking-tight">Event Intelligence</h3>
+                                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{selectedLog.event}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedLog(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Target Entity</label>
+                                        <p className="text-white font-bold">{selectedLog.entity}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</label>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                                            <p className="text-emerald-400 font-black uppercase tracking-tighter text-xs">{selectedLog.status}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Exact Timestamp</label>
+                                        <p className="text-slate-300 font-mono text-xs">{selectedLog.fullTime}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Performed By</label>
+                                        <p className="text-slate-300 font-bold flex items-center gap-2">
+                                            <Shield size={12} className="text-purple-400" />
+                                            {selectedLog.user}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Metadata Payload</label>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        {Object.entries(selectedLog.details)
+                                            .filter(([key]) => key !== 'trigger_source')
+                                            .map(([key, value]) => (
+                                                <div key={key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-blue-500/20 transition-all">
+                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">
+                                                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                                    </span>
+                                                    <span className="text-sm font-black text-blue-400 font-mono">
+                                                        {typeof value === 'string'
+                                                            ? value.replace(/_/g, ' ')
+                                                            : typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        {Object.keys(selectedLog.details).length === 0 && (
+                                            <div className="py-8 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">No detailed payload available</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                                <button
+                                    onClick={() => setSelectedLog(null)}
+                                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                >
+                                    Close Intelligence Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Agent Discoveries Modal */}
+            {
+                selectedAgentDiscoveries && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+                        <div className="w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                            <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                        <Database size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white tracking-tight">Agent Discoveries</h3>
+                                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Findings reported by {selectedAgentDiscoveries.agent.name}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedAgentDiscoveries(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+                                {discoveriesModalLoading ? (
+                                    <div className="py-20 flex flex-col items-center justify-center gap-4">
+                                        <RefreshCw className="animate-spin text-blue-500" size={40} />
+                                        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Querying Intelligence Layer...</p>
+                                    </div>
+                                ) : selectedAgentDiscoveries.data.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {selectedAgentDiscoveries.data.map((item, idx) => (
+                                            <div key={item.id || idx} className="p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/20 transition-all group">
+                                                {selectedAgentDiscoveries.agent.type === 'API' ? (
+                                                    /* Software License View */
+                                                    <>
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-all">
+                                                                    <Package size={18} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-all">{item.name}</h4>
+                                                                    <p className="text-[10px] font-mono text-slate-500 uppercase">{item.vendor}</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded uppercase tracking-tighter border border-blue-500/20">
+                                                                {item.license_type || 'SaaS'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-y-2 text-[10px]">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-slate-500 font-bold uppercase tracking-tight">Status</span>
+                                                                <span className="text-slate-300 font-mono">{item.status}</span>
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-slate-500 font-bold uppercase tracking-tight">Seats</span>
+                                                                <span className="text-slate-300 font-mono">{item.total_seats || 'Unlimited'}</span>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                ) : selectedAgentDiscoveries.agent.type === 'Directory' ? (
+                                                    /* User View */
+                                                    <>
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-all">
+                                                                    <Users size={18} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-all">{item.full_name}</h4>
+                                                                    <p className="text-[10px] font-mono text-slate-500 uppercase">{item.email}</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-tighter border border-emerald-500/20">
+                                                                {item.status}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-y-2 text-[10px]">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-slate-500 font-bold uppercase tracking-tight">Department</span>
+                                                                <span className="text-slate-300 font-mono">{item.department || 'N/A'}</span>
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-slate-500 font-bold uppercase tracking-tight">Role</span>
+                                                                <span className="text-slate-300 font-mono">{item.role}</span>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    /* Standard Asset View */
+                                                    <>
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-all">
+                                                                    <Server size={18} />
+                                                                </div>
+                                                                <div>
+                                                                    <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-all">{item.name}</h4>
+                                                                    <p className="text-[10px] font-mono text-slate-500 uppercase">{item.serial_number}</p>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded uppercase tracking-tighter border border-emerald-500/20">
+                                                                {item.status}
+                                                            </span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-y-2 text-[10px]">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-slate-500 font-bold uppercase tracking-tight">Model</span>
+                                                                <span className="text-slate-300 font-mono">{item.model}</span>
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-slate-500 font-bold uppercase tracking-tight">IP Address</span>
+                                                                <span className="text-blue-400 font-mono font-bold">{item.specifications?.['IP Address'] || 'N/A'}</span>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                        <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-4 text-slate-600">
+                                            <Database size={32} />
+                                        </div>
+                                        <h4 className="text-white font-bold mb-1">No Discoveries Recorded</h4>
+                                        <p className="text-slate-500 text-xs max-w-xs mx-auto">This agent has not yet reported any findings to the central intelligence registry.</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                                <button
+                                    onClick={() => setSelectedAgentDiscoveries(null)}
+                                    className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                >
+                                    Close Intelligence View
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+
+            {/* Agent Details Modal */}
+
+            {
+                selectedAgentDetails && AGENT_DETAILS && AGENT_DETAILS[selectedAgentDetails.id] && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+                        <div className="w-full max-w-3xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                            <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                        <FileText size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white tracking-tight">{selectedAgentDetails.name}</h3>
+                                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{selectedAgentDetails.role} • Technical Documentation</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedAgentDetails(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 flex-1 overflow-y-auto custom-scrollbar space-y-6">
+
+                                {/* Purpose */}
+
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+
+                                    <div className="flex items-center gap-2 mb-3">
+
+                                        <Target className="text-blue-400" size={18} />
+
+                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Purpose</h4>
+
+                                    </div>
+
+                                    <p className="text-slate-300 text-sm leading-relaxed">{AGENT_DETAILS[selectedAgentDetails.id].purpose}</p>
+
+                                </div>
+
+
+
+                                {/* Discovery Methods */}
+
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+
+                                    <div className="flex items-center gap-2 mb-3">
+
+                                        <Layers className="text-emerald-400" size={18} />
+
+                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Discovery Methods</h4>
+
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+
+                                        {AGENT_DETAILS[selectedAgentDetails.id].discoveryMethods.map((method, idx) => (
+
+                                            <span key={idx} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+
+                                                {method}
+
+                                            </span>
+
+                                        ))}
+
+                                    </div>
+
+                                </div>
+
+
+
+                                {/* Data Sources */}
+
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+
+                                    <div className="flex items-center gap-2 mb-3">
+
+                                        <Database className="text-purple-400" size={18} />
+
+                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Data Sources</h4>
+
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+
+                                        {AGENT_DETAILS[selectedAgentDetails.id].dataSources.map((source, idx) => (
+
+                                            <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+
+                                                <div className="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
+
+                                                <span>{source}</span>
+
+                                            </div>
+
+                                        ))}
+
+                                    </div>
+
+                                </div>
+
+
+
+                                {/* Capabilities */}
+
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+
+                                    <div className="flex items-center gap-2 mb-3">
+
+                                        <Zap className="text-amber-400" size={18} />
+
+                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Capabilities</h4>
+
+                                    </div>
+
+                                    <div className="space-y-2">
+
+                                        {AGENT_DETAILS[selectedAgentDetails.id].capabilities.map((capability, idx) => (
+
+                                            <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+
+                                                <Check className="text-amber-400 flex-shrink-0 mt-0.5" size={14} />
+
+                                                <span>{capability}</span>
+
+                                            </div>
+
+                                        ))}
+
+                                    </div>
+
+                                </div>
+
+
+
+                                {/* Schedule */}
+
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+
+                                    <div className="flex items-center gap-2 mb-3">
+
+                                        <Calendar className="text-cyan-400" size={18} />
+
+                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Execution Schedule</h4>
+
+                                    </div>
+
+                                    <p className="text-slate-300 text-sm">{AGENT_DETAILS[selectedAgentDetails.id].schedule}</p>
+
+                                </div>
+
+
+
+                                {/* Output */}
+
+                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+
+                                    <div className="flex items-center gap-2 mb-3">
+
+                                        <FileText className="text-indigo-400" size={18} />
+
+                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Output Format</h4>
+
+                                    </div>
+
+                                    <p className="text-slate-300 text-sm">{AGENT_DETAILS[selectedAgentDetails.id].output}</p>
+
+                                </div>
+
+                            </div>
+
+
+
+                            <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                                <button
+
+                                    onClick={() => setSelectedAgentDetails(null)}
+
+                                    className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+
+                                >
+
+                                    Close Documentation
+
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )
+            }
+
+            {/* Agent Metrics Modal */}
+            {viewingMetrics && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                        <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                    <BarChart3 size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white tracking-tight">Mission Metrics</h3>
+                                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                                        Performance data for {agents.find(a => a.id === viewingMetrics)?.name}
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={() => setViewingMetrics(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
+                            {!agentMetrics[viewingMetrics] ? (
+                                <div className="py-12 text-center">
+                                    <BarChart3 size={48} className="mx-auto text-slate-700 mb-4 opacity-20" />
+                                    <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">No recent mission telemetry available</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                    {Object.entries(agentMetrics[viewingMetrics]).map(([key, value]) => (
+                                        <div key={key} className="p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-blue-500/20 transition-all">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">{key.replace(/_/g, ' ')}</span>
+                                            <span className="text-xl font-black text-blue-400 font-mono">
+                                                {(() => {
+                                                    if (typeof value === 'number') {
+                                                        if (key.toLowerCase().includes('time') || key.toLowerCase().includes('duration')) {
+                                                            return `${value.toFixed(2)}s`;
+                                                        }
+                                                        return value.toLocaleString();
+                                                    }
+                                                    if (value && typeof value === 'object') {
+                                                        if (key === 'assets') {
+                                                            const discovered = value.discovered || 0;
+                                                            if (discovered === 0) return 'No active assets found (Scan Successful)';
+                                                            return `${discovered} discovered / ${value.synced || 0} synced`;
+                                                        }
+                                                        if (key === 'providers') {
+                                                            return `${value.succeeded || 0}/${value.attempted || 0} active`;
+                                                        }
+                                                        if (key === 'discovery_times') {
+                                                            return Object.entries(value)
+                                                                .map(([p, t]) => `${p}: ${Number(t).toFixed(1)}s`)
+                                                                .join(', ') || 'N/A';
+                                                        }
+                                                        if (key === 'errors_by_status') {
+                                                            const total = Object.values(value).reduce((a, b) => a + b, 0);
+                                                            return total > 0 ? `${total} errors` : 'None';
+                                                        }
+                                                        return JSON.stringify(value);
+                                                    }
+                                                    return String(value);
+                                                })()}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                            <button
+                                onClick={() => {
+                                    fetchAgentMetrics(viewingMetrics);
+                                    showToast('Refreshing mission telemetry...');
+                                }}
+                                className="flex-1 py-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 rounded-xl font-bold transition-all active:scale-95 text-sm flex items-center justify-center gap-2"
+                            >
+                                <RefreshCw size={16} />
+                                Refresh Telemetry
+                            </button>
+                            <button
+                                onClick={() => setViewingMetrics(null)}
+                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 className="text-4xl font-extrabold text-white tracking-tight bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                        Discovery Mission Control
+                    </h2>
+                    <p className="text-slate-400 mt-2 text-lg">Autonomous intelligence agents for global infrastructure visibility</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={triggerGlobalSync}
+                        className="px-6 py-3 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95 group"
+                    >
+                        <Zap size={20} className="group-hover:animate-pulse" />
+                        <span>Global Sync</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                    { label: 'Active Agents', value: stats.activeAgents, sub: 'Systems Running', icon: Cpu, color: 'blue' },
+                    { label: 'Discovered Assets', value: stats.totalAssets, sub: '+12 today', icon: Database, color: 'purple' },
+                    { label: 'Network Health', value: stats.networkHealth, sub: 'No critical failures', icon: Activity, color: 'emerald' },
+                    { label: 'Cloud Sync', value: stats.cloudStatus, sub: 'Last sync: 15m ago', icon: Cloud, color: 'indigo' },
+                ].map((stat, i) => (
+                    <div key={i} className="p-6 rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-white/10 relative overflow-hidden group">
+                        <div className={`absolute top-0 right-0 w-24 h-24 bg-${stat.color}-500/10 blur-3xl -mr-8 -mt-8 transition-all duration-500 group-hover:scale-150`} />
+                        <div className="flex items-baseline justify-between mb-4">
+                            <div className={`p-3 rounded-2xl bg-${stat.color}-500/20 text-${stat.color}-400 border border-${stat.color}-500/20`}>
+                                <stat.icon size={24} />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Real-time</span>
+                        </div>
+                        <h3 className="text-2xl font-black text-white">{stat.value}</h3>
+                        <p className="text-slate-500 text-xs font-bold mt-1 uppercase tracking-wider">{stat.label}</p>
+                        <p className={`text-${stat.color}-400/60 text-[10px] mt-2 font-medium`}>{stat.sub}</p>
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Agent Status Cards */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Shield className="text-blue-400" size={20} />
+                            Active Agent Registry
+                        </h3>
+                        <div className="flex gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Online</span>
+                            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" /> Standby</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {agents.map((agent) => {
+                            const isSyncing = activeSweeps[agent.id];
+                            const progress = scanProgress[agent.id];
+                            return (
+                                <div
+                                    key={agent.id}
+                                    onClick={() => fetchAgentDiscoveries(agent)}
+                                    className={`p-6 rounded-3xl bg-slate-900/60 border transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98] ${isSyncing ? 'border-blue-500/50 shadow-lg shadow-blue-500/5' : 'border-white/10 hover:border-blue-500/30'}`}
+                                >
+                                    {isSyncing && (
+                                        <div className="absolute inset-0 bg-blue-500/5 animate-pulse flex items-center justify-center">
+                                            <div className="w-full h-full bg-gradient-to-r from-transparent via-blue-500/10 to-transparent -translate-x-full animate-shimmer" />
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-between items-start mb-6 relative">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5 transition-all ${agent.status === 'online' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-800/50 text-slate-500'}`}>
+                                                {agent.type === 'System' && <Cpu size={24} />}
+                                                {agent.type === 'Cloud' && <Cloud size={24} />}
+                                                {agent.type === 'API' && <RefreshCw size={24} className={isSyncing ? 'animate-spin' : ''} />}
+                                                {agent.type === 'Directory' && <Users size={24} />}
+                                                {agent.type === 'Network' && <Server size={24} />}
+                                            </div>
+                                            <div>
+                                                <h4 className="text-lg font-bold text-white group-hover:text-blue-300 transition-colors uppercase tracking-tight">{agent.name === 'SNMP Scanner' ? 'SNMP Scanner' : agent.name}</h4>
+                                                <p className="text-slate-500 text-xs font-medium">{agent.role}</p>
+                                            </div>
+                                        </div>
+                                        <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border ${agent.status === 'online' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                                            {isSyncing ? 'Syncing...' : agent.status}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4 mb-6 relative">
+                                        <div className="flex justify-between items-center text-xs">
+                                            <span className="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Last Telemetry</span>
+                                            <span className="text-slate-300 font-mono">{agent.lastSync}</span>
+                                        </div>
+
+                                        {progress && progress.status === 'running' ? (
+                                            <>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-blue-400 font-bold uppercase tracking-widest text-[9px] animate-pulse">Scan In Progress</span>
+                                                    <span className="text-blue-300 font-mono">{progress.percent}%</span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+                                                    <div
+                                                        className="h-full bg-blue-500 transition-all duration-300 relative overflow-hidden"
+                                                        style={{ width: `${Math.max(progress.percent, 5)}%` }}
+                                                    >
+                                                        <div className="absolute inset-0 bg-white/20 animate-shimmer" />
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-slate-400 text-center truncate">{progress.message}</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Operational Health</span>
+                                                    <span className={`font-bold ${agent.health > 90 ? 'text-emerald-400' : agent.health > 0 ? 'text-amber-400' : 'text-slate-600'}`}>{agent.health}%</span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+                                                    <div
+                                                        className={`h-full transition-all duration-1000 ${agent.health > 90 ? 'bg-blue-500' : 'bg-slate-700'}`}
+                                                        style={{ width: `${agent.health}%` }}
+                                                    />
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2 relative">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); triggerScan(agent); }}
+                                            disabled={isSyncing}
+                                            className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${isSyncing
+                                                ? 'bg-blue-600/40 text-blue-200 cursor-not-allowed'
+                                                : 'bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 active:scale-95'
+                                                }`}
+                                        >
+                                            {isSyncing ? (
+                                                <RefreshCw size={14} className="animate-spin" />
+                                            ) : (
+                                                <Play size={14} className="fill-current" />
+                                            )}
+                                            {isSyncing ? 'Processing' : 'Run Sweep'}
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                fetchAgentMetrics(agent.id);
+                                                setViewingMetrics(agent.id);
+                                            }}
+                                            className="px-4 py-3 bg-slate-800/50 hover:bg-slate-800 text-slate-400 rounded-xl border border-white/5 transition-all active:scale-95"
+                                            title="View Performance Metrics"
+                                        >
+                                            <BarChart3 size={16} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setConfigAgent(agent); }}
+                                            className="p-3 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+                                            title="Configure Agent"
+                                        >
+                                            <Settings size={16} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setSelectedAgentDetails(agent); }}
+                                            className="p-3 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all active:scale-95"
+                                            title="View Agent Details"
+                                        >
+                                            <Info size={16} />
+                                        </button>
+                                    </div>
+
+                                    {agentMetrics[agent.id] && (
+                                        <div className="mt-4 pt-4 border-t border-white/5 flex gap-4 text-[9px] font-bold text-slate-500 uppercase tracking-widest overflow-hidden">
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-1 h-1 rounded-full bg-blue-400" />
+                                                <span>Duration: {(agentMetrics[agent.id].duration || agentMetrics[agent.id].duration_seconds || 0).toFixed(1)}s</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <div className="w-1 h-1 rounded-full bg-emerald-400" />
+                                                <span>Assets: {agentMetrics[agent.id].assets_synced || agentMetrics[agent.id].users_extracted || agentMetrics[agent.id].software_count || 0}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Activity Feed */}
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Terminal className="text-purple-400" size={20} />
+                            Intelligence Feed
+                        </h3>
+                        <button onClick={fetchAuditLogs} className="p-2 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white transition-all">
+                            <RefreshCw size={14} />
+                        </button>
+                    </div>
+
+                    <div className="rounded-3xl bg-slate-900/60 border border-white/10 p-2 overflow-hidden backdrop-blur-md relative min-h-[400px]">
+                        {loading && (
+                            <div className="absolute inset-0 z-10 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
+                                <RefreshCw className="animate-spin text-blue-500" size={32} />
+                            </div>
+                        )}
+                        <div className="max-h-[600px] overflow-y-auto custom-scrollbar p-4 space-y-4">
+                            {activity.length > 0 ? activity.map((item) => (
+                                <div key={item.id} className="relative pl-6 pb-6 border-l border-white/10 last:pb-0 group">
+                                    <div className={`absolute left-0 top-0 -translate-x-1/2 w-4 h-4 rounded-full border-4 border-slate-900 ${item.status === 'Success' ? 'bg-blue-500 group-hover:bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'bg-amber-500 group-hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]'} transition-all`} />
+                                    <div className="flex justify-between items-start mb-1">
+                                        <h5 className="text-sm font-bold text-white tracking-tight group-hover:text-blue-300 transition-colors uppercase">{item.event}</h5>
+                                        <span className="text-[10px] font-mono text-slate-500">{item.time}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 font-medium mb-2">{item.entity}</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter ${item.status === 'Success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-500'}`}>
+                                            {item.status}
+                                        </span>
+                                        <button
+                                            onClick={() => setSelectedLog(item)}
+                                            className="text-[10px] text-blue-400/60 hover:text-blue-400 font-bold transition-colors"
+                                        >
+                                            Details
+                                        </button>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="py-20 text-center opacity-50">
+                                    <Inbox className="mx-auto mb-4 text-slate-600" size={32} />
+                                    <p className="text-sm text-slate-500 font-bold uppercase tracking-widest">No Intelligence Data</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div >
+    );
+}
+
+function Inbox({ className, size }) {
+    return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>;
+}

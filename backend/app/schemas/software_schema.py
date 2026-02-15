@@ -12,6 +12,8 @@ class SoftwareLicenseBase(BaseModel):
     expiry_date: Optional[date] = None
     cost: float = 0.0
     status: str = "Active"
+    is_discovered: bool = False
+    matched_names: Optional[list[str]] = []
 
 class SoftwareLicenseCreate(SoftwareLicenseBase):
     pass
@@ -22,6 +24,7 @@ class SoftwareLicenseUpdate(BaseModel):
     license_key: Optional[str] = None
     seat_count: Optional[float] = None
     status: Optional[str] = None
+    matched_names: Optional[list[str]] = None
 
 class SoftwareLicenseResponse(SoftwareLicenseBase):
     id: UUID
@@ -41,3 +44,17 @@ class DiscoveredSoftwareSummary(BaseModel):
 
     class Config:
         from_attributes = True
+
+class SoftwareComplianceReport(BaseModel):
+    license_id: UUID
+    software_name: str
+    vendor: str
+    seat_count: float
+    install_count: int
+    utilization_rate: float
+    compliance_status: str # SAFE | WARNING | RISK
+    financial_impact: float # Potential cost risk or savings
+
+class SoftwareMatchRequest(BaseModel):
+    discovered_name: str
+    license_id: UUID

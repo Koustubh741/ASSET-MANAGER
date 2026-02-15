@@ -11,6 +11,7 @@ from ..services import asset_service
 from ..services import asset_request_service
 from ..database.database import get_db
 from ..models.models import AssetRequest
+from ..utils.auth_utils import get_current_user
 from datetime import date
 
 router = APIRouter(
@@ -20,11 +21,30 @@ router = APIRouter(
 
 
 @router.get("", response_model=List[AssetResponse])
-async def get_all_assets(db: AsyncSession = Depends(get_db)):
+async def get_all_assets(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get all assets (Asynchronous).
     """
+    # Security Root Fix: Only privileged roles see global asset list
+    # Managers see assets within their department
+    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"] and current_user.position != "MANAGER":
+        raise HTTPException(
+            status_code=403, 
+            detail="Unauthorized: You can only view your own assets via /my-assets"
+        )
+    
+    # Enforce department scoping for managers
+    department = None
+    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+        department = current_user.department or current_user.domain
+        
     try:
+        if department:
+            # We need to update get_all_assets or call a filtered version
+            return await asset_service.get_all_assets_scoped(db, department=department)
         return await asset_service.get_all_assets(db)
     except Exception as e:
         import traceback
@@ -38,15 +58,21 @@ async def get_all_assets(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/my-assets", response_model=List[AssetResponse])
-async def get_my_assets(user: str, db: AsyncSession = Depends(get_db)):
+async def get_my_assets(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
-    Get assets assigned to a specific user (Asynchronous).
+    Get assets assigned to the current user (Asynchronous).
     """
-    return await asset_service.get_assets_by_assigned_to(db, user)
+    return await asset_service.get_assets_by_assigned_to(db, current_user.full_name)
 
 
 @router.get("/stats")
-async def get_asset_stats(db: AsyncSession = Depends(get_db)):
+async def get_asset_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get asset statistics for dashboard (Asynchronous).
     """
@@ -57,7 +83,8 @@ async def get_asset_stats(db: AsyncSession = Depends(get_db)):
 async def get_assets_for_renewal(
     days_ahead: int = 90,
     expiry_type: str = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Get assets with upcoming expiry dates for renewal calendar.
@@ -103,14 +130,45 @@ async def get_assets_for_renewal(
     return {"total_count": len(renewals), "renewals": renewals}
 
 
+@router.get("/by-agent/{agent_id}", response_model=List[AssetResponse])
+async def get_assets_by_agent(
+    agent_id: str, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Get all assets discovered by a specific agent (Asynchronous).
+    """
+    return await asset_service.get_assets_by_agent(db, agent_id)
+
+
 @router.get("/{asset_id}", response_model=AssetResponse)
-async def get_asset(asset_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_asset(
+    asset_id: str, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
-    Get asset by ID (Asynchronous).
+    Get asset by ID or serial number (Asynchronous).
+    Supports both UUID and human-readable identifiers like serial numbers.
     """
-    asset = await asset_service.get_asset_by_id(db, asset_id)
+    # Try UUID parsing first
+    asset = None
+    try:
+        uuid_id = UUID(asset_id)
+        asset = await asset_service.get_asset_by_id(db, uuid_id)
+    except ValueError:
+        # Not a valid UUID, try serial number lookup
+        asset = await asset_service.get_asset_by_serial_number(db, asset_id)
+    
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
+        
+    # Security Root Fix: Ownership check
+    if current_user.role == "END_USER" and current_user.position != "MANAGER":
+        if asset.assigned_to_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Unauthorized to view this asset")
+            
     return asset
 
 
@@ -118,7 +176,8 @@ async def get_asset(asset_id: UUID, db: AsyncSession = Depends(get_db)):
 async def create_asset(
     asset: AssetCreate,
     db: AsyncSession = Depends(get_db),
-    request_id: Optional[UUID] = Query(None, description="Asset request ID")
+    request_id: Optional[UUID] = Query(None, description="Asset request ID"),
+    current_user = Depends(get_current_user)
 ):
     """
     Create a new asset (Asynchronous).
@@ -130,15 +189,38 @@ async def create_asset(
         if asset_request.status != "IT_APPROVED":
             raise HTTPException(status_code=403, detail="Asset request not IT approved")
     
-    return await asset_service.create_asset(db, asset)
+    return await asset_service.create_asset(
+        db, 
+        asset, 
+        performed_by_id=current_user.id, 
+        performed_by_name=current_user.full_name
+    )
 
 
 @router.patch("/{asset_id}", response_model=AssetResponse)
-async def update_asset(asset_id: UUID, asset_update: AssetUpdate, db: AsyncSession = Depends(get_db)):
+async def update_asset(
+    asset_id: UUID, 
+    asset_update: AssetUpdate, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Update an asset (Asynchronous).
     """
-    updated_asset = await asset_service.update_asset(db, asset_id, asset_update)
+    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or SYSTEM_ADMIN can update assets
+    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized: Only Asset Managers or IT Management can update assets"
+        )
+    
+    updated_asset = await asset_service.update_asset(
+        db, 
+        asset_id, 
+        asset_update,
+        performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
     if not updated_asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     return updated_asset
@@ -149,7 +231,8 @@ async def assign_asset(
     asset_id: UUID,
     assignment: AssetAssignmentRequest,
     db: AsyncSession = Depends(get_db),
-    request_id: Optional[UUID] = Query(None, description="Asset request ID")
+    request_id: Optional[UUID] = Query(None, description="Asset request ID"),
+    current_user = Depends(get_current_user)
 ):
     """
     Assign an asset to a user (Asynchronous).
@@ -174,7 +257,9 @@ async def assign_asset(
         asset_id, 
         assignment.assigned_to, 
         assignment.location or "Office", 
-        assign_date
+        assign_date,
+        assigned_by_id=current_user.id,
+        assigned_by_name=current_user.full_name
     )
     if not assigned_asset:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -182,33 +267,86 @@ async def assign_asset(
 
 
 @router.patch("/{asset_id}/status", response_model=AssetResponse)
-async def update_asset_status(asset_id: UUID, status_update: AssetStatusUpdate, db: AsyncSession = Depends(get_db)):
+async def update_asset_status(
+    asset_id: UUID, 
+    status_update: AssetStatusUpdate, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Update asset status (Asynchronous).
     Accepts JSON body with 'status' field.
     """
-    updated_asset = await asset_service.update_asset(db, asset_id, AssetUpdate(status=status_update.status))
+    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or SYSTEM_ADMIN can update asset status
+    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized: Only Asset Managers or IT Management can update asset status"
+        )
+    
+    updated_asset = await asset_service.update_asset(
+        db, 
+        asset_id, 
+        AssetUpdate(status=status_update.status),
+        performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
     if not updated_asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     return updated_asset
 
 
 @router.get("/{asset_id}/events")
-async def get_asset_events(asset_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_asset_events(
+    asset_id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get asset event history (Asynchronous).
     """
-    events = await asset_service.get_asset_events(db, asset_id)
-    if events is None:
+    asset = await asset_service.get_asset_by_id(db, asset_id)
+    if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
+        
+    # Security Root Fix: Ownership check
+    if current_user.role == "END_USER" and current_user.position != "MANAGER":
+        if asset.assigned_to_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Unauthorized to view this asset's events")
+            
+    events = await asset_service.get_asset_events(db, asset_id)
     return events
+
+
+@router.get("/{asset_id}/timeline")
+async def get_asset_timeline(
+    asset_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Get full asset lifecycle timeline (Asynchronous).
+    """
+    asset = await asset_service.get_asset_by_id(db, asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+        
+    # Security Root Fix: Ownership check
+    if current_user.role == "END_USER" and current_user.position != "MANAGER":
+        if asset.assigned_to_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Unauthorized to view this asset's timeline")
+            
+    from ..services.timeline_service import timeline_service
+    timeline = await timeline_service.get_asset_timeline(db, asset_id)
+    return timeline
 
 
 @router.delete("/{asset_id}")
 async def delete_asset(
     asset_id: UUID,
     hard_delete: bool = False,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Delete an asset (Asynchronous).
@@ -245,7 +383,7 @@ async def delete_asset(
                 entity_type="Asset",
                 entity_id=str(asset_id),
                 action="HARD_DELETED",
-                performed_by="system",
+                performed_by=current_user.id,
                 details={"asset_name": asset.name, "serial_number": asset.serial_number}
             )
             db.add(audit_log)
@@ -266,7 +404,7 @@ async def delete_asset(
             entity_type="Asset",
             entity_id=str(asset_id),
             action="SOFT_DELETED",
-            performed_by="system",
+            performed_by=current_user.id,
             details={"asset_name": asset.name, "previous_status": asset.status}
         )
         db.add(audit_log)
@@ -278,7 +416,11 @@ async def delete_asset(
 # ===================== CMDB Relationship Endpoints =====================
 
 @router.get("/{asset_id}/relationships")
-async def get_asset_relationships(asset_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_asset_relationships(
+    asset_id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get all relationships for an asset (both upstream and downstream).
     """
@@ -349,14 +491,14 @@ class CreateRelationshipRequest(PydanticBaseModel):
     relationship_type: str  # parent_of, depends_on, connected_to, runs_on, backs_up_to
     description: OptType[str] = None
     criticality: OptType[float] = 3.0
-    created_by: OptType[str] = None
 
 
 @router.post("/{asset_id}/relationships")
 async def create_asset_relationship(
     asset_id: UUID,
     request: CreateRelationshipRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Create a new relationship between two assets.
@@ -397,7 +539,6 @@ async def create_asset_relationship(
     if existing.scalars().first():
         raise HTTPException(status_code=400, detail="Relationship already exists")
     
-    # Create relationship
     new_relationship = AssetRelationship(
         id=_uuid.uuid4(),
         source_asset_id=asset_id,
@@ -405,7 +546,7 @@ async def create_asset_relationship(
         relationship_type=request.relationship_type,
         description=request.description,
         criticality=request.criticality,
-        created_by=request.created_by
+        created_by=current_user.id
     )
     
     db.add(new_relationship)
@@ -428,7 +569,8 @@ async def create_asset_relationship(
 async def delete_asset_relationship(
     asset_id: UUID,
     relationship_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Delete a specific relationship.

@@ -1,7 +1,7 @@
 """
 Migration script to add status, position, and domain columns to auth.users table
 """
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def migrate_user_table():

@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from datetime import datetime, date, timedelta
 from ..database.database import get_db
 from ..models.models import Asset, PurchaseOrder, PurchaseInvoice
+from ..utils.auth_utils import get_current_user
+from fastapi import HTTPException, status
 
 router = APIRouter(
     prefix="/financials",
@@ -60,10 +62,15 @@ class MonthlySpendResponse(BaseModel):
 
 
 @router.get("/summary", response_model=FinancialSummaryResponse)
-async def get_financial_summary(db: AsyncSession = Depends(get_db)):
+async def get_financial_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get comprehensive financial summary for the dashboard.
     """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     # Get all assets
     result = await db.execute(select(Asset))
     assets = result.scalars().all()
@@ -128,10 +135,15 @@ async def get_financial_summary(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/by-type", response_model=List[AssetCostBreakdown])
-async def get_costs_by_asset_type(db: AsyncSession = Depends(get_db)):
+async def get_costs_by_asset_type(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get cost breakdown by asset type.
     """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     result = await db.execute(select(Asset))
     assets = result.scalars().all()
     
@@ -161,11 +173,14 @@ async def get_costs_by_asset_type(db: AsyncSession = Depends(get_db)):
 @router.get("/monthly-spend", response_model=List[MonthlySpendResponse])
 async def get_monthly_spend(
     months: int = 12,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Get monthly spend data for the last N months.
     """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     result = await db.execute(select(PurchaseOrder))
     pos = result.scalars().all()
     
@@ -201,11 +216,14 @@ async def get_monthly_spend(
 async def get_depreciation_data(
     method: str = "straight-line",
     useful_life_years: int = 5,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Calculate depreciation for all assets.
     """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     result = await db.execute(select(Asset))
     assets = result.scalars().all()
     

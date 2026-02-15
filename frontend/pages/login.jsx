@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useRole } from '@/contexts/RoleContext';
 import apiClient from '@/lib/apiClient';
-import { User, Mail, Lock, Briefcase, MapPin, Phone, ArrowRight, Check, Building2 } from 'lucide-react';
+import { User, Mail, Lock, Briefcase, MapPin, Phone, ArrowRight, Check, Building2, Disc, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Login() {
     const router = useRouter();
@@ -10,6 +11,8 @@ export default function Login() {
     const [isLoginMode, setIsLoginMode] = useState(true);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // SSO Callback Effect
     useEffect(() => {
@@ -32,6 +35,7 @@ export default function Login() {
                 email: authResponse.user.email,
                 position: authResponse.user.position,
                 domain: authResponse.user.domain,
+                department: authResponse.user.department,
                 company: authResponse.user.company,
                 createdAt: authResponse.user.created_at
             };
@@ -48,12 +52,20 @@ export default function Login() {
         apiClient.ssoLogin(provider);
     };
 
-    const DOMAINS = [
-        { label: 'Data/AI', value: 'data/ai' },
-        { label: 'Cloud', value: 'cloud' },
-        { label: 'Cyber', value: 'cyber' },
-        { label: 'Development', value: 'development' }
-    ];
+    const DEPT_DOMAIN_MAP = {
+        'Engineering': ['Development', 'Data/AI', 'Cloud', 'Cyber', 'DevOps', 'QA'],
+        'IT': ['Infrastructure', 'Security', 'Cloud', 'Network', 'Support'],
+        'Finance': ['Accounting', 'Audit', 'Procurement', 'DATA_AI'],
+        'HR': ['Recruitment', 'Payroll', 'Benefits'],
+        'Operations': ['Logistics', 'Supply Chain', 'Facilities'],
+        'Sales': ['Inside Sales', 'Field Sales', 'Customer Success'],
+        'Marketing': ['Content', 'Growth', 'Brand'],
+        'Legal': ['Compliance', 'Contracts', 'IP'],
+        'Product': ['Management', 'Design', 'Research'],
+        'Cloud': ['Cloud Infrastructure', 'Managed Services']
+    };
+
+    const DEPARTMENTS = Object.keys(DEPT_DOMAIN_MAP);
 
     // Form States
     const [formData, setFormData] = useState({
@@ -64,6 +76,7 @@ export default function Login() {
         confirmPassword: '',
         role: 'End User',
         domain: 'development', // NEW: Domain selection
+        department: 'Engineering', // NEW: Department selection
         location: 'New York HQ',
         phone: '',
         isManager: false // NEW: Manager toggle
@@ -118,6 +131,7 @@ export default function Login() {
                     company: formData.company,
                     role: ROLES.find(r => r.label === formData.role)?.slug || 'END_USER',
                     domain: formData.role === 'End User' ? formData.domain : null,
+                    department: formData.department,
                     location: formData.location,
                     position: formData.isManager ? 'MANAGER' : 'TEAM_MEMBER'
                 };
@@ -148,6 +162,7 @@ export default function Login() {
                 email: authResponse.user.email,
                 position: authResponse.user.position,
                 domain: authResponse.user.domain,
+                department: authResponse.user.department,
                 company: authResponse.user.company,
                 createdAt: authResponse.user.created_at
             };
@@ -248,79 +263,93 @@ export default function Login() {
 
                             {/* Register Only Fields */}
                             {!isLoginMode && (
-                                <>
-                                    <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-left-4 fade-in duration-300">
+                                <div className="space-y-6 animate-in slide-in-from-left-4 fade-in duration-500">
+                                    {/* Section: Personal Identity */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
+                                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Personal Identity</h3>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Full Name</label>
+                                                <div className="relative group">
+                                                    <User size={16} className="absolute left-3 top-3 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                                                    <input
+                                                        type="text"
+                                                        name="name"
+                                                        value={formData.name}
+                                                        onChange={handleInputChange}
+                                                        placeholder="John Doe"
+                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Phone</label>
+                                                <div className="relative group">
+                                                    <Phone size={16} className="absolute left-3 top-3 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        name="phone"
+                                                        value={formData.phone}
+                                                        onChange={handleInputChange}
+                                                        placeholder="+1 555-0000"
+                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Section: Organizational Context */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
+                                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Professional Scoping</h3>
+                                        </div>
+
                                         <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-500 uppercase">Full Name</label>
-                                            <div className="relative">
-                                                <User size={16} className="absolute left-3 top-3 text-slate-500" />
+                                            <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Company</label>
+                                            <div className="relative group">
+                                                <Building2 size={16} className="absolute left-3 top-3 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
                                                 <input
                                                     type="text"
-                                                    name="name"
-                                                    value={formData.name}
+                                                    name="company"
+                                                    value={formData.company}
                                                     onChange={handleInputChange}
-                                                    placeholder="John Doe"
-                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                                    placeholder="Organization Name"
+                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-500 uppercase">Phone</label>
-                                            <div className="relative">
-                                                <Phone size={16} className="absolute left-3 top-3 text-slate-500" />
-                                                <input
-                                                    type="tel"
-                                                    name="phone"
-                                                    value={formData.phone}
-                                                    onChange={handleInputChange}
-                                                    placeholder="+1 (555) 000-0000"
-                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
-                                                />
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">System Access Level</label>
+                                                <div className="relative group">
+                                                    <Briefcase size={16} className="absolute left-3 top-3 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                                                    <select
+                                                        name="role"
+                                                        value={formData.role}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        {ROLES.map(role => (
+                                                            <option key={role.label} value={role.label} className="bg-slate-900">{role.label}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500">▼</div>
+                                                </div>
+                                                <p className="text-[9px] text-slate-500 mt-1 italic pl-1">Determines system permissions</p>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1 animate-in slide-in-from-left-4 fade-in duration-300">
-                                        <label className="text-xs font-semibold text-slate-500 uppercase">Company</label>
-                                        <div className="relative">
-                                            <Building2 size={16} className="absolute left-3 top-3 text-slate-500" />
-                                            <input
-                                                type="text"
-                                                name="company"
-                                                value={formData.company}
-                                                onChange={handleInputChange}
-                                                placeholder="Company Name"
-                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="space-y-1 animate-in slide-in-from-left-4 fade-in duration-300">
-                                        <label className="text-xs font-semibold text-slate-500 uppercase">Role</label>
-                                        <div className="relative">
-                                            <Briefcase size={16} className="absolute left-3 top-3 text-slate-500" />
-                                            <select
-                                                name="role"
-                                                value={formData.role}
-                                                onChange={handleInputChange}
-                                                className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors appearance-none cursor-pointer hover:bg-white/5 focus:border-purple-500`}
-                                            >
-                                                {ROLES.map(role => (
-                                                    <option key={role.label} value={role.label} className="bg-slate-900">{role.label}</option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-4 top-3 pointer-events-none text-slate-500">▼</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Manager/Employee Toggle - ONLY for End User role */}
-                                    {formData.role === 'End User' && (
-                                        <div className="space-y-4 animate-in slide-in-from-top-4 fade-in duration-300">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-semibold text-slate-500 uppercase">Are you a Manager?</label>
-                                                <div className="flex gap-4">
-                                                    <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${!formData.isManager
-                                                        ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                                                        : 'border-white/10 bg-slate-900/50 text-slate-400 hover:bg-white/5'
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Position / Hierarchy</label>
+                                                <div className="flex gap-2">
+                                                    <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${!formData.isManager
+                                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                                        : 'border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5'
                                                         }`}>
                                                         <input
                                                             type="radio"
@@ -329,11 +358,11 @@ export default function Login() {
                                                             onChange={() => setFormData({ ...formData, isManager: false })}
                                                             className="sr-only"
                                                         />
-                                                        <span className="font-medium text-sm">👤 Employee</span>
+                                                        <span className="font-bold text-[10px]">STAFF</span>
                                                     </label>
-                                                    <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${formData.isManager
-                                                        ? 'border-purple-500/50 bg-purple-500/10 text-purple-400'
-                                                        : 'border-white/10 bg-slate-900/50 text-slate-400 hover:bg-white/5'
+                                                    <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${formData.isManager
+                                                        ? 'border-purple-500/40 bg-purple-500/15 text-purple-400'
+                                                        : 'border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5'
                                                         }`}>
                                                         <input
                                                             type="radio"
@@ -342,32 +371,73 @@ export default function Login() {
                                                             onChange={() => setFormData({ ...formData, isManager: true })}
                                                             className="sr-only"
                                                         />
-                                                        <span className="font-medium text-sm">👔 Manager</span>
+                                                        <span className="font-bold text-[10px]">MGR</span>
                                                     </label>
                                                 </div>
+                                                <p className="text-[9px] text-slate-500 mt-1 italic pl-1">Determines data scoping</p>
                                             </div>
+                                        </div>
 
-                                            {/* Domain Selection */}
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-xs font-semibold text-slate-500 uppercase">Choose Domain</label>
-                                                <div className="relative">
-                                                    <Briefcase size={16} className="absolute left-3 top-3 text-slate-500" />
+                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Department</label>
+                                                <div className="relative group">
+                                                    <Building2 size={16} className="absolute left-3 top-3 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                                                    <select
+                                                        name="department"
+                                                        value={formData.department}
+                                                        onChange={(e) => {
+                                                            const newDept = e.target.value;
+                                                            setFormData({
+                                                                ...formData,
+                                                                department: newDept,
+                                                                domain: DEPT_DOMAIN_MAP[newDept]?.[0] || ''
+                                                            });
+                                                        }}
+                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        {DEPARTMENTS.map(dept => (
+                                                            <option key={dept} value={dept} className="bg-slate-900">{dept}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500">▼</div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Domain / Team</label>
+                                                <div className="relative group">
+                                                    <Disc size={16} className="absolute left-3 top-3 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
                                                     <select
                                                         name="domain"
                                                         value={formData.domain}
                                                         onChange={handleInputChange}
-                                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors appearance-none cursor-pointer hover:bg-white/5 focus:border-purple-500`}
+                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
                                                     >
-                                                        {DOMAINS.map(domain => (
-                                                            <option key={domain.value} value={domain.value} className="bg-slate-900">{domain.label}</option>
+                                                        {(DEPT_DOMAIN_MAP[formData.department] || []).map(domain => (
+                                                            <option key={domain} value={domain} className="bg-slate-900">{domain}</option>
                                                         ))}
                                                     </select>
                                                     <div className="absolute right-4 top-3 pointer-events-none text-slate-500">▼</div>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
-                                </>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1">Physical Location</label>
+                                            <div className="relative group">
+                                                <MapPin size={16} className="absolute left-3 top-3 text-slate-500 group-focus-within:text-purple-400 transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    name="location"
+                                                    value={formData.location}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Office/Site Location"
+                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
 
                             <div className="space-y-1">
@@ -385,35 +455,25 @@ export default function Login() {
                                 </div>
                             </div>
 
-                            {!isLoginMode && ( // Location for Register
-                                <div className="space-y-1 animate-in slide-in-from-right-4 fade-in duration-300">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase">Location</label>
-                                    <div className="relative">
-                                        <MapPin size={16} className="absolute left-3 top-3 text-slate-500" />
-                                        <input
-                                            type="text"
-                                            name="location"
-                                            value={formData.location}
-                                            onChange={handleInputChange}
-                                            placeholder="Office Location"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
                             <div className="space-y-1">
                                 <label className="text-xs font-semibold text-slate-500 uppercase">Password</label>
                                 <div className="relative">
                                     <Lock size={16} className="absolute left-3 top-3 text-slate-500" />
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={formData.password}
                                         onChange={handleInputChange}
                                         placeholder="••••••••"
-                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
+                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-2.5 text-slate-500 hover:text-white transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
                                 </div>
                             </div>
 
@@ -423,13 +483,20 @@ export default function Login() {
                                     <div className="relative">
                                         <Check size={16} className="absolute left-3 top-3 text-slate-500" />
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? "text" : "password"}
                                             name="confirmPassword"
                                             value={formData.confirmPassword}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-2.5 text-slate-500 hover:text-white transition-colors"
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -484,7 +551,9 @@ export default function Login() {
 
                         {isLoginMode && (
                             <div className="mt-4 text-center">
-                                <button className="text-xs text-slate-500 hover:text-white transition-colors">Forgot Password?</button>
+                                <Link href="/forgot-password" title="Recover your password">
+                                    <span className="text-xs text-slate-500 hover:text-white transition-colors cursor-pointer">Forgot Password?</span>
+                                </Link>
                             </div>
                         )}
 

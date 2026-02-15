@@ -7,9 +7,9 @@ import os
 # If it's SQLite, I can use sqlite3. If PostgreSQL, I need psycopg2 or sqlalchemy.
 # I'll use sqlalchemy to be safe as models.py uses it.
 
-from database import SessionLocal, engine
+from app.database.database import SessionLocal, engine
 from sqlalchemy import text
-from models import User
+from app.models.models import User
 
 def add_company_column():
     print("Checking database type...")

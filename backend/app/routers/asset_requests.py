@@ -19,15 +19,20 @@ from ..schemas.asset_request_schema import (
     UserAcceptanceRequest,
     ITApprovalRequest,
     ITRejectionRequest,
+    ManagerConfirmationRequest,
+    ByodComplianceCheckRequest,
+    MdmEnrollmentRequest,
+    DeliveryConfirmationRequest,
 )
 from ..services import asset_request_service
+from ..utils.auth_utils import get_current_user
 from ..schemas.user_schema import UserResponse
 from ..models.models import ByodDevice, Asset, AssetAssignment, PurchaseRequest, User, PurchaseOrder, AssetInventory
 from ..services import asset_service
 from ..schemas.asset_schema import AssetCreate
 import uuid as _uuid
 from uuid import UUID
-from datetime import date
+from datetime import datetime
 
 router = APIRouter(
     prefix="/asset-requests",
@@ -39,29 +44,62 @@ async def get_asset_requests(
     skip: int = 0,
     limit: int = 100,
     status: Optional[str] = None,
-    requester_id: Optional[UUID] = None,
+    mine: bool = False,
     domain: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    department: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Get all asset requests (Asynchronous).
     """
+    effective_requester_id = None
+    if mine:
+        effective_requester_id = current_user.id
+    elif current_user.role == "END_USER" and current_user.position != "MANAGER":
+        # Force personal view for regular end users if no domain/other filter is allowed
+        effective_requester_id = current_user.id
+    
+    # Root Fix: Reinforce department scoping for managers, BUT exempt global roles
+    # IT_MANAGEMENT, ASSET_MANAGER, FINANCE need to see requests from ALL departments
+    exclude_roles = ["ADMIN", "SYSTEM_ADMIN", "IT_MANAGEMENT", "ASSET_MANAGER", "FINANCE", "PROCUREMENT"]
+    
+    # CRITICAL: Check role FIRST before checking position
+    # IT managers have position=MANAGER but role=IT_MANAGEMENT, they should see ALL requests
+    if current_user.role not in exclude_roles and current_user.position == "MANAGER":
+        if not department:
+            department = current_user.department or current_user.domain
+        
     return await asset_request_service.get_all_asset_requests(
-        db, skip=skip, limit=limit, status=status, requester_id=requester_id, domain=domain
+        db, 
+        skip=skip, 
+        limit=limit, 
+        status=status, 
+        requester_id=effective_requester_id, 
+        domain=domain,
+        department=department,
+        user_role=current_user.role
     )
 
 
 @router.get("/{request_id}", response_model=AssetRequestResponse)
 async def get_asset_request_by_id(
     request_id: UUID,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Get a single asset request by ID (Asynchronous).
     """
-    asset_request = await asset_request_service.get_asset_request_by_id(db, request_id)
+    asset_request = await asset_request_service.get_asset_request_by_id(db, request_id, user_role=current_user.role)
     if not asset_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
+        
+    # Security Root Fix: Authorization check
+    if current_user.role == "END_USER" and current_user.position != "MANAGER":
+        if asset_request.requester_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Unauthorized to view this request")
+            
     return asset_request
 
 
@@ -86,13 +124,18 @@ async def verify_active_end_user(
 @router.post("", response_model=AssetRequestResponse, status_code=201)
 async def create_asset_request(
     request: AssetRequestCreate,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Create a new asset request (Asynchronous).
     """
-    await verify_active_end_user(request.requester_id, db)
-    return await asset_request_service.create_asset_request(db, request, initial_status="SUBMITTED")
+    # Security: Derive requester_id from JWT
+    requester_id = current_user.id
+    
+    await verify_active_end_user(requester_id, db)
+    
+    return await asset_request_service.create_asset_request_v2(db, request, requester_id, initial_status="SUBMITTED")
 
 
 async def verify_manager_authorization(
@@ -116,12 +159,13 @@ async def verify_manager_authorization(
 async def approve_asset_request(
     request_id: UUID,
     approval: ManagerApprovalRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Approve an asset request (Asynchronous).
     """
-    manager = await verify_manager_authorization(approval.manager_id, db)
+    manager = await verify_manager_authorization(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, request_id)
     if not db_request:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -138,19 +182,20 @@ async def approve_asset_request(
         raise HTTPException(status_code=403, detail="Manager/Requester domain mismatch")
     
     return await asset_request_service.update_asset_request_status_with_validation(
-        db, request_id, "MANAGER_APPROVED", "MANAGER", manager.id, manager.full_name, decision="APPROVED"
+        db, request_id, "MANAGER_APPROVED", current_user.role, current_user.id, current_user.full_name, decision="APPROVED"
     )
 
 @router.post("/{request_id}/manager/reject", response_model=AssetRequestResponse)
 async def reject_asset_request(
     request_id: UUID,
     rejection: ManagerRejectionRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Reject an asset request (Asynchronous).
     """
-    manager = await verify_manager_authorization(rejection.manager_id, db)
+    manager = await verify_manager_authorization(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, request_id)
     if not db_request:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -163,17 +208,27 @@ async def reject_asset_request(
         raise HTTPException(status_code=403, detail="Mismatch")
     
     return await asset_request_service.update_asset_request_status_with_validation(
-        db, request_id, "MANAGER_REJECTED", "MANAGER", manager.id, manager.full_name, reason=rejection.reason
+        db, request_id, "MANAGER_REJECTED", current_user.role, current_user.id, current_user.full_name, reason=rejection.reason
     )
 
 # Backward compatibility aliases
 @router.post("/{id}/manager/approve-v2", response_model=AssetRequestResponse)
-async def manager_approve_request_v2(id: UUID, approval: ManagerApprovalRequest, db: AsyncSession = Depends(get_db)):
-    return await approve_asset_request(id, approval, db)
+async def manager_approve_request_v2(
+    id: UUID, 
+    approval: ManagerApprovalRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    return await approve_asset_request(id, approval, db, current_user=current_user)
 
 @router.post("/{id}/manager/reject-v2", response_model=AssetRequestResponse)
-async def manager_reject_request_v2(id: UUID, rejection: ManagerRejectionRequest, db: AsyncSession = Depends(get_db)):
-    return await reject_asset_request(id, rejection, db)
+async def manager_reject_request_v2(
+    id: UUID, 
+    rejection: ManagerRejectionRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    return await reject_asset_request(id, rejection, db, current_user=current_user)
 
 # ---------------- IT APPROVAL ROUTES ----------------
 
@@ -192,11 +247,13 @@ async def verify_it_management(user_id: UUID, db: AsyncSession) -> User:
 async def it_approve_request(
     request_id: UUID,
     approval: ITApprovalRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    print(f"[IT_APPROVE] Received request for request_id={request_id}, reviewer_id={approval.reviewer_id}")
-    reviewer = await verify_it_management(approval.reviewer_id, db)
-    print(f"[IT_APPROVE] Reviewer verified: {reviewer.full_name} (ID: {reviewer.id})")
+    reviewer = current_user
+    if reviewer.role != "IT_MANAGEMENT" and reviewer.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT")
+        
     try:
         res = await asset_request_service.update_it_review_status(
             db, request_id, "IT_APPROVED", reviewer.id, reviewer.full_name, "IT_APPROVED"
@@ -225,9 +282,12 @@ async def it_approve_request(
 async def it_reject_request(
     request_id: UUID,
     rejection: ITRejectionRequest,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    reviewer = await verify_it_management(rejection.reviewer_id, db)
+    reviewer = current_user
+    if reviewer.role != "IT_MANAGEMENT" and reviewer.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT")
     try:
         res = await asset_request_service.update_it_review_status(
             db, request_id, "IT_REJECTED", reviewer.id, reviewer.full_name, "IT_REJECTED", reason=rejection.reason
@@ -254,10 +314,12 @@ async def it_reject_request(
 async def byod_register_device(
     id: UUID,
     payload: ByodRegisterRequest,
-    reviewer_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
 ):
-    reviewer = await verify_it_management(reviewer_id, db)
+    reviewer = current_user
+    if reviewer.role != "IT_MANAGEMENT" and reviewer.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized")
     res = await asset_request_service.register_byod_device_service(
         db, id, reviewer.id, reviewer.full_name, payload.device_model, payload.os_version, payload.serial_number
     )
@@ -278,10 +340,10 @@ async def verify_asset_inventory_manager(user_id: UUID, db: AsyncSession) -> Use
 @router.post("/{id}/company-owned/fulfill", response_model=AssetRequestResponse)
 async def fulfill_company_owned_request(
     id: UUID,
-    inventory_manager_id: UUID,
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    await verify_asset_inventory_manager(inventory_manager_id, db)
+    reviewer = await verify_asset_inventory_manager(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
     if not db_request or db_request.status != "IT_APPROVED":
         raise HTTPException(status_code=403, detail="Not IT_APPROVED")
@@ -323,87 +385,189 @@ async def verify_procurement_finance(user_id: UUID, db: AsyncSession) -> User:
     return user
 
 @router.post("/{id}/procurement/approve", response_model=AssetRequestResponse)
-async def procurement_approve_request(id: UUID, approval: ProcurementApprovalRequest, db: AsyncSession = Depends(get_db)):
-    reviewer = await verify_procurement_finance(approval.reviewer_id, db)
-    res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", reviewer.id, reviewer.full_name)
+async def procurement_approve_request(
+    id: UUID, 
+    approval: ProcurementApprovalRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    reviewer = current_user
+    if reviewer.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    try:
+        res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", reviewer.id, reviewer.full_name)
+        if not res:
+            raise HTTPException(status_code=404, detail="Asset request not found")
+        return res
+    except Exception as e:
+        import traceback
+        with open("d:/ASSET-MANAGER/debug_errors.log", "a") as f:
+            f.write(f"\n--- PROCUREMENT ERROR ---\n{str(e)}\n")
+            traceback.print_exc(file=f)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{id}/procurement/reject", response_model=AssetRequestResponse)
+async def procurement_reject_request(
+    id: UUID, 
+    rejection: ProcurementRejectionRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", current_user.id, current_user.full_name, reason=rejection.reason)
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
     return res
 
-@router.post("/{id}/procurement/reject", response_model=AssetRequestResponse)
-async def procurement_reject_request(id: UUID, rejection: ProcurementRejectionRequest, db: AsyncSession = Depends(get_db)):
-    reviewer = await verify_procurement_finance(rejection.reviewer_id, db)
-    res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", reviewer.id, reviewer.full_name, reason=rejection.reason)
+@router.post("/{id}/finance/approve", response_model=AssetRequestResponse)
+async def finance_approve_request(
+    id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    try:
+        res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", current_user.id, current_user.full_name)
+        if not res:
+            raise HTTPException(status_code=404, detail="Asset request not found")
+        return res
+    except Exception as e:
+        import traceback
+        with open("d:/ASSET-MANAGER/debug_errors.log", "a") as f:
+            f.write(f"\n--- FINANCE ERROR ---\n{str(e)}\n")
+            traceback.print_exc(file=f)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{id}/finance/reject", response_model=AssetRequestResponse)
+async def finance_reject_request(
+    id: UUID, 
+    rejection: ProcurementRejectionRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", current_user.id, current_user.full_name, reason=rejection.reason)
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
     return res
 
 @router.post("/{id}/procurement/confirm-delivery", response_model=AssetRequestResponse)
-async def procurement_confirm_delivery(id: UUID, reviewer_id: UUID, db: AsyncSession = Depends(get_db)):
-    await verify_procurement_finance(reviewer_id, db)
+async def procurement_confirm_delivery(
+    id: UUID, 
+    delivery_info: DeliveryConfirmationRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+        
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
     if not db_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
         
+    # ROOT FIX: Prevent duplicate asset creation if already confirmed
+    if db_request.asset_id:
+        return await asset_request_service._populate_requester_info(db, db_request)
+
     db_request.status = "QC_PENDING"
+    db_request.updated_at = datetime.now()
+    db_request.procurement_finance_status = "DELIVERED"
     
-    # Automated Asset Onboarding: Create Asset record in 'In Stock' state
+    # Automated Asset Onboarding
     po_result = await db.execute(select(PurchaseOrder).filter(PurchaseOrder.asset_request_id == id))
     po = po_result.scalars().first()
     
-    # Use PO info for name if it's not the generic placeholder
-    asset_name = db_request.asset_name
-    if po and po.product_details and "Generated from PDF" not in po.product_details:
-        asset_name = po.product_details
+    # Ensure vendor is NEVER null (Non-nullable in Asset model)
+    vendor_name = delivery_info.asset_name if not delivery_info.serial_number else "Commercial"
+    if db_request.asset_vendor:
+        vendor_name = db_request.asset_vendor
+    elif po and po.vendor_name:
+        vendor_name = po.vendor_name
 
-    new_asset = Asset(
-        id=_uuid.uuid4(),
-        name=asset_name,
-        type=db_request.asset_type,
-        model=db_request.asset_model or "Standard",
-        vendor=db_request.asset_vendor or (po.vendor_name if po else "Commercial"),
-        serial_number=f"PENDING-{str(_uuid.uuid4())[:8].upper()}",
-        status="In Stock",
-        location="IT Warehouse",
-        cost=po.total_cost if po else (db_request.cost_estimate or 0.0),
-        segment="IT"
-    )
-    db.add(new_asset)
-    db_request.asset_id = new_asset.id
-    
-    # Also add to asset.asset_inventory for the stock dashboard
-    inventory_item = AssetInventory(
-        id=_uuid.uuid4(),
-        asset_id=new_asset.id,
-        location=new_asset.location,
-        status="Available"
-    )
-    db.add(inventory_item)
-    
-    await db.commit()
+    try:
+        # Pre-populate assignment info for immediate visibility
+        from ..services.asset_service import get_user_by_id_db
+        requester = await get_user_by_id_db(db, db_request.requester_id)
+        
+        new_asset = Asset(
+            id=_uuid.uuid4(),
+            name=delivery_info.asset_name,
+            type=db_request.asset_type,
+            model=delivery_info.asset_model or db_request.asset_model or "Standard",
+            vendor=vendor_name,
+            serial_number=delivery_info.serial_number,
+            status="Reserved", # Move to Reserved immediately for user acceptance
+            location="IT Warehouse",
+            cost=po.total_cost if po else (db_request.cost_estimate or 0.0),
+            segment="IT",
+            assigned_to=requester.full_name if requester else "Employee",
+            assigned_to_id=db_request.requester_id,
+            request_id=id
+        )
+        db.add(new_asset)
+        db_request.asset_id = new_asset.id
+        
+        # Also add to asset.asset_inventory for the stock dashboard
+        inventory_item = AssetInventory(
+            id=_uuid.uuid4(),
+            asset_id=new_asset.id,
+            location=new_asset.location,
+            status="Available"
+        )
+        db.add(inventory_item)
+        
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        if "unique constraint" in str(e).lower() and "serial_number" in str(e).lower():
+            raise HTTPException(status_code=400, detail=f"Serial number {delivery_info.serial_number} is already registered in the system.")
+        raise HTTPException(status_code=500, detail=f"Failed to register asset: {str(e)}")
+
     return await asset_request_service._populate_requester_info(db, db_request)
 
 # ---------------- QC & USER ACCEPTANCE ----------------
 
 @router.post("/{id}/qc/perform", response_model=AssetRequestResponse)
-async def perform_qc(id: UUID, qc_request: QCPerformRequest, db: AsyncSession = Depends(get_db)):
-    mgr = await verify_asset_inventory_manager(qc_request.qc_performer_id, db)
-    res = await asset_request_service.perform_qc_check(db, id, qc_request.qc_status, mgr.id, mgr.full_name, qc_request.qc_notes)
+async def perform_qc(
+    id: UUID, 
+    qc_request: QCPerformRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    reviewer = await verify_asset_inventory_manager(current_user.id, db)
+    res = await asset_request_service.perform_qc_check(db, id, qc_request.qc_status, reviewer.id, reviewer.full_name, qc_request.qc_notes)
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
     return res
 
 @router.post("/{id}/user/accept", response_model=AssetRequestResponse)
-async def user_accept_asset(id: UUID, acceptance: UserAcceptanceRequest, db: AsyncSession = Depends(get_db)):
-    await verify_active_end_user(acceptance.user_id, db)
-    res = await asset_request_service.update_user_acceptance(db, id, acceptance.user_id, "ACCEPTED")
+async def user_accept_asset(
+    id: UUID, 
+    acceptance: UserAcceptanceRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    # Verify current_user is the requester
+    db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
+    if not db_request or db_request.requester_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+        
+    res = await asset_request_service.update_user_acceptance(db, id, current_user.id, "ACCEPTED")
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
     return res
 
 @router.post("/{request_id}/inventory/allocate", response_model=AssetRequestResponse)
-async def inventory_allocate_asset(request_id: UUID, asset_id: UUID, inventory_manager_id: UUID, db: AsyncSession = Depends(get_db)):
-    await verify_asset_inventory_manager(inventory_manager_id, db)
+async def inventory_allocate_asset(
+    request_id: UUID, 
+    asset_id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    await verify_asset_inventory_manager(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, request_id)
     if not db_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
@@ -413,17 +577,195 @@ async def inventory_allocate_asset(request_id: UUID, asset_id: UUID, inventory_m
         user = await asset_request_service.get_user_by_id_db(db, db_request.requester_id)
         asset.assigned_to = user.full_name
         asset.status = "Active"
-        db_request.status = "FULFILLED"
+        db_request.status = "USER_ACCEPTANCE_PENDING"
         db_request.asset_id = asset_id
         await db.commit()
     return await asset_request_service._populate_requester_info(db, db_request)
 
+
 @router.post("/{request_id}/inventory/not-available", response_model=AssetRequestResponse)
-async def inventory_mark_not_available(request_id: UUID, inventory_manager_id: UUID, db: AsyncSession = Depends(get_db)):
-    await verify_asset_inventory_manager(inventory_manager_id, db)
+async def inventory_mark_not_available(
+    request_id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    await verify_asset_inventory_manager(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, request_id)
     if not db_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
     db_request.status = "PROCUREMENT_REQUESTED"
     await db.commit()
     return await asset_request_service._populate_requester_info(db, db_request)
+
+
+# ========== MANAGER CONFIRMATION ENDPOINTS (Phase 5) ==========
+
+@router.post("/{request_id}/manager/confirm-it", response_model=AssetRequestResponse)
+async def manager_confirm_it_approval(
+    request_id: UUID,
+    confirmation: ManagerConfirmationRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Manager confirms IT approval decision.
+    This triggers auto-routing logic (inventory check or procurement).
+    """
+    from ..services.manager_confirmation_service import manager_confirm_stage
+    
+    # Verify manager authorization
+    manager = await verify_manager_authorization(current_user.id, db)
+    
+    result = await manager_confirm_stage(
+        db=db,
+        request_id=request_id,
+        stage="IT_APPROVAL",
+        manager_id=manager.id,
+        manager_name=manager.full_name,
+        decision=confirmation.decision,
+        reason=confirmation.reason
+    )
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    return result
+
+
+@router.post("/{request_id}/manager/confirm-budget", response_model=AssetRequestResponse)
+async def manager_confirm_budget_approval(
+    request_id: UUID,
+    confirmation: ManagerConfirmationRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Manager confirms Finance budget approval.
+    Routes to QC_PENDING after confirmation.
+    """
+    from ..services.manager_confirmation_service import manager_confirm_stage
+    
+    # Verify manager authorization
+    manager = await verify_manager_authorization(current_user.id, db)
+    
+    result = await manager_confirm_stage(
+        db=db,
+        request_id=request_id,
+        stage="BUDGET_APPROVAL",
+        manager_id=manager.id,
+        manager_name=manager.full_name,
+        decision=confirmation.decision,
+        reason=confirmation.reason
+    )
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    return result
+
+
+@router.post("/{request_id}/manager/confirm-assignment", response_model=AssetRequestResponse)
+async def manager_confirm_final_assignment(
+    request_id: UUID,
+    confirmation: ManagerConfirmationRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Manager confirms final asset assignment.
+    Transitions request to IN_USE status.
+    """
+    from ..services.manager_confirmation_service import manager_confirm_stage
+    
+    # Verify manager authorization
+    manager = await verify_manager_authorization(current_user.id, db)
+    
+    result = await manager_confirm_stage(
+        db=db,
+        request_id=request_id,
+        stage="ASSIGNMENT",
+        manager_id=manager.id,
+        manager_name=manager.full_name,
+        decision=confirmation.decision,
+        reason=confirmation.reason
+    )
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Request not found")
+    
+    return result
+
+
+# ========== BYOD / MDM ENDPOINTS ==========
+
+@router.post("/{request_id}/byod-compliance-check")
+async def check_byod_compliance(
+    request_id: UUID,
+    check_request: ByodComplianceCheckRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Validate BYOD device compliance and MDM enrollment.
+    Automatically transitions to IN_USE or BYOD_REJECTED based on compliance status.
+    """
+    from ..services.mdm_service import validate_byod_compliance
+    
+    # Verify IT management authorization
+    reviewer = current_user
+    if reviewer.role != "IT_MANAGEMENT" and reviewer.role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Only IT Management can perform BYOD compliance checks"
+        )
+    
+    try:
+        result = await validate_byod_compliance(
+            db=db,
+            request_id=request_id,
+            reviewer_id=reviewer.id
+        )
+        
+        if not result["success"]:
+            raise HTTPException(
+                status_code=400,
+                detail=result.get("error", "BYOD compliance check failed")
+            )
+        
+        return result
+    except Exception as e:
+        import traceback
+        with open("d:/ASSET-MANAGER/debug_errors.log", "a") as f:
+             f.write(f"\n--- BYOD CHECK ERROR ---\n{str(e)}\n")
+             traceback.print_exc(file=f)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/byod-devices/{device_id}/mdm-enroll")
+async def enroll_device_in_mdm(
+    device_id: UUID,
+    enrollment_request: MdmEnrollmentRequest,
+    db: AsyncSession = Depends(get_db),
+    it_user = Depends(get_current_user)
+):
+    """
+    Manually trigger MDM enrollment for a BYOD device.
+    Returns enrollment status, compliance checks, and applied security policies.
+    """
+    if it_user.role not in ["IT_MANAGEMENT", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    from ..services.mdm_service import simulate_mdm_enrollment
+    
+    result = await simulate_mdm_enrollment(
+        db=db,
+        device_id=enrollment_request.device_id,
+        security_policies=enrollment_request.security_policies
+    )
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error", "MDM enrollment failed")
+        )
+    
+    return result

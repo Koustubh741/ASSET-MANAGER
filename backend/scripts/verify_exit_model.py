@@ -5,8 +5,8 @@ import os
 # Add backend directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import SessionLocal
-from models import ExitRequest, User
+from app.database.database import SessionLocal
+from app.models.models import ExitRequest, User
 from sqlalchemy import text
 
 def verify_exit_model():

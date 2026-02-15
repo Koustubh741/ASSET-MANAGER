@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from typing import Optional
 from ..models.models import MaintenanceRecord
 from ..schemas.maintenance_schema import MaintenanceRecordCreate, MaintenanceRecordUpdate
 from uuid import UUID
@@ -9,9 +10,10 @@ async def get_maintenance_by_asset(db: AsyncSession, asset_id: UUID):
     result = await db.execute(select(MaintenanceRecord).filter(MaintenanceRecord.asset_id == asset_id))
     return result.scalars().all()
 
-async def create_maintenance_record(db: AsyncSession, record: MaintenanceRecordCreate):
+async def create_maintenance_record(db: AsyncSession, record: MaintenanceRecordCreate, technician: Optional[str] = None):
     db_record = MaintenanceRecord(
         id=uuid.uuid4(),
+        technician=technician,
         **record.model_dump()
     )
     db.add(db_record)

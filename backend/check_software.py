@@ -1,25 +1,23 @@
 import asyncio
-from app.database.database import get_db_session
-from sqlalchemy import text
+from app.database.database import AsyncSessionLocal
+from app.models.models import SoftwareLicense, DiscoveredSoftware
+from sqlalchemy.future import select
 
-async def check_software():
-    async with get_db_session() as db:
-        # Check total discovered software records
-        result = await db.execute(text('SELECT COUNT(*) FROM discovered_software'))
-        total = result.scalar()
-        print(f'Total discovered_software records: {total}')
+async def check():
+    async with AsyncSessionLocal() as db:
+        lic_result = await db.execute(select(SoftwareLicense))
+        disc_result = await db.execute(select(DiscoveredSoftware))
         
-        # Check unique software (grouped)
-        result = await db.execute(text('''
-            SELECT name, version, vendor, COUNT(*) as install_count
-            FROM discovered_software 
-            GROUP BY name, version, vendor 
-            ORDER BY install_count DESC
-        '''))
-        rows = result.fetchall()
-        print(f'\nUnique software applications: {len(rows)}')
-        print('-' * 80)
-        for r in rows:
-            print(f'{r[0]:40} {r[1]:15} {r[2]:20} {r[3]:3} installs')
+        licenses = lic_result.scalars().all()
+        discovered = disc_result.scalars().all()
+        
+        print(f"TOTAL_LICENSES: {len(licenses)}")
+        print(f"TOTAL_DISCOVERED: {len(discovered)}")
+        
+        for l in licenses[:3]:
+            print(f"LIC: {l.name} ({l.vendor})")
+        for d in discovered[:3]:
+            print(f"DISC: {d.name} ({d.vendor})")
 
-asyncio.run(check_software())
+if __name__ == '__main__':
+    asyncio.run(check())

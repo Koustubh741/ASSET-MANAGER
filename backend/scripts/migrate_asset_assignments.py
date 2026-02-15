@@ -2,7 +2,7 @@
 """
 Migration script to add missing columns to asset_assignments table
 """
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def migrate_asset_assignments():

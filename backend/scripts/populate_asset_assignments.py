@@ -8,8 +8,8 @@ import os
 # Add backend directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import SessionLocal, engine
-from models import Asset, AssetAssignment, User
+from app.database.database import SessionLocal, engine
+from app.models.models import Asset, AssetAssignment, User
 from sqlalchemy import func
 
 def populate_assignments():

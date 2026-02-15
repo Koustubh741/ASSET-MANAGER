@@ -1,5 +1,5 @@
-from sqlalchemy import Column, String, Date, Float, DateTime, JSON, Text, ForeignKey, Boolean, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Date, Float, DateTime, JSON, Text, ForeignKey, Boolean, Index, UUID, Integer
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 import uuid
 from datetime import datetime
@@ -37,10 +37,12 @@ class Asset(Base):
 
     # Status and Location
     status = Column(String(50), nullable=False, index=True)
+    location = Column(String(255), nullable=True) # Flat field
     location_id = Column(UUID(as_uuid=True), ForeignKey("asset.locations.id"), nullable=True)
     location_text = Column(String(255), nullable=True) # Fallback / Legacy
 
     # Assignment
+    assigned_to = Column(String(255), nullable=True) # Flat field
     assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
     assigned_to_name = Column(String(255), nullable=True) # Denormalized for display
     assigned_by = Column(String(255), nullable=True)
@@ -60,6 +62,26 @@ class Asset(Base):
     # Procurement & Disposal Fields
     procurement_status = Column(String(50), nullable=True)
     disposal_status = Column(String(50), nullable=True)
+
+
+
+    # QC and Configuration (Sync with DB)
+    qc_status = Column(String(50), nullable=True)
+    qc_date = Column(DateTime, nullable=True)
+    qc_by = Column(UUID(as_uuid=True), nullable=True)
+    qc_notes = Column(Text, nullable=True)
+    
+    configuration_status = Column(String(50), nullable=True)
+    configuration_date = Column(DateTime, nullable=True)
+    configured_by = Column(UUID(as_uuid=True), nullable=True)
+    
+    # Acceptance
+    acceptance_status = Column(String(50), nullable=True)
+    accepted_at = Column(DateTime, nullable=True)
+    accepted_by = Column(UUID(as_uuid=True), nullable=True)
+    acceptance_rejection_reason = Column(Text, nullable=True)
+    
+    request_id = Column(UUID(as_uuid=True), nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -322,8 +344,8 @@ class ExitRequest(Base):
     __tablename__ = "exit_requests"
     __table_args__ = {"schema": "exit"}
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    user_id = Column(String(36), nullable=False, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
     status = Column(String(50), nullable=False, default="OPEN")  # OPEN | ASSETS_PROCESSED | BYOD_PROCESSED | COMPLETED
 
     assets_snapshot = Column(JSON, nullable=True)
@@ -366,6 +388,8 @@ class SoftwareLicense(Base):
     expiry_date = Column(Date, nullable=True, index=True)
     cost = Column(Float, default=0.0)
     status = Column(String(50), default="Active") # Active, Expired, Retired
+    is_discovered = Column(Boolean, default=False)
+    matched_names = Column(JSONB, nullable=True, default=[]) # Array of names matched to this license
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -398,11 +422,11 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
     __table_args__ = {"schema": "system"}
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     entity_type = Column(String(50), nullable=False, index=True) # Asset, Ticket, User
     entity_id = Column(String(255), nullable=False, index=True)
     action = Column(String(50), nullable=False, index=True) # Created, Updated, Deleted, Login
-    performed_by = Column(String(255), nullable=True, index=True) # User ID 
+    performed_by = Column(UUID(as_uuid=True), nullable=True, index=True) # User ID 
     details = Column(JSONB, nullable=True)
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
 
@@ -418,10 +442,10 @@ class ApiToken(Base):
     __tablename__ = "api_tokens"
     __table_args__ = {"schema": "system"}
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     token = Column(String(255), nullable=False, unique=True, index=True)
     name = Column(String(255), nullable=False)  # Descriptive name (e.g., "RHEL Server 192.168.1.146")
-    created_by = Column(String(36), nullable=True)  # User ID who created the token
+    created_by = Column(UUID(as_uuid=True), nullable=True)  # User ID who created the token
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=True)  # None = never expires
@@ -510,3 +534,89 @@ class DiscoveredSoftware(Base):
     vendor = Column(String(255), nullable=True)
     first_seen = Column(DateTime(timezone=True), server_default=func.now())
     last_seen = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class AgentConfiguration(Base):
+    """
+    Model for storing agent-specific configurations
+    """
+    __tablename__ = "agent_configurations"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_id = Column(String(100), nullable=False, index=True)
+    config_key = Column(String(100), nullable=False)
+    config_value = Column(Text, nullable=False)  # Encrypted if sensitive
+    is_sensitive = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    __table_args__ = (
+        {"schema": "public"} # Default schema
+    )
+
+
+class AgentSchedule(Base):
+    """
+    Model for storing agent execution schedules
+    """
+    __tablename__ = "agent_schedules"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_id = Column(String(100), nullable=False, unique=True)
+    cron_expression = Column(String(100), nullable=False)
+    is_enabled = Column(Boolean, default=True, nullable=False)
+    last_run = Column(DateTime(timezone=True), nullable=True)
+    next_run = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+class PasswordResetToken(Base):
+    """
+    Model for storing password reset tokens
+    """
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = {"schema": "auth"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
+    token = Column(String(255), unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    is_used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<PasswordResetToken(user_id={self.user_id}, token={self.token[:8]}...)>"
+
+
+class DiscoveryScan(Base):
+    """
+    Tracks discovery agent scan sessions
+    """
+    __tablename__ = "discovery_scans"
+    __table_args__ = {"schema": "system"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    agent_id = Column(String(100), nullable=False, index=True)
+    scan_type = Column(String(50), nullable=False) # local, snmp, cloud, saas, user_sync
+    status = Column(String(50), default="STARTED") # STARTED, COMPLETED, FAILED
+    start_time = Column(DateTime(timezone=True), server_default=func.now())
+    end_time = Column(DateTime(timezone=True), nullable=True)
+    assets_processed = Column(Integer, default=0)
+    errors = Column(Text, nullable=True)
+    metadata_ = Column(JSONB, nullable=True, default={})
+
+
+class DiscoveryDiff(Base):
+    """
+    Tracks specific changes detected during a discovery scan
+    """
+    __tablename__ = "discovery_diffs"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    scan_id = Column(UUID(as_uuid=True), ForeignKey("system.discovery_scans.id"), nullable=False)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False)
+    field_name = Column(String(100), nullable=False) # e.g. "RAM", "OS Version", "Software: Adobe Reader"
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    detected_at = Column(DateTime(timezone=True), server_default=func.now())

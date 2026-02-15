@@ -57,7 +57,7 @@ def extract_po_details(file_path: str, debug: bool = False) -> Dict[str, Any]:
                 results["vendor_name"] = author_clean
                 results["confidence_score"] += 0.2
                 if debug:
-                    print(f"✓ Vendor from metadata: {author_clean}")
+                    print(f"Vendor from metadata: {author_clean}".encode('ascii', 'ignore').decode('ascii'))
         
         # Try to get date from metadata
         if meta and hasattr(meta, 'creation_date') and meta.creation_date:
@@ -104,9 +104,9 @@ def extract_po_details(file_path: str, debug: bool = False) -> Dict[str, Any]:
         
         # Look for "Total: $1,234.56" or "Amount: 1234.56"
         total_patterns = [
-            r"(?:Total|Grand Total|Amount Due|Net Amount|Final Amount)[\s:]*[\$€£₹]?\s*([\d,]+\.?\d{0,2})",
-            r"(?:TOTAL|AMOUNT)[\s:]*[\$€£₹]?\s*([\d,]+\.?\d{0,2})",
-            r"[\$€£₹]\s*([\d,]+\.\d{2})"  # Just a currency sign followed by number
+            r"(?:Total|Grand Total|Amount Due|Net Amount|Final Amount|Order Total|Purchase Total)[\s:]*[\$€£₹¥]?\s*([\d,]+\.?\d{0,2})",
+            r"(?:TOTAL|AMOUNT|SUBTOTAL)[\s:]*[\$€£₹¥]?\s*([\d,]+\.?\d{0,2})",
+            r"[\$€£₹¥]\s*([\d,]+\.\d{2})"
         ]
         for pattern in total_patterns:
             match = re.search(pattern, text, re.I | re.MULTILINE)
@@ -169,7 +169,7 @@ def extract_po_details(file_path: str, debug: bool = False) -> Dict[str, Any]:
                             print(f"✓ Vendor found: {cleaned} (pattern #{i+1})")
                         break
                     elif debug:
-                        print(f"  Pattern #{i+1} matched '{cleaned}' but rejected (generic term)")
+                        print(f"  Pattern #{i+1} matched '{cleaned}' but rejected".encode('ascii', 'ignore').decode('ascii'))
 
 
         # STEP 6: Fallback cost extraction if primary patterns failed

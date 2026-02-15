@@ -1,6 +1,6 @@
-from database import SessionLocal
-from services import user_service
-from schemas.user_schema import UserResponse
+from app.database.database import SessionLocal
+from app.services import user_service
+from app.schemas.user_schema import UserResponse
 
 db = SessionLocal()
 try:

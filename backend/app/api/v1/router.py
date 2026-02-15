@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.routers import upload, workflows, disposal, audit, auth, tickets, asset_requests, assets, users, reference, financials, locations, software, maintenance, collect
+from app.routers import upload, workflows, disposal, audit, auth, tickets, asset_requests, assets, users, reference, financials, locations, software, maintenance, collect, agents
 
 api_router = APIRouter()
 
@@ -19,3 +19,4 @@ api_router.include_router(locations.router)
 api_router.include_router(software.router)
 api_router.include_router(maintenance.router)
 api_router.include_router(collect.router)
+api_router.include_router(agents.router)

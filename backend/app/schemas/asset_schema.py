@@ -44,8 +44,6 @@ class AssetUpdate(BaseModel):
     status: Optional[str] = None
     location: Optional[str] = None
     specifications: Optional[Dict[str, Any]] = None
-    assigned_to: Optional[str] = None
-    assigned_by: Optional[str] = None
     assignment_date: Optional[date] = None
     segment: Optional[str] = None
     renewal_status: Optional[str] = None
@@ -72,7 +70,6 @@ class AssetResponse(AssetBase):
         from_attributes = True
 class AssetAssignmentRequest(BaseModel):
     assigned_to: str
-    assigned_to_id: Optional[UUID] = None
     location: Optional[str] = "Office"
     assignment_date: Optional[date] = None
 

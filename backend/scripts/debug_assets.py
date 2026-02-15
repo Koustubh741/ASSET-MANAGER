@@ -4,7 +4,7 @@ import os
 # Add the backend directory to sys.path
 sys.path.append(os.path.join(os.getcwd(), 'backend'))
 
-from services import asset_service
+from app.services import asset_service
 import traceback
 
 try:

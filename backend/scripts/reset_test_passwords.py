@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 from sqlalchemy.orm import Session
-from database import SessionLocal
+from app.database.database import SessionLocal
 import models
 from services.user_service import get_password_hash
 

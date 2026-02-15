@@ -23,7 +23,7 @@ export default function CMDBOverviewPage() {
                 setAssets(data);
 
                 // Filter for "Infrastructure" assets to build a core map
-                const infra = data.filter(a => 
+                const infra = data.filter(a =>
                     ['Server', 'Network', 'Database', 'Cloud'].includes(a.type) ||
                     a.name.toLowerCase().includes('core') ||
                     a.name.toLowerCase().includes('primary')
@@ -61,8 +61,8 @@ export default function CMDBOverviewPage() {
                         status: asset.status,
                         x,
                         y,
-                        icon: asset.type === 'Database' ? Database : 
-                              asset.type === 'Network' ? Wifi : Server,
+                        icon: asset.type === 'Database' ? Database :
+                            asset.type === 'Network' ? Wifi : Server,
                         layer: 'tech',
                         details: asset
                     });
@@ -123,7 +123,7 @@ export default function CMDBOverviewPage() {
 
                 <div className="flex items-center gap-3">
                     <div className="flex bg-slate-800 p-1 rounded-lg border border-white/5 mr-4">
-                        <button 
+                        <button
                             onClick={() => setViewMode('topology')}
                             className={`px-4 py-1.5 rounded-md text-xs font-semibold ${viewMode === 'topology' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
                         >
@@ -158,7 +158,7 @@ export default function CMDBOverviewPage() {
                             const target = graph.nodes.find(n => n.id === edge.target);
                             if (!source || !target) return null;
                             return (
-                                <line 
+                                <line
                                     key={i}
                                     x1={source.x} y1={source.y}
                                     x2={target.x} y2={target.y}
@@ -172,7 +172,7 @@ export default function CMDBOverviewPage() {
 
                     {/* Nodes */}
                     {graph.nodes.map(node => (
-                        <div 
+                        <div
                             key={node.id}
                             className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10 transition-all duration-700"
                             style={{ left: node.x, top: node.y }}
@@ -181,7 +181,7 @@ export default function CMDBOverviewPage() {
                                 <div className={`group flex flex-col items-center cursor-pointer`}>
                                     <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 bg-slate-950 transition-all duration-300 hover:scale-110 ${getNodeColor(node)}`}>
                                         <node.icon size={24} />
-                                        
+
                                         {/* Glow effect for biz nodes */}
                                         {node.layer === 'biz' && (
                                             <div className="absolute inset-0 rounded-2xl bg-blue-500/10 animate-pulse -z-10 shadow-[0_0_30px_rgba(59,130,246,0.3)]"></div>

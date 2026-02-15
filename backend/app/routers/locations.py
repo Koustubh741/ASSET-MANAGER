@@ -13,11 +13,18 @@ router = APIRouter(
 )
 
 @router.get("", response_model=List[LocationResponse])
-async def get_locations(db: AsyncSession = Depends(get_db)):
+async def get_locations(
+    db: AsyncSession = Depends(get_db),
+    user = Depends(auth_utils.get_current_user)
+):
     return await location_service.get_locations(db)
 
 @router.get("/{location_id}", response_model=LocationResponse)
-async def get_location(location_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_location(
+    location_id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    user = Depends(auth_utils.get_current_user)
+):
     location = await location_service.get_location(db, location_id)
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")

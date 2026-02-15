@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Wrench, ShieldCheck, Terminal, AlertCircle, X, CheckCircle, Play, Server, Lock, Activity, ArrowRight, Trash2, Clock, MapPin, User, FileText, Check, MoreHorizontal, Printer, ChevronRight } from 'lucide-react';
+import { Wrench, ShieldCheck, Terminal, AlertCircle, X, CheckCircle, Play, Server, Lock, Activity, ArrowRight, Trash2, Clock, MapPin, User, FileText, Check, MoreHorizontal, Printer, ChevronRight, Eye } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
 import { useAssetContext, ASSET_STATUS } from '@/contexts/AssetContext';
 import { useRole } from '@/contexts/RoleContext';
@@ -51,50 +51,33 @@ export default function ITSupportDashboard() {
     // STATE: Data Queues
 
     const { user } = useRole();
-    const { assets, updateAssetStatus, requests: allRequests } = useAssetContext();
-    // Actually I will cleaner refactor below
+    const { assets, updateAssetStatus, requests, tickets, itApproveRequest, itRejectRequest, registerByod, exitRequests, processExitByod } = useAssetContext();
 
     // Derived state for queues instead of static state
     const pendingQueue = assets.filter(a => a.status === ASSET_STATUS.ALLOCATED || a.status === ASSET_STATUS.CONFIGURING);
 
-    // For other queues we might still check if we want to migrate them fully or keep as local state for now if they are complex (like tickets, disposal).
-    // The plan said "Replace hardcoded pendingQueue". Ticket integration is next.
-    // For now we keep ticket state local if not fully ready or use context if available (Context has tickets).
-    // Let's use context tickets!
-    // Unified Requests Context - ENTERPRISE WORKFLOW
-    const { requests, itApproveRequest, itRejectRequest, registerByod, exitRequests, processExitByod } = useAssetContext();
-
     // 1. Incoming Asset Requests (Awaiting IT Management Action)
     // NOTE: `AssetContext` merges Tickets into `requests` for some dashboards.
     // Tickets must NOT be routed through the asset-request IT approval endpoint.
+    console.log('[ITSupportDashboard] Total requests:', requests.length);
+    console.log('[ITSupportDashboard] Requests with MANAGER_APPROVED status:',
+        requests.filter(r => r.status === 'MANAGER_APPROVED').map(r => ({
+            id: r.id,
+            assetType: r.assetType,
+            status: r.status,
+            currentOwnerRole: r.currentOwnerRole
+        }))
+    );
+
     const incomingRequests = requests.filter(r =>
         r.assetType !== 'Ticket' &&
         r.currentOwnerRole === 'IT_MANAGEMENT' &&
         (r.status === 'MANAGER_APPROVED' || r.status === 'IT_APPROVED' || r.status === 'REQUESTED')
     );
 
-    // 2. Support Tickets State (fetched from /tickets API)
-    const [tickets, setTickets] = useState([]);
-    const [ticketsLoading, setTicketsLoading] = useState(true);
+    console.log('[ITSupportDashboard] Filtered incomingRequests:', incomingRequests.length);
 
-    // Fetch tickets from backend
-    useEffect(() => {
-        const fetchTickets = async () => {
-            try {
-                setTicketsLoading(true);
-                const fetchedTickets = await apiClient.getTickets();
-                setTickets(fetchedTickets);
-                console.log('[IT Support] Fetched tickets:', fetchedTickets);
-            } catch (error) {
-                console.error('[IT Support] Failed to fetch tickets:', error);
-                setTickets([]);
-            } finally {
-                setTicketsLoading(false);
-            }
-        };
-
-        fetchTickets();
-    }, []);
+    // Global tickets state is now provided by AssetContext
 
     // Active Support Tickets (OPEN status)
     const activeTickets = tickets.filter(t => t.status?.toUpperCase() === 'OPEN' || t.status?.toUpperCase() === 'IN_PROGRESS');
@@ -215,7 +198,7 @@ export default function ITSupportDashboard() {
     // Ticket Actions
     const acknowledgeTicket = async (ticketId) => {
         try {
-            await apiClient.acknowledgeTicket(ticketId, user.id);
+            await apiClient.acknowledgeTicket(ticketId);
             // Refresh tickets
             const fetchedTickets = await apiClient.getTickets();
             setTickets(fetchedTickets);
@@ -228,7 +211,7 @@ export default function ITSupportDashboard() {
 
     const resolveTicket = async (ticketId, notes, checklist, percentage) => {
         try {
-            await apiClient.resolveTicket(ticketId, user.id, notes, checklist, percentage);
+            await apiClient.resolveTicket(ticketId, notes, checklist, percentage);
             // Refresh tickets
             const fetchedTickets = await apiClient.getTickets();
             setTickets(fetchedTickets);
@@ -241,7 +224,7 @@ export default function ITSupportDashboard() {
 
     const updateProgress = async (ticketId, notes, checklist, percentage, silent = false) => {
         try {
-            await apiClient.updateTicketProgress(ticketId, user.id, notes, checklist, percentage);
+            await apiClient.updateTicketProgress(ticketId, notes, checklist, percentage);
             // Refresh tickets
             const fetchedTickets = await apiClient.getTickets();
             setTickets(fetchedTickets);
@@ -412,6 +395,150 @@ export default function ITSupportDashboard() {
 
             {activeModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+
+                    {/* ---- REQUEST DETAILS MODAL (IT MANAGEMENT REVIEW) ---- */}
+                    {activeModal === 'REQUEST_DETAILS' && selectedItem && (
+                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="bg-slate-800 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <FileText size={20} className="text-indigo-400" />
+                                        Request Details
+                                    </h2>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">{selectedItem.id}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300'}`}>
+                                            {selectedItem.urgency || 'STANDARD'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onClick={() => setActiveModal('PENDING')} className="text-slate-400 hover:text-white p-2">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                                {/* Requester Info */}
+                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5">
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Requester</label>
+                                        <div className="text-white font-medium">{selectedItem.requestedBy?.name}</div>
+                                        <div className="text-xs text-slate-400">{selectedItem.requestedBy?.email}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Department</label>
+                                        <div className="text-white font-medium">{selectedItem.requestedBy?.department || 'N/A'}</div>
+                                        <div className="text-xs text-slate-400">{selectedItem.requestedBy?.position || 'Employee'}</div>
+                                    </div>
+                                </div>
+
+                                {/* Asset Details */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Asset Information</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs text-slate-500 uppercase block mb-1">Asset Type</label>
+                                            <div className="text-white">{selectedItem.assetType}</div>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-slate-500 uppercase block mb-1">Model / Specs</label>
+                                            <div className="text-white">{selectedItem.asset_model || selectedItem.details || 'Standard Configuration'}</div>
+                                        </div>
+                                        {selectedItem.os_version && (
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase block mb-1">OS Version</label>
+                                                <div className="text-white">{selectedItem.os_version}</div>
+                                            </div>
+                                        )}
+                                        {selectedItem.cost_estimate && (
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase block mb-1">Cost Estimate</label>
+                                                <div className="text-emerald-400 font-mono font-bold">${selectedItem.cost_estimate}</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Justification */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Business Case</h3>
+                                    <div className="bg-slate-800 p-4 rounded-lg border border-white/5">
+                                        <label className="text-xs text-slate-500 uppercase block mb-2">Justification</label>
+                                        <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                                            {selectedItem.justification || "No justification provided."}
+                                        </div>
+                                        {selectedItem.business_justification && selectedItem.business_justification !== selectedItem.justification && (
+                                            <div className="mt-4 pt-4 border-t border-white/5">
+                                                <label className="text-xs text-slate-500 uppercase block mb-2">Detailed Business Justification</label>
+                                                <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                                                    {selectedItem.business_justification}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Approval History */}
+                                {selectedItem.manager_approvals && selectedItem.manager_approvals.length > 0 && (
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Approval History</h3>
+                                        <div className="space-y-2">
+                                            {selectedItem.manager_approvals.map((approval, idx) => (
+                                                <div key={idx} className="flex justify-between items-start text-xs bg-slate-800/30 p-2 rounded">
+                                                    <div>
+                                                        <span className="font-bold text-slate-300">{approval.reviewer_name}</span>
+                                                        <span className="text-slate-500 mx-1">({approval.type || 'Review'})</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className={`font-bold ${approval.decision?.includes('REJECT') ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                            {approval.decision}
+                                                        </div>
+                                                        <div className="text-slate-600">{new Date(approval.timestamp).toLocaleString()}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 bg-slate-800 border-t border-white/10 flex justify-end gap-3 shrink-0">
+                                <button
+                                    onClick={() => {
+                                        const reason = prompt("Enter rejection reason:");
+                                        if (reason) {
+                                            itRejectRequest(selectedItem.id, reason);
+                                            setActiveModal('PENDING'); // Go back to list
+                                        }
+                                    }}
+                                    className="px-4 py-2 text-rose-400 hover:text-white border border-rose-500/30 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                >
+                                    Reject Request
+                                </button>
+                                {selectedItem.status === 'IT_APPROVED' && selectedItem.assetType === 'BYOD' ? (
+                                    <button
+                                        onClick={() => {
+                                            registerByod(selectedItem.id);
+                                            setActiveModal('PENDING');
+                                        }}
+                                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                                    >
+                                        <ShieldCheck size={18} /> Validate & Register BYOD
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            itApproveRequest(selectedItem.id);
+                                            setActiveModal('PENDING');
+                                        }}
+                                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all flex items-center gap-2"
+                                    >
+                                        <CheckCircle size={18} /> Approve & Forward
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* ---- CONFIG WIZARD MODAL (5 STEPS) ---- */}
                     {activeModal === 'CONFIG' && selectedItem && (
@@ -637,9 +764,16 @@ export default function ITSupportDashboard() {
                                                 <td className="p-4 text-right">
                                                     <div className="flex justify-end gap-2">
                                                         <button
+                                                            onClick={() => { setSelectedItem(req); setActiveModal('REQUEST_DETAILS'); }}
+                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                        >
+                                                            <Eye size={14} /> View Details
+                                                        </button>
+
+                                                        <button
                                                             onClick={() => {
                                                                 const reason = prompt("Enter rejection reason:");
-                                                                if (reason) itRejectRequest(req.id, reason, user.id, user.name);
+                                                                if (reason) itRejectRequest(req.id, reason);
                                                             }}
                                                             className="text-xs text-rose-400 hover:text-white border border-rose-500/30 px-3 py-1.5 rounded flex items-center gap-1"
                                                         >
@@ -647,14 +781,14 @@ export default function ITSupportDashboard() {
                                                         </button>
                                                         {req.status === 'IT_APPROVED' && req.assetType === 'BYOD' ? (
                                                             <button
-                                                                onClick={() => registerByod(req.id, user.id, user.name)}
+                                                                onClick={() => registerByod(req.id)}
                                                                 className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-1"
                                                             >
                                                                 <ShieldCheck size={14} /> Validate & Register BYOD
                                                             </button>
                                                         ) : (
                                                             <button
-                                                                onClick={() => itApproveRequest(req.id, user.id, user.name)}
+                                                                onClick={() => itApproveRequest(req.id)}
                                                                 className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-medium shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/30 transition-all"
                                                             >
                                                                 {req.assetType === 'BYOD' ? 'Verify & Review BYOD' : 'Approve & Forward to Inventory'}
@@ -981,6 +1115,82 @@ export default function ITSupportDashboard() {
                         </div>
                     )}
 
+                    {/* ---- BYOD EXIT DETAILS ---- */}
+                    {activeModal === 'BYOD_EXIT_DETAILS' && selectedItem && (
+                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="bg-slate-800 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                                <div>
+                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                        <ShieldCheck size={20} className="text-blue-400" />
+                                        BYOD Exit Details
+                                    </h2>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">{selectedItem.id}</span>
+                                    </div>
+                                </div>
+                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white p-2">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
+                                {/* User Info */}
+                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5">
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Employee</label>
+                                        <div className="text-white font-medium">{selectedItem.user_name || 'Unknown'}</div>
+                                        <div className="text-xs text-slate-400">{selectedItem.user_email || selectedItem.user_id}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Department</label>
+                                        <div className="text-white font-medium">{selectedItem.user_department || 'N/A'}</div>
+                                    </div>
+                                </div>
+
+                                {/* BYOD Devices Snapshot */}
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Registered Personal Devices</h3>
+                                    {selectedItem.byod_snapshot && selectedItem.byod_snapshot.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {selectedItem.byod_snapshot.map((device, idx) => (
+                                                <div key={idx} className="bg-slate-800 p-3 rounded border border-white/5 flex justify-between items-center">
+                                                    <div>
+                                                        <div className="font-medium text-white">{device.device_model}</div>
+                                                        <div className="text-xs text-slate-400">Serial: {device.serial_number}</div>
+                                                    </div>
+                                                    <div className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">
+                                                        {device.os_version}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-slate-500 text-sm italic">No BYOD devices found in snapshot.</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-800 border-t border-white/10 flex justify-end gap-3 shrink-0">
+                                <button
+                                    onClick={() => setActiveModal(null)}
+                                    className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm(`Confirm MDM unenrollment and data wipe for BYOD devices belonging to ${selectedItem.user_name || selectedItem.user_id}?`)) {
+                                            await processExitByod(selectedItem.id);
+                                            setActiveModal(null);
+                                        }
+                                    }}
+                                    className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold shadow-lg shadow-blue-500/20 flex items-center gap-2"
+                                >
+                                    <ShieldCheck size={18} /> Confirm De-registration
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1013,16 +1223,24 @@ export default function ITSupportDashboard() {
                                         ))}
                                     </div>
                                 </div>
-                                <button
-                                    onClick={async () => {
-                                        if (confirm(`Confirm MDM unenrollment and data wipe for BYOD devices belonging to ${req.user_id}?`)) {
-                                            await processExitByod(req.id);
-                                        }
-                                    }}
-                                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
-                                >
-                                    De-register BYOD → Success
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => { setSelectedItem(req); setActiveModal('BYOD_EXIT_DETAILS'); }}
+                                        className="px-4 py-2 text-blue-400 hover:text-white border border-blue-500/30 hover:bg-blue-500/10 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+                                    >
+                                        <Eye size={14} /> View Details
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (confirm(`Confirm MDM unenrollment and data wipe for BYOD devices belonging to ${req.user_id}?`)) {
+                                                await processExitByod(req.id);
+                                            }
+                                        }}
+                                        className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+                                    >
+                                        De-register
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

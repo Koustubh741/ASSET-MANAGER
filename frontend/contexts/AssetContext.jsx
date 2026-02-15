@@ -27,10 +27,14 @@ export const REQUEST_STATUS = {
     REQUESTED: 'REQUESTED',
     MANAGER_APPROVED: 'MANAGER_APPROVED',
     IT_APPROVED: 'IT_APPROVED',
+    MANAGER_CONFIRMED_IT: 'MANAGER_CONFIRMED_IT',
     INVENTORY_APPROVED: 'INVENTORY_APPROVED',
     REJECTED: 'REJECTED',
     PROCUREMENT_REQUIRED: 'PROCUREMENT_REQUIRED',
     QC_PENDING: 'QC_PENDING',
+    USER_ACCEPTANCE_PENDING: 'USER_ACCEPTANCE_PENDING',
+    MANAGER_CONFIRMED_ASSIGNMENT: 'MANAGER_CONFIRMED_ASSIGNMENT',
+    BYOD_COMPLIANCE_CHECK: 'BYOD_COMPLIANCE_CHECK',
     FULFILLED: 'FULFILLED',
     CLOSED: 'CLOSED'
 };
@@ -40,25 +44,34 @@ const AssetContext = createContext();
 export function AssetProvider({ children }) {
     const [assets, setAssets] = useState([]);
     const [requests, setRequests] = useState([]);
+    const [tickets, setTickets] = useState([]);
     const [exitRequests, setExitRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // --- Persistence ---
     const [error, setError] = useState(null);
+
+    // Derived counts for dashboards
+    const incomingRequests = requests.filter(r => r.status === 'REQUESTED' || r.status === 'MANAGER_APPROVED');
+    const activeTickets = tickets.filter(t => t.status !== 'CLOSED' && t.status !== 'REJECTED');
 
     // --- Persistence & API Integration ---
     const deriveOwnerRole = (status, assetType, procurementStage) => {
         switch (status) {
             case REQUEST_STATUS.REQUESTED: return OWNER_ROLE.MANAGER;
             case REQUEST_STATUS.MANAGER_APPROVED: return OWNER_ROLE.IT_MANAGEMENT;
-            case REQUEST_STATUS.IT_APPROVED:
+            case REQUEST_STATUS.IT_APPROVED: return OWNER_ROLE.MANAGER; // Manager must confirm technical decision
+            case REQUEST_STATUS.MANAGER_CONFIRMED_IT:
                 return assetType === 'BYOD' ? OWNER_ROLE.IT_MANAGEMENT : OWNER_ROLE.ASSET_INVENTORY_MANAGER;
             case REQUEST_STATUS.PROCUREMENT_REQUIRED:
                 if (procurementStage === 'PO_CREATED' || procurementStage === 'PO_UPLOADED') return OWNER_ROLE.FINANCE;
-                if (procurementStage === 'FINANCE_APPROVED') return OWNER_ROLE.PROCUREMENT; // Back to procurement for delivery
-                return OWNER_ROLE.PROCUREMENT; // Default to procurement for initial PO creation
+                if (procurementStage === 'FINANCE_APPROVED' || status === 'FINANCE_APPROVED') return OWNER_ROLE.PROCUREMENT;
+                return OWNER_ROLE.PROCUREMENT;
+            case 'PO_UPLOADED': return OWNER_ROLE.FINANCE;
+            case 'FINANCE_APPROVED': return OWNER_ROLE.PROCUREMENT;
             case 'PROCUREMENT_APPROVED': return OWNER_ROLE.PROCUREMENT;
             case 'QC_PENDING': return OWNER_ROLE.ASSET_INVENTORY_MANAGER;
+            case REQUEST_STATUS.USER_ACCEPTANCE_PENDING: return OWNER_ROLE.END_USER;
+            case REQUEST_STATUS.MANAGER_CONFIRMED_ASSIGNMENT: return OWNER_ROLE.MANAGER;
+            case REQUEST_STATUS.BYOD_COMPLIANCE_CHECK: return OWNER_ROLE.IT_MANAGEMENT;
             case REQUEST_STATUS.FULFILLED: return OWNER_ROLE.END_USER;
             case REQUEST_STATUS.REJECTED: return OWNER_ROLE.END_USER;
             default: return OWNER_ROLE.IT_MANAGEMENT;
@@ -79,23 +92,14 @@ export function AssetProvider({ children }) {
 
         try {
             setLoading(true);
-            // 1) Load assets (critical for UI)
-            try {
-                const apiAssets = await apiClient.getAssets();
-                setAssets(apiAssets);
-                setError(null);
-            } catch (assetErr) {
-                console.error("CRITICAL: Failed to fetch assets from API:", assetErr);
-                setError(assetErr.message);
-                setAssets([]);
-            }
+            let apiAssetRequests = [];
+            let apiAssets = [];
+            let apiTickets = [];
 
             // 2) Load asset requests & tickets
             try {
-                let apiAssetRequests = [];
-                let apiTickets = [];
-
                 // Domain-based filtering logic
+                console.log(`[AssetContext] User position: ${user?.position}, Domain: ${user?.domain}, RoleSlug: ${currentRole?.slug}`);
                 if (currentRole?.slug === 'ADMIN' ||
                     currentRole?.slug === 'ASSET_MANAGER' ||
                     currentRole?.slug === 'FINANCE' ||
@@ -103,27 +107,70 @@ export function AssetProvider({ children }) {
                 ) {
                     // Admin-level/Centralized roles see EVERYTHING
                     apiAssetRequests = await apiClient.getAssetRequests();
+                    apiAssets = await apiClient.getAssets();
                     apiTickets = await apiClient.getTickets();
-                } else if (user?.position === 'MANAGER' && user?.domain) {
-                    // Managers see their DOMAIN'S requests + their OWN requests
-                    const domainRequests = await apiClient.getAssetRequests({ domain: user.domain });
-                    const myRequests = await apiClient.getAssetRequests({ requester_id: user.id });
+                    console.log(`[AssetContext] Admin fetch: ${apiAssetRequests.length} requests, ${apiAssets.length} assets, ${apiTickets.length} tickets`);
+                } else if (user?.position === 'MANAGER') {
+                    if (!user.department && !user.domain) {
+                        console.warn(`[AssetContext] Manager ${user.name} has no department or domain assigned. Falling back to personal requests only.`);
+                        apiAssetRequests = await apiClient.getAssetRequests({ mine: true });
+                        apiAssets = await apiClient.getMyAssets();
+                        apiTickets = await apiClient.getTickets();
+                    } else {
+                        console.log(`[AssetContext] Fetching for manager: Dept=${user.department}, Domain=${user.domain}`);
 
-                    // Merge and deduplicate
-                    const combinedAssets = [...domainRequests, ...myRequests];
-                    const seenAssets = new Set();
-                    apiAssetRequests = combinedAssets.filter(r => {
-                        if (seenAssets.has(r.id)) return false;
-                        seenAssets.add(r.id);
-                        return true;
-                    });
+                        // Fetch scoped data for both Dept and Domain to be safe
+                        const deptReqs = user.department ? await apiClient.getAssetRequests({ department: user.department }) : [];
+                        const domainReqs = user.domain ? await apiClient.getAssetRequests({ domain: user.domain }) : [];
+                        const myReqs = await apiClient.getAssetRequests({ mine: true });
 
-                    // For tickets, managers only see their own
-                    apiTickets = await apiClient.getTickets({ requestor_id: user.id });
+                        const deptAssets = user.department ? await apiClient.getAssets({ department: user.department }) : [];
+                        const domainAssets = user.domain ? await apiClient.getAssets({ domain: user.domain }) : [];
+                        const myAssetsList = await apiClient.getMyAssets();
+
+                        const deptTickets = user.department ? await apiClient.getTickets(0, 100, user.department) : [];
+                        const domainTickets = user.domain ? await apiClient.getTickets(0, 100, user.domain) : [];
+
+                        console.log(`[AssetContext] Dept fetches: reqs=${deptReqs.length}, assets=${deptAssets.length}, tickets=${deptTickets.length}`);
+                        console.log(`[AssetContext] Domain fetches: reqs=${domainReqs.length}, assets=${domainAssets.length}, tickets=${domainTickets.length}`);
+                        console.log(`[AssetContext] RAW Dept Requests:`, deptReqs);
+                        console.log(`[AssetContext] RAW Domain Requests:`, domainReqs);
+
+                        // Merge and deduplicate requests
+                        const combinedRequests = [...deptReqs, ...domainReqs, ...myReqs];
+                        const seenReqs = new Set();
+                        apiAssetRequests = combinedRequests.filter(r => {
+                            if (seenReqs.has(r.id)) return false;
+                            seenReqs.add(r.id);
+                            return true;
+                        });
+
+                        console.log(`[AssetContext] MERGED Requests (before mapping): ${apiAssetRequests.length}`, apiAssetRequests);
+
+                        // Assets - Merge and deduplicate
+                        const combinedAssets = [...deptAssets, ...domainAssets, ...myAssetsList];
+                        const seenAssets = new Set();
+                        apiAssets = combinedAssets.filter(a => {
+                            if (seenAssets.has(a.id)) return false;
+                            seenAssets.add(a.id);
+                            return true;
+                        });
+
+                        // Tickets - Merge and deduplicate
+                        const combinedTickets = [...deptTickets, ...domainTickets];
+                        const seenTickets = new Set();
+                        apiTickets = combinedTickets.filter(t => {
+                            if (seenTickets.has(t.id)) return false;
+                            seenTickets.add(t.id);
+                            return true;
+                        });
+                    }
                 } else {
                     // Regular Employees only see their OWN requests
-                    apiAssetRequests = await apiClient.getAssetRequests({ requester_id: user?.id });
-                    apiTickets = await apiClient.getTickets({ requestor_id: user?.id });
+                    console.log(`[AssetContext] Fetching for regular employee: ${user?.id}`);
+                    apiAssetRequests = await apiClient.getAssetRequests({ mine: true });
+                    apiAssets = await apiClient.getMyAssets();
+                    apiTickets = await apiClient.getTickets();
                 }
 
                 const mappedAssetRequests = apiAssetRequests.map(r => {
@@ -132,24 +179,43 @@ export function AssetProvider({ children }) {
                     if (rawStatus === 'PENDING' || rawStatus === 'SUBMITTED') status = 'REQUESTED';
                     if (rawStatus === 'PROCUREMENT_REQUESTED') status = 'PROCUREMENT_REQUIRED';
                     if (rawStatus === 'IN_USE') status = 'FULFILLED';
-                    if (rawStatus === 'MANAGER_REJECTED' || rawStatus === 'IT_REJECTED' || rawStatus === 'PROCUREMENT_REJECTED' || rawStatus === 'USER_REJECTED') status = 'REJECTED';
+                    if (rawStatus === 'MANAGER_REJECTED' || rawStatus === 'IT_REJECTED' || rawStatus === 'PROCUREMENT_REJECTED' || rawStatus === 'USER_REJECTED' || rawStatus === 'BYOD_REJECTED' || rawStatus === 'QC_FAILED') status = 'REJECTED';
+                    if (rawStatus === 'PO_UPLOADED') status = 'PROCUREMENT_REQUIRED';
+                    if (rawStatus === 'FINANCE_APPROVED') status = 'PROCUREMENT_REQUIRED';
+                    if (rawStatus === 'MANAGER_CONFIRMED_IT') status = 'MANAGER_CONFIRMED_IT';
+                    if (rawStatus === 'USER_ACCEPTANCE_PENDING') status = 'USER_ACCEPTANCE_PENDING';
+                    if (rawStatus === 'MANAGER_CONFIRMED_ASSIGNMENT') status = 'MANAGER_CONFIRMED_ASSIGNMENT';
+                    if (rawStatus === 'BYOD_COMPLIANCE_CHECK') status = 'BYOD_COMPLIANCE_CHECK';
 
-                    const procurementStage = r.procurement_finance_status === 'APPROVED' ? 'FINANCE_APPROVED' : (r.procurement_finance_status || 'AWAITING_DECISION');
+                    // Root Fix: Only set procurementStage if it's actually approved/rejected or part of a PO flow
+                    // If it's null/empty, don't default to AWAITING_DECISION which triggers the badge
+                    const procurementStage = r.procurement_finance_status ?
+                        (r.procurement_finance_status === 'APPROVED' ? 'FINANCE_APPROVED' : r.procurement_finance_status) :
+                        null;
+                    const ownerRole = deriveOwnerRole(status, r.asset_type || r.type || 'Standard', procurementStage);
+
+                    console.log(`[AssetContext] Request ${r.id}: rawStatus=${rawStatus}, mappedStatus=${status}, ownerRole=${ownerRole}`);
 
                     return {
                         ...r,
                         status: status,
                         assetType: r.asset_type || r.type || 'Standard',
-                        justification: r.justification || r.business_justification || '',
+                        justification: r.justification || r.business_justification || r.reason || '',
                         requestedBy: {
                             name: r.requester_name || r.requester_id || 'Employee',
-                            email: r.requester_email || ''
+                            email: r.requester_email || '',
+                            department: r.requester_department || 'N/A',
+                            position: r.requester_position || 'Employee'
                         },
                         procurementStage: procurementStage,
-                        currentOwnerRole: deriveOwnerRole(status, r.asset_type || r.type || 'Standard', procurementStage),
+                        inventoryDecision: r.qc_status === 'PASSED' ? 'AVAILABLE' : (r.qc_status === 'FAILED' ? 'NOT_AVAILABLE' : (['IN_USE', 'FULFILLED', 'USER_ACCEPTANCE_PENDING'].includes(status) ? 'AVAILABLE' : null)),
+                        currentOwnerRole: ownerRole,
                         createdAt: r.created_at || r.requested_date
                     };
                 });
+
+                console.log(`[AssetContext] MAPPED Requests (after status mapping): ${mappedAssetRequests.length}`, mappedAssetRequests);
+                console.log(`[AssetContext] Requests with REQUESTED status:`, mappedAssetRequests.filter(r => r.status === 'REQUESTED'));
 
                 const mappedTickets = apiTickets.map(t => {
                     const rawStatus = (t.status || '').toUpperCase();
@@ -170,7 +236,9 @@ export function AssetProvider({ children }) {
                     };
                 });
 
-                setRequests([...mappedAssetRequests, ...mappedTickets]);
+                setAssets(apiAssets);
+                setRequests(mappedAssetRequests);
+                setTickets(mappedTickets);
 
                 // 3) Load exit requests (only for relevant roles)
                 if (currentRole?.slug === 'ADMIN' ||
@@ -220,7 +288,6 @@ export function AssetProvider({ children }) {
             // Frontend 'justification' -> Backend 'reason'
             // Frontend 'assetType' -> Backend 'type'
             const payload = {
-                requester_id: data.requester_id || data.requestedBy?.id || '1',
                 asset_name: data.assetName || `${data.assetType} Asset`,
                 asset_type: (data.assetType || 'Laptop').toUpperCase(),
                 asset_ownership_type: data.assetOwnershipType || data.ownershipType || 'COMPANY_OWNED',
@@ -239,9 +306,12 @@ export function AssetProvider({ children }) {
             // Optimistic update
             const mappedReq = {
                 ...newReq,
-                assetType: newReq.type,
-                justification: newReq.reason,
-                requestedBy: data.requestedBy,
+                assetType: newReq.type || newReq.asset_type,
+                justification: newReq.justification || newReq.reason || newReq.business_justification,
+                requestedBy: {
+                    name: user?.name || 'Employee',
+                    email: user?.email || ''
+                },
                 currentOwnerRole: OWNER_ROLE.MANAGER,
                 createdAt: new Date().toISOString()
             };
@@ -257,13 +327,10 @@ export function AssetProvider({ children }) {
     };
 
     // 2. Manager Approve
-    const managerApproveRequest = async (reqId, managerId, managerName) => {
+    const managerApproveRequest = async (reqId) => {
         try {
-            // Call API for approval
-            await apiClient.managerApproveRequest(reqId, {
-                manager_id: managerId,
-                approval_comment: `Approved by ${managerName}`
-            });
+            // Call API for approval (id inferred from JWT)
+            await apiClient.managerApproveRequest(reqId, {});
 
             setRequests(prev => prev.map(req => {
                 if (req.id !== reqId) return req;
@@ -271,9 +338,9 @@ export function AssetProvider({ children }) {
                 const newAuditEntry = {
                     action: 'MANAGER_APPROVED',
                     byRole: 'MANAGER',
-                    byUser: managerName,
+                    byUser: user?.name || 'Manager',
                     timestamp: new Date().toISOString(),
-                    comment: `Approved by Manager ${managerName}`
+                    comment: `Approved by Manager ${user?.name || ''}`
                 };
 
                 return {
@@ -290,12 +357,11 @@ export function AssetProvider({ children }) {
     };
 
     // 3. Manager Reject
-    const managerRejectRequest = async (reqId, reason, managerId, managerName) => {
+    const managerRejectRequest = async (reqId, reason) => {
         try {
-            // Call backend API first to persist the rejection
+            // Call backend API (manager identity inferred from JWT)
             await apiClient.managerRejectRequest(reqId, {
-                manager_id: managerId,
-                reason: reason  // Changed from rejection_reason to reason
+                reason: reason
             });
 
             // Only update UI state after successful API call
@@ -309,7 +375,7 @@ export function AssetProvider({ children }) {
                     auditTrail: [...(req.auditTrail || []), {
                         action: 'REJECTED',
                         byRole: 'MANAGER',
-                        byUser: managerName,
+                        byUser: user?.name || 'Manager',
                         timestamp: new Date().toISOString(),
                         comment: `Rejected: ${reason}`
                     }]
@@ -323,13 +389,49 @@ export function AssetProvider({ children }) {
         }
     };
 
+    // 3.2. Manager Confirm IT Decision
+    const managerConfirmIT = async (reqId, decision, reason) => {
+        try {
+            await apiClient.managerConfirmIT(reqId, { decision, reason });
+
+            // Refresh data to get latest status and owner from backend
+            await loadData();
+
+            console.log(`[Manager] ✅ IT Decision confirmed for request ${reqId}`);
+        } catch (e) {
+            console.error('[Manager] ❌ Failed to confirm IT decision:', e);
+            alert(`Failed: ${e.message}`);
+        }
+    };
+
+    // 3.4. Manager Confirm Budget
+    const managerConfirmBudget = async (reqId, decision, reason) => {
+        try {
+            await apiClient.managerConfirmBudget(reqId, { decision, reason });
+            await loadData();
+        } catch (e) {
+            console.error('[Manager] ❌ Failed to confirm budget:', e);
+            alert(`Failed: ${e.message}`);
+        }
+    };
+
+    // 3.6. Manager Confirm Assignment
+    const managerConfirmAssignment = async (reqId, decision, reason) => {
+        try {
+            await apiClient.managerConfirmAssignment(reqId, { decision, reason });
+            await loadData();
+        } catch (e) {
+            console.error('[Manager] ❌ Failed to confirm assignment:', e);
+            alert(`Failed: ${e.message}`);
+        }
+    };
+
 
     // 4. IT Management Approve (Handles BYOD & Standard)
-    const itApproveRequest = async (reqId, reviewerId, reviewerName) => {
+    const itApproveRequest = async (reqId, approvalNotes) => {
         try {
             await apiClient.itApproveRequest(reqId, {
-                reviewer_id: reviewerId,
-                approval_comment: `IT Approved by ${reviewerName}`
+                approval_comment: approvalNotes || 'Approved by IT'
             });
 
             setRequests(prev => prev.map(req => {
@@ -344,7 +446,7 @@ export function AssetProvider({ children }) {
                 const newAuditEntry = {
                     action: actionLabel,
                     byRole: 'IT_MANAGEMENT',
-                    byUser: reviewerName,
+                    byUser: user?.name || 'IT Manager',
                     timestamp: new Date().toISOString(),
                     comment: comment
                 };
@@ -364,7 +466,7 @@ export function AssetProvider({ children }) {
     };
 
     // 4.5. Register BYOD (IT Management)
-    const registerByod = async (reqId, reviewerId, reviewerName) => {
+    const registerByod = async (reqId) => {
         try {
             const req = requests.find(r => r.id === reqId);
             const payload = {
@@ -373,7 +475,7 @@ export function AssetProvider({ children }) {
                 serial_number: req.serial_number || 'Unknown Serial'
             };
 
-            await apiClient.byodRegister(reqId, payload, reviewerId);
+            await apiClient.byodRegister(reqId, payload);
 
             setRequests(prev => prev.map(r => {
                 if (r.id !== reqId) return r;
@@ -381,7 +483,7 @@ export function AssetProvider({ children }) {
                 const newAuditEntry = {
                     action: 'BYOD_REGISTERED',
                     byRole: 'IT_MANAGEMENT',
-                    byUser: reviewerName,
+                    byUser: user?.name || 'IT Manager',
                     timestamp: new Date().toISOString(),
                     comment: `BYOD Device Registered & Validated`
                 };
@@ -409,11 +511,10 @@ export function AssetProvider({ children }) {
     };
 
     // 5. IT Management Reject
-    const itRejectRequest = async (reqId, reason, reviewerId, reviewerName) => {
+    const itRejectRequest = async (reqId, reason) => {
         try {
             await apiClient.itRejectRequest(reqId, {
-                reviewer_id: reviewerId,
-                reason: reason // Changed from rejection_reason to reason to match backend schema
+                reason: reason
             });
 
             setRequests(prev => prev.map(req => {
@@ -422,7 +523,7 @@ export function AssetProvider({ children }) {
                 const newAuditEntry = {
                     action: 'REJECTED',
                     byRole: 'IT_MANAGEMENT',
-                    byUser: reviewerName,
+                    byUser: user?.name || 'IT Manager',
                     timestamp: new Date().toISOString(),
                     comment: `IT Rejected: ${reason}`
                 };
@@ -443,7 +544,7 @@ export function AssetProvider({ children }) {
     };
 
     // 6. Inventory - Asset Available (allocate directly)
-    const inventoryCheckAvailable = async (reqId, allocatedAssetId, inventoryManagerName) => {
+    const inventoryCheckAvailable = async (reqId, allocatedAssetId) => {
         console.log(`[Inventory] Starting allocation for request ${reqId}, asset ${allocatedAssetId}`);
         try {
             // 1. Validate asset exists first
@@ -467,10 +568,10 @@ export function AssetProvider({ children }) {
             }
             console.log(`[Inventory] Request found. Assigning to ${targetRequest.requestedBy.name}`);
 
-            // 3. Call backend API to persist the allocation
-            console.log(`[Inventory] Step 3: Calling backend API to allocate asset...`);
+            // 3. Call backend API (id inferred from JWT)
+            console.log(`[Inventory] Step 3: Calling backend API...`);
             try {
-                await apiClient.inventoryAllocateAsset(reqId, allocatedAssetId, user?.id || 'inventory-manager');
+                await apiClient.inventoryAllocateAsset(reqId, allocatedAssetId);
                 console.log(`[Inventory] Backend allocation successful`);
             } catch (apiError) {
                 console.error(`[Inventory] Backend API call failed:`, apiError);
@@ -487,7 +588,7 @@ export function AssetProvider({ children }) {
                     const newAuditEntry = {
                         action: 'ALLOCATED',
                         byRole: 'ASSET_INVENTORY_MANAGER',
-                        byUser: inventoryManagerName,
+                        byUser: user?.name || 'Inventory Manager',
                         timestamp: new Date().toISOString(),
                         comment: `Allocated Asset ID: ${allocatedAssetId}`
                     };
@@ -525,13 +626,13 @@ export function AssetProvider({ children }) {
     };
 
     // 7. Inventory - Asset Not Available (route to procurement)
-    const inventoryCheckNotAvailable = async (reqId, inventoryManagerName) => {
+    const inventoryCheckNotAvailable = async (reqId) => {
         console.log(`[Inventory] Marking request ${reqId} as Not Available`);
         try {
-            // 1. Call backend API to persist
+            // 1. Call backend API (id inferred from JWT)
             console.log(`[Inventory] Step 1: Calling backend API...`);
             try {
-                await apiClient.inventoryMarkNotAvailable(reqId, user?.id || 'inventory-manager');
+                await apiClient.inventoryMarkNotAvailable(reqId);
                 console.log(`[Inventory] Backend update successful`);
             } catch (apiError) {
                 console.error(`[Inventory] Backend API call failed:`, apiError);
@@ -547,7 +648,7 @@ export function AssetProvider({ children }) {
                 const newAuditEntry = {
                     action: 'PROCUREMENT_REQUIRED',
                     byRole: 'ASSET_INVENTORY_MANAGER',
-                    byUser: inventoryManagerName,
+                    byUser: user?.name || 'Inventory Manager',
                     timestamp: new Date().toISOString(),
                     comment: 'Stock unavailable, routed to procurement'
                 };
@@ -571,13 +672,12 @@ export function AssetProvider({ children }) {
     };
 
     // 8. Procurement - Decision (approve → Finance, reject → End User)
-    const procurementApprove = async (reqId, poNumber, procurementOfficer) => {
+    const procurementApprove = async (reqId, poNumber) => {
         try {
             const poId = poNumber || `PO-${Math.floor(Math.random() * 10000)}`;
 
-            // Call backend API to persist the approval
+            // Call backend API (id inferred from JWT)
             await apiClient.procurementApproveRequest(reqId, {
-                reviewer_id: user?.id,
                 po_number: poId
             });
 
@@ -593,13 +693,13 @@ export function AssetProvider({ children }) {
                     auditTrail: [...(req.auditTrail || []), {
                         action: 'PROCUREMENT_APPROVED',
                         byRole: 'PROCUREMENT',
-                        byUser: procurementOfficer,
+                        byUser: user?.name || 'Procurement Officer',
                         timestamp: new Date().toISOString(),
                         comment: `PO ${poId} created and sent to Finance`
                     }],
                     timeline: [
                         ...(req.timeline || []),
-                        { role: 'PROCUREMENT', action: 'PO_CREATED', timestamp: new Date().toISOString(), comment: `PO ${poId} created by ${procurementOfficer}` }
+                        { role: 'PROCUREMENT', action: 'PO_CREATED', timestamp: new Date().toISOString(), comment: `PO ${poId} created by ${user?.name || 'Procurement Officer'}` }
                     ]
                 };
             }));
@@ -616,7 +716,7 @@ export function AssetProvider({ children }) {
     const procurementUploadPO = async (reqId, file) => {
         try {
             console.log(`[Procurement] Uploading PO for request ${reqId}...`);
-            const response = await apiClient.uploadPO(reqId, user?.id || 'procurement', file);
+            const response = await apiClient.uploadPO(reqId, file);
             console.log(`[Procurement] PO Upload Response:`, response); // contains extracted details
 
             // Refresh data to reflect status changes
@@ -631,11 +731,10 @@ export function AssetProvider({ children }) {
         }
     };
 
-    const procurementReject = async (reqId, reason, procurementOfficer) => {
+    const procurementReject = async (reqId, reason) => {
         try {
-            // Call backend API to persist the rejection
+            // Call backend API (id inferred from JWT)
             await apiClient.procurementRejectRequest(reqId, {
-                reviewer_id: user?.id,
                 reason: reason
             });
 
@@ -651,7 +750,7 @@ export function AssetProvider({ children }) {
                     auditTrail: [...(req.auditTrail || []), {
                         action: 'PROCUREMENT_REJECTED',
                         byRole: 'PROCUREMENT',
-                        byUser: procurementOfficer,
+                        byUser: user?.name || 'Procurement Officer',
                         timestamp: new Date().toISOString(),
                         comment: `Rejected: ${reason}`
                     }],
@@ -667,7 +766,7 @@ export function AssetProvider({ children }) {
     };
 
     // 9. Procurement - Create PO (legacy entry point, routes to Finance)
-    const procurementCreatePO = (reqId, poNumber, procurementOfficer) => {
+    const procurementCreatePO = (reqId, poNumber) => {
         setRequests(prev => prev.map(req => {
             if (req.id !== reqId) return req;
             return {
@@ -677,12 +776,12 @@ export function AssetProvider({ children }) {
                 currentOwnerRole: OWNER_ROLE.FINANCE,
                 timeline: [
                     ...(req.timeline || []),
-                    { role: 'PROCUREMENT', action: 'PO_CREATED', timestamp: new Date().toISOString(), comment: `PO ${poNumber} created by ${procurementOfficer}` }
+                    { role: 'PROCUREMENT', action: 'PO_CREATED', timestamp: new Date().toISOString(), comment: `PO ${poNumber} created by ${user?.name || 'Procurement Officer'}` }
                 ],
                 auditTrail: [...(req.auditTrail || []), {
                     action: 'PROCUREMENT_APPROVED',
                     byRole: 'PROCUREMENT',
-                    byUser: procurementOfficer,
+                    byUser: user?.name || 'Procurement Officer',
                     timestamp: new Date().toISOString(),
                     comment: `PO ${poNumber} created and sent to Finance`
                 }]
@@ -691,65 +790,79 @@ export function AssetProvider({ children }) {
     };
 
     // 9. Finance - Approve Budget
-    const financeApprove = (reqId, financeName) => {
-        setRequests(prev => prev.map(req => {
-            if (req.id !== reqId) return req;
-            return {
-                ...req,
-                procurementStage: 'FINANCE_APPROVED',
-                currentOwnerRole: OWNER_ROLE.PROCUREMENT,
-                timeline: [
-                    ...(req.timeline || []),
-                    { role: 'FINANCE', action: 'BUDGET_APPROVED', timestamp: new Date().toISOString(), comment: `Budget approved by ${financeName}` }
-                ],
-                auditTrail: [
-                    ...(req.auditTrail || []),
-                    {
-                        action: 'FINANCE_APPROVED',
-                        byRole: 'FINANCE',
-                        byUser: financeName,
-                        timestamp: new Date().toISOString(),
-                        comment: 'Budget approved'
-                    }
-                ]
-            };
-        }));
+    const financeApprove = async (reqId, financeName) => {
+        try {
+            await apiClient.financeApproveRequest(reqId);
+
+            setRequests(prev => prev.map(req => {
+                if (req.id !== reqId) return req;
+                return {
+                    ...req,
+                    procurementStage: 'FINANCE_APPROVED',
+                    currentOwnerRole: OWNER_ROLE.PROCUREMENT,
+                    timeline: [
+                        ...(req.timeline || []),
+                        { role: 'FINANCE', action: 'BUDGET_APPROVED', timestamp: new Date().toISOString(), comment: `Budget approved by ${financeName}` }
+                    ],
+                    auditTrail: [
+                        ...(req.auditTrail || []),
+                        {
+                            action: 'FINANCE_APPROVED',
+                            byRole: 'FINANCE',
+                            byUser: financeName,
+                            timestamp: new Date().toISOString(),
+                            comment: 'Budget approved'
+                        }
+                    ]
+                };
+            }));
+        } catch (e) {
+            console.error("Finance Approve Failed:", e);
+            alert(`Failed to approve budget: ${e.message}`);
+        }
     };
 
     // 10. Finance - Reject
-    const financeReject = (reqId, reason, financeName) => {
-        setRequests(prev => prev.map(req => {
-            if (req.id !== reqId) return req;
-            return {
-                ...req,
-                status: REQUEST_STATUS.REJECTED,
-                currentOwnerRole: OWNER_ROLE.END_USER,
-                rejectionReason: reason,
-                procurementStage: 'FINANCE_REJECTED',
-                timeline: [
-                    ...(req.timeline || []),
-                    { role: 'FINANCE', action: 'BUDGET_REJECTED', timestamp: new Date().toISOString(), comment: `Budget rejected by ${financeName}: ${reason}` }
-                ],
-                auditTrail: [
-                    ...(req.auditTrail || []),
-                    {
-                        action: 'FINANCE_REJECTED',
-                        byRole: 'FINANCE',
-                        byUser: financeName,
-                        timestamp: new Date().toISOString(),
-                        comment: `Budget rejected: ${reason}`
-                    }
-                ]
-            };
-        }));
+    const financeReject = async (reqId, reason, financeName) => {
+        try {
+            await apiClient.financeRejectRequest(reqId, { reason });
+
+            setRequests(prev => prev.map(req => {
+                if (req.id !== reqId) return req;
+                return {
+                    ...req,
+                    status: REQUEST_STATUS.REJECTED,
+                    currentOwnerRole: OWNER_ROLE.END_USER,
+                    rejectionReason: reason,
+                    procurementStage: 'FINANCE_REJECTED',
+                    timeline: [
+                        ...(req.timeline || []),
+                        { role: 'FINANCE', action: 'BUDGET_REJECTED', timestamp: new Date().toISOString(), comment: `Budget rejected by ${financeName}: ${reason}` }
+                    ],
+                    auditTrail: [
+                        ...(req.auditTrail || []),
+                        {
+                            action: 'FINANCE_REJECTED',
+                            byRole: 'FINANCE',
+                            byUser: financeName,
+                            timestamp: new Date().toISOString(),
+                            comment: `Budget rejected: ${reason}`
+                        }
+                    ]
+                };
+            }));
+        } catch (e) {
+            console.error("Finance Reject Failed:", e);
+            alert(`Failed to reject budget: ${e.message}`);
+        }
     };
 
     // 11. Procurement - Confirm Delivery
-    const procurementConfirmDelivery = async (reqId, procurementOfficer) => {
-        console.log(`[Procurement] Confirming delivery for request ${reqId}`);
+    const procurementConfirmDelivery = async (reqId, payload) => {
+        console.log(`[Procurement] Confirming delivery for request ${reqId}`, payload);
         try {
             // 1. Call backend API
-            await apiClient.procurementConfirmDelivery(reqId, user?.id || 'procurement-officer');
+            await apiClient.procurementConfirmDelivery(reqId, payload);
             console.log(`[Procurement] Backend delivery confirmation successful`);
 
             // 2. Update local state
@@ -760,9 +873,12 @@ export function AssetProvider({ children }) {
                     status: 'QC_PENDING',
                     procurementStage: 'DELIVERED',
                     currentOwnerRole: OWNER_ROLE.ASSET_INVENTORY_MANAGER,
+                    asset_name: payload.asset_name,
+                    asset_model: payload.asset_model,
+                    serial_number: payload.serial_number,
                     timeline: [
                         ...(req.timeline || []),
-                        { role: 'PROCUREMENT', action: 'DELIVERY_CONFIRMED', timestamp: new Date().toISOString(), comment: `Asset delivered - confirmed by ${procurementOfficer}` }
+                        { role: 'PROCUREMENT', action: 'DELIVERY_CONFIRMED', timestamp: new Date().toISOString(), comment: `Asset delivered - Serial: ${payload.serial_number}` }
                     ]
                 };
             }));
@@ -779,6 +895,62 @@ export function AssetProvider({ children }) {
         } catch (e) {
             console.error("[Procurement] Delivery Confirmation Failed:", e);
             alert(`Failed to confirm delivery: ${e.message}`);
+        }
+    };
+
+    // 13. Quality Control (QC)
+    const performQC = async (reqId, qcStatus, notes) => {
+        try {
+            await apiClient.performQC(reqId, {
+                qc_status: qcStatus,
+                qc_notes: notes
+            });
+
+            setRequests(prev => prev.map(req => {
+                if (req.id !== reqId) return req;
+                const nextStatus = qcStatus === 'PASSED' ? REQUEST_STATUS.USER_ACCEPTANCE_PENDING : 'QC_FAILED';
+                const nextOwner = qcStatus === 'PASSED' ? OWNER_ROLE.END_USER : OWNER_ROLE.ASSET_INVENTORY_MANAGER;
+
+                return {
+                    ...req,
+                    status: nextStatus,
+                    currentOwnerRole: nextOwner,
+                    qc_status: qcStatus,
+                    qc_notes: notes,
+                    timeline: [
+                        ...(req.timeline || []),
+                        { role: 'INVENTORY', action: `QC_${qcStatus}`, timestamp: new Date().toISOString(), comment: `QC ${qcStatus}: ${notes}` }
+                    ]
+                };
+            }));
+        } catch (e) {
+            console.error("QC Performance Failed:", e);
+            alert(`Failed to submit QC: ${e.message}`);
+        }
+    };
+
+    // 14. User Acceptance
+    const userAcceptAsset = async (reqId) => {
+        try {
+            await apiClient.userAcceptAsset(reqId);
+            setRequests(prev => prev.map(req => {
+                if (req.id !== reqId) return req;
+                return {
+                    ...req,
+                    status: REQUEST_STATUS.FULFILLED,
+                    currentOwnerRole: OWNER_ROLE.END_USER,
+                    user_acceptance_status: 'ACCEPTED',
+                    user_accepted_at: new Date().toISOString(),
+                    timeline: [
+                        ...(req.timeline || []),
+                        { role: 'END_USER', action: 'ACCEPTED', timestamp: new Date().toISOString(), comment: 'Asset accepted by user' }
+                    ]
+                };
+            }));
+            alert("Asset successfully accepted and fulfilled!");
+        } catch (e) {
+            console.error("User Acceptance Failed:", e);
+            alert(`Failed to accept asset: ${e.message}`);
         }
     };
 
@@ -811,7 +983,7 @@ export function AssetProvider({ children }) {
                 return {
                     ...req,
                     allocatedAssetId: allocatedAssetId,
-                    status: REQUEST_STATUS.FULFILLED,
+                    status: REQUEST_STATUS.USER_ACCEPTANCE_PENDING,
                     currentOwnerRole: OWNER_ROLE.END_USER,
                     timeline: [
                         ...(req.timeline || []),
@@ -906,6 +1078,8 @@ export function AssetProvider({ children }) {
         <AssetContext.Provider value={{
             assets,
             requests,
+            incomingRequests,
+            activeTickets,
             createRequest,
             itApproveRequest,
             itRejectRequest,
@@ -920,18 +1094,23 @@ export function AssetProvider({ children }) {
             financeReject,
             procurementConfirmDelivery,
             inventoryAllocateDelivered,
+            performQC,
+            userAcceptAsset,
             updateAssetStatus,
             assignAsset,
             updateAsset,
             exitRequests,
             processExitAssets,
             processExitByod,
+            tickets,
             refreshData: loadData,
+            // Manager Confirmations
+            managerConfirmIT,
+            managerConfirmBudget,
+            managerConfirmAssignment,
             // Backward compatibility
             managerApproveRequest,
             managerRejectRequest,
-            // Backward compatibility
-            tickets: requests.filter(r => r.status === 'SUPPORT' || r.requestType === 'SUPPORT' || r.assetType === 'TICKET'),
             approveRequest: itApproveRequest,
             rejectRequest: itRejectRequest,
             fulfillRequest: inventoryCheckAvailable

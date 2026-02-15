@@ -5,7 +5,7 @@ from sqlalchemy import text
 # Add backend to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import engine
+from app.database.database import engine
 
 def apply_migration():
     print("Checking for new columns in asset.assets table...")

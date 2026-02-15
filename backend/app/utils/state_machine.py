@@ -9,21 +9,28 @@ VALID_TRANSITIONS: Dict[str, Set[str]] = {
     "SUBMITTED": {"MANAGER_APPROVED", "MANAGER_REJECTED"},
     "MANAGER_APPROVED": {"IT_APPROVED", "IT_REJECTED"},
     "MANAGER_REJECTED": {"CLOSED"},  # Terminal state
-    "IT_APPROVED": {
+    "IT_APPROVED": {"MANAGER_CONFIRMED_IT", "IT_REJECTED"},
+    "MANAGER_CONFIRMED_IT": {
         "PROCUREMENT_REQUESTED",  # Company-owned, no inventory
         "BYOD_COMPLIANCE_CHECK",  # BYOD path
         "USER_ACCEPTANCE_PENDING",  # Company-owned, inventory available
-        "IN_USE"  # Direct assignment (legacy support)
     },
     "IT_REJECTED": {"CLOSED"},  # Terminal state
-    "PROCUREMENT_REQUESTED": {"PROCUREMENT_APPROVED", "PROCUREMENT_REJECTED"},
-    "PROCUREMENT_APPROVED": {"QC_PENDING"},
+    "PROCUREMENT_REQUESTED": {"PO_UPLOADED", "PROCUREMENT_REJECTED", "PROCUREMENT_APPROVED"},  # Procurement uploads PO
+    "PROCUREMENT_APPROVED": {"MANAGER_CONFIRMED_BUDGET", "QC_PENDING", "USER_ACCEPTANCE_PENDING"}, # Added shortcut state
+    "PO_UPLOADED": {"PO_VALIDATED", "PO_REJECTED", "PROCUREMENT_APPROVED"},  # Procurement validates PO completeness
+    "PO_VALIDATED": {"FINANCE_APPROVED", "FINANCE_REJECTED"},  # Finance validates budget
+    "PO_REJECTED": {"CLOSED"},  # Terminal state
+    "FINANCE_APPROVED": {"MANAGER_CONFIRMED_BUDGET", "FINANCE_REJECTED"},
+    "MANAGER_CONFIRMED_BUDGET": {"QC_PENDING"},  # Manager confirms budget allocation
+    "FINANCE_REJECTED": {"CLOSED"},  # Terminal state
     "PROCUREMENT_REJECTED": {"CLOSED"},  # Terminal state
     "QC_PENDING": {"QC_FAILED", "USER_ACCEPTANCE_PENDING"},
     "QC_FAILED": {"PROCUREMENT_REQUESTED"},  # Return to vendor, reorder
     "BYOD_COMPLIANCE_CHECK": {"BYOD_REJECTED", "IN_USE"},
     "BYOD_REJECTED": {"CLOSED"},  # Terminal state
-    "USER_ACCEPTANCE_PENDING": {"USER_REJECTED", "IN_USE"},
+    "USER_ACCEPTANCE_PENDING": {"USER_REJECTED", "MANAGER_CONFIRMED_ASSIGNMENT", "IN_USE"},
+    "MANAGER_CONFIRMED_ASSIGNMENT": {"IN_USE"},  # Manager confirms final assignment
     "USER_REJECTED": {"CLOSED"},  # Terminal state
     "IN_USE": {"CLOSED"},  # Terminal state (normal closure)
     "CLOSED": set(),  # Terminal state - no further transitions
@@ -34,6 +41,8 @@ TERMINAL_STATES: Set[str] = {
     "MANAGER_REJECTED",
     "IT_REJECTED",
     "PROCUREMENT_REJECTED",
+    "PO_REJECTED",
+    "FINANCE_REJECTED",
     "BYOD_REJECTED",
     "USER_REJECTED",
     "CLOSED"
@@ -43,9 +52,14 @@ TERMINAL_STATES: Set[str] = {
 ROLE_REQUIRED_STATES: Dict[str, str] = {
     "SUBMITTED": "MANAGER",  # Manager approval required
     "MANAGER_APPROVED": "IT_MANAGEMENT",  # IT approval required
-    "PROCUREMENT_REQUESTED": "PROCUREMENT_FINANCE",  # Finance approval required
+    "IT_APPROVED": "MANAGER",  # Manager confirms IT decision
+    "PROCUREMENT_REQUESTED": "PROCUREMENT_FINANCE",  # Procurement uploads PO
+    "PO_UPLOADED": "PROCUREMENT_FINANCE",  # Procurement validates PO completeness
+    "PO_VALIDATED": "FINANCE",  # Finance validates budget
+    "FINANCE_APPROVED": "MANAGER",  # Manager confirms budget allocation
     "QC_PENDING": "ASSET_INVENTORY_MANAGER",  # QC performed by inventory manager
     "USER_ACCEPTANCE_PENDING": "END_USER",  # User must accept/reject
+    "MANAGER_CONFIRMED_ASSIGNMENT": "MANAGER",  # Manager confirms final assignment
 }
 
 
@@ -139,7 +153,11 @@ def validate_state_transition(
             if user_role not in ["END_USER", "MANAGER"]:  # Will be checked separately for position
                 return False, f"Transition from {current_status} requires MANAGER role"
         elif user_role != required_role:
-            return False, f"Transition from {current_status} requires {required_role} role"
+            # Special handling for PROCUREMENT/FINANCE which often overlap
+            if required_role == "PROCUREMENT_FINANCE" and user_role in ["PROCUREMENT", "FINANCE"]:
+                 pass
+            else:
+                return False, f"Transition from {current_status} requires {required_role} role"
     
     # Validate asset type specific transitions
     if current_status == "IT_APPROVED":

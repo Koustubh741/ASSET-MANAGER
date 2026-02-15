@@ -24,26 +24,27 @@ export function RoleProvider({ children }) {
             if (typeof window !== 'undefined') {
                 const session = localStorage.getItem('auth_session');
                 console.log('RoleContext: Initializing from localStorage, session found:', !!session);
-                
+
                 if (session) {
                     try {
                         const parsed = JSON.parse(session);
                         console.log('RoleContext: Parsed session:', parsed);
-                        
+
                         if (parsed && parsed.isAuthenticated) {
                             // First, ensure apiClient has the token if it was stored separately
                             // (ApiClient singleton already does this in its constructor, but we want to be sure)
-                            
-                            setUser({ 
-                                id: parsed.id, 
-                                name: parsed.userName, 
-                                location: parsed.location, 
+
+                            setUser({
+                                id: parsed.id,
+                                name: parsed.userName,
+                                location: parsed.location,
                                 position: parsed.position || 'EMPLOYEE',
                                 domain: parsed.domain,
+                                department: parsed.department, // NEW: Restore department
                                 company: parsed.company, // NEW: Restore company
                                 createdAt: parsed.createdAt // NEW: Restore DOJ
                             });
-                            
+
                             const savedRole = ROLES.find(r => r.slug === parsed.role || r.label === parsed.role) || ROLES[0];
                             setCurrentRole(savedRole);
                             setIsAuthenticated(true);
@@ -73,6 +74,7 @@ export function RoleProvider({ children }) {
                 location: user.location,
                 position: user.position, // NEW: Persist position
                 domain: user.domain,
+                department: user.department, // NEW: Persist department
                 company: user.company, // NEW: Persist company
                 createdAt: user.createdAt, // NEW: Persist DOJ
                 role: currentRole.slug // Persist slug for better matching on reload
@@ -84,12 +86,13 @@ export function RoleProvider({ children }) {
     const login = (userData) => {
         setIsAuthenticated(true);
         // USER_REQUEST: Store position from login form (MANAGER or EMPLOYEE)
-        setUser({ 
-            id: userData.id, 
-            name: userData.userName, 
-            location: userData.location, 
+        setUser({
+            id: userData.id,
+            name: userData.userName,
+            location: userData.location,
             position: userData.position || 'EMPLOYEE',
             domain: userData.domain,
+            department: userData.department, // NEW: Set department
             company: userData.company, // NEW: Set company
             createdAt: userData.createdAt // NEW: Set DOJ
         });
@@ -104,6 +107,7 @@ export function RoleProvider({ children }) {
             location: userData.location,
             position: userData.position,
             domain: userData.domain,
+            department: userData.department, // NEW: Save department
             company: userData.company, // NEW: Save company
             createdAt: userData.createdAt // NEW: Save DOJ
         }));

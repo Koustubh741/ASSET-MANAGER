@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPlus, FileCheck, ShoppingCart, Truck, UserCheck, ArrowRight } from 'lucide-react';
+import { UserPlus, FileCheck, ShoppingCart, Truck, UserCheck, ArrowRight, ClipboardCheck } from 'lucide-react';
 
 const WorkflowVisualizer = () => {
     const steps = [
@@ -52,6 +52,7 @@ const WorkflowVisualizer = () => {
             amber: "bg-amber-500/20 text-amber-400 border-amber-500/30",
             indigo: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
             emerald: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+            teal: "bg-teal-500/20 text-teal-400 border-teal-500/30",
         };
         return colors[color] || colors.blue;
     };
@@ -106,6 +107,22 @@ const WorkflowVisualizer = () => {
                         </div>
                     </div>
                 ))}
+                {
+                    /* Added User Acceptance Step */
+                }
+                <div key={6} className="relative z-10 flex flex-col items-center flex-1 group">
+                    <span className="text-slate-500 text-xs font-bold tracking-widest uppercase mb-3 bg-slate-800/50 px-3 py-1 rounded-full border border-white/5">
+                        Step 6
+                    </span>
+                    <div className={`w-20 h-20 rounded-3xl flex items-center justify-center border-2 backdrop-blur-md transition-all duration-300 transform group-hover:scale-105 shadow-xl ${getColorClasses("teal")} mb-5`}>
+                        <ClipboardCheck size={32} strokeWidth={1.5} />
+                    </div>
+                    <div className="text-center space-y-2">
+                        <h4 className="text-white font-bold text-lg">Acceptance</h4>
+                        <p className="text-slate-500 text-[11px] uppercase font-bold tracking-wider">End User</p>
+                        <p className="text-slate-400 text-xs max-w-[140px] leading-relaxed mx-auto">Digital Receipt & Confirmation</p>
+                    </div>
+                </div>
             </div>
         </div>
     );

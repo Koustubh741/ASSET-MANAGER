@@ -26,6 +26,7 @@ async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, u
     if user:
         res.requester_name = user.full_name
         res.requester_email = user.email
+        res.requester_department = user.department
     
     # Step 6: Role-Based Visibility (Backend Enforced)
     if user_role in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
@@ -108,11 +109,17 @@ async def get_user_by_id_db(db: AsyncSession, user_id: UUID) -> Optional[User]:
 
 async def create_asset_request(db: AsyncSession, request: AssetRequestCreate, initial_status: str = "SUBMITTED") -> AssetRequestResponse:
     """
-    Create a new asset request
+    [DEPRECATED] Use create_asset_request_v2 which derives identity from JWT.
+    """
+    return await create_asset_request_v2(db, request, requester_id=getattr(request, 'requester_id', None), initial_status=initial_status)
+
+async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate, requester_id: UUID, initial_status: str = "SUBMITTED") -> AssetRequestResponse:
+    """
+    Create a new asset request with explicit requester_id (derived from JWT).
     """
     db_request = AssetRequest(
         id=uuid.uuid4(),
-        requester_id=request.requester_id,
+        requester_id=requester_id,
         asset_id=request.asset_id,
         asset_name=request.asset_name,
         asset_type=request.asset_type,
@@ -150,6 +157,11 @@ async def update_asset_request_status_with_validation(
     db_request = result.scalars().first()
     if not db_request:
         return None
+    
+    
+    # MANDATORY: Enforce rejection reason for all REJECTED states
+    if new_status.endswith("_REJECTED") and not reason:
+        raise ValueError(f"Rejection reason is mandatory when transitioning to {new_status}")
     
     # Validate state transition
     is_valid, error_msg = validate_state_transition(
@@ -194,7 +206,12 @@ async def update_it_review_status(
     reason: Optional[str] = None
 ) -> Optional[AssetRequestResponse]:
     """
-    Update IT review status
+    Update IT review status with automated inventory routing.
+    
+    When IT approves a Company-Owned request:
+    - Checks inventory for matching assets
+    - If available: Reserves asset and routes to USER_ACCEPTANCE_PENDING
+    - If not available: Routes to PROCUREMENT_REQUESTED
     """
     print(f"[DEBUG] update_it_review_status: Looking for request_id={request_id}, new_status={new_status}")
     result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
@@ -203,6 +220,10 @@ async def update_it_review_status(
         print(f"[DEBUG] update_it_review_status: Request {request_id} not found in database")
         return None
     print(f"[DEBUG] update_it_review_status: Found request {request_id} with status={db_request.status}")
+
+    # Note: Auto-routing logic has been moved to manager_confirm_stage()
+    # IT approval now simply sets status to IT_APPROVED
+    # Manager must confirm before auto-routing occurs
 
     is_valid, error_msg = validate_state_transition(
         current_status=db_request.status,
@@ -220,6 +241,7 @@ async def update_it_review_status(
 
     if db_request.manager_approvals is None:
         db_request.manager_approvals = []
+    
     db_request.manager_approvals.append({
         "reviewer_id": str(reviewer_id),
         "reviewer_name": reviewer_name,
@@ -273,7 +295,6 @@ async def update_procurement_finance_status(
                 db=db, 
                 po_id=po.id, 
                 reviewer_id=reviewer_id, 
-                role="FINANCE", 
                 action="APPROVE",
                 reason=reason
             )
@@ -283,7 +304,6 @@ async def update_procurement_finance_status(
                 db=db, 
                 po_id=po.id, 
                 reviewer_id=reviewer_id, 
-                role="FINANCE", 
                 action="REJECT",
                 reason=reason
             )
@@ -310,7 +330,7 @@ async def update_procurement_finance_status(
         id=uuid.uuid4(),
         reference_id=request_id,
         action="PO_APPROVED" if new_status == "PROCUREMENT_APPROVED" else "PO_REJECTED",
-        performed_by=reviewer_id,
+        performed_by=str(reviewer_id), # Cast to string for String column
         role="PROCUREMENT_FINANCE",
         metadata_={"reviewer_name": reviewer_name, "decision": new_status, "reason": reason}
     )
@@ -396,7 +416,22 @@ async def update_user_acceptance(
     db_request.user_accepted_at = datetime.now()
     
     if acceptance_status == "ACCEPTED":
-        db_request.status = "IN_USE"
+        # Root Fix: If this is an inventory-allocated asset (Asset ID present), 
+        # auto-fulfill it to IN_USE to avoid redundant manager approval.
+        if db_request.asset_id:
+            db_request.status = "IN_USE"
+            from .asset_service import finalize_asset_assignment
+            await finalize_asset_assignment(
+                db=db,
+                asset_id=db_request.asset_id,
+                requester_id=user_id,
+                manager_id=user_id, # User self-confirms receipt
+                manager_name="System/End-User (Auto-Fulfill)"
+            )
+            print(f"[AUTO-FULFILL] Request {request_id} fulfilled directly upon user acceptance")
+        else:
+            # New procurement/BYOD path follows official confirmation
+            db_request.status = "MANAGER_CONFIRMED_ASSIGNMENT"
     else:
         db_request.status = "USER_REJECTED"
     
@@ -407,7 +442,8 @@ async def update_user_acceptance(
         "reviewer_name": "END_USER",
         "decision": acceptance_status,
         "timestamp": datetime.now().isoformat(),
-        "type": "USER_ACCEPTANCE"
+        "type": "USER_ACCEPTANCE",
+        "auto_fulfilled": True if (acceptance_status == "ACCEPTED" and db_request.asset_id) else False
     })
     
     await db.commit()
@@ -472,12 +508,13 @@ async def get_all_asset_requests(
     status: Optional[str] = None,
     requester_id: Optional[UUID] = None,
     domain: Optional[str] = None,
+    department: Optional[str] = None,
     user_role: Optional[str] = None
 ) -> List[AssetRequestResponse]:
     """
     Get all asset requests with optional filtering
     """
-    print(f"DEBUG: Filtering requests - status={status}, requester_id={requester_id}, domain={domain}")
+    print(f"DEBUG: Filtering requests - status={status}, requester_id={requester_id}, domain={domain}, department={department}")
     
     query = select(AssetRequest)
     if status:
@@ -486,6 +523,17 @@ async def get_all_asset_requests(
         query = query.filter(AssetRequest.requester_id == requester_id)
     if domain:
         query = query.join(User, AssetRequest.requester_id == User.id).filter(User.domain == domain)
+    if department:
+        from sqlalchemy import or_
+        # Join with User only if not already joined via domain
+        if not domain:
+            query = query.join(User, AssetRequest.requester_id == User.id)
+        query = query.filter(
+            or_(
+                User.department.ilike(f"%{department}%"),
+                User.domain.ilike(f"%{department}%")
+            )
+        )
         
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)

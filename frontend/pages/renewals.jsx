@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle, XCircle, DollarSign, Clock, AlertCircle, Eye, Filter, Calendar, Building, FileText, ChevronRight } from 'lucide-react'
 import apiClient from '@/lib/apiClient';
+import { getHash } from '@/utils/assetNormalizer';
 
 // --- Helper Components ---
 
@@ -30,10 +31,10 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
                     <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-400 uppercase tracking-wide font-semibold">Current Status</span>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold border ${renewal.renewal_status === 'Requested' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
-                                renewal.renewal_status === 'IT_Approved' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                    renewal.renewal_status === 'Finance_Approved' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                        renewal.renewal_status === 'Commercial_Approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                            'bg-red-500/10 text-red-400 border-red-500/20'
+                            renewal.renewal_status === 'IT_Approved' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                renewal.renewal_status === 'Finance_Approved' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                                    renewal.renewal_status === 'Commercial_Approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                        'bg-red-500/10 text-red-400 border-red-500/20'
                             }`}>
                             {renewal.renewal_status.replace('_', ' ')}
                         </span>
@@ -186,11 +187,15 @@ export default function Renewals() {
                 const assets = await apiClient.getAssets();
 
                 const generatedRenewals = assets
-                    .filter(a => a.id % 4 === 0 && a.status !== 'Retired')
+                    .filter(asset => {
+                        const h = getHash(String(asset.id));
+                        return h % 4 === 0 && asset.status !== 'Retired';
+                    })
                     .map(asset => {
+                        const h = getHash(String(asset.id));
                         let status = 'Requested';
-                        if (asset.id % 3 === 0) status = 'IT_Approved';
-                        if (asset.id % 5 === 0) status = 'Finance_Approved';
+                        if (h % 3 === 0) status = 'IT_Approved';
+                        if (h % 5 === 0) status = 'Finance_Approved';
 
                         return {
                             ...asset,

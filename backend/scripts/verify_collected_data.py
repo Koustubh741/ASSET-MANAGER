@@ -1,5 +1,5 @@
-from database import SessionLocal
-from models import AuditLog
+from app.database.database import SessionLocal
+from app.models.models import AuditLog
 
 def verify_collected_data():
     db = SessionLocal()

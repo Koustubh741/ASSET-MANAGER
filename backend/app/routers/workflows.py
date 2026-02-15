@@ -8,6 +8,7 @@ from ..schemas.asset_schema import AssetUpdate
 from ..database.database import get_db
 from ..models.models import AssetRequest, PurchaseRequest, Asset
 from ..services import asset_request_service
+from ..utils.auth_utils import get_current_user
 from datetime import date
 
 router = APIRouter(
@@ -20,11 +21,14 @@ async def review_renewal(
     asset_id: UUID, 
     action: str, 
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user),
     comments: Optional[str] = None
 ):
     """
     Review asset renewal (Asynchronous).
     """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to review renewals")
     asset = await asset_service.get_asset_by_id(db, asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -52,11 +56,14 @@ async def review_renewal(
 async def manage_procurement(
     asset_id: UUID, 
     action: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Manage asset procurement workflow (Asynchronous).
     """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "PROCUREMENT", "PROCUREMENT_FINANCE", "ASSET_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to manage procurement")
     asset = await asset_service.get_asset_by_id(db, asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -118,11 +125,14 @@ async def manage_procurement(
 async def manage_disposal(
     asset_id: UUID, 
     action: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Manage asset disposal workflow (Asynchronous).
     """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "ASSET_MANAGER", "IT_SUPPORT"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to manage disposal")
     asset = await asset_service.get_asset_by_id(db, asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")

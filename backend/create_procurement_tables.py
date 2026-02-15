@@ -1,5 +1,11 @@
-from database import engine
+import sys
+import os
 from sqlalchemy import text
+
+# Add root directory to path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from app.database.database import engine
 
 def create_tables():
     try:
@@ -11,8 +17,8 @@ def create_tables():
             # Create Procurement Logs
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS audit.procurement_logs (
-                    id VARCHAR PRIMARY KEY,
-                    reference_id VARCHAR NOT NULL,
+                    id UUID PRIMARY KEY,
+                    reference_id UUID NOT NULL,
                     action VARCHAR(50) NOT NULL,
                     performed_by VARCHAR NOT NULL,
                     role VARCHAR(50),
@@ -28,8 +34,8 @@ def create_tables():
             # Create Purchase Orders
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS procurement.purchase_orders (
-                    id VARCHAR PRIMARY KEY,
-                    asset_request_id VARCHAR NOT NULL,
+                    id UUID PRIMARY KEY,
+                    asset_request_id UUID NOT NULL,
                     uploaded_by VARCHAR NOT NULL,
                     po_pdf_path VARCHAR(500) NOT NULL,
                     vendor_name VARCHAR(255),
@@ -49,12 +55,12 @@ def create_tables():
             # Create Purchase Invoices
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS procurement.purchase_invoices (
-                    id VARCHAR PRIMARY KEY,
-                    purchase_order_id VARCHAR NOT NULL,
+                    id UUID PRIMARY KEY,
+                    purchase_order_id UUID NOT NULL,
                     invoice_pdf_path VARCHAR(500) NOT NULL,
                     purchase_date TIMESTAMP,
                     total_amount FLOAT,
-                    created_by VARCHAR NOT NULL,
+                    created_by UUID NOT NULL,
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
                 );
             """))

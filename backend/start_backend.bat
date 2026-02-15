@@ -6,12 +6,12 @@ echo.
 
 cd /d D:\ASSET-MANAGER\backend
 
-echo Step 1: Installing asyncpg...
-C:\Users\Admin\AppData\Local\Programs\Python\Python311\python.exe -m pip install --upgrade asyncpg
+echo Step 1: Synchronizing dependencies from requirements.txt...
+C:\Users\Admin\AppData\Local\Programs\Python\Python311\python.exe -m pip install -r requirements.txt
 echo.
 
-echo Step 2: Verifying installation...
-C:\Users\Admin\AppData\Local\Programs\Python\Python311\python.exe -c "import asyncpg; print('asyncpg version:', asyncpg.__version__)"
+echo Step 2: Verifying critical dependencies...
+C:\Users\Admin\AppData\Local\Programs\Python\Python311\python.exe -c "import asyncpg; import apscheduler; print('✅ All critical dependencies verified')"
 echo.
 
 echo Step 3: Starting backend server...

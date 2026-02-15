@@ -1,5 +1,5 @@
-from database import SessionLocal
-from models import Ticket
+from app.database.database import SessionLocal
+from app.models.models import Ticket
 import uuid
 
 def test_create_ticket():

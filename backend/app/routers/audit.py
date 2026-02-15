@@ -6,20 +6,38 @@ from typing import List, Optional
 from ..database.database import get_db
 from ..models.models import AuditLog, Asset
 from pydantic import BaseModel
-from datetime import datetime
 from uuid import UUID
+from ..routers.auth import check_system_admin, check_user_list_access
+from ..utils.auth_utils import get_current_user
+from datetime import datetime
 
 router = APIRouter(
     prefix="/audit",
     tags=["audit"]
 )
 
+async def check_audit_access(
+    current_user = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Dependency to check if user has access to audit logs.
+    Admins see all. Managers see their department.
+    """
+    if current_user.role in ["ADMIN", "SYSTEM_ADMIN"] or current_user.position == "MANAGER":
+        return current_user
+        
+    raise HTTPException(
+        status_code=403,
+        detail="Only ADMIN, SYSTEM_ADMIN, or Managers can view audit logs"
+    )
+
 class AuditLogResponse(BaseModel):
     id: UUID
     entity_type: str
     entity_id: Optional[str] = None
     action: str
-    performed_by: Optional[str] = None
+    performed_by: Optional[UUID] = None
     timestamp: datetime
     details: Optional[dict] = None
 
@@ -32,7 +50,8 @@ async def get_audit_logs(
     offset: int = 0,
     after_id: Optional[UUID] = None,
     entity_type: Optional[str] = None,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(check_audit_access)
 ):
     """
     Get system audit logs (Asynchronous).
@@ -40,6 +59,17 @@ async def get_audit_logs(
     """
     query = select(AuditLog)
     
+    # Apply manager scoping
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+        from ..models.models import User
+        manager_unit = current_user.department or current_user.domain
+        
+        # We need to filter logs by users who belong to the same department/domain
+        # This requires joining with the User table
+        query = query.join(User, AuditLog.performed_by == User.id).filter(
+            (User.department == manager_unit) | (User.domain == manager_unit)
+        )
+
     if entity_type:
         query = query.filter(AuditLog.entity_type == entity_type)
         
@@ -60,14 +90,29 @@ async def get_audit_logs(
     return result.scalars().all()
 
 @router.get("/stats")
-async def get_audit_stats(db: AsyncSession = Depends(get_db)):
+async def get_audit_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(check_audit_access)
+):
     """
     Get audit log statistics (Asynchronous).
     """
-    total_res = await db.execute(select(func.count(AuditLog.id)))
+    base_query = select(AuditLog)
+    
+    # Apply manager scoping
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+        from ..models.models import User
+        manager_unit = current_user.department or current_user.domain
+        base_query = base_query.join(User, AuditLog.performed_by == User.id).filter(
+            (User.department == manager_unit) | (User.domain == manager_unit)
+        )
+
+    total_res = await db.execute(select(func.count()).select_from(base_query.subquery()))
     total = total_res.scalar() or 0
     
-    api_res = await db.execute(select(func.count(AuditLog.id)).filter(AuditLog.action == "DATA_COLLECT"))
+    api_res = await db.execute(select(func.count()).select_from(
+        base_query.filter(AuditLog.action == "DATA_COLLECT").subquery()
+    ))
     api_collects = api_res.scalar() or 0
     
     return {
@@ -76,7 +121,10 @@ async def get_audit_stats(db: AsyncSession = Depends(get_db)):
     }
 
 @router.post("/sync")
-async def sync_orphaned_logs(db: AsyncSession = Depends(get_db)):
+async def sync_orphaned_logs(
+    db: AsyncSession = Depends(get_db),
+    admin_user = Depends(check_system_admin)
+):
     """
     Search for DATA_COLLECT logs that don't have corresponding assets and create them (Asynchronous).
     """

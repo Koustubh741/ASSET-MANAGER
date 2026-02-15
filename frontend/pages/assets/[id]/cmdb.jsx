@@ -28,7 +28,7 @@ export default function CMDBMapPage() {
             try {
                 // Fetch the primary asset
                 const mainAsset = await apiClient.getAsset(id);
-                
+
                 // Fetch some context (other assets and users)
                 const [allAssets, allUsers] = await Promise.all([
                     apiClient.getAssets({ limit: 10 }),
@@ -108,7 +108,7 @@ export default function CMDBMapPage() {
                 // 5. Business Layer (Portal, Finance, etc.)
                 businessNodes.push({ id: 'biz-app', type: 'Service', name: 'Enterprise Portal', status: 'Active', x: 400, y: 150, icon: Globe, layer: 'biz' });
                 bizEdges.push({ source: 'root', target: 'biz-app', type: 'Powers', label: 'Critical' });
-                
+
                 businessNodes.push({ id: 'biz-fin', type: 'Business', name: 'Financial Operations', status: 'Active', x: 200, y: 80, icon: Briefcase, layer: 'biz' });
                 bizEdges.push({ source: 'biz-app', target: 'biz-fin', type: 'Enables', label: 'Revenue' });
 

@@ -9,6 +9,7 @@ from ..services import ticket_service
 from ..services import asset_request_service
 from ..schemas.user_schema import UserResponse
 from ..models.models import Asset, ByodDevice
+from ..utils.auth_utils import get_current_user
 from datetime import datetime
 
 router = APIRouter(
@@ -17,17 +18,14 @@ router = APIRouter(
 )
 
 
-async def verify_it_management(user_id: UUID, db: AsyncSession) -> UserResponse:
+async def verify_it_management(user: UserResponse) -> UserResponse:
     """
-    Verify that the user is IT management (role=IT_MANAGEMENT) and active (Asynchronous).
+    Verify that the user is IT management (role=IT_MANAGEMENT) and active.
     """
-    user = await asset_request_service.get_user_by_id_db(db, user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.role != "IT_MANAGEMENT":
+    if user.role != "IT_MANAGEMENT" and user.role != "ADMIN":
         raise HTTPException(
             status_code=403,
-            detail="Only users with role=IT_MANAGEMENT can perform this action",
+            detail="Unauthorized: Requires IT_MANAGEMENT or ADMIN role",
         )
     if user.status != "ACTIVE":
         raise HTTPException(
@@ -38,8 +36,15 @@ async def verify_it_management(user_id: UUID, db: AsyncSession) -> UserResponse:
 
 
 @router.post("/", response_model=TicketResponse)
-async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)):
+async def create_ticket(
+    ticket: TicketCreate, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """Create a new ticket (Asynchronous)."""
+    # Security: Derive requestor_id from JWT
+    requestor_id = current_user.id
+    
     if ticket.related_asset_id:
         res_asset = await db.execute(select(Asset).filter(Asset.id == ticket.related_asset_id))
         asset = res_asset.scalars().first()
@@ -51,28 +56,80 @@ async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)
                     status_code=400,
                     detail="related_asset_id must reference a valid asset or BYOD device",
                 )
-    return await ticket_service.create_ticket(db=db, ticket=ticket)
+    return await ticket_service.create_ticket_v2(db=db, ticket=ticket, requestor_id=requestor_id)
 
 @router.get("/", response_model=List[TicketResponse])
-async def read_tickets(requestor_id: Optional[UUID] = None, skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
-    """Read all tickets (Asynchronous)."""
-    return await ticket_service.get_tickets(db, requestor_id=requestor_id, skip=skip, limit=limit)
+async def read_tickets(
+    skip: int = 0, 
+    limit: int = 100, 
+    department: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Read tickets (Asynchronous). If END_USER, only see own tickets. Managers see their department."""
+    effective_requestor_id = None
+    
+    # System Admin and IT Management see all. 
+    # Regular End Users see only their own.
+    # Managers see their own department.
+    if current_user.role == "END_USER" and current_user.position != "MANAGER":
+        effective_requestor_id = current_user.id
+    
+    if current_user.position == "MANAGER" and current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "IT_MANAGEMENT"]:
+        # Reinforce scoping for managers
+        if not department:
+            department = current_user.department or current_user.domain
+        
+    return await ticket_service.get_tickets(db, requestor_id=effective_requestor_id, department=department, skip=skip, limit=limit)
 
 @router.get("/{ticket_id}", response_model=TicketResponse)
-async def read_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db)):
+async def read_ticket(
+    ticket_id: UUID, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """Read a specific ticket (Asynchronous)."""
     db_ticket = await ticket_service.get_ticket(db, ticket_id=ticket_id)
     if db_ticket is None:
         raise HTTPException(status_code=404, detail="Ticket not found")
+        
+    # Security Root Fix: Authorization check
+    if current_user.role == "END_USER" and db_ticket.requestor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized to view this ticket")
+        
     return db_ticket
 
 @router.patch("/{ticket_id}", response_model=TicketResponse)
-async def update_ticket(ticket_id: UUID, ticket_update: TicketUpdate, db: AsyncSession = Depends(get_db)):
+async def update_ticket(
+    ticket_id: UUID, 
+    ticket_update: TicketUpdate, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """Update a ticket (Asynchronous)."""
-    db_ticket = await ticket_service.update_ticket(db, ticket_id=ticket_id, ticket_update=ticket_update)
+    # Fetch the ticket to verify ownership and permissions
+    db_ticket = await ticket_service.get_ticket(db, ticket_id=ticket_id)
     if db_ticket is None:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    return db_ticket
+    
+    # RBAC: END_USER can only update their own tickets and specific fields
+    if current_user.role == "END_USER":
+        if db_ticket.requestor_id != current_user.id:
+            raise HTTPException(
+                status_code=403, 
+                detail="Unauthorized: You can only update your own tickets"
+            )
+        
+        # Restrict END_USER to only updating subject and description
+        if ticket_update.status is not None or ticket_update.priority is not None or ticket_update.assigned_to_id is not None:
+            raise HTTPException(
+                status_code=403,
+                detail="Unauthorized: End users cannot modify status, priority, or assignment"
+            )
+    
+    # Proceed with update
+    updated_ticket = await ticket_service.update_ticket(db, ticket_id=ticket_id, ticket_update=ticket_update)
+    return updated_ticket
 
 
 @router.post("/{ticket_id}/it/diagnose", response_model=TicketResponse)
@@ -80,9 +137,10 @@ async def it_diagnose_ticket(
     ticket_id: UUID,
     payload: ITDiagnosisRequest,
     db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """IT Management diagnosis for tickets (Asynchronous)."""
-    reviewer = await verify_it_management(payload.reviewer_id, db)
+    reviewer = await verify_it_management(current_user)
 
     db_ticket = await ticket_service.get_ticket(db, ticket_id)
     if not db_ticket:
@@ -129,9 +187,14 @@ async def it_diagnose_ticket(
     return db_ticket
 
 @router.post("/{ticket_id}/acknowledge", response_model=TicketResponse)
-async def acknowledge_ticket(ticket_id: UUID, payload: ITDiagnosisRequest, db: AsyncSession = Depends(get_db)):
+async def acknowledge_ticket(
+    ticket_id: UUID, 
+    payload: ITDiagnosisRequest, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """IT Management acknowledges the ticket (Asynchronous)."""
-    reviewer = await verify_it_management(payload.reviewer_id, db)
+    reviewer = await verify_it_management(current_user)
     
     db_ticket = await ticket_service.get_ticket(db, ticket_id)
     if not db_ticket:
@@ -160,9 +223,14 @@ async def acknowledge_ticket(ticket_id: UUID, payload: ITDiagnosisRequest, db: A
     return db_ticket
 
 @router.post("/{ticket_id}/progress", response_model=TicketResponse)
-async def update_ticket_progress(ticket_id: UUID, payload: ResolutionUpdate, db: AsyncSession = Depends(get_db)):
+async def update_ticket_progress(
+    ticket_id: UUID, 
+    payload: ResolutionUpdate, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """Update resolution progress (Asynchronous)."""
-    reviewer = await verify_it_management(payload.reviewer_id, db)
+    reviewer = await verify_it_management(current_user)
     
     db_ticket = await ticket_service.get_ticket(db, ticket_id)
     if not db_ticket:
@@ -191,9 +259,14 @@ async def update_ticket_progress(ticket_id: UUID, payload: ResolutionUpdate, db:
     return db_ticket
 
 @router.post("/{ticket_id}/resolve", response_model=TicketResponse)
-async def resolve_ticket(ticket_id: UUID, payload: ResolutionUpdate, db: AsyncSession = Depends(get_db)):
+async def resolve_ticket(
+    ticket_id: UUID, 
+    payload: ResolutionUpdate, 
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """IT Management resolves the ticket (Asynchronous)."""
-    reviewer = await verify_it_management(payload.reviewer_id, db)
+    reviewer = await verify_it_management(current_user)
     
     db_ticket = await ticket_service.get_ticket(db, ticket_id)
     if not db_ticket:

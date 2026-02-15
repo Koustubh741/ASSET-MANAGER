@@ -1,6 +1,17 @@
 /**
  * Cleans corrupted asset data (removes extra quotes, parses costs, etc.)
  */
+
+export const getHash = (s) => {
+    if (!s) return 0;
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) {
+        hash = ((hash << 5) - hash) + s.charCodeAt(i);
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+};
+
 export function sanitizeAsset(a) {
     const cleanStr = (s) => s ? String(s).replace(/^["']|["']$/g, '').trim() : s;
     const parseVal = (v) => {
@@ -123,7 +134,9 @@ export function calculateDashboardStats(allAssets) {
             if (!isNaN(date)) {
                 const month = date.getMonth();
                 monthlyTrends[month].renewed += 1;
-                if (asset.id % 3 === 0) {
+                // Use hash-based modulo for stability with UUIDs
+                const assetHash = getHash(String(asset.id));
+                if (assetHash % 3 === 0) {
                     const repairMonth = (month + 2) % 12;
                     monthlyTrends[repairMonth].repaired += 1;
                 }

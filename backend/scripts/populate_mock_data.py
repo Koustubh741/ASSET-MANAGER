@@ -1,7 +1,7 @@
 """
 Populate the asset.assets table with mock data for testing
 """
-from database import SessionLocal
+from app.database.database import SessionLocal
 import models
 from datetime import datetime, timedelta
 import random

@@ -6,25 +6,91 @@ import http.client
 import subprocess
 import os
 import sys
-from datetime import datetime
+import logging
+import time
+import hmac
+import hashlib
+import argparse
+import ssl
+from datetime import datetime, timezone
+from dataclasses import dataclass, field, asdict
+from typing import Any, Dict, List, Optional
+from dotenv import load_dotenv
 
-# CONFIGURATION
-BACKEND_URL = "127.0.0.1:8000"  # Target FastAPI server
-AGENT_SECRET = "agent_secret_key_2026"
-CONFIG_FILE = "agent_config.json"
+# ── Environment & Logging ─────────────────────────────────────────────────────
+load_dotenv()
 
-def get_agent_id():
-    """Persistent agent ID management"""
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as f:
-            return json.load(f).get("agent_id")
-    
-    new_id = str(uuid.uuid4())
-    with open(CONFIG_FILE, 'w') as f:
-        json.dump({"agent_id": new_id}, f)
-    return new_id
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%SZ",
+)
+logger = logging.getLogger("local_discovery_agent")
 
-def get_hardware_info():
+# ── Configuration Management ─────────────────────────────────────────────────
+@dataclass
+class AgentConfig:
+    """Centralized configuration for the local discovery agent."""
+    backend_url: str
+    agent_secret: str
+    agent_id: str
+    ssl_verify: bool = True
+    http_timeout: int = 15
+    config_file: str = "agent_config.json"
+
+    @classmethod
+    def from_env(cls) -> "AgentConfig":
+        """Load configuration from environment variables and local cache."""
+        backend_url = os.getenv("BACKEND_URL", "127.0.0.1:8000").replace("https://", "").replace("http://", "").rstrip("/")
+        agent_secret = os.getenv("AGENT_SECRET", "agent_secret_key_2026")
+        
+        # Load or generate persistent Agent ID
+        config_file = "agent_config.json"
+        agent_id = None
+        if os.path.exists(config_file):
+            try:
+                with open(config_file, 'r') as f:
+                    agent_id = json.load(f).get("agent_id")
+            except: pass
+            
+        if not agent_id:
+            agent_id = os.getenv("LOCAL_AGENT_ID", str(uuid.uuid4()))
+            try:
+                with open(config_file, 'w') as f:
+                    json.dump({"agent_id": agent_id}, f)
+            except: pass
+
+        return cls(
+            backend_url=backend_url,
+            agent_secret=agent_secret,
+            agent_id=agent_id,
+            ssl_verify=os.getenv("BACKEND_SSL_VERIFY", "true").lower() != "false",
+            http_timeout=int(os.getenv("HTTP_TIMEOUT", "15")),
+        )
+
+# ── Metrics Collection ───────────────────────────────────────────────────────
+@dataclass
+class DiscoveryMetrics:
+    """Track performance and results of the discovery run."""
+    start_time: float = field(default_factory=time.time)
+    end_time: float = 0.0
+    duration: float = 0.0
+    software_count: int = 0
+    sync_success: bool = False
+    error_msg: Optional[str] = None
+
+    def finalize(self):
+        self.end_time = time.time()
+        self.duration = self.end_time - self.start_time
+
+    def to_dict(self) -> Dict[str, Any]:
+        data = asdict(self)
+        data["agent_id"] = "agent-local" # Placeholder for reporting
+        return data
+
+# ── Hardware/Software Discovery ─────────────────────────────────────────────
+def get_hardware_info() -> Dict[str, Any]:
+    """Gather hardware specifications from the local host."""
     hardware = {
         "cpu": platform.processor(),
         "ram_mb": 0,
@@ -33,41 +99,29 @@ def get_hardware_info():
         "vendor": "UNKNOWN",
         "storage_gb": 0,
         "condition": "Excellent",
-        "type": "Desktop"
+        "type": "Desktop",
+        "ad_user": "Unknown",
+        "ad_domain": "LOCAL"
     }
     
-    # Get RAM info
     try:
         if platform.system() == "Windows":
-            # Windows RAM & Hardware logic
             import ctypes
             class MEMORYSTATUSEX(ctypes.Structure):
-                _fields_ = [
-                    ("dwLength", ctypes.c_ulong),
-                    ("dwMemoryLoad", ctypes.c_ulong),
-                    ("ullTotalPhys", ctypes.c_ulonglong),
-                    ("ullAvailPhys", ctypes.c_ulonglong),
-                    ("ullTotalPageFile", ctypes.c_ulonglong),
-                    ("ullAvailPageFile", ctypes.c_ulonglong),
-                    ("ullTotalVirtual", ctypes.c_ulonglong),
-                    ("ullAvailVirtual", ctypes.c_ulonglong),
-                    ("sullAvailExtendedVirtual", ctypes.c_ulonglong),
-                ]
+                _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                           ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                           ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                           ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                           ("sullAvailExtendedVirtual", ctypes.c_ulonglong)]
             stat = MEMORYSTATUSEX()
             stat.dwLength = ctypes.sizeof(stat)
             ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
             hardware["ram_mb"] = stat.ullTotalPhys // (1024 * 1024)
             
-            # Improved parsing using WMIC format:list
             def get_wmic_dict(cmd):
                 try:
                     out = subprocess.check_output(cmd, shell=True).decode().strip().split('\r\r\n')
-                    d = {}
-                    for line in out:
-                        if '=' in line:
-                            k, v = line.split('=', 1)
-                            d[k.strip()] = v.strip()
-                    return d
+                    return {k.strip(): v.strip() for line in out if '=' in line for k, v in [line.split('=', 1)]}
                 except: return {}
 
             csproduct = get_wmic_dict("wmic csproduct get name, vendor /format:list")
@@ -77,27 +131,17 @@ def get_hardware_info():
             bios = get_wmic_dict("wmic bios get serialnumber /format:list")
             hardware["serial"] = bios.get("SerialNumber", "NOT_FOUND")
 
-            # Chassis Type Detection
             chassis = get_wmic_dict("wmic systemenclosure get chassistypes /format:list")
             ct = chassis.get("ChassisTypes", "")
-            # ChassisTypes mapping: 8, 9, 10 are Laptops. 3, 4, 6 are Desktops. 23 is Server.
-            if any(t in ct for t in ["8", "9", "10", "11", "12", "14"]):
-                hardware["type"] = "Laptop"
-            elif any(t in ct for t in ["23", "28"]):
-                hardware["type"] = "Server"
-            else:
-                hardware["type"] = "Desktop"
-            
-            # Storage Detection
+            if any(t in ct for t in ["8", "9", "10", "11", "12", "14"]): hardware["type"] = "Laptop"
+            elif any(t in ct for t in ["23", "28"]): hardware["type"] = "Server"
+
             disk = get_wmic_dict("wmic logicaldisk where \"DeviceID='C:'\" get size /format:list")
-            if disk.get("Size"):
-                hardware["storage_gb"] = int(disk["Size"]) // (1024 * 1024 * 1024)
+            if disk.get("Size"): hardware["storage_gb"] = int(disk["Size"]) // (1024**3)
             
-            # Health/Condition Detection
             health = get_wmic_dict("wmic diskdrive get status /format:list")
             hardware["condition"] = "Excellent" if health.get("Status") == "OK" else "Fair"
             
-            # AD/Domain Context (Windows)
             try:
                 hardware["ad_user"] = subprocess.check_output("whoami", shell=True).decode().strip()
                 domain_info = get_wmic_dict("wmic computersystem get domain /format:list")
@@ -105,158 +149,151 @@ def get_hardware_info():
             except:
                 hardware["ad_user"] = os.getenv("USERNAME", "Unknown")
                 hardware["ad_domain"] = os.getenv("USERDOMAIN", "LOCAL")
-            
         else:
-            # Linux RAM & Hardware logic
-            with open('/proc/meminfo', 'r') as f:
-                for line in f:
-                    if "MemTotal" in line:
-                        hardware["ram_mb"] = int(line.split()[1]) // 1024
-                        break
-            
-            # Storage
+            # Linux logic
             try:
+                with open('/proc/meminfo', 'r') as f:
+                    for line in f:
+                        if "MemTotal" in line:
+                            hardware["ram_mb"] = int(line.split()[1]) // 1024
+                            break
                 st = os.statvfs('/')
-                hardware["storage_gb"] = (st.f_blocks * st.f_frsize) // (1024 * 1024 * 1024)
+                hardware["storage_gb"] = (st.f_blocks * st.f_frsize) // (1024**3)
             except: pass
             
-            # Serial & Model via Sysfs (Safe, root not always needed)
             def read_sysfs(path):
                 try:
                     with open(path, 'r') as f: return f.read().strip()
                 except: return "UNKNOWN"
-                
-            hardware["model"] = read_sysfs("/sys/class/dmi/id/product_name")
-            hardware["vendor"] = read_sysfs("/sys/class/dmi/id/sys_vendor")
-            hardware["serial"] = read_sysfs("/sys/class/dmi/id/product_serial")
-            hardware["condition"] = "Excellent" # Default for Linux prototype
+            hardware["model"], hardware["vendor"], hardware["serial"] = (
+                read_sysfs("/sys/class/dmi/id/product_name"),
+                read_sysfs("/sys/class/dmi/id/sys_vendor"),
+                read_sysfs("/sys/class/dmi/id/product_serial")
+            )
             hardware["ad_user"] = os.getenv("USER", "Unknown")
             hardware["ad_domain"] = socket.getfqdn().split('.', 1)[-1] if '.' in socket.getfqdn() else "LOCAL"
-            
             chassis_type = read_sysfs("/sys/class/dmi/id/chassis_type")
             if chassis_type in ["8", "9", "10"]: hardware["type"] = "Laptop"
             elif chassis_type in ["23"]: hardware["type"] = "Server"
-            else: hardware["type"] = "Desktop"
-            
+
     except Exception as e:
-        print(f"Error gathering hardware stats: {e}")
-        
+        logger.error(f"Hardware discovery failed: {e}")
     return hardware
 
-def get_software_info():
-    """Collects installed software list"""
+def get_software_info() -> List[Dict[str, str]]:
+    """Gather installed software list from the local machine."""
     software_list = []
-    
     try:
         if platform.system() == "Windows":
-            # Registry-based scan for better performance than 'wmic product'
-            # We look at both 32-bit and 64-bit uninstall keys
-            keys = [
-                r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
-                r"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
-            ]
-            
+            keys = [r"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall",
+                    r"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"]
             for key in keys:
                 try:
-                    # Run reg query to get subkeys
-                    cmd = f'reg query "{key}"'
-                    subkeys = subprocess.check_output(cmd, shell=True).decode().split('\r\n')
-                    
+                    subkeys = subprocess.check_output(f'reg query "{key}"', shell=True).decode().split('\r\n')
                     for subkey in subkeys:
                         if not subkey.strip(): continue
-                        
-                        # Get details for each software
                         try:
-                            # We fetch Name, Version, and Publisher (Vendor)
-                            details_cmd = f'reg query "{subkey}"'
-                            details_out = subprocess.check_output(details_cmd, shell=True).decode().split('\r\n')
-                            
+                            details = subprocess.check_output(f'reg query "{subkey}"', shell=True).decode().split('\r\n')
                             soft = {"name": "", "version": "Unknown", "vendor": "Unknown"}
-                            for line in details_out:
-                                if "DisplayName" in line:
-                                    soft["name"] = line.split("REG_SZ")[-1].strip()
-                                elif "DisplayVersion" in line:
-                                    soft["version"] = line.split("REG_SZ")[-1].strip()
-                                elif "Publisher" in line:
-                                    soft["vendor"] = line.split("REG_SZ")[-1].strip()
-                            
-                            if soft["name"]:
-                                software_list.append(soft)
+                            for line in details:
+                                if "DisplayName" in line: soft["name"] = line.split("REG_SZ")[-1].strip()
+                                elif "DisplayVersion" in line: soft["version"] = line.split("REG_SZ")[-1].strip()
+                                elif "Publisher" in line: soft["vendor"] = line.split("REG_SZ")[-1].strip()
+                            if soft["name"]: software_list.append(soft)
                         except: continue
                 except: continue
-                
         else:
-            # Linux: Check dpkg (Debian/Ubuntu)
+            # Linux
             try:
                 out = subprocess.check_output("dpkg-query -W -f='${Package}|${Version}|${Maintainer}\n'", shell=True).decode().split('\n')
-                for line in out:
-                    if '|' in line:
-                        parts = line.split('|')
-                        software_list.append({
-                            "name": parts[0],
-                            "version": parts[1],
-                            "vendor": parts[2] if len(parts) > 2 else "Unknown"
-                        })
+                software_list = [{"name": p[0], "version": p[1], "vendor": p[2] if len(p)>2 else "Unknown"} 
+                                for line in out if '|' in line for p in [line.split('|')]]
             except:
-                # Fallback to rpm (RHEL/CentOS)
                 try:
                     out = subprocess.check_output("rpm -qa --queryformat '%{NAME}|%{VERSION}|%{VENDOR}\n'", shell=True).decode().split('\n')
-                    for line in out:
-                        if '|' in line:
-                            parts = line.split('|')
-                            software_list.append({
-                                "name": parts[0],
-                                "version": parts[1],
-                                "vendor": parts[2] if len(parts) > 2 else "Unknown"
-                            })
+                    software_list = [{"name": p[0], "version": p[1], "vendor": p[2] if len(p)>2 else "Unknown"} 
+                                    for line in out if '|' in line for p in [line.split('|')]]
                 except: pass
-
     except Exception as e:
-        print(f"Error gathering software info: {e}")
-        
+        logger.error(f"Software discovery failed: {e}")
     return software_list
 
-def run_discovery():
-    print(f"[{datetime.now()}] Starting Discovery Scan...")
+# ── Backend Communication ───────────────────────────────────────────────────
+def send_to_backend(endpoint: str, payload: Dict[str, Any], config: AgentConfig) -> bool:
+    """Send data to backend with modern HMAC authentication."""
+    try:
+        timestamp = datetime.now(timezone.utc).isoformat()
+        message = f"{config.agent_id}:{timestamp}"
+        signature = hmac.new(config.agent_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-Agent-ID": config.agent_id,
+            "X-Agent-Timestamp": timestamp,
+            "X-Agent-Signature": signature
+        }
+
+        conn = http.client.HTTPConnection(config.backend_url, timeout=config.http_timeout)
+        conn.request("POST", f"/api/v1/collect{endpoint}", body=json.dumps(payload), headers=headers)
+        response = conn.getresponse()
+        data = json.loads(response.read().decode())
+        
+        if response.status == 200 and data.get("status") == "success":
+            logger.info(f"✓ Data successfully sent to {endpoint}")
+            return True
+        else:
+            logger.error(f"✗ Backend rejected data ({response.status}): {data.get('detail', 'Unknown error')}")
+            return False
+    except Exception as e:
+        logger.error(f"Communication error: {e}")
+        return False
+
+# ── Main Execution ──────────────────────────────────────────────────────────
+def main():
+    parser = argparse.ArgumentParser(description="Production Local Discovery Agent")
+    parser.add_argument("--dry-run", action="store_true", help="Scan without sending to backend")
+    args = parser.parse_args()
+
+    config = AgentConfig.from_env()
+    metrics = DiscoveryMetrics()
     
+    logger.info(f"Starting discovery sweep for {socket.gethostname()}")
+    
+    hardware = get_hardware_info()
+    software = get_software_info()
+    metrics.software_count = len(software)
+
     payload = {
-        "agent_id": get_agent_id(),
+        "agent_id": config.agent_id,
         "hostname": socket.gethostname(),
         "ip_address": socket.gethostbyname(socket.gethostname()),
-        "hardware": get_hardware_info(),
+        "hardware": hardware,
         "os": {
             "name": platform.system(),
             "version": platform.release(),
-            "uptime_sec": int(datetime.now().timestamp()) # Simplified for prototype
+            "uptime_sec": int(time.time()) # Simplified
         },
-        "software": get_software_info()[:200], # Limit to top 200 for prototype payload size
-        "metadata": {
-            "collector_version": "1.0.0-proto"
-        }
+        "software": software[:500], # Limit payload
+        "metadata": {"collector_version": "2.0.0-prod"}
     }
-    
-    print(f"Payload generated for {payload['hostname']} (SN: {payload['hardware']['serial']})")
-    
-    # POST via http.client
-    try:
-        conn = http.client.HTTPConnection(BACKEND_URL)
-        headers = {
-            'Content-Type': 'application/json',
-            'X-Agent-Key': AGENT_SECRET
-        }
-        conn.request("POST", "/api/v1/collect", body=json.dumps(payload), headers=headers)
-        response = conn.getresponse()
-        data = response.read().decode()
-        
-        if response.status == 200:
-            print(f"SUCCESS: {json.loads(data)['message']}")
-        else:
-            print(f"FAILED ({response.status}): {data}")
-            
-    except Exception as e:
-        print(f"COMMUNICATION ERROR: {e}")
-    finally:
-        conn.close()
+
+    if args.dry_run:
+        logger.info("[DRY RUN] Discovery complete. Payload generated but not sent.")
+        metrics.sync_success = True
+    else:
+        metrics.sync_success = send_to_backend("", payload, config)
+
+    # Report metrics
+    metrics.finalize()
+    if not args.dry_run:
+        send_to_backend("/metrics", metrics.to_dict(), config)
+
+    logger.info("="*40)
+    logger.info(f"Discovery Summary:")
+    logger.info(f"  Duration: {metrics.duration:.2f}s")
+    logger.info(f"  Software Found: {metrics.software_count}")
+    logger.info(f"  Sync Status: {'✓' if metrics.sync_success else '✗'}")
+    logger.info("="*40)
 
 if __name__ == "__main__":
-    run_discovery()
+    main()

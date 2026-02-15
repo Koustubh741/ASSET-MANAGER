@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import Asset
+from app.database.database import SessionLocal
+from app.models.models import Asset
 from datetime import datetime
 
 data = {

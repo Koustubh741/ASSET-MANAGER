@@ -5,8 +5,8 @@ import traceback
 # Add app to path
 sys.path.append(os.path.join(os.getcwd(), "app"))
 
-from database import SessionLocal
-from models import AssetRequest
+from app.database.database import SessionLocal
+from app.models.models import AssetRequest
 
 def run():
     db = SessionLocal()

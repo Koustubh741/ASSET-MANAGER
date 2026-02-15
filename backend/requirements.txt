@@ -12,5 +12,9 @@ python-jose[cryptography]
 pypdf
 asyncpg
 greenlet
-pysnmp-lextudio
+pysnmp
 scapy
+
+# Remote Server Discovery
+paramiko
+pywinrm

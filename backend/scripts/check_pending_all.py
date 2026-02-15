@@ -1,5 +1,5 @@
 import psycopg2
-from database import DATABASE_HOST, DATABASE_PORT, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD
+from app.database.database import DATABASE_HOST, DATABASE_PORT, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD
 
 def check_pending():
     conn = psycopg2.connect(

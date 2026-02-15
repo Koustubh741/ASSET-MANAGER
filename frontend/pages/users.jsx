@@ -1,13 +1,51 @@
 import Link from 'next/link';
-import { ArrowLeft, User, Monitor, Disc, Ticket, Search, Mail } from 'lucide-react';
+import { ArrowLeft, User, Monitor, Disc, Ticket, Search, Mail, Check, X, ShieldAlert } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/lib/apiClient';
+import { useRole } from '@/contexts/RoleContext';
 
 export default function UsersPage() {
+    const { currentRole } = useRole();
     const [users, setUsers] = useState([]);
+    const [pendingUsers, setPendingUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
+
+    const isAdmin = currentRole?.slug === 'ADMIN' || currentRole?.slug === 'SYSTEM_ADMIN';
+
+    const fetchPendingUsers = async () => {
+        if (!isAdmin) return;
+        try {
+            const pending = await apiClient.getUsers({ status: 'PENDING' });
+            setPendingUsers(pending || []);
+        } catch (e) {
+            console.error("Failed to fetch pending users:", e);
+        }
+    };
+
+    const handleApprove = async (userId) => {
+        try {
+            await apiClient.activateUser(userId);
+            setPendingUsers(prev => prev.filter(u => u.id !== userId));
+            // Refresh main list to show newly active user
+            window.location.reload();
+        } catch (e) {
+            console.error("Failed to approve user:", e);
+            alert("Failed to approve user: " + e.message);
+        }
+    };
+
+    const handleDeny = async (userId) => {
+        if (!confirm("Are you sure you want to deny this user?")) return;
+        try {
+            await apiClient.denyUser(userId);
+            setPendingUsers(prev => prev.filter(u => u.id !== userId));
+        } catch (e) {
+            console.error("Failed to deny user:", e);
+            alert("Failed to deny user: " + e.message);
+        }
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -19,32 +57,38 @@ export default function UsersPage() {
                     apiClient.getTickets()
                 ]);
 
+                if (isAdmin) {
+                    await fetchPendingUsers();
+                }
+
                 // Optional: Try to fetch real users, but fall back to discovery if 403
                 let apiUsers = [];
                 try {
                     apiUsers = await apiClient.getUsers();
                 } catch (e) {
-                    console.warn('Could not fetch user list directly, using discovery from assets/tickets');
+                    // console.warn('Could not fetch user list directly, using discovery from assets/tickets');
                 }
 
                 const userMap = {};
 
                 // 1. Initialize from User List (if available)
-                apiUsers.forEach(u => {
-                    userMap[u.full_name] = {
-                        id: u.id,
-                        name: u.full_name,
-                        role: u.role || 'Employee',
-                        status: u.status || 'Active',
-                        email: u.email,
-                        assets_count: 0,
-                        assigned_assets: [],
-                        software_licenses: [],
-                        software_count: 0,
-                        tickets_count: 0,
-                        tickets: []
-                    };
-                });
+                if (apiUsers && Array.isArray(apiUsers)) {
+                    apiUsers.forEach(u => {
+                        userMap[u.full_name] = {
+                            id: u.id,
+                            name: u.full_name,
+                            role: u.role || 'Employee',
+                            status: u.status || 'Active',
+                            email: u.email,
+                            assets_count: 0,
+                            assigned_assets: [],
+                            software_licenses: [],
+                            software_count: 0,
+                            tickets_count: 0,
+                            tickets: []
+                        };
+                    });
+                }
 
                 // 2. Discover/Update from Assets
                 apiAssets.forEach(asset => {
@@ -55,7 +99,7 @@ export default function UsersPage() {
                                 id: userName,
                                 name: userName,
                                 role: 'Employee',
-                                status: 'Active',
+                                status: 'Active', // Assumed active if they have assets
                                 assets_count: 0,
                                 assigned_assets: [],
                                 software_licenses: [],
@@ -66,11 +110,15 @@ export default function UsersPage() {
                         }
 
                         if (asset.type?.toUpperCase() === 'SOFTWARE' || asset.type?.toUpperCase() === 'LICENSE') {
-                            userMap[userName].software_licenses.push(asset);
-                            userMap[userName].software_count += 1;
+                            if (userMap[userName].software_licenses) {
+                                userMap[userName].software_licenses.push(asset);
+                                userMap[userName].software_count += 1;
+                            }
                         } else {
-                            userMap[userName].assigned_assets.push(asset);
-                            userMap[userName].assets_count += 1;
+                            if (userMap[userName].assigned_assets) {
+                                userMap[userName].assigned_assets.push(asset);
+                                userMap[userName].assets_count += 1;
+                            }
                         }
                     }
                 });
@@ -93,8 +141,10 @@ export default function UsersPage() {
                                 tickets: []
                             };
                         }
-                        userMap[userName].tickets.push(ticket);
-                        userMap[userName].tickets_count += 1;
+                        if (userMap[userName].tickets) {
+                            userMap[userName].tickets.push(ticket);
+                            userMap[userName].tickets_count += 1;
+                        }
                     }
                 });
 
@@ -106,10 +156,10 @@ export default function UsersPage() {
             }
         };
         loadData();
-    }, []);
+    }, [isAdmin]);
 
-    const filteredUsers = users.filter(u => 
-        u.name?.toLowerCase().includes(search.toLowerCase()) || 
+    const filteredUsers = users.filter(u =>
+        u.name?.toLowerCase().includes(search.toLowerCase()) ||
         u.role?.toLowerCase().includes(search.toLowerCase()) ||
         u.email?.toLowerCase().includes(search.toLowerCase())
     );
@@ -131,6 +181,43 @@ export default function UsersPage() {
                         </div>
                     </div>
                 </div>
+
+                {/* Pending Approvals Section (Admin Only) */}
+                {isAdmin && pendingUsers.length > 0 && (
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-3 mb-4">
+                            <ShieldAlert className="text-amber-400" size={24} />
+                            <h2 className="text-xl font-bold text-amber-100">Pending Approvals ({pendingUsers.length})</h2>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {pendingUsers.map(user => (
+                                <div key={user.id} className="bg-slate-900 border border-white/10 p-4 rounded-xl flex justify-between items-center group hover:border-amber-500/30 transition-all">
+                                    <div>
+                                        <h3 className="font-bold text-slate-200">{user.full_name}</h3>
+                                        <p className="text-xs text-slate-400">{user.email}</p>
+                                        <p className="text-xs text-amber-500/80 mt-1 uppercase font-mono">{user.role}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleApprove(user.id)}
+                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
+                                            title="Approve"
+                                        >
+                                            <Check size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeny(user.id)}
+                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors"
+                                            title="Deny"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Toolbar */}
                 <div className="glass-panel p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center">
@@ -165,7 +252,7 @@ export default function UsersPage() {
                                         </div>
                                     </div>
                                 </div>
-                                <span className={`text-xs px-2 py-1 rounded-full border ${user.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-400'}`}>
+                                <span className={`text-xs px-2 py-1 rounded-full border ${user.status?.toUpperCase() === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-400'}`}>
                                     {user.status}
                                 </span>
                             </div>

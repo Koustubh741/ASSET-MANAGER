@@ -11,7 +11,6 @@ class TicketBase(BaseModel):
 
 class TicketCreate(TicketBase):
     related_asset_id: Optional[UUID] = None
-    requestor_id: Optional[UUID] = None # Optional for MVP, can infer from auth token later
 
 class TicketUpdate(BaseModel):
     status: Optional[str] = None
@@ -21,14 +20,13 @@ class TicketUpdate(BaseModel):
 
 class ITDiagnosisRequest(BaseModel):
     """
-    Request body for IT Management diagnosis of a ticket
+    Request body for IT Management diagnosis of a ticket (Reviewer inferred from JWT)
     """
-    reviewer_id: UUID  # IT management user ID
     outcome: str  # "repair" for company assets, "secure" for BYOD
     notes: Optional[str] = None
 
 class ResolutionUpdate(BaseModel):
-    reviewer_id: UUID
+    """Refinement: Reviewer inferred from JWT"""
     checklist: List[dict]
     notes: Optional[str] = None
     percentage: float
@@ -38,6 +36,8 @@ class TicketResponse(TicketBase):
     status: str
     requestor_id: Optional[UUID] = None
     requestor_name: Optional[str] = None
+    requestor_department: Optional[str] = None
+    requestor_email: Optional[str] = None
     assigned_to_id: Optional[UUID] = None
     related_asset_id: Optional[UUID] = None
     

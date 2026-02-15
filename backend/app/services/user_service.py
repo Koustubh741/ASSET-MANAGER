@@ -1,23 +1,31 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from ..models.models import User
 from ..schemas.user_schema import UserCreate, UserUpdate
 import uuid
 from uuid import UUID
 
 from passlib.context import CryptContext
+import bcrypt
 
 # Password hashing configuration
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain_password, hashed_password):
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        # Check if hashed_password is a bcrypt hash (starts with $2b$, $2a$, etc)
+        # Note: bcrypt.checkpw requires bytes
+        if hashed_password.startswith("$2"):
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        else:
+             # Fallback to plain text comparison for dev seeds if they are not hashed
+             return plain_password == hashed_password
     except Exception:
-        # Fallback to plain text comparison for dev seeds if they are not hashed
+        # Fallback to plain text comparison
         return plain_password == hashed_password
 
 async def get_user_by_email(db: AsyncSession, email: str):
@@ -30,13 +38,19 @@ async def get_user(db: AsyncSession, user_id: UUID):
 
 async def create_user(db: AsyncSession, user: UserCreate):
     hashed_password = get_password_hash(user.password)
+    # Check if this is the first user
+    result = await db.execute(select(func.count(User.id)))
+    count = result.scalar()
+    
+    is_first_user = count == 0
+    
     db_user = User(
         id=uuid.uuid4(),
         email=user.email,
         full_name=user.full_name,
         password_hash=hashed_password,
-        role=user.role or "END_USER",
-        status=user.status if user.status else "PENDING",
+        role="SYSTEM_ADMIN" if is_first_user else (user.role or "END_USER"),
+        status="ACTIVE" if is_first_user else (user.status if user.status else "PENDING"),
         position=user.position,
         domain=user.domain,
         department=user.department,
@@ -73,10 +87,20 @@ async def activate_user(db: AsyncSession, user_id: UUID) -> User:
     await db.refresh(user)
     return user
 
-async def get_users(db: AsyncSession, status: str = None):
+async def get_users(db: AsyncSession, status: str = None, department: str = None):
     query = select(User)
     if status:
         query = query.filter(User.status == status)
+    
+    if department:
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                User.department.ilike(f"%{department}%"),
+                User.domain.ilike(f"%{department}%")
+            )
+        )
+        
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -114,6 +138,18 @@ async def sync_sso_user(db: AsyncSession, sso_provider: str, sso_id: str, email:
             )
             db.add(user)
     
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+async def update_user_password(db: AsyncSession, user_id: UUID, new_password: str):
+    """
+    Update a user's password with hashing (Asynchronous).
+    """
+    user = await get_user(db, user_id)
+    if not user:
+        return None
+    user.password_hash = get_password_hash(new_password)
     await db.commit()
     await db.refresh(user)
     return user

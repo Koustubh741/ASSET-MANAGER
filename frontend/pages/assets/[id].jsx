@@ -9,6 +9,8 @@ import { ArrowLeft, User, MapPin, Calendar, Activity, Server, Shield, QrCode, Sc
 
 import apiClient from '@/lib/apiClient';
 import { useRole } from '@/contexts/RoleContext';
+import ScanHistoryViewer from '@/components/ScanHistoryViewer';
+import AssetTimeline from '@/components/AssetTimeline';
 
 export default function AssetDetail() {
     const router = useRouter()
@@ -192,59 +194,18 @@ export default function AssetDetail() {
                         </h3>
 
                         {/* Dynamic Timeline Container */}
-                        <div className="relative pl-8 pb-4 z-10">
-
-                            {/* Animated Flow Line (Reversed: Bottom to Top) */}
-                            <div className="absolute left-[9px] top-2 bottom-6 w-0.5 bg-slate-800 overflow-hidden">
-                                <div className="absolute top-0 left-0 w-full h-[50%] bg-gradient-to-t from-emerald-500 via-blue-500 to-transparent animate-flow-up opacity-100"></div>
-                            </div>
-
-                            <style jsx>{`
-                                @keyframes flow-up {
-                                    0% { transform: translateY(200%); opacity: 0; }
-                                    50% { opacity: 1; }
-                                    100% { transform: translateY(-100%); opacity: 0; }
-                                }
-                                .animate-flow-up {
-                                    animation: flow-up 3s linear infinite;
-                                }
-                            `}</style>
-
-                            {events.map((event, index) => (
-                                <div key={index} className="relative mb-10 last:mb-0 group">
-                                    {/* Glowing Timeline Dot */}
-                                    <div className={`absolute -left-[33px] top-1.5 w-5 h-5 rounded-full border-4 border-slate-950 transition-all duration-500 z-10 ${event.status === 'completed' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)] scale-110' :
-                                        event.status === 'active' ? 'bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-pulse' :
-                                            'bg-slate-700'
-                                        }`}></div>
-
-                                    {/* Content Card with Glassmorphism */}
-                                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors duration-300">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                                            <h4 className="font-bold text-white text-base tracking-wide">{event.event}</h4>
-                                            <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20 whitespace-nowrap shadow-sm">
-                                                {event.date}
-                                            </span>
-                                        </div>
-
-                                        <p className="text-sm text-slate-300 mb-3 leading-relaxed">{event.description}</p>
-
-                                        {event.user && (
-                                            <div className="flex items-center gap-2 pt-2 border-t border-white/5">
-                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold shadow-md">
-                                                    {event.user.charAt(0)}
-                                                </div>
-                                                <span className="text-xs text-indigo-300 font-medium tracking-wide">Action by {event.user}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {events.length === 0 && (
-                                <p className="text-slate-500 italic">No history available for this asset.</p>
-                            )}
+                        <div className="z-10 bg-slate-900/40 rounded-xl border border-white/5 mt-4">
+                            <AssetTimeline assetId={asset.id} />
                         </div>
+                    </div>
+
+                    {/* Configuration Change History */}
+                    <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
+                        <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                            <Activity className="mr-3 text-cyan-400" size={20} />
+                            Configuration Change History
+                        </h3>
+                        <ScanHistoryViewer assetId={asset.id} />
                     </div>
 
                     {/* Renewal & Service Request Section - Conditions: Retired, Repair, Maintenance OR Warranty Expired */}

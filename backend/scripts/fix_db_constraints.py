@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from database import engine
+from app.database.database import engine
 
 def fix_constraints():
     with engine.connect() as conn:

@@ -8,14 +8,31 @@ from .database.database import get_db, test_connection, get_connection_info
 from .models.models import AuditLog, Asset
 import traceback
 from datetime import datetime
-import os
 from .routers import upload, workflows, disposal, audit, assets, auth, tickets, asset_requests, users, reference, financials
+import os
+from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+from .scheduler import scheduler
+
+# Load environment variables from .env file
+load_dotenv()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    scheduler.start()
+    print("INFO:     APScheduler started")
+    yield
+    # Shutdown
+    scheduler.shutdown()
+    print("INFO:     APScheduler shut down")
 
 # Create FastAPI app instance
 app = FastAPI(
     title="ITSM Asset Management API",
     description="Asset Management API for ITSM Platform (Asynchronous)",
-    version="1.1.0"
+    version="1.1.0",
+    lifespan=lifespan
 )
 
 # Enterprise API Router
@@ -69,10 +86,23 @@ async def debug_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content=content,
-        headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+from fastapi.exceptions import ResponseValidationError
+
+@app.exception_handler(ResponseValidationError)
+async def validation_exception_handler(request: Request, exc: ResponseValidationError):
+    print(f"Response Validation Error: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Response Serialization Error", "errors": str(exc)},
+        headers={"Access-Control-Allow-Origin": "*"}
     )
 
 # All routers are now registered through the versioned api_router above
+
 
 # Root endpoint
 @app.get("/")

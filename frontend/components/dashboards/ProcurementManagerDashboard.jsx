@@ -1,16 +1,20 @@
-import { ShoppingCart, FileText, Calendar, CreditCard, CheckCircle, Truck, XCircle, Upload } from 'lucide-react';
+import { ShoppingCart, FileText, Calendar, CreditCard, CheckCircle, Truck, XCircle, Upload, Eye } from 'lucide-react';
 import { useAssetContext } from '@/contexts/AssetContext';
+import ProcurementActionModal from '../ProcurementActionModal';
+import { useState } from 'react';
 
 export default function ProcurementManagerDashboard() {
     const { requests, procurementCreatePO, procurementConfirmDelivery, procurementApprove, procurementReject, procurementUploadPO } = useAssetContext();
+    const [selectedRequest, setSelectedRequest] = useState(null);
 
     // ENTERPRISE: Requests needing PO creation (routed from Inventory)
-
     const awaitingPO = requests.filter(r =>
         r.currentOwnerRole === 'PROCUREMENT' &&
         r.status === 'PROCUREMENT_REQUIRED' &&
         (!r.procurementStage || r.procurementStage === 'AWAITING_DECISION')
     );
+
+    // ... (rest of initial filter logic) ...
 
     // ENTERPRISE: Requests with finance approval awaiting delivery confirmation
     const awaitingDelivery = requests.filter(r => r.currentOwnerRole === 'PROCUREMENT' && r.procurementStage === 'FINANCE_APPROVED');
@@ -128,22 +132,12 @@ export default function ProcurementManagerDashboard() {
                                             >
                                                 <XCircle size={14} /> Reject
                                             </button>
-                                            <label className="cursor-pointer bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2">
-                                                <Upload size={14} /> Upload PO & Approve
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf" // Backend expects PDF
-                                                    className="hidden"
-                                                    onChange={(e) => {
-                                                        const file = e.target.files[0];
-                                                        if (file) {
-                                                            if (confirm(`Upload PO ${file.name} for request ${req.id}?`)) {
-                                                                procurementUploadPO(req.id, file);
-                                                            }
-                                                        }
-                                                    }}
-                                                />
-                                            </label>
+                                            <button
+                                                onClick={() => setSelectedRequest(req)}
+                                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2"
+                                            >
+                                                <Eye size={14} /> Review & Approve
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -185,12 +179,21 @@ export default function ProcurementManagerDashboard() {
                                         </span>
                                     </td>
                                     <td className="py-3 text-right">
-                                        <button
-                                            onClick={async () => await procurementConfirmDelivery(req.id, "Procurement Officer")}
-                                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2 ml-auto"
-                                        >
-                                            <CheckCircle size={14} /> Confirm Delivery → Inventory
-                                        </button>
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => setSelectedRequest(req)}
+                                                className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                                                title="View Details"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => setSelectedRequest(req)}
+                                                className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
+                                            >
+                                                <CheckCircle size={14} /> Confirm Delivery → Inventory
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -198,6 +201,15 @@ export default function ProcurementManagerDashboard() {
                     </table>
                 </div>
             )}
+            {/* Procurement Details Modal */}
+            <ProcurementActionModal
+                isOpen={!!selectedRequest}
+                onClose={() => setSelectedRequest(null)}
+                request={selectedRequest}
+                onUploadPO={procurementUploadPO}
+                onReject={procurementReject}
+                onConfirmDelivery={procurementConfirmDelivery}
+            />
         </div>
     )
 }
