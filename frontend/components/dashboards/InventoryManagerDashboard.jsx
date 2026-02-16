@@ -3,12 +3,14 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { Archive, TrendingDown, AlertOctagon, CheckCircle, Package, Eye, X, ShieldCheck } from 'lucide-react';
 import { useAssetContext } from '@/contexts/AssetContext';
 import { useRole } from '@/contexts/RoleContext';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 export default function InventoryManagerDashboard() {
     const { user } = useRole();
     const { requests, inventoryCheckAvailable, inventoryCheckNotAvailable, inventoryAllocateDelivered, performQC, assets, exitRequests, processExitAssets } = useAssetContext();
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [selectedForQC, setSelectedForQC] = useState(null);
+    const [selectedExitRequest, setSelectedExitRequest] = useState(null);
 
     // ENTERPRISE: Requests awaiting inventory check (exclude fulfilled/closed)
     const awaitingStockCheck = requests.filter(r => {
@@ -50,12 +52,24 @@ export default function InventoryManagerDashboard() {
     const totalSKUs = new Set(assets.map(a => a.type)).size;
     const criticalShortages = realStockData.filter(i => i.stock < i.min).length;
 
+    const exitPending = exitRequests.filter(r => r.status === 'OPEN' || r.status === 'BYOD_PROCESSED').length;
+
     return (
         <div className="space-y-6">
             <header>
                 <h1 className="text-3xl font-bold text-white">Stock Control</h1>
                 <p className="text-slate-400">Inventory levels and replenishment alerts</p>
             </header>
+
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(awaitingStockCheck.length > 0 ? [{ label: 'Stock check', count: awaitingStockCheck.length, icon: Package, variant: 'primary' }] : []),
+                    ...(awaitingAllocation.length > 0 ? [{ label: 'Allocate delivered', count: awaitingAllocation.length, icon: CheckCircle, variant: 'success' }] : []),
+                    ...(criticalShortages > 0 ? [{ label: 'Critical shortages', count: criticalShortages, icon: AlertOctagon, variant: 'warning' }] : []),
+                    ...(exitPending > 0 ? [{ label: 'Exit reclamations', count: exitPending, icon: Archive, variant: 'info' }] : []),
+                ]}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="glass-card p-6 border border-white/5 hover:border-blue-500/30 transition-all">
@@ -104,12 +118,13 @@ export default function InventoryManagerDashboard() {
                 </div>
 
                 {awaitingStockCheck.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500 bg-white/5 rounded-xl border border-dashed border-white/10">
-                        No requests awaiting stock check.
+                    <div className="p-8 text-center bg-white/5 rounded-xl border border-dashed border-white/10">
+                        <p className="text-slate-400 font-medium">No requests awaiting stock check</p>
+                        <p className="text-sm text-slate-500 mt-1">IT-approved requests will be routed here for inventory verification.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
+                    <div className="overflow-x-auto -mx-2 md:mx-0">
+                        <table className="w-full text-left min-w-[640px] md:min-w-0">
                             <thead className="bg-white/5 text-slate-400 text-xs uppercase font-bold">
                                 <tr>
                                     <th className="p-3 rounded-l-lg">Asset Request</th>
@@ -139,8 +154,9 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedRequest(req)}
-                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10"
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
                                                     title="View Details"
+                                                    aria-label="View details"
                                                 >
                                                     <Eye size={16} />
                                                 </button>
@@ -180,8 +196,8 @@ export default function InventoryManagerDashboard() {
                         </h3>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
+                    <div className="overflow-x-auto -mx-2 md:mx-0">
+                        <table className="w-full text-left min-w-[640px] md:min-w-0">
                             <thead className="bg-white/5 text-slate-400 text-xs uppercase font-bold">
                                 <tr>
                                     <th className="p-3 rounded-l-lg">Asset Request</th>
@@ -210,8 +226,9 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedRequest(req)}
-                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10"
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
                                                     title="View Details"
+                                                    aria-label="View details"
                                                 >
                                                     <Eye size={16} />
                                                 </button>
@@ -257,8 +274,8 @@ export default function InventoryManagerDashboard() {
                         </h3>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
+                    <div className="overflow-x-auto -mx-2 md:mx-0">
+                        <table className="w-full text-left min-w-[640px] md:min-w-0">
                             <thead className="bg-white/5 text-slate-400 text-xs uppercase font-bold">
                                 <tr>
                                     <th className="p-3 rounded-l-lg">User</th>
@@ -283,21 +300,31 @@ export default function InventoryManagerDashboard() {
                                             </div>
                                         </td>
                                         <td className="p-3">
-                                            <span className="text-[10px] px-2 py-1 rounded font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                            <span className="text-xs px-2 py-1 rounded font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">
                                                 {req.status}
                                             </span>
                                         </td>
                                         <td className="p-3 text-right">
-                                            <button
-                                                onClick={async () => {
-                                                    if (confirm(`Confirm receipt and QC of all company assets for user ${req.user_id}?`)) {
-                                                        await processExitAssets(req.id);
-                                                    }
-                                                }}
-                                                className="bg-orange-600 hover:bg-orange-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-orange-500/10 transition-all"
-                                            >
-                                                Process Asset Returns
-                                            </button>
+                                            <div className="flex justify-end gap-2">
+                                                <button
+                                                    onClick={() => setSelectedExitRequest(req)}
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10 flex items-center gap-1.5"
+                                                    title="View Details"
+                                                >
+                                                    <Eye size={16} />
+                                                    <span className="text-xs">View</span>
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm(`Confirm receipt and QC of all company assets for user ${req.user_id}?`)) {
+                                                            await processExitAssets(req.id);
+                                                        }
+                                                    }}
+                                                    className="bg-orange-600 hover:bg-orange-500 text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-orange-500/10 transition-all"
+                                                >
+                                                    Process Asset Returns
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -353,6 +380,51 @@ export default function InventoryManagerDashboard() {
                 </div>
             </div>
 
+            {/* EXIT REQUEST DETAILS MODAL */}
+            {selectedExitRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Eye className="text-orange-400" size={20} />
+                                Exit Request Details
+                            </h3>
+                            <button
+                                onClick={() => setSelectedExitRequest(null)}
+                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <p className="text-xs uppercase tracking-wider font-bold text-slate-500">User</p>
+                                <p className="text-white font-medium">{selectedExitRequest.user_id}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Exit ID</p>
+                                <p className="text-xs font-mono text-slate-400">{selectedExitRequest.id}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Status</p>
+                                <span className="text-xs px-2 py-0.5 rounded font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">
+                                    {selectedExitRequest.status}
+                                </span>
+                            </div>
+                            <div>
+                                <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Assets to Reclaim</p>
+                                <div className="text-slate-300 text-sm">
+                                    {selectedExitRequest.assets_snapshot?.length || 0} Physical Assets
+                                </div>
+                                <div className="text-xs font-mono text-slate-500 mt-1">
+                                    {selectedExitRequest.assets_snapshot?.map(a => a.asset_id).join(', ') || '—'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* REQUEST DETAILS MODAL */}
             {selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -376,30 +448,30 @@ export default function InventoryManagerDashboard() {
                         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Asset Type</p>
+                                    <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Asset Type</p>
                                     <p className="text-white font-medium">{selectedRequest.assetType}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Urgency</p>
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedRequest.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300'}`}>
+                                    <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Urgency</p>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedRequest.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300'}`}>
                                         {selectedRequest.urgency || 'Standard'}
                                     </span>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Requester</p>
+                                    <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Requester</p>
                                     <p className="text-white">{selectedRequest.requestedBy?.name}</p>
                                     <p className="text-xs text-slate-500">{selectedRequest.requestedBy?.department} • {selectedRequest.requestedBy?.position || selectedRequest.requestedBy?.role}</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500">Status</p>
+                                    <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Status</p>
                                     <p className="text-blue-400 font-medium">{selectedRequest.status}</p>
-                                    <p className="text-[10px] text-slate-500">{selectedRequest.procurementStage}</p>
+                                    <p className="text-xs text-slate-500">{selectedRequest.procurementStage}</p>
                                 </div>
                             </div>
 
                             <div className="p-4 bg-white/5 rounded-xl border border-white/5">
-                                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Business Justification</p>
-                                <p className="text-slate-300 text-sm italic leading-relaxed">
+                                <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Business Justification</p>
+                                <p className="text-slate-300 text-sm italic leading-relaxed max-w-prose">
                                     "{selectedRequest.justification || 'No justification provided.'}"
                                 </p>
                             </div>
@@ -407,7 +479,7 @@ export default function InventoryManagerDashboard() {
                             {selectedRequest.assetId && (
                                 <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 flex items-center justify-between">
                                     <div>
-                                        <p className="text-[10px] uppercase tracking-wider font-bold text-emerald-500/70 mb-1">Pre-Allocated Asset ID</p>
+                                        <p className="text-xs uppercase tracking-wider font-bold text-emerald-500/70 mb-1">Pre-Allocated Asset ID</p>
                                         <p className="text-emerald-400 font-mono font-bold">{selectedRequest.assetId}</p>
                                     </div>
                                     <CheckCircle size={24} className="text-emerald-500/30" />
@@ -459,7 +531,7 @@ export default function InventoryManagerDashboard() {
                         }} className="p-6 space-y-6">
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Inspection Outcome</label>
+                                    <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Inspection Outcome</label>
                                     <div className="grid grid-cols-2 gap-4">
                                         <label className="relative flex items-center p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-emerald-500/50 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/10 transition-all group">
                                             <input type="radio" name="qc_status" value="PASSED" defaultChecked className="hidden" />
@@ -479,7 +551,7 @@ export default function InventoryManagerDashboard() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Technical Inspection Notes</label>
+                                    <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Technical Inspection Notes</label>
                                     <textarea
                                         name="qc_notes"
                                         required

@@ -35,7 +35,7 @@ export default function QuickScanner({ isOpen, onClose }) {
                         <Scan size={20} className="text-indigo-400" />
                         Quick Field Scanner
                     </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
+                    <button onClick={onClose} className="text-slate-400 hover:text-white p-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close" title="Close">
                         <X size={20} />
                     </button>
                 </div>

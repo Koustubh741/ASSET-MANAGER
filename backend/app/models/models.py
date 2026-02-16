@@ -275,6 +275,16 @@ class ByodDevice(Base):
     compliance_status = Column(String(50), nullable=False, default="COMPLIANT")
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
+    # MDM & compliance fields (Phase 1 - nullable for backward compat)
+    mdm_enrolled = Column(Boolean, nullable=True, default=False)
+    mdm_enrollment_date = Column(DateTime(timezone=True), nullable=True)
+    mdm_provider = Column(String(50), nullable=True)  # INTUNE | JAMF | SIMULATED
+    mdm_device_id = Column(String(255), nullable=True)
+    last_compliance_check = Column(DateTime(timezone=True), nullable=True)
+    compliance_checks = Column(JSONB, nullable=True)  # Detailed check results
+    security_policies = Column(JSONB, nullable=True)  # Policies applied
+    remediation_notes = Column(Text, nullable=True)
+
 
 class PurchaseRequest(Base):
     """

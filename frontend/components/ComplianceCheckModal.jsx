@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, ShieldAlert, Check, Lock, Smartphone } from 'lucide-react';
 import apiClient from '../lib/apiClient';
 
@@ -6,6 +6,13 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
     const [isChecking, setIsChecking] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const onEscape = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onEscape);
+        return () => window.removeEventListener('keydown', onEscape);
+    }, [isOpen, onClose]);
 
     if (!isOpen || !request) return null;
 
@@ -49,7 +56,7 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                         <ShieldCheck className="w-5 h-5 text-emerald-600" />
                         BYOD Security Scan
                     </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close modal" title="Close">
                         <X className="w-5 h-5" />
                     </button>
                 </div>

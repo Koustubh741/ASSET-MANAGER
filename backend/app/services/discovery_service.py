@@ -156,7 +156,8 @@ async def process_discovery_payload(
         assigned_user_id     = await _resolve_user_id(db, payload)
 
         # ── 3. Build specifications blob ─────────────────────────────────
-        specs = {
+        # Base specs from hardware/OS
+        specs: dict[str, str] = {
             "OS":           f"{payload.os.name} {payload.os.version}",
             "Processor":    payload.hardware.cpu,
             "RAM":          f"{round(payload.hardware.ram_mb / 1024)} GB",
@@ -169,6 +170,80 @@ async def process_discovery_payload(
             "AD Domain":    payload.hardware.ad_domain,
             "Agent ID":     str(payload.agent_id),
         }
+
+        # Human-friendly uptime, if available
+        try:
+            if payload.os.uptime_sec and payload.os.uptime_sec > 0:
+                total_sec = int(payload.os.uptime_sec)
+                days, rem = divmod(total_sec, 86400)
+                hours, rem = divmod(rem, 3600)
+                minutes, _ = divmod(rem, 60)
+                parts: list[str] = []
+                if days:
+                    parts.append(f"{days}d")
+                if hours:
+                    parts.append(f"{hours}h")
+                if minutes or not parts:
+                    parts.append(f"{minutes}m")
+                specs["Uptime"] = " ".join(parts)
+        except Exception:
+            # Uptime is optional; ignore formatting errors
+            pass
+
+        # Network / disk detail from metadata (best-effort)
+        meta = payload.metadata or {}
+        network = meta.get("network") or []
+        disks = meta.get("disks") or []
+
+        if isinstance(network, list) and network:
+            # Short summary: number of interfaces and sample IPs
+            ips: list[str] = []
+            for entry in network:
+                ip_addr = entry.get("ip") if isinstance(entry, dict) else None
+                if ip_addr and ip_addr not in ips:
+                    ips.append(ip_addr)
+                if len(ips) >= 3:
+                    break
+            specs["Network Interfaces"] = f"{len(network)} entries; sample IPs: {', '.join(ips)}"
+
+        if isinstance(disks, list) and disks:
+            # Compute total storage if not already present, and build a short summary
+            try:
+                total_bytes = 0
+                for d in disks:
+                    if isinstance(d, dict):
+                        size_val = d.get("size_bytes")
+                        try:
+                            if size_val is not None:
+                                total_bytes += int(size_val)
+                        except (TypeError, ValueError):
+                            continue
+                if total_bytes and (not payload.hardware.storage_gb):
+                    specs["Storage"] = f"{total_bytes // (1024 * 1024 * 1024)} GB"
+            except Exception:
+                pass
+
+            # Simple descriptive string
+            try:
+                sample = []
+                for d in disks[:3]:
+                    if isinstance(d, dict):
+                        name = d.get("name") or d.get("device_id") or "disk"
+                        size_val = d.get("size_bytes")
+                        size_gb = None
+                        try:
+                            if size_val is not None:
+                                size_gb = int(size_val) // (1024 * 1024 * 1024)
+                        except (TypeError, ValueError):
+                            size_gb = None
+                        if size_gb is not None and size_gb > 0:
+                            sample.append(f"{name}≈{size_gb}GB")
+                        else:
+                            sample.append(name)
+                if sample:
+                    specs["Storage Detail"] = ", ".join(sample)
+            except Exception:
+                pass
 
         # ── 4. Look up existing asset ────────────────────────────────────
         asset_result = await db.execute(

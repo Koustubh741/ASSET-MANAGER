@@ -6,6 +6,7 @@ sqlalchemy
 pandas
 openpyxl
 python-dotenv
+PyYAML
 psycopg2-binary
 passlib[bcrypt]
 python-jose[cryptography]

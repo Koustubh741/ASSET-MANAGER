@@ -173,14 +173,37 @@ export function calculateDashboardStats(allAssets) {
     warningDate.setDate(today.getDate() + 30);
 
     let warrantyRiskCount = 0;
+    const warrantyByMonth = Array(12).fill(0).map((_, i) => ({
+        name: new Date(0, i).toLocaleString('default', { month: 'short' }),
+        value: 0
+    }));
     allAssets.forEach(asset => {
         if (asset.warranty_expiry) {
             const expiry = new Date(asset.warranty_expiry);
+            if (!isNaN(expiry)) {
+                const month = expiry.getMonth();
+                warrantyByMonth[month].value += 1;
+            }
             if (expiry >= today && expiry <= warningDate) {
                 warrantyRiskCount++;
             }
         }
     });
+
+    const ageBuckets = { '0-1 yr': 0, '1-3 yr': 0, '3-5 yr': 0, '5+ yr': 0 };
+    const todayTime = today.getTime();
+    const oneYr = 365.25 * 24 * 60 * 60 * 1000;
+    allAssets.forEach(asset => {
+        if (!asset.purchase_date) return;
+        const purchase = new Date(asset.purchase_date);
+        if (isNaN(purchase.getTime())) return;
+        const ageYr = (todayTime - purchase.getTime()) / oneYr;
+        if (ageYr < 1) ageBuckets['0-1 yr']++;
+        else if (ageYr < 3) ageBuckets['1-3 yr']++;
+        else if (ageYr < 5) ageBuckets['3-5 yr']++;
+        else ageBuckets['5+ yr']++;
+    });
+    const age_distribution = Object.entries(ageBuckets).map(([name, value]) => ({ name, value }));
 
     return {
         total: totals.total,
@@ -196,6 +219,8 @@ export function calculateDashboardStats(allAssets) {
         by_segment,
         by_type,
         by_location,
+        warranty_by_month: warrantyByMonth,
+        age_distribution,
         trends: {
             monthly: monthlyTrends,
             quarterly: quarterlyTrends

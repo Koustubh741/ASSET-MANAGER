@@ -2,6 +2,7 @@ import { ShoppingCart, FileText, Calendar, CreditCard, CheckCircle, Truck, XCirc
 import { useAssetContext } from '@/contexts/AssetContext';
 import ProcurementActionModal from '../ProcurementActionModal';
 import { useState } from 'react';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 export default function ProcurementManagerDashboard() {
     const { requests, procurementCreatePO, procurementConfirmDelivery, procurementApprove, procurementReject, procurementUploadPO } = useAssetContext();
@@ -31,6 +32,14 @@ export default function ProcurementManagerDashboard() {
                     <p className="text-2xl font-bold text-emerald-400">₹12,50,000</p>
                 </div>
             </header>
+
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(awaitingPO.length > 0 ? [{ label: 'Awaiting PO', count: awaitingPO.length, icon: ShoppingCart, variant: 'primary' }] : []),
+                    ...(awaitingDelivery.length > 0 ? [{ label: 'Awaiting delivery', count: awaitingDelivery.length, icon: Truck, variant: 'warning' }] : []),
+                ]}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="glass-card p-5">
@@ -88,11 +97,13 @@ export default function ProcurementManagerDashboard() {
                 </h3>
 
                 {awaitingPO.length === 0 ? (
-                    <div className="p-8 text-center text-slate-500 bg-white/5 rounded-xl border border-dashed border-white/10">
-                        No requests awaiting PO creation.
+                    <div className="p-8 text-center bg-white/5 rounded-xl border border-dashed border-white/10">
+                        <p className="text-slate-400 font-medium">No requests awaiting PO creation</p>
+                        <p className="text-sm text-slate-500 mt-1">Approved requests will appear here for purchase order creation.</p>
                     </div>
                 ) : (
-                    <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto -mx-2 md:mx-0">
+                    <table className="w-full text-sm text-left min-w-[640px] md:min-w-0">
                         <thead className="text-slate-400 border-b border-white/10 text-xs uppercase font-bold">
                             <tr>
                                 <th className="pb-3">Request Details</th>
@@ -144,6 +155,7 @@ export default function ProcurementManagerDashboard() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 )}
             </div>
 
@@ -156,7 +168,8 @@ export default function ProcurementManagerDashboard() {
                         <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">{awaitingDelivery.length}</span>
                     </h3>
 
-                    <table className="w-full text-sm text-left">
+                    <div className="overflow-x-auto -mx-2 md:mx-0">
+                    <table className="w-full text-sm text-left min-w-[560px] md:min-w-0">
                         <thead className="text-slate-400 border-b border-white/10 text-xs uppercase font-bold">
                             <tr>
                                 <th className="pb-3">Asset Type</th>
@@ -199,6 +212,7 @@ export default function ProcurementManagerDashboard() {
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
             {/* Procurement Details Modal */}

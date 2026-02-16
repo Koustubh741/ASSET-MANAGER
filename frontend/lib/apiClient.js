@@ -312,6 +312,13 @@ class ApiClient {
         return this.request('/assets/stats');
     }
 
+    async getAlerts(params = {}) {
+        const q = new URLSearchParams(params);
+        const query = q.toString();
+        const url = query ? `/alerts?${query}` : '/alerts';
+        return this.request(url);
+    }
+
     // Asset Requests
     async getAssetRequests(params = {}) {
         const queryParams = new URLSearchParams(params);

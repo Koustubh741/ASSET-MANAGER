@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Package, CheckCircle, Clock, AlertTriangle, X } from 'lucide-react';
 import { useRouter } from 'next/router';
+import { useToast } from '@/components/common/Toast';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 export default function AssetOwnerDashboard() {
     const router = useRouter();
+    const toast = useToast();
 
     // Return reason modal state
     const [returnModal, setReturnModal] = useState({ open: false, asset: null });
@@ -50,12 +53,11 @@ export default function AssetOwnerDashboard() {
         notifications.unshift(notification); // Add to beginning
         localStorage.setItem('itAdminNotifications', JSON.stringify(notifications));
 
-        console.log('📤 Notification sent to IT Admin:', notification);
     };
 
     // 1. ACCEPT BUTTON
     const handleAccept = (asset) => {
-        alert(`✅ Asset "${asset.name}" verified and accepted!\n\nAsset has been moved to your Active Assets.`);
+        toast.success(`Asset "${asset.name}" verified and accepted! Asset has been moved to your Active Assets.`);
         // In real implementation, this would update the asset status
     };
 
@@ -64,7 +66,7 @@ export default function AssetOwnerDashboard() {
         // Send notification to IT Admin
         sendNotificationToITAdmin('VERIFICATION_ISSUE', asset, 'Verification issue reported - requires IT review');
 
-        alert(`⚠️ Issue reported for "${asset.name}"!\n\n✅ Notification sent to IT Admin\n\nThe IT Support team will review this issue shortly.`);
+        toast.success(`Issue reported for "${asset.name}". Notification sent to IT Admin. The IT Support team will review shortly.`);
     };
 
     // 3. RETURN BUTTON
@@ -75,7 +77,7 @@ export default function AssetOwnerDashboard() {
 
     const handleReturnSubmit = () => {
         if (!returnReason.trim()) {
-            alert('Please provide a reason for return');
+            toast.error('Please provide a reason for return');
             return;
         }
 
@@ -84,7 +86,7 @@ export default function AssetOwnerDashboard() {
         // Send notification to IT Admin
         sendNotificationToITAdmin('RETURN_REQUEST', asset, returnReason);
 
-        alert(`📦 Return request submitted for "${asset.name}"!\n\n✅ Notification sent to IT Admin\n\nReason: ${returnReason}\n\nThe IT team will process your return request.`);
+        toast.success(`Return request submitted for "${asset.name}". Notification sent to IT Admin. Reason: ${returnReason}`);
 
         setReturnModal({ open: false, asset: null });
         setReturnReason('');
@@ -101,6 +103,13 @@ export default function AssetOwnerDashboard() {
                 <h1 className="text-3xl font-bold text-white">My Asset Responsibility</h1>
                 <p className="text-slate-400">Manage your assigned equipment and verification requests</p>
             </header>
+
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(verificationPending.length > 0 ? [{ label: 'Pending verification', count: verificationPending.length, icon: Clock, variant: 'warning' }] : []),
+                ]}
+            />
 
             {/* KPI Cards - LIVE COUNTS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -1,10 +1,13 @@
 """
 MDM (Mobile Device Management) Service
-Simulates device enrollment and security policy validation for BYOD compliance.
+Device enrollment and security policy validation for BYOD compliance.
+Uses policy engine and pluggable MDM adapters.
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from ..models.models import ByodDevice, AssetRequest
+from .policy_engine import _load_policies
+from .mdm import get_mdm_adapter
 from typing import Dict, Any, Optional
 from uuid import UUID
 from datetime import datetime
@@ -17,72 +20,41 @@ async def simulate_mdm_enrollment(
     security_policies: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:
     """
-    Simulate MDM enrollment for a BYOD device.
-    
-    In production, this would integrate with:
-    - Microsoft Intune
-    - Google Endpoint Management
-    - Jamf Pro (for Apple devices)
-    
-    Args:
-        db: Database session
-        device_id: ID of the BYOD device
-        security_policies: Optional security policies to apply
-        
-    Returns:
-        Enrollment result with compliance status
+    Legacy: Enroll/check BYOD device. Now delegates to MDM adapter.
+    Kept for backward compatibility with mdm-enroll endpoint.
     """
     result = await db.execute(select(ByodDevice).filter(ByodDevice.id == device_id))
     device = result.scalars().first()
-    
     if not device:
-        return {
-            "success": False,
-            "error": "Device not found"
-        }
-    
-    # Default security baseline
-    default_policies = {
-        "encryption_required": True,
-        "password_complexity": "HIGH",
-        "biometric_auth": True,
-        "remote_wipe_enabled": True,
-        "app_whitelist_enforced": True,
-        "os_version_minimum": "12.0",
-        "auto_update_enabled": True
+        return {"success": False, "error": "Device not found"}
+    policies = _load_policies().get("default_policies", {}) or {
+        "encryption_required": True, "password_complexity": "HIGH",
+        "remote_wipe_enabled": True, "os_version_minimum": "12.0",
     }
-    
-    policies = security_policies or default_policies
-    
-    # Simulate compliance check
-    compliance_checks = {
-        "encryption": True,  # Simulated - would check actual device
-        "password_policy": True,
-        "os_version": True,
-        "security_patch_level": True,
-        "unauthorized_apps": False
-    }
-    
-    all_compliant = all(compliance_checks.values())
-    
-    # Update device record
-    device.compliance_status = "COMPLIANT" if all_compliant else "NON_COMPLIANT"
-    # device.mdm_enrolled = True (Missing column)
-    # device.mdm_enrollment_date = datetime.now() (Missing column)
-    # device.security_policies = policies (Missing column)
-    # device.compliance_checks = compliance_checks (Missing column)
-    
+    policies = security_policies or policies
+    adapter = get_mdm_adapter()
+    enrollment_result = await adapter.enroll_and_check(
+        device_id=device.id,
+        device_model=device.device_model,
+        os_version=device.os_version,
+        security_policies=policies,
+    )
+    device.compliance_status = enrollment_result.get("compliance_status", "COMPLIANT")
+    device.mdm_enrolled = True
+    device.mdm_enrollment_date = datetime.now()
+    device.last_compliance_check = datetime.now()
+    device.compliance_checks = enrollment_result.get("compliance_checks", {})
+    device.security_policies = policies
     await db.commit()
     await db.refresh(device)
-    
     return {
         "success": True,
         "device_id": str(device.id),
         "mdm_enrolled": True,
         "compliance_status": device.compliance_status,
         "policies_applied": policies,
-        "compliance_checks": compliance_checks,
-        "enrollment_date": datetime.now().isoformat(), # device.mdm_enrollment_date.isoformat(), # device.mdm_enrollment_date.isoformat()
+        "compliance_checks": enrollment_result.get("compliance_checks", {}),
+        "enrollment_date": datetime.now().isoformat(),
     }
 
 
@@ -129,24 +101,41 @@ async def validate_byod_compliance(
     )
     device = byod_result.scalars().first()
     
+    # Root fix: If no device exists but request has device details, auto-register
     if not device:
-        return {
-            "success": False,
-            "error": "BYOD device not registered"
-        }
+        device_model = request.asset_model or "Unknown Model"
+        os_version = request.os_version or "Unknown OS"
+        serial_number = request.serial_number or f"BYOD-{request.id}"
+        device = ByodDevice(
+            id=uuid.uuid4(),
+            request_id=request.id,
+            owner_id=request.requester_id,
+            device_model=device_model,
+            os_version=os_version,
+            serial_number=serial_number,
+            compliance_status="COMPLIANT",
+        )
+        db.add(device)
+        await db.flush()
     
-    # Enroll in MDM if not already enrolled
-    # if not device.mdm_enrolled: (Column missing in DB)
-    #     enrollment_result = await simulate_mdm_enrollment(db, device.id)
-    #     
-    #     if not enrollment_result["success"]:
-    #         return enrollment_result
-    # else:
-    #     # Re-check compliance
-    #     enrollment_result = await simulate_mdm_enrollment(db, device.id)
-    
-    # PATCH: Always simulate enrollment check since we can't store state
-    enrollment_result = await simulate_mdm_enrollment(db, device.id)
+    # Run compliance check via MDM adapter (policy engine)
+    policies = _load_policies().get("default_policies", {}) or {}
+    adapter = get_mdm_adapter()
+    enrollment_result = await adapter.enroll_and_check(
+        device_id=device.id,
+        device_model=device.device_model,
+        os_version=device.os_version,
+        security_policies=policies,
+    )
+    # Update device with compliance result
+    compliance_status = enrollment_result.get("compliance_status", "COMPLIANT")
+    device.compliance_status = compliance_status
+    device.mdm_enrolled = True
+    device.mdm_enrollment_date = datetime.now()
+    device.last_compliance_check = datetime.now()
+    device.compliance_checks = enrollment_result.get("compliance_checks", {})
+    device.security_policies = policies
+    device.mdm_provider = "SIMULATED"
     
     # Update request status based on compliance
     if enrollment_result["compliance_status"] == "COMPLIANT":
@@ -179,7 +168,8 @@ async def validate_byod_compliance(
             "reason": "Device failed compliance checks",
             "timestamp": datetime.now().isoformat(),
             "type": "BYOD_COMPLIANCE_CHECK",
-            "compliance_checks": enrollment_result["compliance_checks"]
+            "compliance_checks": enrollment_result.get("compliance_checks", {}),
+            "remediation_steps": enrollment_result.get("remediation_steps", []),
         })
     
     await db.commit()

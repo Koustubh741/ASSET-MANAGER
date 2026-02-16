@@ -16,7 +16,7 @@ const CustomTooltip = ({ active, payload }) => {
     return null
 }
 
-export default function CustomPieChart({ data, onPieClick }) {
+export default function CustomPieChart({ data, onPieClick, minAngle }) {
     if (!data || data.length === 0) return (
         <div className="flex items-center justify-center h-full text-slate-500">
             No data available
@@ -35,6 +35,7 @@ export default function CustomPieChart({ data, onPieClick }) {
                     fill="#8884d8"
                     paddingAngle={5}
                     dataKey="value"
+                    minAngle={minAngle != null ? minAngle : 0}
                     onClick={data => data && onPieClick && onPieClick(data)}
                 >
                     {data.map((entry, index) => (

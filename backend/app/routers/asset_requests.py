@@ -575,8 +575,10 @@ async def inventory_allocate_asset(
     asset = asset_res.scalars().first()
     if asset:
         user = await asset_request_service.get_user_by_id_db(db, db_request.requester_id)
-        asset.assigned_to = user.full_name
-        asset.status = "Active"
+        # Root fix: keep asset.assigned_to / assigned_to_id in sync with request requester
+        asset.assigned_to = user.full_name if user else "Employee"
+        asset.assigned_to_id = db_request.requester_id
+        asset.status = "Reserved"  # User acceptance pending; finalize_asset_assignment sets "In Use" on accept
         db_request.status = "USER_ACCEPTANCE_PENDING"
         db_request.asset_id = asset_id
         await db.commit()
@@ -708,9 +710,20 @@ async def check_byod_compliance(
     """
     Validate BYOD device compliance and MDM enrollment.
     Automatically transitions to IN_USE or BYOD_REJECTED based on compliance status.
+    Use dry_run=true to test connectivity without executing backend logic.
     """
+    # Dry run: return mock success, no DB changes
+    if check_request.dry_run:
+        return {
+            "success": True,
+            "request_id": str(request_id),
+            "final_status": "DRY_RUN",
+            "dry_run": True,
+            "message": "Dry run - no backend logic executed",
+        }
+
     from ..services.mdm_service import validate_byod_compliance
-    
+
     # Verify IT management authorization
     reviewer = current_user
     if reviewer.role != "IT_MANAGEMENT" and reviewer.role != "ADMIN":
@@ -718,7 +731,7 @@ async def check_byod_compliance(
             status_code=403,
             detail="Only IT Management can perform BYOD compliance checks"
         )
-    
+
     try:
         result = await validate_byod_compliance(
             db=db,
@@ -768,4 +781,20 @@ async def enroll_device_in_mdm(
             detail=result.get("error", "MDM enrollment failed")
         )
     
+    return result
+
+
+@router.post("/apply-root-fix")
+async def apply_root_fix_endpoint(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Admin-only. Syncs Asset.assigned_to and assigned_to_id from AssetRequest requester
+    for all requests with an asset in USER_ACCEPTANCE_PENDING, MANAGER_CONFIRMED_ASSIGNMENT,
+    FULFILLED, or IN_USE. Use after data fixes or to repair orphaned asset links.
+    """
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "ASSET_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Only Admin or Asset Manager can run root fix")
+    result = await asset_request_service.apply_root_fix(db)
     return result

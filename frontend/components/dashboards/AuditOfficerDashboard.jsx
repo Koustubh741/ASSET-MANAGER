@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '@/lib/apiClient';
 import { ClipboardList, AlertTriangle, FileCheck, Search, ShieldCheck, PieChart, Users, AlertOctagon, History, FileText, CheckCircle2, XCircle, BarChart3, Lock, Eye, Download, Info } from 'lucide-react';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 export default function AuditOfficerDashboard() {
     const [activeTab, setActiveTab] = useState('overview');
@@ -497,6 +498,15 @@ export default function AuditOfficerDashboard() {
                     ))}
                 </div>
             </header>
+
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(auditPlans.filter(p => p.status === 'In Progress').length > 0 ? [{ label: 'Audits in progress', count: auditPlans.filter(p => p.status === 'In Progress').length, icon: ClipboardList, variant: 'primary' }] : []),
+                    ...(softwareCompliance.highRiskViolations > 0 ? [{ label: 'High-risk violations', count: softwareCompliance.highRiskViolations, icon: AlertOctagon, variant: 'warning' }] : []),
+                    ...(violations.filter(v => v.status !== 'Closed').length > 0 ? [{ label: 'Open violations / CAPA', count: violations.filter(v => v.status !== 'Closed').length, icon: FileText, variant: 'info' }] : []),
+                ]}
+            />
 
             {/* Dynamic Content */}
             <div className="min-h-[500px]">

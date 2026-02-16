@@ -41,7 +41,9 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, onClose }) => {
             <div className="glass-panel w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 border border-white/10 relative">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg z-[101] transition-all"
+                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg z-[101] transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    aria-label="Close scanner"
+                    title="Close"
                 >
                     <X size={20} />
                 </button>

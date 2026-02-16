@@ -748,7 +748,8 @@ async def trigger_server_scan(
                     ip_address=ip,
                     hardware=DiscoveryHardware(**raw_data["hardware"]),
                     os=DiscoveryOS(**raw_data["os"]),
-                    software=raw_data["software"]
+                    software=raw_data["software"],
+                    metadata=raw_data.get("metadata", {})
                 )
                 
                 # 3. Process

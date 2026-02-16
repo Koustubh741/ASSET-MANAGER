@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, AlertTriangle, Upload, FileText, User, ShoppingBag, Camera } from 'lucide-react';
 import BarcodeScanner from './common/BarcodeScanner';
 
@@ -11,6 +11,13 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
     const [receivedAssetName, setReceivedAssetName] = useState(request?.asset_name || request?.assetType || '');
     const [receivedAssetModel, setReceivedAssetModel] = useState(request?.asset_model || '');
     const [showScanner, setShowScanner] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const onEscape = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onEscape);
+        return () => window.removeEventListener('keydown', onEscape);
+    }, [isOpen, onClose]);
 
     if (!isOpen || !request) return null;
 
@@ -90,7 +97,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                         <ShoppingBag className="w-5 h-5 text-blue-400" />
                         Process Procurement Request
                     </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded" aria-label="Close modal" title="Close">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -102,7 +109,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-4">
                             <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">Request Information</label>
+                                <label className="text-xs uppercase tracking-wider text-slate-500 font-bold block mb-1">Request Information</label>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-slate-400">Request ID</span>
@@ -114,24 +121,24 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-slate-400">Priority</span>
-                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">MEDIUM</span>
+                                        <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">MEDIUM</span>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">Requester Details</label>
+                                <label className="text-xs uppercase tracking-wider text-slate-500 font-bold block mb-1">Requester Details</label>
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                                         <User size={20} />
                                     </div>
                                     <div className="flex flex-col">
                                         <div className="text-sm font-bold text-white">{request.requestedBy.name}</div>
-                                        <div className="text-[10px] text-slate-400 mb-1">{request.requestedBy.email || request.requester_email}</div>
+                                        <div className="text-xs text-slate-400 mb-1">{request.requestedBy.email || request.requester_email}</div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[10px] text-slate-500">{request.requestedBy.role}</span>
+                                            <span className="text-xs text-slate-500">{request.requestedBy.role}</span>
                                             {request.requester_department && (
-                                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
+                                                <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
                                                     {request.requester_department}
                                                 </span>
                                             )}
@@ -142,8 +149,8 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                         </div>
 
                         <div className="bg-white/5 p-4 rounded-xl border border-white/5 flex flex-col">
-                            <label className="text-[10px] uppercase tracking-wider text-slate-500 font-bold block mb-1">Business Justification</label>
-                            <div className="text-sm text-slate-300 flex-grow italic leading-relaxed">
+                            <label className="text-xs uppercase tracking-wider text-slate-500 font-bold block mb-1">Business Justification</label>
+                            <div className="text-sm text-slate-300 flex-grow italic leading-relaxed max-w-prose">
                                 "{request.justification || 'No justification provided.'}"
                             </div>
                         </div>
@@ -163,7 +170,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
                                     <div className="space-y-2">
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
                                             Physical Serial Number
                                             <button
                                                 onClick={() => setShowScanner(true)}
@@ -171,7 +178,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                                 title="Scan Barcode"
                                             >
                                                 <Camera size={12} />
-                                                <span className="text-[9px]">Scan Barcode</span>
+                                                <span className="text-xs">Scan Barcode</span>
                                             </button>
                                         </label>
                                         <input
@@ -183,7 +190,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
                                             Final Asset Name
                                         </label>
                                         <input
@@ -194,7 +201,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                         />
                                     </div>
                                     <div className="space-y-2 col-span-full">
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
                                             Hardware Model (Optional)
                                         </label>
                                         <input
@@ -248,7 +255,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                                         <Upload size={24} />
                                                     </div>
                                                     <div className="text-sm text-slate-300">Click or drag & drop PO PDF here</div>
-                                                    <div className="text-[10px] text-slate-500 font-mono italic">Must be valid PDF under 5MB</div>
+                                                    <div className="text-xs text-slate-500 font-mono italic">Must be valid PDF under 5MB</div>
                                                 </>
                                             )}
                                         </div>

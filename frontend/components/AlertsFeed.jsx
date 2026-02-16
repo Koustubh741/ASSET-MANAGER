@@ -1,97 +1,97 @@
 import React from 'react';
 import { AlertCircle, Clock, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import apiClient from '@/lib/apiClient';
 
-const MOCK_ALERTS = [
-    {
-        id: 1,
-        type: 'critical',
-        title: 'Warranty Expiring Soon',
-        message: 'MacBook Pro M1 (AST-003) warranty expires in 5 days.',
-        time: '2 hours ago',
-        icon: AlertCircle,
-        color: 'text-rose-400',
-        bg: 'bg-rose-500/10',
-        border: 'border-rose-500/20',
-        link: '/assets?risk=warranty'
-    },
-    {
-        id: 2,
-        type: 'warning',
-        title: 'New Renewal Request',
-        message: 'Sarah Jenkins requested renewal for Dell XPS 15.',
-        time: '5 hours ago',
-        icon: Clock,
-        color: 'text-orange-400',
-        bg: 'bg-orange-500/10',
-        border: 'border-orange-500/20',
-        link: '/renewals'
-    },
-    {
-        id: 3,
-        type: 'success',
-        title: 'Procurement Approved',
-        message: 'PO-2024-001 for 5 monitors has been approved.',
-        time: '1 day ago',
-        icon: CheckCircle2,
-        color: 'text-emerald-400',
-        bg: 'bg-emerald-500/10',
-        border: 'border-emerald-500/20',
-        link: '/procurement'
-    },
-    {
-        id: 4,
-        type: 'info',
-        title: 'Asset Assigned',
-        message: 'iPhone 13 assigned to New Hire (Mike Ross).',
-        time: '1 day ago',
-        icon: AlertTriangle, // Placeholder icon or Info icon
-        color: 'text-blue-400',
-        bg: 'bg-blue-500/10',
-        border: 'border-blue-500/20',
-        link: '/assets'
-    },
-    {
-        id: 5,
-        type: 'critical',
-        title: 'Maintenance Overdue',
-        message: 'Server Rack A-04 monthly maintenance missed.',
-        time: '2 days ago',
-        icon: AlertCircle,
-        color: 'text-rose-400',
-        bg: 'bg-rose-500/10',
-        border: 'border-rose-500/20',
-        link: '/assets?status=Repair'
-    }
-];
+const TYPE_STYLE = {
+    warranty: { icon: AlertCircle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+    request: { icon: Clock, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
+    procurement_approved: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+    assignment: { icon: AlertTriangle, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+    maintenance: { icon: AlertCircle, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20' },
+};
+
+const defaultStyle = { icon: AlertTriangle, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' };
+
+function mapApiAlertToUi(apiAlert) {
+    const style = TYPE_STYLE[apiAlert.type] || defaultStyle;
+    return {
+        id: apiAlert.id,
+        type: apiAlert.type,
+        title: apiAlert.title,
+        message: apiAlert.message,
+        time: apiAlert.time || '',
+        link: apiAlert.link || '/assets',
+        icon: style.icon,
+        color: style.color,
+        bg: style.bg,
+        border: style.border,
+    };
+}
+
+function filterByNotificationSettings(alerts, notifications) {
+    if (!notifications) return alerts;
+    return alerts.filter((alert) => {
+        if (alert.type === 'warranty' && notifications.expiry === false) return false;
+        if ((alert.type === 'request' || alert.type === 'procurement_approved') && notifications.approvals === false) return false;
+        return true;
+    });
+}
 
 export default function AlertsFeed() {
-    const [alerts, setAlerts] = React.useState(MOCK_ALERTS);
+    const [alerts, setAlerts] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState(false);
 
     React.useEffect(() => {
-        const savedSettings = localStorage.getItem('appSettings');
-        if (savedSettings) {
+        let cancelled = false;
+        async function fetchAlerts() {
+            setLoading(true);
+            setError(false);
             try {
-                const { notifications } = JSON.parse(savedSettings);
-                // Filter logic
-                const filtered = MOCK_ALERTS.filter(alert => {
-                    if (alert.title.includes('Warranty') && !notifications.expiry) return false;
-                    if (alert.title.includes('Renewal') && !notifications.approvals) return false;
-                    if (alert.title.includes('Approved') && !notifications.approvals) return false;
-                    return true;
-                });
-                setAlerts(filtered);
+                const data = await apiClient.getAlerts({ limit: 20 });
+                if (cancelled) return;
+                const raw = Array.isArray(data) ? data : [];
+                let list = raw.map(mapApiAlertToUi);
+                const savedSettings = localStorage.getItem('appSettings');
+                if (savedSettings) {
+                    try {
+                        const { notifications } = JSON.parse(savedSettings);
+                        list = filterByNotificationSettings(list, notifications);
+                    } catch (e) {
+                        console.error('Failed to load settings for alerts', e);
+                    }
+                }
+                setAlerts(list);
             } catch (e) {
-                console.error("Failed to load settings for alerts", e);
+                if (!cancelled) {
+                    console.error('Failed to load alerts', e);
+                    setError(true);
+                    setAlerts([]);
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
             }
         }
+        fetchAlerts();
+        return () => { cancelled = true; };
     }, []);
 
-    if (alerts.length === 0) return (
-        <div className="p-8 text-center border border-white/5 rounded-xl bg-white/5">
-            <p className="text-slate-400 text-sm">No active alerts</p>
-        </div>
-    );
+    if (loading) {
+        return (
+            <div className="p-8 text-center border border-white/5 rounded-xl bg-white/5">
+                <p className="text-slate-400 text-sm">Loading alerts...</p>
+            </div>
+        );
+    }
+
+    if (alerts.length === 0) {
+        return (
+            <div className="p-8 text-center border border-white/5 rounded-xl bg-white/5">
+                <p className="text-slate-400 text-sm">{error ? 'Could not load alerts.' : 'No active alerts'}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">

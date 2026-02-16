@@ -1,59 +1,27 @@
-
+"""
+CLI to run the root fix: sync Asset.assigned_to / assigned_to_id from AssetRequest requester.
+Run from backend: python apply_root_fix.py
+Or call POST /api/v1/asset-requests/apply-root-fix (Admin/Asset Manager).
+"""
 import asyncio
-from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from app.database.database import AsyncSessionLocal
-from app.models.models import Asset, AssetRequest, User
+from app.services.asset_request_service import apply_root_fix as apply_root_fix_service
+
 
 async def apply_root_fix():
     async with AsyncSessionLocal() as db:
-        # 1. Find all requests that have an asset assigned but are pending finalization
-        query = select(AssetRequest).filter(
-            AssetRequest.asset_id.isnot(None),
-            AssetRequest.status.in_(["USER_ACCEPTANCE_PENDING", "MANAGER_CONFIRMED_ASSIGNMENT", "FULFILLED"])
-        )
-        result = await db.execute(query)
-        requests = result.scalars().all()
-        
-        print(f"Applying Root Fix to {len(requests)} requests...")
-        
-        for req in requests:
-            # Get the user
-            u_query = select(User).filter(User.id == req.requester_id)
-            u_result = await db.execute(u_query)
-            user = u_result.scalars().first()
-            
-            if not user:
-                print(f"  Error: User {req.requester_id} not found for request {req.id}")
-                continue
-                
-            # Get the asset
-            a_query = select(Asset).filter(Asset.id == req.asset_id)
-            a_result = await db.execute(a_query)
-            asset = a_result.scalars().first()
-            
-            if not asset:
-                print(f"  Error: Asset {req.asset_id} not found for request {req.id}")
-                continue
-            
-            print(f"  Updating Asset {asset.id} for user '{user.full_name}'")
-            print(f"    Current Status: {asset.status}, Current Assigned To: {asset.assigned_to}")
-            
-            # Update fields
-            asset.assigned_to = user.full_name
-            asset.assigned_to_id = user.id
-            
-            # If request is FULFILLED, status should be 'In Use'
-            if req.status == "FULFILLED":
-                asset.status = "In Use"
-            else:
-                # Otherwise it's 'Reserved' (Visible to user)
-                asset.status = "Reserved"
-            
-            print(f"    New Status: {asset.status}, New Assigned To: {asset.assigned_to}")
+        result = await apply_root_fix_service(db)
+    print(f"Root Fix: {result['updated']} asset(s) updated.")
+    if result["errors"]:
+        for e in result["errors"]:
+            print(f"  Error: {e}")
+    else:
+        print("Done.")
 
-        await db.commit()
-        print("\nRoot Fix applied successfully!")
 
 if __name__ == "__main__":
     asyncio.run(apply_root_fix())

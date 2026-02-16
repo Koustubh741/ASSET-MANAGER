@@ -134,7 +134,7 @@ class ManagerConfirmationRequest(BaseModel):
 
 class ByodComplianceCheckRequest(BaseModel):
     """Request body for BYOD compliance validation (Reviewer derived from JWT)"""
-    pass
+    dry_run: bool = False  # When True, return mock success without executing logic
 
 
 class MdmEnrollmentRequest(BaseModel):

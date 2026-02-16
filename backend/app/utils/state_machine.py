@@ -161,7 +161,8 @@ def validate_state_transition(
     
     # Validate asset type specific transitions
     if current_status == "IT_APPROVED":
-        if asset_ownership_type == "BYOD" and new_status not in {"BYOD_COMPLIANCE_CHECK", "IN_USE"}:
+        # MANAGER_CONFIRMED_IT allowed for BYOD - service immediately routes to BYOD_COMPLIANCE_CHECK
+        if asset_ownership_type == "BYOD" and new_status not in {"BYOD_COMPLIANCE_CHECK", "IN_USE", "MANAGER_CONFIRMED_IT"}:
             return False, "BYOD requests must go through compliance check"
         elif asset_ownership_type == "COMPANY_OWNED" and new_status == "BYOD_COMPLIANCE_CHECK":
             return False, "Company-owned assets cannot go through BYOD compliance check"

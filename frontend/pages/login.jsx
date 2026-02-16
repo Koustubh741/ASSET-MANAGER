@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useRole } from '@/contexts/RoleContext';
+import { useToast } from '@/components/common/Toast';
 import apiClient from '@/lib/apiClient';
 import { User, Mail, Lock, Briefcase, MapPin, Phone, ArrowRight, Check, Building2, Disc, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
@@ -8,6 +9,7 @@ import Link from 'next/link';
 export default function Login() {
     const router = useRouter();
     const { login, ROLES } = useRole();
+    const toast = useToast();
     const [isLoginMode, setIsLoginMode] = useState(true);
     const [isAnimating, setIsAnimating] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +44,9 @@ export default function Login() {
             login(userData);
             router.push('/');
         } catch (err) {
-            setError('SSO Authentication failed: ' + (err.message || 'Unknown error'));
+            const msg = 'SSO Authentication failed: ' + (err.message || 'Unknown error');
+            setError(msg);
+            toast.error(msg);
         } finally {
             setIsLoading(false);
         }
@@ -111,7 +115,9 @@ export default function Login() {
 
         if (!isLoginMode) {
             if (formData.password !== formData.confirmPassword) {
-                setError('Passwords do not match.');
+                const msg = 'Passwords do not match.';
+                setError(msg);
+                toast.error(msg);
                 return;
             }
             if (!formData.name) {
@@ -139,12 +145,16 @@ export default function Login() {
                 try {
                     await apiClient.register(registerData);
                     console.log("Registration successful!");
-                    setSuccessMsg('Registration successful! Your account is pending administrator approval. You will be able to log in once activated.');
+                    const msg = 'Registration successful! Your account is pending administrator approval. You will be able to log in once activated.';
+                    setSuccessMsg(msg);
+                    toast.success(msg);
                     setIsLoginMode(true);
                     return; // Stop here, don't try to log in since status is PENDING
                 } catch (regErr) {
                     console.error("Registration failed:", regErr);
-                    setError(regErr.message || 'Registration failed. Please try again.');
+                    const msg = regErr.message || 'Registration failed. Please try again.';
+                    setError(msg);
+                    toast.error(msg);
                     return;
                 }
             }
@@ -171,7 +181,9 @@ export default function Login() {
             router.push('/');
         } catch (e) {
             console.warn("Real backend auth failed:", e);
-            setError(e.message || 'Authentication failed. Please check your credentials.');
+            const msg = e.message || 'Authentication failed. Please check your credentials.';
+            setError(msg);
+            toast.error(msg);
 
             // Optional: Keep mock fallback for demonstration if desired, but user specifically asked for DB reflection
             /*

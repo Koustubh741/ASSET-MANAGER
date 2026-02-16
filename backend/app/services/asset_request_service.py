@@ -8,7 +8,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
-from ..models.models import AssetRequest, User, PurchaseOrder, PurchaseInvoice, ProcurementLog
+from ..models.models import AssetRequest, User, Asset, PurchaseOrder, PurchaseInvoice, ProcurementLog
 from ..schemas.asset_request_schema import AssetRequestCreate, AssetRequestUpdate, AssetRequestResponse
 from ..services import procurement_service
 from ..utils.state_machine import validate_state_transition
@@ -465,7 +465,8 @@ async def register_byod_device_service(
     """
     result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
     db_request = result.scalars().first()
-    if not db_request or db_request.status != "IT_APPROVED":
+    # Accept both IT_APPROVED (quick path) and BYOD_COMPLIANCE_CHECK (full compliance flow)
+    if not db_request or db_request.status not in ("IT_APPROVED", "BYOD_COMPLIANCE_CHECK"):
         return None
 
     # 1. Create BYOD entry
@@ -481,8 +482,9 @@ async def register_byod_device_service(
     )
     db.add(byod)
     
-    # 2. Update status
-    db_request.status = "IN_USE"
+    # 2. Update status: IT_APPROVED → IN_USE (quick path); BYOD_COMPLIANCE_CHECK → keep for compliance check
+    if db_request.status == "IT_APPROVED":
+        db_request.status = "IN_USE"
     db_request.updated_at = datetime.now()
     
     # 3. Add to approvals log
@@ -534,7 +536,8 @@ async def get_all_asset_requests(
                 User.domain.ilike(f"%{department}%")
             )
         )
-        
+    # Order by newest first so pending requests (MANAGER_APPROVED, IT_APPROVED, etc.) appear at top
+    query = query.order_by(desc(AssetRequest.created_at))
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     results = result.scalars().all()
@@ -545,3 +548,48 @@ async def get_all_asset_requests(
         response_list.append(res)
         
     return response_list
+
+
+async def apply_root_fix(db: AsyncSession) -> dict:
+    """
+    Sync Asset.assigned_to / assigned_to_id from AssetRequest requester for all
+    requests with an asset that are in USER_ACCEPTANCE_PENDING, MANAGER_CONFIRMED_ASSIGNMENT,
+    FULFILLED, or IN_USE. Fixes orphaned or misaligned asset-request links so
+    frontend "My Assets" shows correctly.
+    Returns {"updated": count, "errors": list}.
+    """
+    updated = 0
+    errors = []
+    q = select(AssetRequest).filter(
+        AssetRequest.asset_id.isnot(None),
+        AssetRequest.status.in_([
+            "USER_ACCEPTANCE_PENDING",
+            "MANAGER_CONFIRMED_ASSIGNMENT",
+            "FULFILLED",
+            "IN_USE",
+        ]),
+    )
+    result = await db.execute(q)
+    requests = result.scalars().all()
+
+    for req in requests:
+        u_result = await db.execute(select(User).filter(User.id == req.requester_id))
+        user = u_result.scalars().first()
+        if not user:
+            errors.append(f"User {req.requester_id} not found for request {req.id}")
+            continue
+        a_result = await db.execute(select(Asset).filter(Asset.id == req.asset_id))
+        asset = a_result.scalars().first()
+        if not asset:
+            errors.append(f"Asset {req.asset_id} not found for request {req.id}")
+            continue
+        asset.assigned_to = user.full_name
+        asset.assigned_to_id = user.id
+        if req.status in ("FULFILLED", "IN_USE"):
+            asset.status = "In Use"
+        else:
+            asset.status = "Reserved"
+        updated += 1
+
+    await db.commit()
+    return {"updated": updated, "errors": errors}

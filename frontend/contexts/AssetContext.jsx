@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useRole } from '@/contexts/RoleContext';
+import { useToast } from '@/components/common/Toast';
 
 // --- ENTERPRISE ASSET REQUEST FLOW ---
 
@@ -86,6 +87,7 @@ export function AssetProvider({ children }) {
     }, [requests]);
 
     const { isAuthenticated, isLoading: authLoading, user, currentRole } = useRole();
+    const toast = useToast();
 
     const loadData = async () => {
         if (authLoading || !isAuthenticated) return;
@@ -105,8 +107,8 @@ export function AssetProvider({ children }) {
                     currentRole?.slug === 'FINANCE' ||
                     currentRole?.slug === 'IT_MANAGEMENT'
                 ) {
-                    // Admin-level/Centralized roles see EVERYTHING
-                    apiAssetRequests = await apiClient.getAssetRequests();
+                    // Admin-level/Centralized roles see EVERYTHING (higher limit so pending requests aren't cut off)
+                    apiAssetRequests = await apiClient.getAssetRequests({ limit: 300 });
                     apiAssets = await apiClient.getAssets();
                     apiTickets = await apiClient.getTickets();
                     console.log(`[AssetContext] Admin fetch: ${apiAssetRequests.length} requests, ${apiAssets.length} assets, ${apiTickets.length} tickets`);
@@ -352,7 +354,7 @@ export function AssetProvider({ children }) {
             }));
         } catch (e) {
             console.error("Manager Approve Failed:", e);
-            alert(`Failed to approve: ${e.message}`);
+            toast.error(`Failed to approve: ${e.message}`);
         }
     };
 
@@ -385,7 +387,7 @@ export function AssetProvider({ children }) {
             console.log(`[Manager] ✅ Request ${reqId} successfully rejected`);
         } catch (e) {
             console.error('[Manager] ❌ Failed to reject request:', e);
-            alert(`Failed to reject request: ${e.message}`);
+            toast.error(`Failed to reject request: ${e.message}`);
         }
     };
 
@@ -400,7 +402,7 @@ export function AssetProvider({ children }) {
             console.log(`[Manager] ✅ IT Decision confirmed for request ${reqId}`);
         } catch (e) {
             console.error('[Manager] ❌ Failed to confirm IT decision:', e);
-            alert(`Failed: ${e.message}`);
+            toast.error(`Failed: ${e.message}`);
         }
     };
 
@@ -411,7 +413,7 @@ export function AssetProvider({ children }) {
             await loadData();
         } catch (e) {
             console.error('[Manager] ❌ Failed to confirm budget:', e);
-            alert(`Failed: ${e.message}`);
+            toast.error(`Failed: ${e.message}`);
         }
     };
 
@@ -422,7 +424,7 @@ export function AssetProvider({ children }) {
             await loadData();
         } catch (e) {
             console.error('[Manager] ❌ Failed to confirm assignment:', e);
-            alert(`Failed: ${e.message}`);
+            toast.error(`Failed: ${e.message}`);
         }
     };
 
@@ -461,7 +463,7 @@ export function AssetProvider({ children }) {
             }));
         } catch (e) {
             console.error("IT Approve Failed:", e);
-            alert(`Failed IT approval: ${e.message}`);
+            toast.error(`Failed IT approval: ${e.message}`);
         }
     };
 
@@ -475,11 +477,12 @@ export function AssetProvider({ children }) {
                 serial_number: req.serial_number || 'Unknown Serial'
             };
 
-            await apiClient.byodRegister(reqId, payload);
+            const updated = await apiClient.byodRegister(reqId, payload);
 
             setRequests(prev => prev.map(r => {
                 if (r.id !== reqId) return r;
 
+                const newStatus = (updated?.status || r.status) === 'IN_USE' ? REQUEST_STATUS.FULFILLED : (updated?.status || r.status);
                 const newAuditEntry = {
                     action: 'BYOD_REGISTERED',
                     byRole: 'IT_MANAGEMENT',
@@ -490,8 +493,9 @@ export function AssetProvider({ children }) {
 
                 return {
                     ...r,
-                    status: REQUEST_STATUS.FULFILLED,
-                    currentOwnerRole: OWNER_ROLE.END_USER,
+                    ...updated,
+                    status: newStatus,
+                    currentOwnerRole: newStatus === REQUEST_STATUS.FULFILLED ? OWNER_ROLE.END_USER : r.currentOwnerRole,
                     auditTrail: [...(r.auditTrail || []), newAuditEntry],
                     timeline: [...(r.timeline || []), { role: 'IT_MANAGEMENT', action: 'BYOD_REGISTERED', timestamp: new Date().toISOString(), comment: 'BYOD Device Live' }]
                 };
@@ -506,7 +510,7 @@ export function AssetProvider({ children }) {
             }
         } catch (e) {
             console.error("BYOD Registration Failed:", e);
-            alert(`Registration failed: ${e.message}`);
+            toast.error(`Registration failed: ${e.message}`);
         }
     };
 
@@ -539,7 +543,7 @@ export function AssetProvider({ children }) {
             }));
         } catch (e) {
             console.error("IT Reject Failed:", e);
-            alert(`Failed IT rejection: ${e.message}`);
+            toast.error(`Failed IT rejection: ${e.message}`);
         }
     };
 
@@ -554,7 +558,7 @@ export function AssetProvider({ children }) {
                 console.log(`[Inventory] Asset ${allocatedAssetId} found in database`);
             } catch (err) {
                 console.error(`[Inventory] Asset validation failed:`, err);
-                alert(`Error: Asset "${allocatedAssetId}" not found in database. Please enter a valid Asset ID.`);
+                toast.error(`Error: Asset "${allocatedAssetId}" not found in database. Please enter a valid Asset ID.`);
                 return;
             }
 
@@ -563,7 +567,7 @@ export function AssetProvider({ children }) {
             const targetRequest = requests.find(r => r.id === reqId);
             if (!targetRequest) {
                 console.error(`[Inventory] Request ${reqId} not found in requests array`);
-                alert("Error: Request not found.");
+                toast.error("Error: Request not found.");
                 return;
             }
             console.log(`[Inventory] Request found. Assigning to ${targetRequest.requestedBy.name}`);
@@ -575,7 +579,7 @@ export function AssetProvider({ children }) {
                 console.log(`[Inventory] Backend allocation successful`);
             } catch (apiError) {
                 console.error(`[Inventory] Backend API call failed:`, apiError);
-                alert(`Failed to persist allocation to database: ${apiError.message}`);
+                toast.error(`Failed to persist allocation to database: ${apiError.message}`);
                 return;
             }
 
@@ -618,10 +622,10 @@ export function AssetProvider({ children }) {
                 console.warn("[Inventory] Could not refresh assets after allocation:", assetErr);
             }
 
-            alert(`Asset ${allocatedAssetId} successfully allocated!`);
+            toast.success(`Asset ${allocatedAssetId} successfully allocated!`);
         } catch (e) {
             console.error("[Inventory] ❌ Inventory Check Available Failed:", e);
-            alert(`Failed to allocate asset: ${e.message}`);
+            toast.error(`Failed to allocate asset: ${e.message}`);
         }
     };
 
@@ -636,7 +640,7 @@ export function AssetProvider({ children }) {
                 console.log(`[Inventory] Backend update successful`);
             } catch (apiError) {
                 console.error(`[Inventory] Backend API call failed:`, apiError);
-                alert(`Failed to route to procurement: ${apiError.message}`);
+                toast.error(`Failed to route to procurement: ${apiError.message}`);
                 return;
             }
 
@@ -664,10 +668,10 @@ export function AssetProvider({ children }) {
                 };
             }));
             console.log(`[Inventory] ✅ Request ${reqId} successfully routed to Procurement`);
-            alert("Request successfully routed to Procurement for purchasing.");
+            toast.success("Request successfully routed to Procurement for purchasing.");
         } catch (e) {
             console.error("[Inventory] ❌ Inventory Check Not Available Failed:", e);
-            alert(`Failed to route to procurement: ${e.message}`);
+            toast.error(`Failed to route to procurement: ${e.message}`);
         }
     };
 
@@ -707,7 +711,7 @@ export function AssetProvider({ children }) {
             console.log(`[Procurement] ✅ Request ${reqId} approved with PO ${poId}`);
         } catch (error) {
             console.error('[Procurement] ❌ Failed to approve request:', error);
-            alert(`Failed to approve request: ${error.message}`);
+            toast.error(`Failed to approve request: ${error.message}`);
         }
     };
 
@@ -726,7 +730,7 @@ export function AssetProvider({ children }) {
 
         } catch (error) {
             console.error('[Procurement] ❌ PO Upload Failed:', error);
-            alert(`PO Upload Failed: ${error.message}`);
+            toast.error(`PO Upload Failed: ${error.message}`);
             throw error;
         }
     };
@@ -761,7 +765,7 @@ export function AssetProvider({ children }) {
             console.log(`[Procurement] ✅ Request ${reqId} successfully rejected`);
         } catch (error) {
             console.error('[Procurement] ❌ Failed to reject request:', error);
-            alert(`Failed to reject request: ${error.message}`);
+            toast.error(`Failed to reject request: ${error.message}`);
         }
     };
 
@@ -818,7 +822,7 @@ export function AssetProvider({ children }) {
             }));
         } catch (e) {
             console.error("Finance Approve Failed:", e);
-            alert(`Failed to approve budget: ${e.message}`);
+            toast.error(`Failed to approve budget: ${e.message}`);
         }
     };
 
@@ -853,7 +857,7 @@ export function AssetProvider({ children }) {
             }));
         } catch (e) {
             console.error("Finance Reject Failed:", e);
-            alert(`Failed to reject budget: ${e.message}`);
+            toast.error(`Failed to reject budget: ${e.message}`);
         }
     };
 
@@ -891,10 +895,10 @@ export function AssetProvider({ children }) {
                 console.warn("[Procurement] Could not refresh assets after delivery confirmation:", assetErr);
             }
 
-            alert("Delivery confirmed! Request moved back to Inventory for allocation.");
+            toast.success("Delivery confirmed! Request moved back to Inventory for allocation.");
         } catch (e) {
             console.error("[Procurement] Delivery Confirmation Failed:", e);
-            alert(`Failed to confirm delivery: ${e.message}`);
+            toast.error(`Failed to confirm delivery: ${e.message}`);
         }
     };
 
@@ -925,7 +929,7 @@ export function AssetProvider({ children }) {
             }));
         } catch (e) {
             console.error("QC Performance Failed:", e);
-            alert(`Failed to submit QC: ${e.message}`);
+            toast.error(`Failed to submit QC: ${e.message}`);
         }
     };
 
@@ -947,10 +951,10 @@ export function AssetProvider({ children }) {
                     ]
                 };
             }));
-            alert("Asset successfully accepted and fulfilled!");
+            toast.success("Asset successfully accepted and fulfilled!");
         } catch (e) {
             console.error("User Acceptance Failed:", e);
-            alert(`Failed to accept asset: ${e.message}`);
+            toast.error(`Failed to accept asset: ${e.message}`);
         }
     };
 
@@ -962,7 +966,7 @@ export function AssetProvider({ children }) {
             try {
                 await apiClient.getAsset(allocatedAssetId);
             } catch (err) {
-                alert(`Error: Asset "${allocatedAssetId}" not found in database. Please enter a valid Asset ID.`);
+                toast.error(`Error: Asset "${allocatedAssetId}" not found in database. Please enter a valid Asset ID.`);
                 return;
             }
 
@@ -973,7 +977,7 @@ export function AssetProvider({ children }) {
                 console.log(`[Inventory] Backend allocation successful`);
             } catch (apiError) {
                 console.error(`[Inventory] Backend API call failed:`, apiError);
-                alert(`Failed to allocate asset: ${apiError.message}`);
+                toast.error(`Failed to allocate asset: ${apiError.message}`);
                 return;
             }
 
@@ -1000,10 +1004,10 @@ export function AssetProvider({ children }) {
                 console.warn("[Inventory] Could not refresh assets after final allocation:", assetErr);
             }
 
-            alert(`Asset ${allocatedAssetId} successfully allocated and fulfilled!`);
+            toast.success(`Asset ${allocatedAssetId} successfully allocated and fulfilled!`);
         } catch (e) {
             console.error("Inventory Allocate Delivered Failed:", e);
-            alert(`Failed to allocate delivered asset: ${e.message}`);
+            toast.error(`Failed to allocate delivered asset: ${e.message}`);
         }
     };
 

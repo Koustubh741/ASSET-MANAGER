@@ -1,4 +1,5 @@
 import { Box, ClipboardCheck, MapPin, Truck } from 'lucide-react';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 export default function CustodianDashboard() {
     const deliveryQueue = [
@@ -17,6 +18,14 @@ export default function CustodianDashboard() {
                 <h1 className="text-3xl font-bold text-white">Custodian Operations</h1>
                 <p className="text-slate-400">Physical inventory management and logistics</p>
             </header>
+
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(inspectionPending.length > 0 ? [{ label: 'Pending inspections', count: inspectionPending.length, icon: ClipboardCheck, variant: 'warning' }] : []),
+                    ...(deliveryQueue.length > 0 ? [{ label: 'Inbound shipments', count: deliveryQueue.length, icon: Truck, variant: 'primary' }] : []),
+                ]}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="glass-card p-5">

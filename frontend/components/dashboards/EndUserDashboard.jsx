@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Laptop, Ticket, RefreshCw, User, Briefcase, MapPin, Calendar, Building2, Cpu, X, CheckCircle, AlertCircle, Settings, Sparkles, ChevronUp, Smartphone, LogOut, Eye } from 'lucide-react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAssetContext, ASSET_STATUS, OWNER_ROLE, REQUEST_STATUS } from '@/contexts/AssetContext';
+import { useToast } from '@/components/common/Toast';
 import apiClient from '@/lib/apiClient';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 export default function EndUserDashboard() {
+    const toast = useToast();
     const { currentRole, setCurrentRole, ROLES, logout, user } = useRole();
     const { assets, requests, tickets, createRequest, managerApproveRequest, managerRejectRequest, managerConfirmIT, userAcceptAsset, refreshData } = useAssetContext();
     const [activeModal, setActiveModal] = useState(null); // 'asset' | 'ticket' | 'profile' | null
@@ -42,10 +45,8 @@ export default function EndUserDashboard() {
                 };
 
                 await apiClient.createTicket(ticketData);
-                console.log('[End User] Ticket created successfully');
             } catch (error) {
-                console.error('[End User] Failed to create ticket:', error);
-                alert(`Failed to create ticket: ${error.message}`);
+                toast.error(`Failed to create ticket: ${error.message}`);
                 return;
             }
         }
@@ -96,11 +97,11 @@ export default function EndUserDashboard() {
             return dateB - dateA; // Latest first
         });
 
-    console.log('--- DASHBOARD ASSET DEBUG ---');
-    console.log('CUrrent User Name:', user?.name);
-    console.log('Total Assets in context:', assets.length);
-    console.log('Assigned Assets found:', assignedAssets.length);
-    console.log('----------------------------');
+    const pendingAcceptance = requests.filter(r => r.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING).length;
+    const managerApprovalsNeeded = (user?.position === 'MANAGER' || currentRole?.label === 'Manager')
+        ? requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).length
+        : 0;
+    const openTicketsCount = tickets.filter(t => !['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(t.status?.toUpperCase())).length;
 
     return (
         <div className="space-y-6 relative">
@@ -133,6 +134,16 @@ export default function EndUserDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Actions needed — same line as banner for all roles */}
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(pendingAcceptance > 0 ? [{ label: 'Confirm asset acceptance', count: pendingAcceptance, icon: CheckCircle, variant: 'success' }] : []),
+                    ...(managerApprovalsNeeded > 0 ? [{ label: 'Team approvals needed', count: managerApprovalsNeeded, icon: Briefcase, variant: 'primary' }] : []),
+                    ...(openTicketsCount > 0 ? [{ label: 'Open support tickets', count: openTicketsCount, icon: Ticket, variant: 'warning' }] : []),
+                ]}
+            />
 
             {/* User Profile Section */}
             <div className="glass-panel p-6 md:p-8 relative overflow-hidden">
@@ -184,6 +195,7 @@ export default function EndUserDashboard() {
                     </div>
 
                     <div className="flex flex-col gap-3 justify-center border-l border-white/10 pl-6 h-full my-auto">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Quick actions</p>
                         <button
                             onClick={() => setActiveModal('profile')}
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
@@ -233,7 +245,7 @@ export default function EndUserDashboard() {
                                                 {asset.model && asset.model !== asset.name && <span className="text-slate-400 font-normal text-sm ml-2">({asset.model})</span>}
                                             </h4>
                                             <p className="text-sm text-slate-400 flex items-center gap-2 mt-1">
-                                                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono text-slate-300">{asset.id}</span>
+                                                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono text-slate-300">{asset.id}</span>
                                                 <span className="w-1 h-1 rounded-full bg-slate-500"></span>
                                                 <span>Assigned: {asset.assignment_date || asset.assignedDate || 'Recent'}</span>
                                             </p>
@@ -313,13 +325,13 @@ export default function EndUserDashboard() {
                             <div className="flex bg-slate-900/50 rounded-lg p-1 border border-white/5">
                                 <button
                                     onClick={() => setRequestFilter('active')}
-                                    className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${requestFilter === 'active' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                    className={`px-3 py-1 text-xs font-bold rounded transition-all ${requestFilter === 'active' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                                 >
                                     Active
                                 </button>
                                 <button
                                     onClick={() => setRequestFilter('history')}
-                                    className={`px-3 py-1 text-[10px] font-bold rounded transition-all ${requestFilter === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                    className={`px-3 py-1 text-xs font-bold rounded transition-all ${requestFilter === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                                 >
                                     History
                                 </button>
@@ -353,7 +365,7 @@ export default function EndUserDashboard() {
 
                                         <div className="flex justify-between items-start mb-2 relative z-10">
                                             <div className="flex flex-col items-end">
-                                                <span className={`px-2 py-0.5 text-[10px] rounded font-medium border 
+                                                <span className={`px-2 py-0.5 text-xs rounded font-medium border 
                                                     ${req.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                         req.status === 'IT_APPROVED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                                             req.status === 'IN_PROGRESS' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
@@ -363,7 +375,7 @@ export default function EndUserDashboard() {
                                                     {req.status}
                                                 </span>
                                             </div>
-                                            <span className="text-[10px] text-slate-500 font-mono">{new Date(req.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-xs text-slate-500 font-mono">{new Date(req.createdAt).toLocaleDateString()}</span>
                                         </div>
 
                                         <div className="flex items-center gap-2 mb-1.5 relative z-10">
@@ -373,10 +385,10 @@ export default function EndUserDashboard() {
                                             <div>
                                                 <h4 className="text-sm font-bold text-white leading-tight">{req.assetType} Request</h4>
                                                 <div className="flex flex-col mt-0.5">
-                                                    <p className="text-[10px] font-medium text-slate-300">
+                                                    <p className="text-xs font-medium text-slate-300">
                                                         {req.requestedBy?.name || req.requester_name}
                                                     </p>
-                                                    <p className="text-[9px] text-slate-500 truncate max-w-[150px] italic">
+                                                    <p className="text-xs text-slate-500 truncate max-w-[150px] italic">
                                                         {req.requestedBy?.email || req.requester_email || req.id.split('-')[0]}
                                                     </p>
                                                 </div>
@@ -408,9 +420,9 @@ export default function EndUserDashboard() {
                                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 relative z-10">
                                             <div className="flex items-center gap-1.5">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-                                                <span className="text-[10px] text-indigo-300 font-medium">With: {req.currentOwnerRole}</span>
+                                                <span className="text-xs text-indigo-300 font-medium">With: {req.currentOwnerRole}</span>
                                                 {req.requester_department && (
-                                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-slate-400 border border-white/5">
+                                                    <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-slate-400 border border-white/5">
                                                         Dept: {req.requester_department}
                                                     </span>
                                                 )}
@@ -418,7 +430,7 @@ export default function EndUserDashboard() {
                                             {req.procurementStage &&
                                                 req.procurementStage !== 'AWAITING_DECISION' &&
                                                 req.status !== 'FULFILLED' && (
-                                                    <span className="text-[10px] flex items-center gap-1 text-amber-400">
+                                                    <span className="text-xs flex items-center gap-1 text-amber-400">
                                                         <Building2 size={10} /> Procurement
                                                     </span>
                                                 )}
@@ -464,7 +476,7 @@ export default function EndUserDashboard() {
 
                                         <div className="flex justify-between items-start mb-2 relative z-10">
                                             <div className="flex flex-col items-end">
-                                                <span className={`px-2 py-0.5 text-[10px] rounded font-medium border 
+                                                <span className={`px-2 py-0.5 text-xs rounded font-medium border 
                                                     ${ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                         ticket.status === 'OPEN' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                                             ticket.status === 'IN_PROGRESS' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' :
@@ -472,12 +484,12 @@ export default function EndUserDashboard() {
                                                     {ticket.status}
                                                 </span>
                                                 {ticket.resolution_percentage > 0 && (
-                                                    <span className="text-[9px] text-indigo-400 font-bold mt-1">
+                                                    <span className="text-xs text-indigo-400 font-bold mt-1">
                                                         {Math.round(ticket.resolution_percentage)}% Fixed
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className="text-[10px] text-slate-500 font-mono">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                            <span className="text-xs text-slate-500 font-mono">{new Date(ticket.createdAt).toLocaleDateString()}</span>
                                         </div>
 
                                         <div className="flex items-center gap-2 mb-1.5 relative z-10">
@@ -487,10 +499,10 @@ export default function EndUserDashboard() {
                                             <div>
                                                 <h4 className="text-sm font-bold text-white leading-tight">{ticket.subject || 'Support Ticket'}</h4>
                                                 <div className="flex flex-col mt-0.5">
-                                                    <p className="text-[10px] font-medium text-slate-300">
+                                                    <p className="text-xs font-medium text-slate-300">
                                                         {ticket.requestor_name || 'Anonymous User'}
                                                     </p>
-                                                    <p className="text-[9px] text-rose-400/70 truncate max-w-[150px] italic">
+                                                    <p className="text-xs text-rose-400/70 truncate max-w-[150px] italic">
                                                         {ticket.requestor_email || ticket.id.split('-')[0]}
                                                     </p>
                                                 </div>
@@ -506,12 +518,12 @@ export default function EndUserDashboard() {
                                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 relative z-10">
                                             <div className="flex items-center gap-1.5">
                                                 <div className={`w-1.5 h-1.5 rounded-full ${ticket.priority === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'} animate-pulse`}></div>
-                                                <span className="text-[10px] text-slate-300 font-medium">Priority: {ticket.priority}</span>
+                                                <span className="text-xs text-slate-300 font-medium">Priority: {ticket.priority}</span>
                                             </div>
                                             <div className="flex flex-col items-end gap-1">
-                                                <span className="text-[10px] text-slate-500">{ticket.category}</span>
+                                                <span className="text-xs text-slate-500">{ticket.category}</span>
                                                 {ticket.requestor_department && (
-                                                    <span className="text-[9px] text-rose-400 font-medium">Dept: {ticket.requestor_department}</span>
+                                                    <span className="text-xs text-rose-400 font-medium">Dept: {ticket.requestor_department}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -558,14 +570,14 @@ export default function EndUserDashboard() {
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
                                                 <h4 className="font-bold text-white">{req.assetType} Request</h4>
-                                                {req.assetType === 'BYOD' && <span className="text-[10px] bg-sky-500/20 text-sky-300 px-1.5 rounded border border-sky-500/30">BYOD</span>}
+                                                {req.assetType === 'BYOD' && <span className="text-xs bg-sky-500/20 text-sky-300 px-1.5 rounded border border-sky-500/30">BYOD</span>}
                                             </div>
-                                            <span className="text-[10px] text-slate-500">{new Date(req.createdAt).toLocaleString()}</span>
+                                            <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleString()}</span>
                                         </div>
                                         <div className="mt-2 space-y-0.5">
                                             <p className="text-xs text-slate-400">Sent by: <span className="text-indigo-300 font-semibold">{req.requestedBy?.name || req.requester_name}</span></p>
-                                            <p className="text-[10px] text-slate-500 font-medium">Department: <span className="text-slate-300">{req.requester_department || 'General'}</span></p>
-                                            <p className="text-[10px] text-slate-500 italic">{req.requestedBy?.email || req.requester_email || 'No email provided'}</p>
+                                            <p className="text-xs text-slate-500 font-medium">Department: <span className="text-slate-300">{req.requester_department || 'General'}</span></p>
+                                            <p className="text-xs text-slate-500 italic">{req.requestedBy?.email || req.requester_email || 'No email provided'}</p>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">{req.justification || req.reason || 'No justification'}</p>
                                     </div>
@@ -628,23 +640,32 @@ export default function EndUserDashboard() {
                                             <div className="flex flex-col mt-0.5">
                                                 <p className="text-xs text-slate-400">Sent by: <span className="text-slate-200">{req.requestedBy?.name || req.requester_name}</span></p>
                                                 <div className="flex flex-col mt-0.5">
-                                                    <p className="text-[10px] text-slate-500 truncate max-w-[180px] italic">{req.requestedBy?.email || req.requester_email}</p>
+                                                    <p className="text-xs text-slate-500 truncate max-w-[180px] italic">{req.requestedBy?.email || req.requester_email}</p>
                                                     <div className="flex items-center gap-2 mt-0.5">
-                                                        <span className="text-[10px] text-indigo-400 font-medium">Dept: {req.requester_department || 'General'}</span>
-                                                        <span className="text-[10px] text-slate-600">{new Date(req.createdAt).toLocaleString()}</span>
+                                                        <span className="text-xs text-indigo-400 font-medium">Dept: {req.requester_department || 'General'}</span>
+                                                        <span className="text-xs text-slate-600">{new Date(req.createdAt).toLocaleString()}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <span className={`text-[10px] px-2 py-1 rounded border ${req.status === 'MANAGER_APPROVED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                            req.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                                'bg-slate-500/10 text-slate-400'
-                                            }`}>
-                                            {req.status}
-                                        </span>
-                                        <p className="text-[10px] text-slate-500 mt-1">Current: {req.currentOwnerRole}</p>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => setSelectedRequest(req)}
+                                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-medium rounded-lg border border-white/10 transition-colors"
+                                        >
+                                            <Eye size={14} />
+                                            View
+                                        </button>
+                                        <div className="text-right">
+                                            <span className={`text-xs px-2 py-1 rounded border ${req.status === 'MANAGER_APPROVED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                req.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                                    'bg-slate-500/10 text-slate-400'
+                                                }`}>
+                                                {req.status}
+                                            </span>
+                                            <p className="text-xs text-slate-500 mt-1">Current: {req.currentOwnerRole}</p>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -932,7 +953,7 @@ export default function EndUserDashboard() {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Justification</label>
-                                        <p className="text-slate-300 text-sm mt-1 leading-relaxed bg-white/5 p-3 rounded-lg border border-white/5">
+                                        <p className="text-slate-300 text-sm mt-1 leading-relaxed max-w-prose bg-white/5 p-3 rounded-lg border border-white/5">
                                             {selectedRequest.justification}
                                         </p>
                                     </div>
@@ -984,7 +1005,7 @@ export default function EndUserDashboard() {
 
                                             {selectedRequest.resolution_checklist?.length > 0 && (
                                                 <div className="space-y-2 pt-2 border-t border-indigo-500/20">
-                                                    <p className="text-[10px] text-slate-500 uppercase font-bold">Verification Steps</p>
+                                                    <p className="text-xs text-slate-500 uppercase font-bold">Verification Steps</p>
                                                     {selectedRequest.resolution_checklist.map((item, idx) => (
                                                         <div key={idx} className="flex items-center gap-2 text-xs">
                                                             <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${item.checked ? 'bg-indigo-500 border-indigo-400 text-white' : 'border-slate-600 text-transparent'}`}>
@@ -998,7 +1019,7 @@ export default function EndUserDashboard() {
 
                                             {selectedRequest.resolution_notes && (
                                                 <div className="bg-slate-900/50 p-2.5 rounded border border-white/5">
-                                                    <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Latest Fix Notes</p>
+                                                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Latest Fix Notes</p>
                                                     <p className="text-xs text-slate-300 italic">"{selectedRequest.resolution_notes}"</p>
                                                 </div>
                                             )}
@@ -1027,7 +1048,7 @@ export default function EndUserDashboard() {
                                                     <div className="flex justify-between items-start">
                                                         <span className="text-sm font-bold text-slate-200">{log.action || log.status || 'Update'}</span>
                                                         {log.percentage !== undefined && (
-                                                            <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                                                            <span className="text-xs bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20">
                                                                 {log.percentage}%
                                                             </span>
                                                         )}

@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import apiClient from '../lib/apiClient';
+import { useToast } from '@/components/common/Toast';
 import ManagerApprovalModal from './ManagerApprovalModal';
 import ComplianceCheckModal from './ComplianceCheckModal';
 import ITApprovalModal from './ITApprovalModal';
 import WorkflowProgressBar from './WorkflowProgressBar';
-import { FileText, Check, Shield, AlertCircle, ShieldCheck, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import Skeleton from '@/components/common/Skeleton';
+import { getStatusLabel } from '@/lib/statusLabels';
+import { FileText, Check, Shield, AlertCircle, ShieldCheck, ChevronDown, ChevronUp, Info, Eye, Plus } from 'lucide-react';
 
 const AssetRequestsList = () => {
+    const toast = useToast();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState(null);
@@ -31,6 +36,7 @@ const AssetRequestsList = () => {
             setRequests(data);
         } catch (error) {
             console.error("Failed to fetch requests", error);
+            toast.error(`Failed to load asset requests: ${error.message || 'Unknown error'}`);
         } finally {
             setLoading(false);
         }
@@ -87,10 +93,11 @@ const AssetRequestsList = () => {
     };
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-slate-600">
-                    <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+        <div className="glass-panel overflow-hidden">
+            {/* Desktop: Table */}
+            <div className="overflow-x-auto hidden md:block">
+                <table className="w-full text-left text-sm text-slate-200">
+                    <thead className="bg-white/5 text-slate-300 font-semibold border-b border-white/10">
                         <tr>
                             <th className="px-6 py-4 w-10"></th>
                             <th className="px-6 py-4">Asset / User</th>
@@ -98,33 +105,62 @@ const AssetRequestsList = () => {
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-white/5">
                         {loading ? (
-                            <tr><td colSpan="4" className="px-6 py-8 text-center text-slate-400">Loading requests...</td></tr>
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <tr key={i} className="animate-pulse">
+                                    <td className="px-6 py-4"><Skeleton variant="line" className="h-4 w-4 rounded" /></td>
+                                    <td className="px-6 py-4 space-y-2">
+                                        <Skeleton variant="line" className="h-4 w-32" />
+                                        <Skeleton variant="line" className="h-3 w-24" />
+                                    </td>
+                                    <td className="px-6 py-4"><Skeleton variant="line" className="h-5 w-20 rounded-full" /></td>
+                                    <td className="px-6 py-4 text-right"><Skeleton variant="line" className="h-8 w-16 ml-auto rounded" /></td>
+                                </tr>
+                            ))
                         ) : requests.length === 0 ? (
-                            <tr><td colSpan="4" className="px-6 py-8 text-center text-slate-400">No active requests found</td></tr>
+                            <tr>
+                                <td colSpan="4" className="px-6 py-12 text-center">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center">
+                                            <FileText className="w-7 h-7 text-slate-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-slate-400 font-medium">No asset requests yet</p>
+                                            <p className="text-sm text-slate-500 mt-1">Request an asset from your dashboard to get started.</p>
+                                        </div>
+                                        <Link
+                                            href="/"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 hover:brightness-110 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all duration-200"
+                                        >
+                                            <Plus size={18} />
+                                            Request an asset
+                                        </Link>
+                                    </div>
+                                </td>
+                            </tr>
                         ) : (
                             requests.map((req) => (
                                 <React.Fragment key={req.id}>
-                                    <tr className={`hover:bg-slate-50/50 transition-colors cursor-pointer ${expandedRows.has(req.id) ? 'bg-slate-50/50' : ''}`} onClick={() => toggleRow(req.id)}>
+                                    <tr className={`hover:bg-white/5 transition-all duration-200 cursor-pointer ${expandedRows.has(req.id) ? 'bg-indigo-500/10 ring-1 ring-indigo-500/30' : ''}`} onClick={() => toggleRow(req.id)}>
                                         <td className="px-6 py-4">
                                             {expandedRows.has(req.id) ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <div className="font-medium text-slate-900 flex items-center gap-2">
+                                                <div className="font-medium text-white flex items-center gap-2">
                                                     {req.asset_name}
-                                                    <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase">
+                                                    <span className="text-xs font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded uppercase">
                                                         {req.asset_ownership_type}
                                                     </span>
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <div className="text-sm font-bold text-slate-700">{req.requester_name}</div>
-                                                    <div className="text-[10px] text-slate-400 mb-1">{req.requester_email}</div>
+                                                    <div className="text-sm font-bold text-slate-200">{req.requester_name}</div>
+                                                    <div className="text-xs text-slate-400 mb-1">{req.requester_email}</div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] text-slate-500">{req.domain}</span>
+                                                        <span className="text-xs text-slate-500">{req.domain}</span>
                                                         {req.requester_department && (
-                                                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 font-medium">
+                                                            <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">
                                                                 {req.requester_department}
                                                             </span>
                                                         )}
@@ -133,21 +169,30 @@ const AssetRequestsList = () => {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${req.status === 'IN_USE' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                req.status.includes('REJECTED') || req.status.includes('FAILED') ? 'bg-red-50 text-red-700 border-red-100' :
-                                                    'bg-blue-50 text-blue-700 border-blue-100'
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${req.status === 'IN_USE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                req.status.includes('REJECTED') || req.status.includes('FAILED') ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                                    'bg-blue-500/10 text-blue-400 border-blue-500/20'
                                                 }`}>
-                                                {req.status.replace(/_/g, ' ')}
+                                                {getStatusLabel(req.status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    onClick={() => toggleRow(req.id)}
+                                                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                                                    aria-label="View details"
+                                                    title="View details"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                    View
+                                                </button>
                                                 {canAct(req) && (
                                                     <>
                                                         {(currentUser.role === 'MANAGER' || currentUser.position === 'MANAGER') && (
-                                                            <button
-                                                                onClick={() => handleManagerAction(req)}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg shadow-sm transition-all"
+                                                <button
+                                                    onClick={() => handleManagerAction(req)}
+                                                    className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200"
                                                             >
                                                                 Review
                                                             </button>
@@ -155,7 +200,7 @@ const AssetRequestsList = () => {
                                                         {currentUser.role === 'IT_MANAGEMENT' && req.status === 'MANAGER_APPROVED' && (
                                                             <button
                                                                 onClick={() => handleITAction(req)}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg shadow-sm transition-all"
+                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200"
                                                             >
                                                                 IT Review
                                                             </button>
@@ -163,7 +208,7 @@ const AssetRequestsList = () => {
                                                         {currentUser.role === 'IT_MANAGEMENT' && req.status === 'BYOD_COMPLIANCE_CHECK' && (
                                                             <button
                                                                 onClick={() => handleComplianceCheck(req)}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm transition-all"
+                                                                className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200"
                                                             >
                                                                 Scan
                                                             </button>
@@ -172,7 +217,9 @@ const AssetRequestsList = () => {
                                                 )}
                                                 <button
                                                     onClick={() => toggleRow(req.id)}
-                                                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
+                                                    className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded"
+                                                    aria-label="Toggle details"
+                                                    title="Toggle details"
                                                 >
                                                     <Info className="w-4 h-4" />
                                                 </button>
@@ -180,7 +227,7 @@ const AssetRequestsList = () => {
                                         </td>
                                     </tr>
                                     {expandedRows.has(req.id) && (
-                                        <tr className="bg-slate-50/30">
+                                        <tr className="bg-white/5">
                                             <td colSpan="4" className="px-12 py-8 border-l-4 border-indigo-500">
                                                 <div className="space-y-6">
                                                     <div>
@@ -193,49 +240,49 @@ const AssetRequestsList = () => {
 
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                                                         <div className="space-y-4">
-                                                            <h5 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                                                                <FileText className="w-4 h-4 text-indigo-500" />
+                                                            <h5 className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                                                                <FileText className="w-4 h-4 text-indigo-400" />
                                                                 Request Context
                                                             </h5>
-                                                            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3 shadow-sm">
+                                                            <div className="bg-white/5 p-4 rounded-xl border border-white/10 space-y-3">
                                                                 <div className="flex justify-between text-xs">
-                                                                    <span className="text-slate-500">Justification:</span>
-                                                                    <span className="font-medium text-slate-900">{req.justification || 'N/A'}</span>
+                                                                    <span className="text-slate-400">Justification:</span>
+                                                                    <span className="font-medium text-slate-200">{req.justification || 'N/A'}</span>
                                                                 </div>
                                                                 <div className="flex justify-between text-xs">
-                                                                    <span className="text-slate-500">Asset Type:</span>
-                                                                    <span className="font-medium text-slate-900 font-mono uppercase">{req.asset_type}</span>
+                                                                    <span className="text-slate-400">Asset Type:</span>
+                                                                    <span className="font-medium text-slate-200 font-mono uppercase">{req.asset_type}</span>
                                                                 </div>
                                                                 {req.serial_number && (
                                                                     <div className="flex justify-between text-xs">
-                                                                        <span className="text-slate-500">Serial/Model:</span>
-                                                                        <span className="font-medium text-slate-900 uppercase">{req.serial_number}</span>
+                                                                        <span className="text-slate-400">Serial/Model:</span>
+                                                                        <span className="font-medium text-slate-200 uppercase">{req.serial_number}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
                                                         </div>
 
                                                         <div className="space-y-4">
-                                                            <h5 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                                                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                                            <h5 className="text-xs font-bold text-slate-300 flex items-center gap-2">
+                                                                <ShieldCheck className="w-4 h-4 text-emerald-400" />
                                                                 Audit Trail
                                                             </h5>
-                                                            <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-3 shadow-sm">
+                                                            <div className="bg-white/5 p-4 rounded-xl border border-white/10 space-y-3">
                                                                 {req.manager_approvals?.length > 0 ? (
                                                                     req.manager_approvals.map((log, i) => (
-                                                                        <div key={i} className="flex gap-3 text-[10px]">
-                                                                            <div className="w-1.5 h-1.5 mt-1 rounded-full bg-slate-300 shrink-0" />
-                                                                            <span className="text-slate-500">
-                                                                                <span className="font-bold text-slate-700">{log.reviewer_name}</span>
+                                                                        <div key={i} className="flex gap-3 text-xs">
+                                                                            <div className="w-1.5 h-1.5 mt-1 rounded-full bg-slate-500 shrink-0" />
+                                                                            <span className="text-slate-400">
+                                                                                <span className="font-bold text-slate-200">{log.reviewer_name}</span>
                                                                                 {' '}{log.type.replace('_', ' ')}:
-                                                                                <span className={`ml-1 font-bold ${log.decision === 'APPROVED' ? 'text-emerald-600' : 'text-red-500'}`}>
+                                                                                <span className={`ml-1 font-bold ${log.decision === 'APPROVED' ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                                                     {log.decision}
                                                                                 </span>
                                                                             </span>
                                                                         </div>
                                                                     ))
                                                                 ) : (
-                                                                    <div className="text-[10px] text-slate-400 italic italic">No audit events recorded yet</div>
+                                                                    <div className="text-xs text-slate-500 italic">No audit events recorded yet</div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -249,6 +296,80 @@ const AssetRequestsList = () => {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Mobile: Card layout */}
+            <div className="block md:hidden divide-y divide-white/10">
+                {loading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="p-4 space-y-3 animate-pulse">
+                            <Skeleton variant="line" className="h-4 w-3/4" />
+                            <Skeleton variant="line" className="h-3 w-1/2" />
+                            <Skeleton variant="line" className="h-5 w-20 rounded-full" />
+                        </div>
+                    ))
+                ) : requests.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+                        <p className="text-slate-400 font-medium">No asset requests yet</p>
+                        <p className="text-sm text-slate-500 mt-1">Request an asset from your dashboard to get started.</p>
+                        <Link href="/" className="inline-flex items-center gap-2 mt-4 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-xl min-h-[44px] items-center justify-center">
+                            <Plus size={18} /> Request an asset
+                        </Link>
+                    </div>
+                ) : (
+                    requests.map((req) => (
+                        <div
+                            key={req.id}
+                            className={`p-4 space-y-3 border-b border-white/5 last:border-0 transition-all duration-200 ${expandedRows.has(req.id) ? 'bg-indigo-500/10 ring-1 ring-indigo-500/30' : ''}`}
+                            onClick={() => toggleRow(req.id)}
+                        >
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="font-medium text-white flex flex-wrap items-center gap-2">
+                                        {req.asset_name}
+                                        <span className="text-xs font-mono text-slate-400 bg-white/5 px-1.5 py-0.5 rounded uppercase">{req.asset_ownership_type}</span>
+                                    </div>
+                                    <div className="text-sm text-slate-200 mt-0.5">{req.requester_name}</div>
+                                    <div className="text-xs text-slate-500">{req.requester_department || req.domain}</div>
+                                </div>
+                                <span className={`shrink-0 inline-flex px-2.5 py-0.5 rounded-full text-xs font-bold uppercase border ${req.status.includes('REJECTED') || req.status.includes('FAILED') ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                    {getStatusLabel(req.status)}
+                                </span>
+                            </div>
+                            <div className="flex gap-2 flex-wrap min-h-[44px] items-center">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); toggleRow(req.id); }}
+                                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/10 rounded-lg min-h-[44px]"
+                                    aria-label="View details"
+                                >
+                                    <Eye className="w-4 h-4" /> View details
+                                </button>
+                                {canAct(req) && (currentUser.role === 'MANAGER' || currentUser.position === 'MANAGER') && (
+                                    <button onClick={(e) => { e.stopPropagation(); handleManagerAction(req); }} className="px-3 py-2.5 text-xs font-bold bg-indigo-600 text-white rounded-lg min-h-[44px]">
+                                        Review
+                                    </button>
+                                )}
+                                {canAct(req) && currentUser.role === 'IT_MANAGEMENT' && req.status === 'MANAGER_APPROVED' && (
+                                    <button onClick={(e) => { e.stopPropagation(); handleITAction(req); }} className="px-3 py-2.5 text-xs font-bold bg-emerald-600 text-white rounded-lg min-h-[44px]">
+                                        IT Review
+                                    </button>
+                                )}
+                                {canAct(req) && currentUser.role === 'IT_MANAGEMENT' && req.status === 'BYOD_COMPLIANCE_CHECK' && (
+                                    <button onClick={(e) => { e.stopPropagation(); handleComplianceCheck(req); }} className="px-3 py-2.5 text-xs font-bold bg-blue-600 text-white rounded-lg min-h-[44px]">
+                                        Scan
+                                    </button>
+                                )}
+                            </div>
+                            {expandedRows.has(req.id) && (
+                                <div className="pt-4 mt-4 border-t border-white/10 space-y-4">
+                                    <WorkflowProgressBar currentStatus={req.status} isByod={req.asset_ownership_type === 'BYOD'} />
+                                    <p className="text-xs text-slate-400"><span className="font-medium text-slate-300">Justification:</span> {req.justification || 'N/A'}</p>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
 
             <ManagerApprovalModal

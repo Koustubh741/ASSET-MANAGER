@@ -1,8 +1,10 @@
 import { DollarSign, TrendingDown, PieChart, Download, CheckCircle, XCircle, User, Calendar, Hash, Package, ShieldCheck, Activity } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAssetContext } from '@/contexts/AssetContext';
+import { useToast } from '@/components/common/Toast';
 import { useEffect, useState } from 'react';
 import apiClient from '@/lib/apiClient';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 const TrendSparkline = ({ data, color = "#10b981" }) => {
     const points = data.map((d, i) => `${(i / (data.length - 1)) * 100},${100 - (d / Math.max(...data)) * 100}`).join(' ');
@@ -74,6 +76,7 @@ const RenderStructuredData = ({ data }) => {
 };
 
 export default function FinanceDashboard() {
+    const toast = useToast();
     const { requests, financeApprove, financeReject } = useAssetContext();
 
     // ENTERPRISE: Requests awaiting budget approval
@@ -113,7 +116,7 @@ export default function FinanceDashboard() {
             setEditingPos(prev => ({ ...prev, [requestId]: false }));
         } catch (e) {
             console.error("Failed to update PO", e);
-            alert("Failed to save PO changes.");
+            toast.error("Failed to save PO changes.");
         }
     };
 
@@ -161,6 +164,13 @@ export default function FinanceDashboard() {
                     <Download size={20} className="text-indigo-400" /> Export Financial Intel
                 </button>
             </header>
+
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(budgetApprovals.length > 0 ? [{ label: 'Budget approvals', count: budgetApprovals.length, icon: DollarSign, variant: 'primary' }] : []),
+                ]}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="group relative glass-card p-6 overflow-hidden ring-1 ring-white/20 hover:ring-emerald-500/50 transition-all duration-500 border border-white/20 shadow-2xl">

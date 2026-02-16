@@ -2,6 +2,7 @@ import '@/styles/globals.css'
 import Layout from '@/components/Layout'
 import { RoleProvider } from '@/contexts/RoleContext'
 import { AssetProvider } from '@/contexts/AssetContext'
+import { ToastProvider } from '@/components/common/Toast'
 import AuthGuard from '@/components/AuthGuard'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -39,6 +40,7 @@ export default function App({ Component, pageProps }) {
     }, [router]);
 
     return (
+        <ToastProvider>
         <RoleProvider>
             <AssetProvider>
                 <AuthGuard>
@@ -52,5 +54,6 @@ export default function App({ Component, pageProps }) {
                 </AuthGuard>
             </AssetProvider>
         </RoleProvider>
+        </ToastProvider>
     )
 }

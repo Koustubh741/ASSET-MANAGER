@@ -2,27 +2,27 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { Package, CheckCircle, AlertTriangle, Clock, Activity, Download, Plus, Layers, LayoutGrid, Calendar, ArrowUpRight, DollarSign, TrendingDown, ShoppingBag, LogOut, Trash, FileText, Filter, Search, UserPlus, Users, Settings, Scan, RefreshCw, Eye, ShieldCheck, X, Terminal, AlertCircle, ChevronRight } from 'lucide-react'
-import BarChart from '@/components/BarChart'
-import PieChart from '@/components/PieChart'
-import TrendLineChart from '@/components/TrendLineChart'
 import AlertsFeed from '@/components/AlertsFeed'
 import WorkflowVisualizer from '@/components/WorkflowVisualizer'
 import QuickScanner from '@/components/Scanner/QuickScanner';
 import apiClient from '@/lib/apiClient';
 import { useRole } from '@/contexts/RoleContext';
+import { useToast } from '@/components/common/Toast';
 import { useAssetContext } from '@/contexts/AssetContext'; // Added context
 import { sanitizeAsset, calculateDashboardStats } from '@/utils/assetNormalizer';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
-export default function SystemAdminDashboard() {
+export default function SystemAdminDashboard({ forceView }) {
+    const toast = useToast();
     const router = useRouter()
     const { ROLES, user: currentUser } = useRole()
     // Asset Context for Requests
     const { incomingRequests, activeTickets, itApproveRequest, itRejectRequest, registerByod } = useAssetContext();
 
     const [loading, setLoading] = useState(true)
-    const [chartMetric, setChartMetric] = useState('location')
-    const [trendView, setTrendView] = useState('monthly')
-    const [timeRange, setTimeRange] = useState('Overview') // Overview, Analytics, Requests
+    // Dedicated pages: forceView from route; analytics lives on its own page, so only Overview or Requests here
+    const timeRange = forceView || (router.query.view === 'requests' ? 'Requests' : 'Overview')
+    const roleSlug = router.query.role || 'system-admin'
     const [pendingUsers, setPendingUsers] = useState([])
     const [scanning, setScanning] = useState(false)
     const [adSyncing, setAdSyncing] = useState(false)
@@ -85,16 +85,12 @@ export default function SystemAdminDashboard() {
 
     const [activeUsers, setActiveUsers] = useState([])
     const [exitRequests, setExitRequests] = useState([])
+    const [activeRequestsTab, setActiveRequestsTab] = useState('asset')
 
     const fetchPendingUsers = async () => {
         try {
-            console.log('Fetching pending users, admin_id:', currentUser?.id);
-            if (!currentUser) {
-                console.warn('No currentUser found in fetchPendingUsers');
-                return;
-            }
+            if (!currentUser) return;
             const pending = await apiClient.getUsers({ status: 'PENDING' });
-            console.log('Pending users fetched:', pending.length);
             setPendingUsers(pending);
             const active = await apiClient.getUsers({ status: 'ACTIVE' });
             setActiveUsers(active);
@@ -114,7 +110,7 @@ export default function SystemAdminDashboard() {
             fetchPendingUsers();
         } catch (error) {
             console.error('Failed to activate user:', error);
-            alert('Failed to activate user: ' + error.message);
+            toast.error('Failed to activate user: ' + error.message);
         }
     }
 
@@ -127,7 +123,7 @@ export default function SystemAdminDashboard() {
             fetchPendingUsers();
         } catch (error) {
             console.error('Failed to deny user:', error);
-            alert('Failed to deny user: ' + error.message);
+            toast.error('Failed to deny user: ' + error.message);
         }
     }
 
@@ -138,13 +134,13 @@ export default function SystemAdminDashboard() {
         setScanning(true);
         try {
             const result = await apiClient.triggerNetworkScan(cidr);
-            alert(`Scan Complete: ${result.message}`);
+            toast.success(`Scan Complete: ${result.message}`);
             // Refresh assets
             const apiAssets = await apiClient.getAssets();
             setAllAssets(apiAssets.map(sanitizeAsset));
         } catch (error) {
             console.error('Scan failed:', error);
-            alert('Scan failed: ' + error.message);
+            toast.error('Scan failed: ' + error.message);
         } finally {
             setScanning(false);
         }
@@ -154,10 +150,10 @@ export default function SystemAdminDashboard() {
         setAdSyncing(true);
         try {
             const result = await apiClient.triggerAdSync();
-            alert(`AD Sync Complete: ${result.message}`);
+            toast.success(`AD Sync Complete: ${result.message}`);
         } catch (error) {
             console.error('AD Sync failed:', error);
-            alert('AD Sync failed: ' + error.message);
+            toast.error('AD Sync failed: ' + error.message);
         } finally {
             setAdSyncing(false);
         }
@@ -171,7 +167,7 @@ export default function SystemAdminDashboard() {
             fetchPendingUsers();
         } catch (error) {
             console.error('Failed to deactivate user:', error);
-            alert('Failed to deactivate user: ' + error.message);
+            toast.error('Failed to deactivate user: ' + error.message);
         }
     }
 
@@ -183,7 +179,7 @@ export default function SystemAdminDashboard() {
             fetchPendingUsers();
         } catch (error) {
             console.error('Failed to initiate exit:', error);
-            alert('Failed to initiate exit: ' + error.message);
+            toast.error('Failed to initiate exit: ' + error.message);
         }
     }
 
@@ -193,18 +189,22 @@ export default function SystemAdminDashboard() {
             if (!currentUser) return;
             await apiClient.completeExitRequest(requestId);
             fetchPendingUsers();
-            alert('Exit process completed successfully. User account has been deactivated.');
+            toast.success('Exit process completed successfully. User account has been deactivated.');
         } catch (error) {
             console.error('Failed to complete exit:', error);
-            alert('Failed to complete exit: ' + error.message);
+            toast.error('Failed to complete exit: ' + error.message);
         }
     }
 
     useEffect(() => {
         if (timeRange === 'Requests') {
-            fetchPendingUsers()
+            fetchPendingUsers();
         }
-    }, [timeRange, currentUser])
+    }, [timeRange, currentUser]);
+
+    useEffect(() => {
+        if (currentUser?.id) fetchPendingUsers();
+    }, [currentUser?.id]);
 
     useEffect(() => {
         if (allAssets.length === 0) return;
@@ -283,51 +283,86 @@ export default function SystemAdminDashboard() {
         </div>
     )
 
-    const handleGraphClick = (data) => {
-        if (!data) return;
-        const name = data.name || (data.payload && data.payload.name);
-        if (!name) return;
-
-        // Map UI metric names to URL params if needed, but they mostly match
-        // chartMetric: 'location', 'type', 'segment', 'status'
-        router.push(`/assets?${chartMetric}=${encodeURIComponent(name)}`)
-    }
-
     return (
         <div className="space-y-6 pb-8">
             {/* Header Section with Toggles */}
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-bold text-white tracking-tight leading-tight">
-                        Executive <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Overview</span>
-                    </h2>
-                    <p className="text-slate-400 mt-2 text-sm max-w-md">
-                        Comprehensive asset lifecycle management and real-time operational intelligence.
-                    </p>
+                    {timeRange === 'Requests' ? (
+                        <>
+                            <h2 className="text-4xl font-bold text-white tracking-tight leading-tight">
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Requests</span>
+                            </h2>
+                            <p className="text-slate-400 mt-2 text-sm max-w-md">
+                                Pending asset and access requests, and exit management.
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <h2 className="text-4xl font-bold text-white tracking-tight leading-tight">
+                                Executive <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Overview</span>
+                            </h2>
+                            <p className="text-slate-400 mt-2 text-sm max-w-md">
+                                Comprehensive asset lifecycle management and real-time operational intelligence.
+                            </p>
+                        </>
+                    )}
                 </div>
+            </div>
+
+            {timeRange === 'Overview' && (
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(pendingUsers.length > 0 ? [{ label: 'Pending user approvals', count: pendingUsers.length, icon: UserPlus, variant: 'primary' }] : []),
+                    ...(exitRequests.length > 0 ? [{ label: 'Exit requests', count: exitRequests.length, icon: LogOut, variant: 'warning' }] : []),
+                    ...((incomingRequests?.length || 0) > 0 ? [{ label: 'Asset requests (IT)', count: incomingRequests.length, icon: Terminal, variant: 'info' }] : []),
+                ]}
+            />
+            )}
+
+            {timeRange === 'Overview' && (
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mt-6">
 
                 <div className="flex flex-col md:flex-row gap-4 items-center bg-slate-900/50 p-2 rounded-2xl border border-white/5 backdrop-blur-sm">
 
-                    {/* View Toggles */}
+                    {/* View Toggles: Overview / Analytics / Requests — each is a dedicated page (new URL) */}
                     <div className="flex bg-slate-800/50 p-1 rounded-xl">
-                        {['Overview', 'Analytics', 'Requests'].map((mode) => (
-                            <button
-                                key={mode}
-                                onClick={() => setTimeRange(mode)}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${timeRange === mode
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                                    }`}
-                            >
-                                {mode === 'Overview' ? <LayoutGrid size={16} /> : mode === 'Analytics' ? <Activity size={16} /> : <Clock size={16} />}
-                                {mode}
-                                {mode === 'Requests' && pendingUsers.length > 0 && (
-                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
-                                        {pendingUsers.length}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
+                        <Link
+                            href={`/dashboard/${roleSlug}`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${timeRange === 'Overview'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <LayoutGrid size={16} />
+                            Overview
+                        </Link>
+                        <a
+                            href={`/dashboard/${roleSlug}/analytics`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${timeRange === 'Analytics'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <Activity size={16} />
+                            Analytics
+                        </a>
+                        <a
+                            href={`/dashboard/${roleSlug}/requests`}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${timeRange === 'Requests'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                }`}
+                        >
+                            <Clock size={16} />
+                            Requests
+                            {pendingUsers.length > 0 && (
+                                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                                    {pendingUsers.length}
+                                </span>
+                            )}
+                        </a>
                     </div>
 
                     <div className="w-px h-8 bg-white/10 hidden md:block"></div>
@@ -370,7 +405,10 @@ export default function SystemAdminDashboard() {
                     </div>
                 </div>
             </div>
+            )}
 
+            {timeRange === 'Overview' && (
+            <>
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Link href="/assets">
@@ -528,68 +566,16 @@ export default function SystemAdminDashboard() {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <WorkflowVisualizer />
             </div>
+            </>
+            )}
 
             {/* Main Content Layout */}
             {
                 timeRange === 'Overview' ? (
-                    /* OVERVIEW LAYOUT */
+                    /* OVERVIEW LAYOUT - Alerts & Recent only (Asset Analytics and Cost & Renewal Trends moved to Analytics page) */
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                        {/* Left Column: Charts */}
-                        <div className="xl:col-span-2 space-y-6">
-                            {/* Primary Chart */}
-                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 min-h-[400px]">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h3 className="text-xl font-bold text-white">Asset Analytics</h3>
-                                        <p className="text-slate-400 text-sm">Distribution and lifecycle metrics</p>
-                                    </div>
-                                    <div className="flex bg-slate-800/50 p-1 rounded-lg border border-white/5">
-                                        <button onClick={() => setChartMetric('location')} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${chartMetric === 'location' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>Location</button>
-                                        <button onClick={() => setChartMetric('type')} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${chartMetric === 'type' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>Type</button>
-                                        <button onClick={() => setChartMetric('segment')} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${chartMetric === 'segment' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>Segment</button>
-                                        <button onClick={() => setChartMetric('status')} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${chartMetric === 'status' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>Status</button>
-                                    </div>
-                                </div>
-
-                                <div className="h-80 w-full animate-in fade-in duration-500">
-                                    {chartMetric === 'segment'
-                                        ? <PieChart data={stats?.by_segment || []} onPieClick={handleGraphClick} />
-                                        : chartMetric === 'status'
-                                            ? <PieChart data={stats?.by_status || []} onPieClick={handleGraphClick} />
-                                            : <BarChart
-                                                data={chartMetric === 'type' ? (stats?.by_type || []) : (stats?.by_location || [])}
-                                                onBarClick={handleGraphClick}
-                                            />
-                                    }
-                                </div>
-                            </div>
-
-                            {/* Secondary Chart: Trends */}
-                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
-                                <div className="flex justify-between items-center mb-6">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                            <Activity size={18} className="text-purple-400" />
-                                            Cost & Renewal Trends
-                                        </h3>
-                                    </div>
-                                    <select
-                                        value={trendView}
-                                        onChange={(e) => setTrendView(e.target.value)}
-                                        className="bg-slate-800/50 border border-white/10 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none"
-                                    >
-                                        <option value="monthly">Monthly</option>
-                                        <option value="quarterly">Quarterly</option>
-                                    </select>
-                                </div>
-                                <div className="h-64 w-full">
-                                    <TrendLineChart data={trendView === 'monthly' ? stats?.trends?.monthly : stats?.trends?.quarterly} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Right Column: Alerts & Recent */}
-                        <div className="xl:col-span-1 space-y-6">
+                        {/* Alerts & Recent - full width or right column */}
+                        <div className="xl:col-span-3 space-y-6 max-w-2xl">
                             {/* Alerts Feed */}
                             <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <AlertsFeed />
@@ -626,51 +612,51 @@ export default function SystemAdminDashboard() {
                             </div>
                         </div>
                     </div>
-                ) : timeRange === 'Analytics' ? (
-                    /* ANALYTICS VIEW LAYOUT */
-                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
-                                <h3 className="text-xl font-bold text-white mb-4">Lifecycle Status Distribution</h3>
-                                <div className="h-80 w-full flex items-center justify-center">
-                                    <PieChart
-                                        data={stats?.by_status || []}
-                                        onPieClick={(data) => router.push(`/assets?status=${encodeURIComponent(data.name)}`)}
-                                    />
-                                </div>
-                            </div>
-                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
-                                <h3 className="text-xl font-bold text-white mb-4">Asset Type Breakdown</h3>
-                                <div className="h-80 w-full flex items-center justify-center">
-                                    <PieChart
-                                        data={stats?.by_segment || []}
-                                        onPieClick={(data) => router.push(`/assets?segment=${encodeURIComponent(data.name)}`)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="glass-panel p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-white">Comprehensive Trends</h3>
-                                <select
-                                    value={trendView}
-                                    onChange={(e) => setTrendView(e.target.value)}
-                                    className="bg-slate-800/50 border border-white/10 text-slate-300 text-sm rounded-lg px-3 py-1"
-                                >
-                                    <option value="monthly">Monthly Analysis</option>
-                                    <option value="quarterly">Quarterly Analysis</option>
-                                </select>
-                            </div>
-                            <div className="h-96 w-full">
-                                <TrendLineChart data={trendView === 'monthly' ? stats?.trends?.monthly : stats?.trends?.quarterly} />
-                            </div>
-                        </div>
-                    </div>
                 ) : (
                     /* REQUESTS / ACCESS CONTROL VIEW */
                     <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-8 animate-in slide-in-from-bottom-4 duration-500">
-                        {/* ---- PENDING ASSET REQUESTS SECTION (NEW) ---- */}
-                        <div className="mb-12 border-b border-white/5 pb-8">
+                        {/* Tab bar: Asset Requests | Access Requests | Exit Workflows | Active Users */}
+                        <div className="flex flex-wrap gap-2 mb-6 p-1.5 bg-slate-800/50 rounded-xl border border-white/5">
+                            <button
+                                type="button"
+                                onClick={() => setActiveRequestsTab('asset')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'asset' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                            >
+                                <Package size={16} />
+                                Asset Requests
+                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10">{(incomingRequests || []).length}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveRequestsTab('access')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'access' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                            >
+                                <Activity size={16} />
+                                Access Requests
+                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10">{pendingUsers.length}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveRequestsTab('exit')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'exit' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                            >
+                                <LogOut size={16} />
+                                Exit Workflows
+                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10">{exitRequests.length}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveRequestsTab('users')}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'users' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                            >
+                                <Users size={16} />
+                                Active Users
+                            </button>
+                        </div>
+
+                        {/* ---- PENDING ASSET REQUESTS SECTION ---- */}
+                        {activeRequestsTab === 'asset' && (
+                        <div className="mb-6">
                             <div className="flex justify-between items-center mb-6">
                                 <div>
                                     <h3 className="text-2xl font-bold text-white">Pending Asset Requests</h3>
@@ -729,10 +715,14 @@ export default function SystemAdminDashboard() {
                                 </div>
                             )}
                         </div>
+                        )}
 
-                        <div className="flex justify-between items-center mb-8">
-                            <div>
-                                <h3 className="text-2xl font-bold text-white">Access Requests</h3>
+                        {/* ---- ACCESS REQUESTS SECTION ---- */}
+                        {activeRequestsTab === 'access' && (
+                        <div className="mb-6">
+                            <div className="flex justify-between items-center mb-8">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white">Access Requests</h3>
                                 <p className="text-slate-400 text-sm mt-1">Manage pending user registrations and platform access permissions.</p>
                             </div>
                             <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400 text-sm font-medium">
@@ -805,10 +795,14 @@ export default function SystemAdminDashboard() {
                                 </table>
                             </div>
                         )}
+                        </div>
+                        )}
 
-                        {/* Exit Requests Section */}
-                        {exitRequests.length > 0 && (
-                            <div className="mt-12 mb-8 animate-in fade-in duration-700">
+                        {/* ---- EXIT WORKFLOWS SECTION ---- */}
+                        {activeRequestsTab === 'exit' && (
+                        <div className="mb-6 animate-in fade-in duration-700">
+                            {exitRequests.length > 0 ? (
+                            <>
                                 <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                                     <LogOut className="text-orange-400" size={24} />
                                     Ongoing Exit Workflows
@@ -901,16 +895,29 @@ export default function SystemAdminDashboard() {
                                         </tbody>
                                     </table>
                                 </div>
-                            </div>
+                            </>
+                            ) : (
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                                        <LogOut className="text-orange-400" size={24} />
+                                        Ongoing Exit Workflows
+                                    </h3>
+                                    <p className="text-slate-400 text-sm mt-1">Users currently in the process of leaving the organization. Reclaim assets before finalizing.</p>
+                                    <div className="p-8 bg-slate-800/20 border border-white/5 rounded-2xl text-center mt-6">
+                                        <p className="text-slate-500 text-sm italic">No ongoing exit workflows.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                         )}
 
-                        {/* Active Users Section */}
-                        <div className="mt-12 mb-8">
+                        {/* ---- ACTIVE PLATFORM USERS SECTION ---- */}
+                        {activeRequestsTab === 'users' && (
+                        <div className="mb-6">
                             <h3 className="text-2xl font-bold text-white">Active Platform Users</h3>
-                            <p className="text-slate-400 text-sm mt-1">Review and manage currently active user accounts and their access status.</p>
-                        </div>
+                            <p className="text-slate-400 text-sm mt-1 mb-6">Review and manage currently active user accounts and their access status.</p>
 
-                        {activeUsers.length === 0 ? (
+                            {activeUsers.length === 0 ? (
                             <div className="p-8 bg-slate-800/20 border border-white/5 rounded-2xl text-center">
                                 <p className="text-slate-500 text-sm italic">No active users found (excluding system accounts).</p>
                             </div>
@@ -966,6 +973,8 @@ export default function SystemAdminDashboard() {
                                     </tbody>
                                 </table>
                             </div>
+                        )}
+                        </div>
                         )}
                     </div>
                 )
@@ -1046,7 +1055,7 @@ export default function SystemAdminDashboard() {
                                     <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Business Case</h3>
                                     <div className="bg-slate-800 p-4 rounded-lg border border-white/5">
                                         <label className="text-xs text-slate-500 uppercase block mb-2">Justification</label>
-                                        <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                                        <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed max-w-prose">
                                             {selectedItem.justification || "No justification provided."}
                                         </div>
                                         {selectedItem.business_justification && selectedItem.business_justification !== selectedItem.justification && (

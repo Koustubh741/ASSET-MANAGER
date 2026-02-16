@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Wrench, ShieldCheck, Terminal, AlertCircle, X, CheckCircle, Play, Server, Lock, Activity, ArrowRight, Trash2, Clock, MapPin, User, FileText, Check, MoreHorizontal, Printer, ChevronRight, Eye } from 'lucide-react';
+import { Wrench, ShieldCheck, Terminal, AlertCircle, X, CheckCircle, Play, Server, Lock, Activity, ArrowRight, Trash2, Clock, MapPin, User, FileText, Check, MoreHorizontal, Printer, ChevronRight, Eye, Ticket } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
+import { useToast } from '@/components/common/Toast';
+import ComplianceCheckModal from '@/components/ComplianceCheckModal';
 import { useAssetContext, ASSET_STATUS } from '@/contexts/AssetContext';
 import { useRole } from '@/contexts/RoleContext';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 
 // Helper Component for Manual Install Items (Step 2 of Config)
 const SoftwareInstallItem = ({ app }) => {
@@ -48,10 +51,9 @@ const SoftwareInstallItem = ({ app }) => {
 };
 
 export default function ITSupportDashboard() {
-    // STATE: Data Queues
-
+    const toast = useToast();
     const { user } = useRole();
-    const { assets, updateAssetStatus, requests, tickets, itApproveRequest, itRejectRequest, registerByod, exitRequests, processExitByod } = useAssetContext();
+    const { assets, updateAssetStatus, requests, tickets, itApproveRequest, itRejectRequest, registerByod, exitRequests, processExitByod, refreshData } = useAssetContext();
 
     // Derived state for queues instead of static state
     const pendingQueue = assets.filter(a => a.status === ASSET_STATUS.ALLOCATED || a.status === ASSET_STATUS.CONFIGURING);
@@ -59,23 +61,11 @@ export default function ITSupportDashboard() {
     // 1. Incoming Asset Requests (Awaiting IT Management Action)
     // NOTE: `AssetContext` merges Tickets into `requests` for some dashboards.
     // Tickets must NOT be routed through the asset-request IT approval endpoint.
-    console.log('[ITSupportDashboard] Total requests:', requests.length);
-    console.log('[ITSupportDashboard] Requests with MANAGER_APPROVED status:',
-        requests.filter(r => r.status === 'MANAGER_APPROVED').map(r => ({
-            id: r.id,
-            assetType: r.assetType,
-            status: r.status,
-            currentOwnerRole: r.currentOwnerRole
-        }))
-    );
-
     const incomingRequests = requests.filter(r =>
         r.assetType !== 'Ticket' &&
         r.currentOwnerRole === 'IT_MANAGEMENT' &&
-        (r.status === 'MANAGER_APPROVED' || r.status === 'IT_APPROVED' || r.status === 'REQUESTED')
+        (r.status === 'MANAGER_APPROVED' || r.status === 'IT_APPROVED' || r.status === 'REQUESTED' || r.status === 'BYOD_COMPLIANCE_CHECK')
     );
-
-    console.log('[ITSupportDashboard] Filtered incomingRequests:', incomingRequests.length);
 
     // Global tickets state is now provided by AssetContext
 
@@ -106,6 +96,9 @@ export default function ITSupportDashboard() {
     const [resolutionType, setResolutionType] = useState('Fixed');
     const [activeChecklist, setActiveChecklist] = useState([]);
 
+    // STATE: BYOD Compliance Modal
+    const [complianceModalOpen, setComplianceModalOpen] = useState(false);
+
     // --- WORKFLOW ACTIONS ---
 
     // 1. CONFIGURATION WORKFLOW
@@ -132,7 +125,7 @@ export default function ITSupportDashboard() {
     // 2. DISPOSAL WORKFLOW
     const handleStartWipe = (id) => {
         // Mock wipe start
-        alert(`Secure Wipe started for Asset ID ${id}. This will take approx 45 mins.`);
+        toast.info(`Secure Wipe started for Asset ID ${id}. This will take approx 45 mins.`);
     };
 
     const handleMarkDisposed = (id) => {
@@ -143,12 +136,12 @@ export default function ITSupportDashboard() {
 
     // 3. DEPLOYMENT WORKFLOW
     const handleHandover = (item) => {
-        alert(`Handover protocol initiated for ${item.assignedUser}. Email notification sent.`);
+        toast.success(`Handover protocol initiated for ${item.assignedUser}. Email notification sent.`);
         updateAssetStatus(item.id, ASSET_STATUS.IN_USE);
     };
 
     const handleGenerateAck = (item) => {
-        alert(`Generating PDF Acknowledgement for ${item.name} (${item.id})...`);
+        toast.info(`Generating PDF Acknowledgement for ${item.name} (${item.id})...`);
     };
 
     // 4. TICKET RESOLUTION WORKFLOW
@@ -164,7 +157,7 @@ export default function ITSupportDashboard() {
 
     const submitResolution = () => {
         if (!resolutionNotes) {
-            alert("Please enter troubleshooting notes.");
+            toast.error("Please enter troubleshooting notes.");
             return;
         }
 
@@ -182,7 +175,7 @@ export default function ITSupportDashboard() {
 
     const submitProgress = () => {
         if (!resolutionNotes && activeChecklist.length === 0) {
-            alert("Please add notes or checklist items to update progress.");
+            toast.error("Please add notes or checklist items to update progress.");
             return;
         }
 
@@ -202,10 +195,10 @@ export default function ITSupportDashboard() {
             // Refresh tickets
             const fetchedTickets = await apiClient.getTickets();
             setTickets(fetchedTickets);
-            alert("Ticket acknowledged!");
+            toast.success("Ticket acknowledged!");
         } catch (error) {
             console.error("Failed to acknowledge ticket:", error);
-            alert("Failed to acknowledge ticket: " + error.message);
+            toast.error("Failed to acknowledge ticket: " + error.message);
         }
     };
 
@@ -215,10 +208,10 @@ export default function ITSupportDashboard() {
             // Refresh tickets
             const fetchedTickets = await apiClient.getTickets();
             setTickets(fetchedTickets);
-            alert("Ticket resolved successfully!");
+            toast.success("Ticket resolved successfully!");
         } catch (error) {
             console.error("Failed to resolve ticket:", error);
-            alert("Failed to resolve ticket: " + error.message);
+            toast.error("Failed to resolve ticket: " + error.message);
         }
     };
 
@@ -228,10 +221,10 @@ export default function ITSupportDashboard() {
             // Refresh tickets
             const fetchedTickets = await apiClient.getTickets();
             setTickets(fetchedTickets);
-            if (!silent) alert("Progress updated and user notified!");
+            if (!silent) toast.success("Progress updated and user notified!");
         } catch (error) {
             console.error("Failed to update progress:", error);
-            if (!silent) alert("Failed to update progress: " + error.message);
+            if (!silent) toast.error("Failed to update progress: " + error.message);
         }
     }
 
@@ -266,6 +259,15 @@ export default function ITSupportDashboard() {
                 <h1 className="text-3xl font-bold text-white">Technician Workbench</h1>
                 <p className="text-slate-400">IT Support Operations & Device Lifecycle Management</p>
             </header>
+
+            <ActionsNeededBanner
+                title="Actions needed"
+                items={[
+                    ...(incomingRequests.length > 0 ? [{ label: 'Pending approval', count: incomingRequests.length, onClick: () => setActiveModal('PENDING'), icon: Terminal, variant: 'primary' }] : []),
+                    ...(activeTickets.length > 0 ? [{ label: 'Open tickets', count: activeTickets.length, onClick: () => setActiveModal('TICKETS'), icon: Ticket, variant: 'warning' }] : []),
+                    ...(deployedArgs.length > 0 ? [{ label: 'Ready for handover', count: deployedArgs.length, onClick: () => setActiveModal('DEPLOY'), icon: CheckCircle, variant: 'success' }] : []),
+                ]}
+            />
 
             {/* --- METRIC CARDS --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -464,7 +466,7 @@ export default function ITSupportDashboard() {
                                     <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Business Case</h3>
                                     <div className="bg-slate-800 p-4 rounded-lg border border-white/5">
                                         <label className="text-xs text-slate-500 uppercase block mb-2">Justification</label>
-                                        <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                                        <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed max-w-prose">
                                             {selectedItem.justification || "No justification provided."}
                                         </div>
                                         {selectedItem.business_justification && selectedItem.business_justification !== selectedItem.justification && (
@@ -525,6 +527,24 @@ export default function ITSupportDashboard() {
                                     >
                                         <ShieldCheck size={18} /> Validate & Register BYOD
                                     </button>
+                                ) : selectedItem.status === 'BYOD_COMPLIANCE_CHECK' && selectedItem.assetType === 'BYOD' ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                registerByod(selectedItem.id);
+                                                setActiveModal(null);
+                                            }}
+                                            className="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-bold shadow-lg shadow-sky-500/20 flex items-center gap-2"
+                                        >
+                                            <ShieldCheck size={18} /> Validate & Register BYOD
+                                        </button>
+                                        <button
+                                            onClick={() => setComplianceModalOpen(true)}
+                                            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                                        >
+                                            <CheckCircle size={18} /> Run Compliance Check
+                                        </button>
+                                    </>
                                 ) : (
                                     <button
                                         onClick={() => {
@@ -539,6 +559,123 @@ export default function ITSupportDashboard() {
                             </div>
                         </div>
                     )}
+
+                    {/* ---- TICKET VIEW MODAL ---- */}
+                    {activeModal === 'TICKET_VIEW' && selectedItem && (
+                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in scale-95 duration-200">
+                            <div className="bg-slate-800 p-4 border-b border-white/10 flex justify-between items-center">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <FileText size={18} className="text-indigo-400" />
+                                    Ticket Details
+                                </h2>
+                                <button onClick={() => setActiveModal('TICKETS')} className="text-slate-400 hover:text-white p-2">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Subject</label>
+                                    <div className="text-white font-medium">{selectedItem.subject}</div>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Description</label>
+                                    <div className="text-slate-300 text-sm whitespace-pre-wrap">{selectedItem.description || '—'}</div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Status</label>
+                                        <span className="text-sm text-slate-300">{selectedItem.status}</span>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Priority</label>
+                                        <span className="text-sm text-slate-300">{selectedItem.priority || 'Medium'}</span>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Requestor</label>
+                                        <div className="text-sm text-slate-300">{selectedItem.requestor_id || selectedItem.requestor_name || '—'}</div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">ID</label>
+                                        <div className="text-xs font-mono text-slate-500">{selectedItem.id}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 border-t border-white/10 flex justify-end">
+                                <button
+                                    onClick={() => { setActiveModal('TICKETS'); openResolveModal(selectedItem); }}
+                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium"
+                                >
+                                    Resolve Ticket
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ---- ITEM VIEW (Deploy / Disposal) MODAL ---- */}
+                    {activeModal === 'ITEM_VIEW' && selectedItem && (
+                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in scale-95 duration-200">
+                            <div className="bg-slate-800 p-4 border-b border-white/10 flex justify-between items-center">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <FileText size={18} className="text-indigo-400" />
+                                    {selectedItem._viewType === 'deploy' ? 'Deployment Asset' : 'Disposal Asset'}
+                                </h2>
+                                <button onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')} className="text-slate-400 hover:text-white p-2">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div>
+                                    <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Name</label>
+                                    <div className="text-white font-medium">{selectedItem.name}</div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs text-slate-500 uppercase font-bold block mb-1">ID</label>
+                                        <div className="text-xs font-mono text-slate-500">{selectedItem.id}</div>
+                                    </div>
+                                    {selectedItem._viewType === 'deploy' ? (
+                                        <>
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Assigned To</label>
+                                                <div className="text-slate-300 text-sm">{selectedItem.assignedUser || '—'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Location</label>
+                                                <div className="text-slate-300 text-sm">{selectedItem.location || '—'}</div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Serial</label>
+                                                <div className="text-slate-300 text-sm">{selectedItem.serial || '—'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Reason</label>
+                                                <div className="text-slate-300 text-sm">{selectedItem.reason || '—'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Method</label>
+                                                <div className="text-slate-300 text-sm">{selectedItem.method || '—'}</div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Age</label>
+                                                <div className="text-slate-300 text-sm">{selectedItem.age || '—'}</div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ---- BYOD COMPLIANCE CHECK MODAL ---- */}
+                    <ComplianceCheckModal
+                        isOpen={complianceModalOpen}
+                        onClose={() => setComplianceModalOpen(false)}
+                        request={selectedItem}
+                        onUpdate={() => refreshData()}
+                    />
 
                     {/* ---- CONFIG WIZARD MODAL (5 STEPS) ---- */}
                     {activeModal === 'CONFIG' && selectedItem && (
@@ -786,6 +923,21 @@ export default function ITSupportDashboard() {
                                                             >
                                                                 <ShieldCheck size={14} /> Validate & Register BYOD
                                                             </button>
+                                                        ) : req.status === 'BYOD_COMPLIANCE_CHECK' && req.assetType === 'BYOD' ? (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => registerByod(req.id)}
+                                                                    className="text-xs bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded font-medium shadow-lg shadow-sky-500/10 transition-all flex items-center gap-1"
+                                                                >
+                                                                    <ShieldCheck size={14} /> Register BYOD
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => { setSelectedItem(req); setComplianceModalOpen(true); }}
+                                                                    className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-1"
+                                                                >
+                                                                    <CheckCircle size={14} /> Run Compliance
+                                                                </button>
+                                                            </>
                                                         ) : (
                                                             <button
                                                                 onClick={() => itApproveRequest(req.id)}
@@ -819,6 +971,12 @@ export default function ITSupportDashboard() {
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <div className="flex justify-end gap-2">
+                                                        <button
+                                                            onClick={() => { setSelectedItem(item); setActiveModal('TICKET_VIEW'); }}
+                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                        >
+                                                            <Eye size={14} /> View
+                                                        </button>
                                                         {(item.status?.toUpperCase() === 'OPEN') && (
                                                             <button
                                                                 onClick={() => acknowledgeTicket(item.id)}
@@ -856,6 +1014,12 @@ export default function ITSupportDashboard() {
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <div className="flex justify-end gap-2">
+                                                        <button
+                                                            onClick={() => { setSelectedItem({ ...item, _viewType: 'deploy' }); setActiveModal('ITEM_VIEW'); }}
+                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                        >
+                                                            <Eye size={14} /> View
+                                                        </button>
                                                         <button onClick={() => handleGenerateAck(item)} className="text-xs text-slate-400 hover:text-white border border-white/10 px-3 py-1.5 rounded flex items-center gap-1">
                                                             <Printer size={12} /> Ack Form
                                                         </button>
@@ -883,6 +1047,12 @@ export default function ITSupportDashboard() {
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <div className="flex justify-end gap-2">
+                                                        <button
+                                                            onClick={() => { setSelectedItem({ ...item, _viewType: 'disposal' }); setActiveModal('ITEM_VIEW'); }}
+                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                        >
+                                                            <Eye size={14} /> View
+                                                        </button>
                                                         <button onClick={() => handleStartWipe(item.id)} className="text-xs border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 px-3 py-1.5 rounded flex items-center gap-1">
                                                             <Activity size={12} /> Wipe
                                                         </button>
@@ -1061,7 +1231,7 @@ export default function ITSupportDashboard() {
                                     {configStep === 1 && (
                                         <button
                                             onClick={() => {
-                                                if (!resolutionNotes) return alert("Please enter a diagnosis.");
+                                                if (!resolutionNotes) { toast.error("Please enter a diagnosis."); return; }
                                                 // Save progress silently when moving to next step
                                                 const percentage = activeChecklist.length > 0 ? (activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100 : 10;
                                                 updateProgress(selectedItem.id, resolutionNotes, activeChecklist, percentage, true);
