@@ -801,22 +801,22 @@ async def scan_network_range(
     if v3_data:
         try:
             v3_creds = SNMPv3Credentials(
-                username=v3_data.get('username', 'user'),
-                auth_key=v3_data.get('authKey'),
-                priv_key=v3_data.get('privKey'),
-                auth_protocol=AuthProtocol(v3_data.get('authProtocol', 'SHA')),
-                priv_protocol=PrivProtocol(v3_data.get('privProtocol', 'AES'))
+                username=v3_data.get("username", "user"),
+                auth_key=v3_data.get("authKey"),
+                priv_key=v3_data.get("privKey"),
+                auth_protocol=AuthProtocol(v3_data.get("authProtocol", "SHA")),
+                priv_protocol=PrivProtocol(v3_data.get("privProtocol", "AES")),
             )
         except ValueError as e:
             logger.error(f"Invalid v3 credentials: {e}")
             return []
-    
+
     config = ScanConfig(
         communities=[c.strip() for c in community.split(",")] if "," in community else [community],
         v3=v3_creds,
-        context_name=context_name
+        context_name=context_name,
     )
-    
+
     try:
         result = await scan_network(cidr, config, progress_cb=progress_cb)
         return [d.to_dict() for d in result.devices]

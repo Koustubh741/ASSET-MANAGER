@@ -11,6 +11,7 @@ from sqlalchemy import desc
 from ..models.models import AssetRequest, User, Asset, PurchaseOrder, PurchaseInvoice, ProcurementLog
 from ..schemas.asset_request_schema import AssetRequestCreate, AssetRequestUpdate, AssetRequestResponse
 from ..services import procurement_service
+from ..services.notification_service import NotificationService
 from ..utils.state_machine import validate_state_transition
 
 
@@ -29,7 +30,7 @@ async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, u
         res.requester_department = user.department
     
     # Step 6: Role-Based Visibility (Backend Enforced)
-    if user_role in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+    if user_role in ["PROCUREMENT", "FINANCE", "ADMIN"]:
         # Fetch current PO
         po_query = select(PurchaseOrder).filter(PurchaseOrder.asset_request_id == db_request.id).order_by(desc(PurchaseOrder.created_at))
         po_result = await db.execute(po_query)
@@ -262,23 +263,25 @@ async def update_procurement_finance_status(
     new_status: str,
     reviewer_id: UUID,
     reviewer_name: str,
-    reason: Optional[str] = None
+    reason: Optional[str] = None,
+    user_role: str = "PROCUREMENT"
 ) -> Optional[AssetRequestResponse]:
     """
-    Update procurement & finance approval status.
+    Procurement-only: validate PO (set PO_VALIDATED) or reject (set PROCUREMENT_REJECTED).
+    Finance approve/reject is handled by procurement_service.validate_finance_budget.
     """
     result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
     db_request = result.scalars().first()
     if not db_request:
         return None
     
-    if db_request.status == "PROCUREMENT_APPROVED" and new_status != "PROCUREMENT_REJECTED":
-        return await _populate_requester_info(db, db_request, user_role="PROCUREMENT_FINANCE")
+    if db_request.status == "PO_VALIDATED" and new_status == "PROCUREMENT_APPROVED":
+        return await _populate_requester_info(db, db_request, user_role=user_role)
 
     is_valid, error_msg = validate_state_transition(
         current_status=db_request.status,
         new_status=new_status,
-        user_role="PROCUREMENT_FINANCE",
+        user_role=user_role,
         asset_ownership_type=db_request.asset_ownership_type
     )
     
@@ -289,27 +292,13 @@ async def update_procurement_finance_status(
     po_result = await db.execute(po_query)
     po = po_result.scalars().first()
 
+    # Procurement validated PO -> hand off to Finance (PO_VALIDATED). Do not call validate_finance_budget here.
     if new_status == "PROCUREMENT_APPROVED":
-        if po:
-            await procurement_service.validate_finance_budget(
-                db=db, 
-                po_id=po.id, 
-                reviewer_id=reviewer_id, 
-                action="APPROVE",
-                reason=reason
-            )
+        db_request.status = "PO_VALIDATED"
+        db_request.procurement_finance_status = "PO_VALIDATED"
     elif new_status == "PROCUREMENT_REJECTED":
-        if po:
-            await procurement_service.validate_finance_budget(
-                db=db, 
-                po_id=po.id, 
-                reviewer_id=reviewer_id, 
-                action="REJECT",
-                reason=reason
-            )
-
-    db_request.status = new_status
-    db_request.procurement_finance_status = "APPROVED" if new_status == "PROCUREMENT_APPROVED" else "REJECTED"
+        db_request.status = "PROCUREMENT_REJECTED"
+        db_request.procurement_finance_status = "REJECTED"
     db_request.procurement_finance_reviewed_by = reviewer_id
     db_request.procurement_finance_reviewed_at = datetime.now()
     if reason:
@@ -323,22 +312,22 @@ async def update_procurement_finance_status(
         "decision": new_status,
         "reason": reason,
         "timestamp": datetime.now().isoformat(),
-        "type": "PROCUREMENT_FINANCE_REVIEW"
+        "type": "PROCUREMENT_REVIEW"
     })
     
     log = ProcurementLog(
         id=uuid.uuid4(),
         reference_id=request_id,
-        action="PO_APPROVED" if new_status == "PROCUREMENT_APPROVED" else "PO_REJECTED",
+        action="PO_VALIDATED" if new_status == "PROCUREMENT_APPROVED" else "PO_REJECTED",
         performed_by=str(reviewer_id), # Cast to string for String column
-        role="PROCUREMENT_FINANCE",
+        role=user_role,
         metadata_={"reviewer_name": reviewer_name, "decision": new_status, "reason": reason}
     )
     db.add(log)
     
     await db.commit()
     await db.refresh(db_request)
-    return await _populate_requester_info(db, db_request, user_role="PROCUREMENT_FINANCE")
+    return await _populate_requester_info(db, db_request, user_role=user_role)
 
 
 async def perform_qc_check(
@@ -386,6 +375,8 @@ async def perform_qc_check(
     
     await db.commit()
     await db.refresh(db_request)
+    if qc_status == "FAILED":
+        await NotificationService(db).notify_qc_failed(request_id)
     return await _populate_requester_info(db, db_request)
 
 

@@ -100,7 +100,7 @@ export default function AssetOwnerDashboard() {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-bold text-white">My Asset Responsibility</h1>
+                <h1 className="text-3xl font-bold text-white light:text-slate-800">My Asset Responsibility</h1>
                 <p className="text-slate-400">Manage your assigned equipment and verification requests</p>
             </header>
 
@@ -117,7 +117,7 @@ export default function AssetOwnerDashboard() {
                     <div className="flex justify-between items-start">
                         <div>
                             <p className="text-slate-400 text-xs uppercase tracking-wider">Total Assigned</p>
-                            <h3 className="text-3xl font-bold text-white mt-1">{totalAssigned}</h3>
+                            <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{totalAssigned}</h3>
                         </div>
                         <Package className="text-blue-500" />
                     </div>
@@ -126,7 +126,7 @@ export default function AssetOwnerDashboard() {
                     <div className="flex justify-between items-start">
                         <div>
                             <p className="text-slate-400 text-xs uppercase tracking-wider">Pending Verification</p>
-                            <h3 className="text-3xl font-bold text-white mt-1">{verificationPending.length}</h3>
+                            <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{verificationPending.length}</h3>
                         </div>
                         <Clock className="text-amber-500" />
                     </div>
@@ -135,7 +135,7 @@ export default function AssetOwnerDashboard() {
                     <div className="flex justify-between items-start">
                         <div>
                             <p className="text-slate-400 text-xs uppercase tracking-wider">Active Issues</p>
-                            <h3 className="text-3xl font-bold text-white mt-1">{activeIssues}</h3>
+                            <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{activeIssues}</h3>
                         </div>
                         <CheckCircle className="text-emerald-500" />
                     </div>
@@ -145,13 +145,13 @@ export default function AssetOwnerDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Verification Queue */}
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4 flex items-center gap-2">
                         <AlertTriangle size={18} className="text-amber-400" />
                         Verification Required
                     </h3>
                     <div className="space-y-3">
                         {verificationPending.length === 0 ? (
-                            <div className="bg-white/5 p-4 rounded-lg text-center text-slate-400 text-sm">
+                            <div className="bg-white/5 p-4 rounded-lg text-center text-slate-400 light:text-slate-600 text-sm">
                                 No pending verifications
                             </div>
                         ) : (
@@ -184,7 +184,7 @@ export default function AssetOwnerDashboard() {
                 {/* My Assets */}
                 <div className="glass-panel p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-bold text-white">My Active Assets</h3>
+                        <h3 className="text-lg font-bold text-white light:text-slate-800">My Active Assets</h3>
                         <button
                             onClick={handleViewAll}
                             className="text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
@@ -194,7 +194,7 @@ export default function AssetOwnerDashboard() {
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm text-slate-400">
-                            <thead className="text-xs uppercase bg-white/5 text-slate-300">
+                            <thead className="text-xs uppercase bg-white/5 light:bg-slate-50 text-slate-300 light:text-slate-700">
                                 <tr>
                                     <th className="px-4 py-3">Asset</th>
                                     <th className="px-4 py-3">Tag</th>
@@ -235,15 +235,15 @@ export default function AssetOwnerDashboard() {
             {/* VIEW ALL ACTIVE ASSETS MODAL */}
             {viewAllModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
-                        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+                    <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
+                        <div className="p-6 border-b border-white/10 light:border-slate-200 flex justify-between items-center">
                             <div>
-                                <h3 className="text-xl font-bold text-white">My Active Assets</h3>
-                                <p className="text-sm text-slate-400 mt-1">All verified assets currently assigned to you</p>
+                                <h3 className="text-xl font-bold text-white light:text-slate-800">My Active Assets</h3>
+                                <p className="text-sm text-slate-400 light:text-slate-600 mt-1">All verified assets currently assigned to you</p>
                             </div>
                             <button
                                 onClick={() => setViewAllModal(false)}
-                                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                                className="text-slate-400 hover:text-white light:hover:text-slate-900 p-1 rounded-lg hover:bg-white/10 transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -252,10 +252,10 @@ export default function AssetOwnerDashboard() {
                         <div className="p-6 overflow-y-auto">
                             <div className="grid gap-4">
                                 {activeAssets.map(asset => (
-                                    <div key={asset.id} className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors">
+                                    <div key={asset.id} className="bg-white/5 border border-white/10 light:border-slate-200 rounded-xl p-4 hover:bg-white/10 transition-colors">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <h4 className="text-lg font-bold text-white mb-1">{asset.name}</h4>
+                                                <h4 className="text-lg font-bold text-white light:text-slate-800 mb-1">{asset.name}</h4>
                                                 <div className="flex gap-3 text-sm text-slate-400">
                                                     <span>Tag: <span className="text-blue-400 font-mono">{asset.asset_tag}</span></span>
                                                     <span>•</span>
@@ -267,7 +267,7 @@ export default function AssetOwnerDashboard() {
                                             </span>
                                         </div>
 
-                                        <div className="pt-3 border-t border-white/5 flex justify-end">
+                                        <div className="pt-3 border-t border-white/5 light:border-slate-200 flex justify-end">
                                             <button
                                                 onClick={() => {
                                                     setViewAllModal(false);
@@ -283,8 +283,8 @@ export default function AssetOwnerDashboard() {
                             </div>
                         </div>
 
-                        <div className="p-4 border-t border-white/10 bg-white/5 rounded-b-2xl">
-                            <p className="text-xs text-slate-400 text-center">
+                        <div className="p-4 border-t border-white/10 light:border-slate-200 bg-white/5 light:bg-slate-50 rounded-b-2xl">
+                            <p className="text-xs text-slate-400 light:text-slate-600 text-center">
                                 Showing {activeAssets.length} active asset{activeAssets.length !== 1 ? 's' : ''}
                             </p>
                         </div>
@@ -295,12 +295,12 @@ export default function AssetOwnerDashboard() {
             {/* RETURN REASON MODAL */}
             {returnModal.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white">Return Asset</h3>
+                    <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-white/10 light:border-slate-200 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-white light:text-slate-800">Return Asset</h3>
                             <button
                                 onClick={() => setReturnModal({ open: false, asset: null })}
-                                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                                className="text-slate-400 hover:text-white light:hover:text-slate-900 p-1 rounded-lg hover:bg-white/10 transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -312,23 +312,23 @@ export default function AssetOwnerDashboard() {
                                 <p className="text-slate-400 text-sm">Tag: <span className="text-white font-medium">{returnModal.asset?.asset_tag}</span></p>
                             </div>
 
-                            <label className="block text-sm font-medium text-slate-300 mb-2">
+                            <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-2">
                                 Reason for Return <span className="text-rose-400">*</span>
                             </label>
                             <textarea
                                 value={returnReason}
                                 onChange={(e) => setReturnReason(e.target.value)}
                                 placeholder="Please provide a reason for returning this asset..."
-                                className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                                 rows="4"
                                 required
                             />
                         </div>
 
-                        <div className="p-6 border-t border-white/10 flex gap-3 justify-end">
+                        <div className="p-6 border-t border-white/10 light:border-slate-200 flex gap-3 justify-end">
                             <button
                                 onClick={() => setReturnModal({ open: false, asset: null })}
-                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-medium transition-colors"
+                                className="px-4 py-2 bg-white/10 light:bg-slate-100 hover:bg-white/20 text-white rounded-lg font-medium transition-colors"
                             >
                                 Cancel
                             </button>

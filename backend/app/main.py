@@ -12,6 +12,7 @@ from .routers import upload, workflows, disposal, audit, assets, auth, tickets, 
 import os
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+import asyncio
 from .scheduler import scheduler
 
 # Load environment variables from .env file
@@ -22,10 +23,17 @@ async def lifespan(app: FastAPI):
     # Startup
     scheduler.start()
     print("INFO:     APScheduler started")
-    yield
-    # Shutdown
-    scheduler.shutdown()
-    print("INFO:     APScheduler shut down")
+    _log_registered_routes()
+    try:
+        yield
+    except asyncio.CancelledError:
+        pass  # Graceful shutdown on Ctrl+C; avoid traceback from our code
+    finally:
+        try:
+            scheduler.shutdown()
+            print("INFO:     APScheduler shut down")
+        except Exception:
+            pass
 
 # Create FastAPI app instance
 app = FastAPI(
@@ -37,7 +45,32 @@ app = FastAPI(
 
 # Enterprise API Router
 from .api.v1.router import api_router
+from .routers import financials as financials_router
 app.include_router(api_router, prefix="/api/v1")
+# Ensure procurement-summary is always registered (avoids 404 if router load order varies)
+app.include_router(financials_router.router, prefix="/api/v1")
+
+# Explicit route so GET /api/v1/financials/procurement-summary always exists (workaround for 404)
+app.add_api_route(
+    "/api/v1/financials/procurement-summary",
+    financials_router.get_procurement_summary,
+    methods=["GET"],
+    response_model=financials_router.ProcurementSummaryResponse,
+    name="get_procurement_summary_explicit",
+)
+
+
+def _log_registered_routes():
+    """Log key routes at startup so we can verify procurement-summary etc. are registered."""
+    try:
+        from fastapi.routing import APIRoute
+        financial_routes = [r.path for r in app.routes if isinstance(r, APIRoute) and "financial" in r.path]
+        if "/api/v1/financials/procurement-summary" in financial_routes:
+            print("INFO:     GET /api/v1/financials/procurement-summary is registered")
+        else:
+            print("WARNING:  GET /api/v1/financials/procurement-summary NOT in registered routes:", financial_routes)
+    except Exception as e:
+        print("INFO:     Route check skipped:", e)
 
 # Suppress favicon 404s
 @app.get("/favicon.ico", include_in_schema=False)

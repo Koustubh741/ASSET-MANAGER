@@ -1,12 +1,10 @@
 import React from 'react';
 import { Container, Box, Typography, Paper } from '@mui/material';
-import Layout from '../components/Layout';
 import ScanHistoryViewer from '../components/ScanHistoryViewer';
 
 const ScanHistoryPage = () => {
     return (
-        <Layout>
-            <Container maxWidth="xl">
+        <Container maxWidth="xl">
                 <Box sx={{ py: 4 }}>
                     <Typography variant="h4" gutterBottom>
                         Discovery Scan History
@@ -20,7 +18,6 @@ const ScanHistoryPage = () => {
                     </Paper>
                 </Box>
             </Container>
-        </Layout>
     );
 };
 

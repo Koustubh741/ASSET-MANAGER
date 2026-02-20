@@ -15,12 +15,6 @@
     min-height: 100vh;
   }
 
-  /* Support for light class if needed later, but minimal */
-  html.light body {
-    background-image: none;
-    background-color: #f8fafc;
-    color: #0f172a;
-  }
 }
 
 /* Custom Scrollbar */

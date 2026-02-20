@@ -15,6 +15,7 @@ asyncpg
 greenlet
 pysnmp
 scapy
+openai
 
 # Remote Server Discovery
 paramiko

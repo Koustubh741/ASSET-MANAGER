@@ -59,19 +59,19 @@ export default function NewTicketPage() {
         <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
             <div className="max-w-3xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">New Ticket</h1>
                 </div>
 
-                <form onSubmit={handleSubmit} className="glass-panel p-8 rounded-2xl bg-slate-900 border border-white/10 space-y-6">
+                <form onSubmit={handleSubmit} className="glass-panel p-8 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200 space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Subject</label>
+                        <label className="block text-sm font-medium text-slate-400 light:text-slate-600 mb-2">Subject</label>
                         <input
                             type="text"
                             required
-                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                            className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
                             placeholder="Brief summary of the issue"
                             value={formData.subject}
                             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
@@ -80,9 +80,9 @@ export default function NewTicketPage() {
 
                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Priority</label>
+                            <label className="block text-sm font-medium text-slate-400 light:text-slate-600 mb-2">Priority</label>
                             <select
-                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                                className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
                                 value={formData.priority}
                                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                             >
@@ -93,9 +93,9 @@ export default function NewTicketPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Related Asset</label>
+                            <label className="block text-sm font-medium text-slate-400 light:text-slate-600 mb-2">Related Asset</label>
                             <select
-                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                                className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
                                 value={formData.related_asset_id}
                                 onChange={(e) => setFormData({ ...formData, related_asset_id: e.target.value })}
                             >
@@ -108,11 +108,11 @@ export default function NewTicketPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
+                        <label className="block text-sm font-medium text-slate-400 light:text-slate-600 mb-2">Description</label>
                         <textarea
                             rows={5}
                             required
-                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                            className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
                             placeholder="Detailed description..."
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}

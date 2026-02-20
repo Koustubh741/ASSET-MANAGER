@@ -74,12 +74,12 @@ export default function NotificationsPage() {
     ]);
 
     return (
-        <div className="flex flex-col h-full bg-[#0B1120] text-slate-300 min-h-screen">
+        <div className="flex flex-col h-full bg-[#0B1120] text-slate-300 light:text-slate-700 min-h-screen">
             {/* Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-xl sticky top-0 z-10">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 light:border-slate-200 bg-[#0B1120]/80 backdrop-blur-xl sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                     <Link href="/dashboard/system-admin">
-                        <button className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 hover:text-white">
+                        <button className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 hover:text-white light:hover:text-slate-900">
                             <ChevronLeft size={20} />
                         </button>
                     </Link>
@@ -92,7 +92,7 @@ export default function NotificationsPage() {
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors border border-white/10">
+                    <button className="px-4 py-2 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors border border-white/10">
                         Mark all as read
                     </button>
                 </div>
@@ -114,7 +114,7 @@ export default function NotificationsPage() {
                                         {notification.time}
                                     </span>
                                 </div>
-                                <p className="text-sm text-slate-300 mt-1">{notification.message}</p>
+                                <p className="text-sm text-slate-300 light:text-slate-700 mt-1">{notification.message}</p>
                             </div>
                         </div>
                     ))}

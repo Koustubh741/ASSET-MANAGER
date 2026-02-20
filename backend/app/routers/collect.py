@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.database import get_db, get_db_context
 from ..models.models import AuditLog
@@ -296,7 +296,7 @@ async def _run_snmp_scan_background(
             devices = await snmp_service.scan_network_range(
                 cidr, community, v3_data, context_name, progress_cb=progress_cb
             )
-            
+
             count = 0
             for dev in devices:
                 payload = DiscoveryPayload(
@@ -341,14 +341,20 @@ async def _run_snmp_scan_background(
 
 @router.post("/scan", response_model=dict)
 async def trigger_network_scan(
+    request: Request,
     background_tasks: BackgroundTasks,
-    payload: ScanTriggerPayload,
     db: AsyncSession = Depends(get_db),
     admin_user = Depends(check_system_admin)
 ):
     """
     Trigger an agentless SNMP network scan sweep (async background execution).
+    Accepts optional JSON body with cidr/community; empty body uses saved DB config.
     """
+    body = await request.body()
+    if body and body.strip():
+        payload = ScanTriggerPayload.model_validate_json(body)
+    else:
+        payload = ScanTriggerPayload()
     try:
         from ..models.models import AgentConfiguration
         from ..services.encryption_service import decrypt_value

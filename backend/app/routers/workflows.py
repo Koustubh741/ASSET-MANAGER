@@ -27,7 +27,7 @@ async def review_renewal(
     """
     Review asset renewal (Asynchronous).
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT", "IT_MANAGEMENT"]:
         raise HTTPException(status_code=403, detail="Unauthorized to review renewals")
     asset = await asset_service.get_asset_by_id(db, asset_id)
     if not asset:
@@ -62,7 +62,7 @@ async def manage_procurement(
     """
     Manage asset procurement workflow (Asynchronous).
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "PROCUREMENT", "PROCUREMENT_FINANCE", "ASSET_MANAGER"]:
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "PROCUREMENT", "ASSET_MANAGER"]:
         raise HTTPException(status_code=403, detail="Unauthorized to manage procurement")
     asset = await asset_service.get_asset_by_id(db, asset_id)
     if not asset:

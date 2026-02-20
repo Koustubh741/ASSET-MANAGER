@@ -75,6 +75,21 @@ async def list_users(
     return users
 
 
+@router.get("/role-counts")
+async def get_role_counts(
+    status: str = None,
+    db: AsyncSession = Depends(get_db),
+    admin_user = Depends(check_admin_access)
+):
+    """
+    Get count of users per role (Admin only).
+    Optional query: status=ACTIVE to count only active users.
+    Returns e.g. {"FINANCE": 2, "PROCUREMENT": 3, "END_USER": 50, ...}.
+    """
+    counts = await user_service.get_role_counts(db, status=status)
+    return counts
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: UUID,
@@ -112,6 +127,9 @@ async def update_user(
     
     # Update user fields
     update_data = user_update.model_dump(exclude_unset=True)
+    # Root fix: no combined PROCUREMENT_FINANCE role; normalize to FINANCE
+    if update_data.get("role") and str(update_data.get("role")).strip().upper() == "PROCUREMENT_FINANCE":
+        update_data["role"] = "FINANCE"
     for field, value in update_data.items():
         if field == "password" and value:
             # Hash the password if being updated

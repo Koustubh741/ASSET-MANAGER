@@ -3,7 +3,7 @@
  * Use for loading states in tables, cards, and lists.
  */
 export default function Skeleton({ className = '', width, height, variant = 'default' }) {
-    const base = 'animate-pulse bg-slate-700 rounded';
+    const base = 'animate-pulse bg-slate-700 light:bg-slate-300 rounded';
     const variants = {
         default: base,
         line: `${base} h-4`,
@@ -26,7 +26,7 @@ export function SkeletonTable({ rows = 5, cols = 4 }) {
         <div className="glass-panel overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-white/5 text-slate-400 border-b border-white/10">
+                    <thead className="bg-white/5 text-slate-400 light:bg-slate-100 light:text-slate-600 light:border-slate-200 border-b border-white/10">
                         <tr>
                             {Array.from({ length: cols }).map((_, i) => (
                                 <th key={i} className="px-6 py-4">
@@ -35,7 +35,7 @@ export function SkeletonTable({ rows = 5, cols = 4 }) {
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-white/5 light:divide-slate-200">
                         {Array.from({ length: rows }).map((_, ri) => (
                             <tr key={ri}>
                                 {Array.from({ length: cols }).map((_, ci) => (

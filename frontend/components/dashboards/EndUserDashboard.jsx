@@ -167,35 +167,35 @@ export default function EndUserDashboard() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5 light:border-slate-200">
                                 <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><Building2 size={12} /> Company</p>
-                                <p className="text-white font-semibold text-sm">{displayProfile.company}</p>
+                                <p className="text-white light:text-slate-900 font-semibold text-sm">{displayProfile.company}</p>
                             </div>
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5 light:border-slate-200">
                                 <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><Ticket size={12} /> Employee ID</p>
-                                <p className="text-white font-semibold text-sm">{displayProfile.empId}</p>
+                                <p className="text-white light:text-slate-900 font-semibold text-sm">{displayProfile.empId}</p>
                             </div>
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5 light:border-slate-200">
                                 <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><Calendar size={12} /> Date of Joining</p>
-                                <p className="text-white font-semibold text-sm">{displayProfile.doj}</p>
+                                <p className="text-white light:text-slate-900 font-semibold text-sm">{displayProfile.doj}</p>
                             </div>
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5 light:border-slate-200">
                                 <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><MapPin size={12} /> Work Location</p>
-                                <p className="text-white font-semibold text-sm">{displayProfile.location}</p>
+                                <p className="text-white light:text-slate-900 font-semibold text-sm">{displayProfile.location}</p>
                             </div>
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5 light:border-slate-200">
                                 <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><Briefcase size={12} className="text-blue-400" /> Department</p>
-                                <p className="text-white font-semibold text-sm uppercase">{displayProfile.department}</p>
+                                <p className="text-white light:text-slate-900 font-semibold text-sm uppercase">{displayProfile.department}</p>
                             </div>
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/5 light:border-slate-200">
                                 <p className="text-slate-400 text-xs uppercase mb-1 flex items-center gap-1.5"><Sparkles size={12} className="text-purple-400" /> Domain</p>
-                                <p className="text-white font-semibold text-sm uppercase">{displayProfile.domain?.replace('/', ' / ')}</p>
+                                <p className="text-white light:text-slate-900 font-semibold text-sm uppercase">{displayProfile.domain?.replace('/', ' / ')}</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 justify-center border-l border-white/10 pl-6 h-full my-auto">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Quick actions</p>
+                    <div className="flex flex-col gap-3 justify-center border-l border-white/10 light:border-slate-200 pl-6 h-full my-auto">
+                        <p className="text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-1">Quick actions</p>
                         <button
                             onClick={() => setActiveModal('profile')}
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
@@ -216,7 +216,7 @@ export default function EndUserDashboard() {
                         </button>
                         <button
                             onClick={() => setActiveModal('ticket')}
-                            className="bg-white/5 hover:bg-white/10 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold border border-white/10 transition-all active:scale-95"
+                            className="bg-white/5 hover:bg-white/10 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-semibold border border-white/10 light:border-slate-200 transition-all active:scale-95"
                         >
                             <Ticket size={18} /> Get Support
                         </button>
@@ -233,10 +233,10 @@ export default function EndUserDashboard() {
 
                     {assignedAssets.map((asset) => (
                         <div key={asset.id} className="glass-panel p-0 overflow-hidden group hover:border-blue-500/30 transition-all duration-300">
-                            <div className="p-6 border-b border-white/5 bg-gradient-to-r from-white/5 to-transparent">
+                            <div className="p-6 border-b border-white/5 light:border-slate-200 bg-gradient-to-r from-white/5 to-transparent">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 border border-white/10">
+                                        <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-blue-400 border border-white/10 light:border-slate-200">
                                             {asset.type === 'Laptop' ? <Laptop size={24} /> : <RefreshCw size={24} />}
                                         </div>
                                         <div>
@@ -244,8 +244,8 @@ export default function EndUserDashboard() {
                                                 {asset.name}
                                                 {asset.model && asset.model !== asset.name && <span className="text-slate-400 font-normal text-sm ml-2">({asset.model})</span>}
                                             </h4>
-                                            <p className="text-sm text-slate-400 flex items-center gap-2 mt-1">
-                                                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono text-slate-300">{asset.id}</span>
+                                            <p className="text-sm text-slate-400 light:text-slate-600 flex items-center gap-2 mt-1">
+                                                <span className="bg-slate-700 px-1.5 py-0.5 rounded text-xs font-mono text-slate-300 light:text-slate-700">{asset.id}</span>
                                                 <span className="w-1 h-1 rounded-full bg-slate-500"></span>
                                                 <span>Assigned: {asset.assignment_date || asset.assignedDate || 'Recent'}</span>
                                             </p>
@@ -262,24 +262,38 @@ export default function EndUserDashboard() {
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase mb-2 font-semibold">Asset Specifications</p>
                                         <ul className="space-y-2">
-                                            {Object.entries(asset.specifications || asset.specs || {}).map(([key, value]) => (
-                                                <li key={key} className="flex items-start gap-2 text-sm text-slate-300">
-                                                    <Cpu size={14} className="mt-1 text-slate-500 shrink-0" />
-                                                    <span>
-                                                        <span className="capitalize text-slate-400">{key}:</span> {String(value)}
-                                                    </span>
-                                                </li>
-                                            ))}
+                                            {Object.entries(asset.specifications || asset.specs || {}).map(([key, value]) => {
+                                                const strVal = String(value ?? '');
+                                                const isIpList = key === 'IP Address' && strVal.includes('; ');
+                                                const parts = isIpList ? strVal.split('; ').map(s => s.trim()).filter(Boolean) : [strVal];
+                                                return (
+                                                    <li key={key} className="flex items-start gap-2 text-sm text-slate-300 light:text-slate-700">
+                                                        <Cpu size={14} className="mt-1 text-slate-500 shrink-0" />
+                                                        <span className="flex flex-col gap-0.5">
+                                                            {parts.length > 1 ? (
+                                                                <>
+                                                                    <span className="capitalize text-slate-400">{key}:</span>
+                                                                    <ul className="list-none p-0 m-0 space-y-0.5 font-mono text-blue-400/90">
+                                                                        {parts.map((p, i) => <li key={i}>{p}</li>)}
+                                                                    </ul>
+                                                                </>
+                                                            ) : (
+                                                                <><span className="capitalize text-slate-400">{key}:</span> {strVal || 'N/A'}</>
+                                                            )}
+                                                        </span>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase mb-2 font-semibold">Location & Status</p>
                                         <div className="space-y-3">
-                                            <div className="flex items-center gap-2 text-sm text-slate-300 bg-white/5 p-2 rounded-lg">
+                                            <div className="flex items-center gap-2 text-sm text-slate-300 light:text-slate-700 bg-white/5 light:bg-slate-50 p-2 rounded-lg">
                                                 <MapPin size={14} className="text-amber-400" />
                                                 {asset.location}
                                             </div>
-                                            <div className="flex items-center gap-2 text-sm text-slate-300 bg-white/5 p-2 rounded-lg">
+                                            <div className="flex items-center gap-2 text-sm text-slate-300 light:text-slate-700 bg-white/5 light:bg-slate-50 p-2 rounded-lg">
                                                 <Calendar size={14} className="text-blue-400" />
                                                 Next Audit: 15th Sept, 2024
                                             </div>
@@ -294,7 +308,7 @@ export default function EndUserDashboard() {
                                             </button>
                                             <button
                                                 onClick={() => setActiveModal('asset')}
-                                                className="text-xs text-slate-400 hover:text-white hover:underline"
+                                                className="text-xs text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 hover:underline"
                                             >
                                                 Request Upgrade
                                             </button>
@@ -316,22 +330,22 @@ export default function EndUserDashboard() {
                                 <h3 className="text-lg font-bold text-white">Asset Procurement Requests</h3>
                                 <button
                                     onClick={() => refreshData?.()}
-                                    className="p-1.5 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/5 active:scale-90 group"
+                                    className="p-1.5 rounded-lg bg-white/5 light:bg-slate-50 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 hover:bg-white/10 transition-all border border-white/5 light:border-slate-200 active:scale-90 group"
                                     title="Refresh Data"
                                 >
                                     <RefreshCw size={14} className="group-active:animate-spin" />
                                 </button>
                             </div>
-                            <div className="flex bg-slate-900/50 rounded-lg p-1 border border-white/5">
+                            <div className="flex bg-slate-900/50 rounded-lg p-1 border border-white/5 light:border-slate-200">
                                 <button
                                     onClick={() => setRequestFilter('active')}
-                                    className={`px-3 py-1 text-xs font-bold rounded transition-all ${requestFilter === 'active' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                    className={`px-3 py-1 text-xs font-bold rounded transition-all ${requestFilter === 'active' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white light:hover:text-slate-900'}`}
                                 >
                                     Active
                                 </button>
                                 <button
                                     onClick={() => setRequestFilter('history')}
-                                    className={`px-3 py-1 text-xs font-bold rounded transition-all ${requestFilter === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                    className={`px-3 py-1 text-xs font-bold rounded transition-all ${requestFilter === 'history' ? 'bg-indigo-500 text-white shadow-lg' : 'text-slate-400 hover:text-white light:hover:text-slate-900'}`}
                                 >
                                     History
                                 </button>
@@ -344,7 +358,7 @@ export default function EndUserDashboard() {
                                 return requestFilter === 'active' ? !isCompleted : isCompleted;
                             }).length === 0 ? (
                                 <div className="text-center py-8">
-                                    <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3 border border-white/5">
+                                    <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3 border border-white/5 light:border-slate-200">
                                         <Briefcase className="text-slate-600" size={20} />
                                     </div>
                                     <p className="text-slate-500 text-xs">No {requestFilter} asset requests found.</p>
@@ -359,7 +373,7 @@ export default function EndUserDashboard() {
                                     <div
                                         key={req.id}
                                         onClick={() => setSelectedRequest(req)}
-                                        className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/30 hover:shadow-md hover:bg-white/[0.07] transition-all cursor-pointer group relative overflow-hidden"
+                                        className="p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 hover:border-indigo-500/30 hover:shadow-md hover:bg-white/[0.07] transition-all cursor-pointer group relative overflow-hidden"
                                     >
                                         <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/5 to-transparent rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
@@ -385,7 +399,7 @@ export default function EndUserDashboard() {
                                             <div>
                                                 <h4 className="text-sm font-bold text-white leading-tight">{req.assetType} Request</h4>
                                                 <div className="flex flex-col mt-0.5">
-                                                    <p className="text-xs font-medium text-slate-300">
+                                                    <p className="text-xs font-medium text-slate-300 light:text-slate-700">
                                                         {req.requestedBy?.name || req.requester_name}
                                                     </p>
                                                     <p className="text-xs text-slate-500 truncate max-w-[150px] italic">
@@ -396,7 +410,7 @@ export default function EndUserDashboard() {
                                         </div>
 
                                         {req.justification && (
-                                            <p className="text-[11px] text-slate-400 mb-2 line-clamp-2 bg-slate-900/30 p-2 rounded-lg border border-white/5">
+                                            <p className="text-[11px] text-slate-400 light:text-slate-600 mb-2 line-clamp-2 bg-slate-900/30 p-2 rounded-lg border border-white/5 light:border-slate-200">
                                                 {req.justification}
                                             </p>
                                         )}
@@ -417,12 +431,12 @@ export default function EndUserDashboard() {
                                             </div>
                                         )}
 
-                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 relative z-10">
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 light:border-slate-200 relative z-10">
                                             <div className="flex items-center gap-1.5">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
                                                 <span className="text-xs text-indigo-300 font-medium">With: {req.currentOwnerRole}</span>
                                                 {req.requester_department && (
-                                                    <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-slate-400 border border-white/5">
+                                                    <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 light:bg-slate-100 text-slate-400 light:text-slate-600 border border-white/5 light:border-slate-200">
                                                         Dept: {req.requester_department}
                                                     </span>
                                                 )}
@@ -455,7 +469,7 @@ export default function EndUserDashboard() {
                                 return requestFilter === 'active' ? !isCompleted : isCompleted;
                             }).length === 0 ? (
                                 <div className="text-center py-8">
-                                    <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3 border border-white/5">
+                                    <div className="w-12 h-12 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-3 border border-white/5 light:border-slate-200">
                                         <Ticket className="text-slate-600" size={20} />
                                     </div>
                                     <p className="text-slate-500 text-xs">No {requestFilter} support tickets found.</p>
@@ -470,7 +484,7 @@ export default function EndUserDashboard() {
                                     <div
                                         key={ticket.id}
                                         onClick={() => setSelectedRequest(ticket)}
-                                        className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-rose-500/30 hover:shadow-md hover:bg-white/[0.07] transition-all cursor-pointer group relative overflow-hidden"
+                                        className="p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 hover:border-rose-500/30 hover:shadow-md hover:bg-white/[0.07] transition-all cursor-pointer group relative overflow-hidden"
                                     >
                                         <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/5 to-transparent rounded-bl-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
@@ -499,7 +513,7 @@ export default function EndUserDashboard() {
                                             <div>
                                                 <h4 className="text-sm font-bold text-white leading-tight">{ticket.subject || 'Support Ticket'}</h4>
                                                 <div className="flex flex-col mt-0.5">
-                                                    <p className="text-xs font-medium text-slate-300">
+                                                    <p className="text-xs font-medium text-slate-300 light:text-slate-700">
                                                         {ticket.requestor_name || 'Anonymous User'}
                                                     </p>
                                                     <p className="text-xs text-rose-400/70 truncate max-w-[150px] italic">
@@ -510,15 +524,15 @@ export default function EndUserDashboard() {
                                         </div>
 
                                         {ticket.description && (
-                                            <p className="text-[11px] text-slate-400 mb-2 line-clamp-2 bg-slate-900/30 p-2 rounded-lg border border-white/5">
+                                            <p className="text-[11px] text-slate-400 light:text-slate-600 mb-2 line-clamp-2 bg-slate-900/30 p-2 rounded-lg border border-white/5 light:border-slate-200">
                                                 {ticket.description}
                                             </p>
                                         )}
 
-                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 relative z-10">
+                                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 light:border-slate-200 relative z-10">
                                             <div className="flex items-center gap-1.5">
                                                 <div className={`w-1.5 h-1.5 rounded-full ${ticket.priority === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'} animate-pulse`}></div>
-                                                <span className="text-xs text-slate-300 font-medium">Priority: {ticket.priority}</span>
+                                                <span className="text-xs text-slate-300 light:text-slate-700 font-medium">Priority: {ticket.priority}</span>
                                             </div>
                                             <div className="flex flex-col items-end gap-1">
                                                 <span className="text-xs text-slate-500">{ticket.category}</span>
@@ -565,7 +579,7 @@ export default function EndUserDashboard() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).map(req => (
-                                <div key={req.id} className="p-4 bg-slate-800 rounded-xl border border-white/10 flex justify-between items-center group hover:border-indigo-500/50 transition-all">
+                                <div key={req.id} className="p-4 bg-slate-800 rounded-xl border border-white/10 light:border-slate-200 flex justify-between items-center group hover:border-indigo-500/50 transition-all">
                                     <div>
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
@@ -626,17 +640,17 @@ export default function EndUserDashboard() {
                     )}
 
                     {/* MANAGER HISTORY */}
-                    <div className="mt-8 pt-6 border-t border-white/5">
-                        <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Request History</h4>
+                    <div className="mt-8 pt-6 border-t border-white/5 light:border-slate-200">
+                        <h4 className="text-sm font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-4">Request History</h4>
                         <div className="space-y-3">
                             {requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).length === 0 ? (
                                 <p className="text-slate-500 text-xs italic">No history available.</p>
                             ) : requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).map(req => (
-                                <div key={req.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/5 opacity-75 hover:opacity-100 transition-opacity">
+                                <div key={req.id} className="flex items-center justify-between p-3 bg-white/5 light:bg-slate-50 rounded-lg border border-white/5 light:border-slate-200 opacity-75 hover:opacity-100 transition-opacity">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-2 h-2 rounded-full ${req.status === 'REJECTED' ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
                                         <div>
-                                            <p className="text-sm font-medium text-white">{req.assetType} Request</p>
+                                            <p className="text-sm font-medium text-white light:text-slate-900">{req.assetType} Request</p>
                                             <div className="flex flex-col mt-0.5">
                                                 <p className="text-xs text-slate-400">Sent by: <span className="text-slate-200">{req.requestedBy?.name || req.requester_name}</span></p>
                                                 <div className="flex flex-col mt-0.5">
@@ -652,7 +666,7 @@ export default function EndUserDashboard() {
                                     <div className="flex items-center gap-3">
                                         <button
                                             onClick={() => setSelectedRequest(req)}
-                                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 hover:text-white text-xs font-medium rounded-lg border border-white/10 transition-colors"
+                                            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/10 light:bg-slate-100 hover:bg-white/20 text-slate-200 light:text-slate-800 hover:text-white light:hover:text-slate-900 text-xs font-medium rounded-lg border border-white/10 light:border-slate-200 transition-colors"
                                         >
                                             <Eye size={14} />
                                             View
@@ -678,10 +692,10 @@ export default function EndUserDashboard() {
             {
                 activeModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 
                             {/* Modal Header */}
-                            <div className="px-6 py-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+                            <div className="px-6 py-4 border-b border-white/10 light:border-slate-200 flex justify-between items-center bg-white/5">
                                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                     {activeModal === 'asset' && <Laptop className="text-blue-400" size={20} />}
                                     {activeModal === 'byod' && <Smartphone className="text-sky-400" size={20} />}
@@ -695,7 +709,7 @@ export default function EndUserDashboard() {
                                 </h3>
                                 <button
                                     onClick={() => setActiveModal(null)}
-                                    className="text-slate-400 hover:text-white transition-colors"
+                                    className="text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors"
                                 >
                                     <X size={20} />
                                 </button>
@@ -707,8 +721,8 @@ export default function EndUserDashboard() {
                                     {activeModal === 'asset' ? (
                                         <>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Asset Type</label>
-                                                <select name="type" className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Asset Type</label>
+                                                <select name="type" className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                     <option value="Laptop">Laptop (Standard)</option>
                                                     <option value="BYOD">BYOD (Bring Your Own Device)</option>
                                                     <option value="Laptop_HighPerf">Laptop (High Performance)</option>
@@ -718,21 +732,21 @@ export default function EndUserDashboard() {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Reason for Request</label>
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Reason for Request</label>
                                                 <textarea
                                                     name="reason"
                                                     rows="3"
-                                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     placeholder="e.g., Current laptop is slow, Need monitor for dual-screen setup..."
                                                 ></textarea>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Urgency</label>
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Urgency</label>
                                                 <div className="flex gap-4">
-                                                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                                    <label className="flex items-center gap-2 text-sm text-slate-300 light:text-slate-700 cursor-pointer">
                                                         <input type="radio" name="urgency" className="text-blue-500" defaultChecked /> Standard
                                                     </label>
-                                                    <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                                    <label className="flex items-center gap-2 text-sm text-slate-300 light:text-slate-700 cursor-pointer">
                                                         <input type="radio" name="urgency" className="text-blue-500" /> high
                                                     </label>
                                                 </div>
@@ -742,41 +756,41 @@ export default function EndUserDashboard() {
                                         <>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Device Model</label>
+                                                    <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Device Model</label>
                                                     <input
                                                         type="text"
                                                         name="device_model"
                                                         required
                                                         placeholder="e.g. MacBook Pro, Dell XPS"
-                                                        className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                        className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">OS Version</label>
+                                                    <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">OS Version</label>
                                                     <input
                                                         type="text"
                                                         name="os_version"
                                                         required
                                                         placeholder="e.g. macOS Sonoma, Win 11"
-                                                        className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                        className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                                                     />
                                                 </div>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Serial Number</label>
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Serial Number</label>
                                                 <input
                                                     type="text"
                                                     name="serial_number"
                                                     required
-                                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                    className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Usage Justification</label>
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Usage Justification</label>
                                                 <textarea
                                                     name="reason"
                                                     rows="2"
-                                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                    className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                                                     placeholder="Why do you need to use your personal device for work?"
                                                 ></textarea>
                                             </div>
@@ -790,18 +804,18 @@ export default function EndUserDashboard() {
                                     ) : (
                                         <>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Subject</label>
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Subject</label>
                                                 <input
                                                     type="text"
                                                     name="title"
                                                     required
-                                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     placeholder="Brief summary of the issue"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Issue Category</label>
-                                                <select name="category" className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Issue Category</label>
+                                                <select name="category" className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                     <option value="Hardware Fault">Hardware Fault</option>
                                                     <option value="Software / OS Issue">Software / OS Issue</option>
                                                     <option value="Network / VPN">Network / VPN</option>
@@ -810,11 +824,11 @@ export default function EndUserDashboard() {
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Description</label>
+                                                <label className="block text-sm font-medium text-slate-300 light:text-slate-700 mb-1.5">Description</label>
                                                 <textarea
                                                     name="description"
                                                     rows="4"
-                                                    className="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="w-full bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     placeholder="Describe the issue in detail..."
                                                 ></textarea>
                                             </div>
@@ -832,7 +846,7 @@ export default function EndUserDashboard() {
                                         <button
                                             type="button"
                                             onClick={() => setActiveModal(null)}
-                                            className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2.5 rounded-lg font-medium transition-colors border border-white/10"
+                                            className="flex-1 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white py-2.5 rounded-lg font-medium transition-colors border border-white/10 light:border-slate-200"
                                         >
                                             Cancel
                                         </button>
@@ -848,8 +862,8 @@ export default function EndUserDashboard() {
                                 // PROFILE MODAL CONTENT
                                 <div className="p-8 space-y-8 custom-scrollbar max-h-[80vh] overflow-y-auto">
                                     <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-8 flex flex-col md:flex-row items-center gap-6 shadow-lg relative overflow-hidden">
-                                        <div className="absolute top-0 right-0 p-16 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                                        <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border-4 border-white/10 shrink-0 shadow-xl">
+                                        <div className="absolute top-0 right-0 p-16 bg-white/10 light:bg-slate-100 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                                        <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border-4 border-white/10 light:border-slate-200 shrink-0 shadow-xl">
                                             <span className="text-3xl font-bold text-white">AJ</span>
                                         </div>
                                         <div className="flex-1 text-center md:text-left">
@@ -858,7 +872,7 @@ export default function EndUserDashboard() {
                                             <p className="text-blue-200 text-sm opacity-80">{user?.department || "General"} • {currentRole.label}</p>
                                         </div>
                                         <div className="flex gap-3 relative z-10">
-                                            <button className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-semibold backdrop-blur-sm border border-white/10 transition-colors">
+                                            <button className="px-4 py-2 bg-white/10 light:bg-slate-100 hover:bg-white/20 text-white rounded-lg text-sm font-semibold backdrop-blur-sm border border-white/10 light:border-slate-200 transition-colors">
                                                 Change Password
                                             </button>
                                             <button
@@ -866,7 +880,7 @@ export default function EndUserDashboard() {
                                                     logout();
                                                     window.location.href = '/login';
                                                 }}
-                                                className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-100 hover:text-white rounded-lg text-sm font-semibold backdrop-blur-sm border border-rose-500/20 transition-colors"
+                                                className="px-4 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-100 hover:text-white light:hover:text-slate-900 rounded-lg text-sm font-semibold backdrop-blur-sm border border-rose-500/20 transition-colors"
                                             >
                                                 Logout
                                             </button>
@@ -892,14 +906,14 @@ export default function EndUserDashboard() {
                                             </div>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="border border-white/5 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
+                                                <div className="border border-white/5 light:border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
                                                     <div>
                                                         <h5 className="font-semibold text-white mb-1">Password</h5>
                                                         <p className="text-xs text-slate-400">Last changed 3 months ago</p>
                                                     </div>
                                                     <button className="text-sm font-semibold text-blue-400 group-hover:text-blue-300">Change</button>
                                                 </div>
-                                                <div className="border border-white/5 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
+                                                <div className="border border-white/5 light:border-slate-200 rounded-xl p-4 flex items-center justify-between hover:bg-white/5 transition-colors group">
                                                     <div>
                                                         <h5 className="font-semibold text-white mb-1">Two-Factor Authentication</h5>
                                                         <p className="text-xs text-slate-400">Add an extra layer of security</p>
@@ -920,9 +934,9 @@ export default function EndUserDashboard() {
             {
                 selectedRequest && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                        <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
                             {/* Header */}
-                            <div className="p-6 border-b border-white/10 bg-white/5 flex justify-between items-start">
+                            <div className="p-6 border-b border-white/10 light:border-slate-200 bg-white/5 light:bg-slate-50 flex justify-between items-start">
                                 <div>
                                     <div className="flex items-center gap-3 mb-2">
                                         <span className={`px-2 py-0.5 text-xs rounded font-bold border 
@@ -934,11 +948,11 @@ export default function EndUserDashboard() {
                                                                 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
                                             {selectedRequest.status}
                                         </span>
-                                        <span className="text-xs text-slate-400 font-mono">{selectedRequest.id}</span>
+                                        <span className="text-xs text-slate-400 light:text-slate-600 font-mono">{selectedRequest.id}</span>
                                     </div>
                                     <h3 className="text-xl font-bold text-white">{selectedRequest.assetType} Request</h3>
                                 </div>
-                                <button onClick={() => setSelectedRequest(null)} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10">
+                                <button onClick={() => setSelectedRequest(null)} className="text-slate-400 hover:text-white light:hover:text-slate-900 p-1 rounded-lg hover:bg-white/10">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -953,7 +967,7 @@ export default function EndUserDashboard() {
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Justification</label>
-                                        <p className="text-slate-300 text-sm mt-1 leading-relaxed max-w-prose bg-white/5 p-3 rounded-lg border border-white/5">
+                                        <p className="text-slate-300 text-sm mt-1 leading-relaxed max-w-prose bg-white/5 light:bg-slate-50 p-3 rounded-lg border border-white/5 light:border-slate-200">
                                             {selectedRequest.justification}
                                         </p>
                                     </div>
@@ -1018,9 +1032,9 @@ export default function EndUserDashboard() {
                                             )}
 
                                             {selectedRequest.resolution_notes && (
-                                                <div className="bg-slate-900/50 p-2.5 rounded border border-white/5">
+                                                <div className="bg-slate-900/50 p-2.5 rounded border border-white/5 light:border-slate-200">
                                                     <p className="text-xs text-slate-500 uppercase font-bold mb-1">Latest Fix Notes</p>
-                                                    <p className="text-xs text-slate-300 italic">"{selectedRequest.resolution_notes}"</p>
+                                                    <p className="text-xs text-slate-300 light:text-slate-700 italic">"{selectedRequest.resolution_notes}"</p>
                                                 </div>
                                             )}
                                         </div>
@@ -1046,7 +1060,7 @@ export default function EndUserDashboard() {
                                                 <div className="flex flex-col">
                                                     <span className="text-xs text-slate-500">{new Date(log.timestamp || log.date).toLocaleString()}</span>
                                                     <div className="flex justify-between items-start">
-                                                        <span className="text-sm font-bold text-slate-200">{log.action || log.status || 'Update'}</span>
+                                                        <span className="text-sm font-bold text-slate-200 light:text-slate-800">{log.action || log.status || 'Update'}</span>
                                                         {log.percentage !== undefined && (
                                                             <span className="text-xs bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20">
                                                                 {log.percentage}%
@@ -1056,7 +1070,7 @@ export default function EndUserDashboard() {
                                                     <span className="text-xs text-slate-400">
                                                         by {log.byRole || log.role || 'System'} ({log.byUser || log.user || 'Automation'})
                                                     </span>
-                                                    {(log.comment || log.notes) && <p className="text-xs text-slate-300 mt-1 italic border-l-2 border-white/5 pl-2">
+                                                    {(log.comment || log.notes) && <p className="text-xs text-slate-300 light:text-slate-700 mt-1 italic border-l-2 border-white/5 light:border-slate-200 pl-2">
                                                         "{log.comment || log.notes}"
                                                     </p>}
                                                 </div>
@@ -1071,7 +1085,7 @@ export default function EndUserDashboard() {
                             </div>
 
                             {/* Footer */}
-                            <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end gap-3">
+                            <div className="p-4 border-t border-white/10 light:border-slate-200 bg-white/5 light:bg-slate-50 flex justify-end gap-3">
                                 {selectedRequest.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING && (
                                     <button
                                         onClick={() => {
@@ -1087,7 +1101,7 @@ export default function EndUserDashboard() {
                                 )}
                                 <button
                                     onClick={() => setSelectedRequest(null)}
-                                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-semibold transition-colors"
+                                    className="px-4 py-2 bg-white/10 light:bg-slate-100 hover:bg-white/20 text-white rounded-lg text-sm font-semibold transition-colors"
                                 >
                                     Close
                                 </button>

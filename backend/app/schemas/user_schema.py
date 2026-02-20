@@ -15,6 +15,7 @@ class UserBase(BaseModel):
     location: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    plan: str = "STARTER"  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
 
 class UserCreate(UserBase):
     password: str
@@ -28,6 +29,7 @@ class UserUpdate(BaseModel):
     department: Optional[str] = None
     location: Optional[str] = None
     company: Optional[str] = None
+    plan: Optional[str] = None
     password: Optional[str] = None # In real app, handle password change securely
 
 class UserResponse(UserBase):

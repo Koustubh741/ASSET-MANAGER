@@ -82,7 +82,7 @@ export default function SystemAdminAnalytics() {
                         <p className="text-slate-400 mb-4">No asset data yet. Add assets or run a scan to see analytics.</p>
                         <div className="flex flex-wrap justify-center gap-3">
                             <Link href="/assets/add" className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium">Add Asset</Link>
-                            <Link href="/assets" className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium border border-white/10">View Assets</Link>
+                            <Link href="/assets" className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium border border-white/10 light:border-slate-200">View Assets</Link>
                         </div>
                     </div>
                 ) : (
@@ -93,9 +93,9 @@ export default function SystemAdminAnalytics() {
                                     <h3 className="text-xl font-bold text-white">Asset Analytics</h3>
                                     <p className="text-slate-400 text-sm">Distribution and lifecycle metrics</p>
                                 </div>
-                                <div className="flex bg-slate-800/50 p-1 rounded-lg border border-white/5">
+                                <div className="flex bg-slate-800/50 p-1 rounded-lg border border-white/5 light:border-slate-200">
                                     {['location', 'type', 'segment', 'status'].map((m) => (
-                                        <button key={m} onClick={() => setChartMetric(m)} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${chartMetric === m ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}>{m.charAt(0).toUpperCase() + m.slice(1)}</button>
+                                        <button key={m} onClick={() => setChartMetric(m)} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${chartMetric === m ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white light:hover:text-slate-900'}`}>{m.charAt(0).toUpperCase() + m.slice(1)}</button>
                                     ))}
                                 </div>
                             </div>
@@ -112,7 +112,7 @@ export default function SystemAdminAnalytics() {
                                         Cost & Renewal Trends
                                     </h3>
                                 </div>
-                                <select value={trendView} onChange={(e) => setTrendView(e.target.value)} className="bg-slate-800/50 border border-white/10 text-slate-300 text-xs rounded-lg px-2 py-1 focus:outline-none">
+                                <select value={trendView} onChange={(e) => setTrendView(e.target.value)} className="bg-slate-800/50 border border-white/10 light:border-slate-200 text-slate-300 light:text-slate-700 text-xs rounded-lg px-2 py-1 focus:outline-none">
                                     <option value="monthly">Monthly</option>
                                     <option value="quarterly">Quarterly</option>
                                 </select>
@@ -127,7 +127,7 @@ export default function SystemAdminAnalytics() {
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20"><Clock size={18} className="text-rose-400" /></div>
                                     <div>
-                                        <p className="text-xs text-slate-400 uppercase tracking-wider">Warranty risk</p>
+                                        <p className="text-xs text-slate-400 light:text-slate-600 uppercase tracking-wider">Warranty risk</p>
                                         <p className="text-xl font-bold text-white">{(stats?.warranty_risk ?? 0)}</p>
                                         <p className="text-[10px] text-slate-500">Expiring in 30 days</p>
                                     </div>
@@ -137,7 +137,7 @@ export default function SystemAdminAnalytics() {
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20"><AlertTriangle size={18} className="text-orange-400" /></div>
                                     <div>
-                                        <p className="text-xs text-slate-400 uppercase tracking-wider">In repair</p>
+                                        <p className="text-xs text-slate-400 light:text-slate-600 uppercase tracking-wider">In repair</p>
                                         <p className="text-xl font-bold text-white">{(stats?.repair ?? 0)}</p>
                                         <p className="text-[10px] text-slate-500">Needs attention</p>
                                     </div>
@@ -147,7 +147,7 @@ export default function SystemAdminAnalytics() {
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/20"><Activity size={18} className="text-purple-400" /></div>
                                     <div>
-                                        <p className="text-xs text-slate-400 uppercase tracking-wider">Discovered</p>
+                                        <p className="text-xs text-slate-400 light:text-slate-600 uppercase tracking-wider">Discovered</p>
                                         <p className="text-xl font-bold text-white">{(stats?.discovered ?? 0)}</p>
                                         <p className="text-[10px] text-slate-500">Unclaimed</p>
                                     </div>
@@ -157,7 +157,7 @@ export default function SystemAdminAnalytics() {
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><DollarSign size={18} className="text-emerald-400" /></div>
                                     <div>
-                                        <p className="text-xs text-slate-400 uppercase tracking-wider">Inventory value</p>
+                                        <p className="text-xs text-slate-400 light:text-slate-600 uppercase tracking-wider">Inventory value</p>
                                         <p className="text-xl font-bold text-white">₹{(stats?.total_value ?? 0).toLocaleString()}</p>
                                         <p className="text-[10px] text-slate-500">Total</p>
                                     </div>
@@ -206,17 +206,17 @@ export default function SystemAdminAnalytics() {
                         <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl p-6">
                             <h3 className="text-xl font-bold text-white mb-4">Software & SaaS</h3>
                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                                <Link href="/software" className="rounded-xl p-4 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                                    <p className="text-xs text-slate-400 uppercase tracking-wider">Active licenses</p>
+                                <Link href="/software" className="rounded-xl p-4 bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200 hover:bg-white/10 transition-colors">
+                                    <p className="text-xs text-slate-400 light:text-slate-600 uppercase tracking-wider">Active licenses</p>
                                     <p className="text-xl font-bold text-white mt-1">{saasStats.total_licenses}</p>
                                 </Link>
-                                <Link href="/software" className="rounded-xl p-4 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                                    <p className="text-xs text-slate-400 uppercase tracking-wider">SaaS spend</p>
+                                <Link href="/software" className="rounded-xl p-4 bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200 hover:bg-white/10 transition-colors">
+                                    <p className="text-xs text-slate-400 light:text-slate-600 uppercase tracking-wider">SaaS spend</p>
                                     <p className="text-xl font-bold text-white mt-1">₹{saasStats.monthly_spend.toLocaleString()}</p>
                                     <p className="text-[10px] text-slate-500">Monthly</p>
                                 </Link>
-                                <Link href="/software" className="rounded-xl p-4 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                                    <p className="text-xs text-slate-400 uppercase tracking-wider">Discovered via agent</p>
+                                <Link href="/software" className="rounded-xl p-4 bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200 hover:bg-white/10 transition-colors">
+                                    <p className="text-xs text-slate-400 light:text-slate-600 uppercase tracking-wider">Discovered via agent</p>
                                     <p className="text-xl font-bold text-white mt-1">{saasStats.discovered_count}</p>
                                 </Link>
                             </div>

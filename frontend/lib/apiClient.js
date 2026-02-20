@@ -36,6 +36,7 @@ class ApiClient {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
+            localStorage.removeItem('auth_session');
         }
     }
 
@@ -119,7 +120,7 @@ class ApiClient {
                         return this.request(endpoint, options, false);
                     } catch (refreshError) {
                         this.isRefreshing = false;
-                        // Redirect to login on refresh failure
+                        this.clearToken();
                         if (typeof window !== 'undefined') {
                             window.location.href = '/login';
                         }
@@ -151,12 +152,15 @@ class ApiClient {
             }
 
             if (!response.ok) {
-                throw new Error(data.detail || data.message || `API request failed: ${response.status}`);
+                const err = new Error(data.detail || data.message || `API request failed: ${response.status}`);
+                err.status = response.status;
+                throw err;
             }
 
             return data;
         } catch (error) {
-            console.error('API Error:', error);
+            const suppressLog = options.suppressLogForStatuses && error.status != null && options.suppressLogForStatuses.includes(error.status);
+            if (!suppressLog) console.error('API Error:', error);
             throw error;
         }
     }
@@ -253,6 +257,36 @@ class ApiClient {
 
     async getCurrentUser() {
         return this.request('/auth/me');
+    }
+
+    // Setup wizard (optional: 404 if backend has no setup route — treat as completed, don't log)
+    async getSetupStatus() {
+        try {
+            return await this.request('/setup/status', { suppressLogForStatuses: [404] });
+        } catch (err) {
+            if (err?.status === 404) return { setup_completed: true };
+            throw err;
+        }
+    }
+
+    async completeSetup(payload) {
+        return this.request('/setup/complete', {
+            method: 'POST',
+            body: payload,
+        });
+    }
+
+    async updateMyPlan(plan) {
+        return this.patch('/auth/me/plan', { plan });
+    }
+
+    // AI Assistant
+    async getAIUsage() {
+        return this.request('/ai/usage');
+    }
+
+    async postAIChat(message) {
+        return this.post('/ai/chat', { message });
     }
 
     // Assets
@@ -638,6 +672,16 @@ class ApiClient {
         });
     }
 
+    /**
+     * Get user counts by role (Admin only).
+     * @param {Object} params - Optional { status: 'ACTIVE' } to count only active users.
+     * @returns {Promise<Record<string, number>>} e.g. { FINANCE: 2, PROCUREMENT: 3, END_USER: 50 }
+     */
+    async getRoleCounts(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.request(`/users/role-counts${queryString ? `?${queryString}` : ''}`);
+    }
+
     // Exits
     async getExitRequests(params = {}) {
         const queryString = new URLSearchParams(params).toString();
@@ -764,6 +808,10 @@ class ApiClient {
         return this.request(`/financials/depreciation?method=${method}&useful_life_years=${usefulLifeYears}`);
     }
 
+    async getProcurementSummary(months = 6) {
+        return this.request(`/financials/procurement-summary?months=${months}`, { suppressLogForStatuses: [404] });
+    }
+
     // Renewals
     async getAssetRenewals(daysAhead = 90, expiryType = null) {
         let url = `/assets/renewals?days_ahead=${daysAhead}`;
@@ -887,6 +935,52 @@ class ApiClient {
 
     async getAuditStats() {
         return this.request('/audit/stats');
+    }
+
+    // Port Policies
+    async getPortPolicies(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        const url = query ? `/port-policies?${query}` : '/port-policies';
+        return this.request(url);
+    }
+
+    async getPortPolicy(id) {
+        return this.request(`/port-policies/${id}`);
+    }
+
+    async createPortPolicy(data) {
+        return this.request('/port-policies', {
+            method: 'POST',
+            body: data,
+        });
+    }
+
+    async updatePortPolicy(id, data) {
+        return this.request(`/port-policies/${id}`, {
+            method: 'PUT',
+            body: data,
+        });
+    }
+
+    async deletePortPolicy(id) {
+        return this.request(`/port-policies/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async assignPortPolicyTargets(policyId, targets) {
+        return this.request(`/port-policies/${policyId}/targets`, {
+            method: 'POST',
+            body: targets,
+        });
+    }
+
+    async getPortPolicyEnforcement(policyId) {
+        return this.request(`/port-policies/${policyId}/enforcement`);
+    }
+
+    async getAgentPortPolicyState(agentId) {
+        return this.request(`/agents/${agentId}/port-policies/state`);
     }
 }
 

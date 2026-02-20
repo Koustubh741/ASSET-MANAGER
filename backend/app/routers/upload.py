@@ -113,7 +113,7 @@ async def upload_po(
     Step 2: PO PDF upload (Asynchronous).
     """
     # Verify user role for procurement
-    if current_user.role not in ["PROCUREMENT_FINANCE", "PROCUREMENT", "FINANCE", "ADMIN"]:
+    if current_user.role not in ["PROCUREMENT", "FINANCE", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only PDF files are allowed for POs")
@@ -141,7 +141,7 @@ async def upload_invoice(
     Step 5: Invoice / Purchase Confirmation Upload (Asynchronous).
     """
     # Verify user role for procurement
-    if current_user.role not in ["PROCUREMENT_FINANCE", "PROCUREMENT", "FINANCE", "ADMIN"]:
+    if current_user.role not in ["PROCUREMENT", "FINANCE", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     if not file.filename.endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed for Invoices")
@@ -170,7 +170,7 @@ async def get_po_details(
         return None
         
     # Security Root Fix: Authorization check
-    if current_user.role not in ["FINANCE", "PROCUREMENT", "PROCUREMENT_FINANCE", "ADMIN"]:
+    if current_user.role not in ["FINANCE", "PROCUREMENT", "ADMIN"]:
         # Verify if current user is the requester of the associated asset request
         req_result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
         asset_request = req_result.scalars().first()
@@ -189,7 +189,7 @@ async def update_po_details(
     """
     Update Purchase Order metadata (Manual correction).
     """
-    if current_user.role not in ["FINANCE", "PROCUREMENT", "PROCUREMENT_FINANCE", "ADMIN"]:
+    if current_user.role not in ["FINANCE", "PROCUREMENT", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
         
     result = await db.execute(select(PurchaseOrder).filter(PurchaseOrder.id == po_id))

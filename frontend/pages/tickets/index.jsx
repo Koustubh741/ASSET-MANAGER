@@ -66,12 +66,12 @@ export default function TicketsDashboard() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                        <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 light:hover:bg-slate-100 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                             <ArrowLeft size={24} />
                         </Link>
                         <div>
                             <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">Help Desk & Tickets</h1>
-                            <p className="text-slate-400 mt-1">Manage support requests and issues</p>
+                            <p className="text-slate-400 light:text-slate-600 mt-1">Manage support requests and issues</p>
                         </div>
                     </div>
                     <Link href="/tickets/new" className="btn btn-primary bg-rose-600 hover:bg-rose-500 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-bold shadow-lg shadow-rose-500/20">
@@ -81,7 +81,7 @@ export default function TicketsDashboard() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Link href="/tickets/all?status=Open" className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-rose-500/30 hover:bg-white/10 transition-all cursor-pointer">
+                    <Link href="/tickets/all?status=Open" className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 light:border-slate-200 hover:border-rose-500/30 hover:bg-white/10 transition-all cursor-pointer">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400">
                                 <AlertCircle size={24} />
@@ -92,18 +92,18 @@ export default function TicketsDashboard() {
                             </div>
                         </div>
                     </Link>
-                    <Link href="/tickets/all?status=Pending" className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-orange-500/30 hover:bg-white/10 transition-all cursor-pointer">
+                    <Link href="/tickets/all?status=Pending" className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 light:border-slate-200 hover:border-orange-500/30 hover:bg-white/10 light:hover:bg-slate-100 transition-all cursor-pointer">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-orange-500/10 text-orange-400">
                                 <Clock size={24} />
                             </div>
                             <div>
                                 <div className="text-2xl font-bold">{stats.pending}</div>
-                                <div className="text-sm text-slate-400">Pending Actions</div>
+                                <div className="text-sm text-slate-400 light:text-slate-600">Pending Actions</div>
                             </div>
                         </div>
                     </Link>
-                    <Link href="/tickets/all?status=Closed" className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-500/30 hover:bg-white/10 transition-all cursor-pointer">
+                    <Link href="/tickets/all?status=Closed" className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 light:border-slate-200 hover:border-emerald-500/30 hover:bg-white/10 light:hover:bg-slate-100 transition-all cursor-pointer">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
                                 <CheckCircle size={24} />
@@ -119,7 +119,7 @@ export default function TicketsDashboard() {
                 {/* Recent Tickets Section */}
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* List */}
-                    <div className="flex-1 glass-panel rounded-2xl bg-slate-900 border border-white/10 overflow-hidden">
+                    <div className="flex-1 glass-panel rounded-2xl bg-slate-900 light:bg-white border border-white/10 light:border-slate-200 light:border-slate-200 overflow-hidden">
                         <div className="p-6 border-b border-white/10 flex justify-between items-center">
                             <h3 className="font-semibold text-lg flex items-center gap-2">
                                 <Ticket size={20} className="text-slate-500" /> Recent Activity
@@ -128,11 +128,11 @@ export default function TicketsDashboard() {
                         </div>
                         <div className="divide-y divide-white/5">
                             {recentTickets.map(ticket => (
-                                <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block p-4 hover:bg-white/5 transition-colors group">
+                                <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block p-4 hover:bg-white/5 light:hover:bg-slate-50 transition-colors group">
                                     <div className="flex justify-between items-start">
                                         <div>
                                             <div className="font-medium text-slate-200 group-hover:text-rose-400 transition-colors">{ticket.subject}</div>
-                                            <div className="text-sm text-slate-400 mt-1 flex items-center gap-2">
+                                            <div className="text-sm text-slate-400 light:text-slate-600 mt-1 flex items-center gap-2">
                                                 <span className="font-mono text-xs opacity-70">{ticket.id}</span>
                                                 <span>•</span>
                                                 <span className="flex items-center gap-1"><Clock size={12} /> {ticket.created}</span>
@@ -154,9 +154,9 @@ export default function TicketsDashboard() {
 
                     {/* Quick Actions / Knowledge Base Mock */}
                     <div className="w-full lg:w-80 space-y-6">
-                        <div className="p-6 rounded-2xl bg-gradient-to-br from-rose-900/20 to-purple-900/20 border border-white/10">
+                        <div className="p-6 rounded-2xl bg-gradient-to-br from-rose-900/20 to-purple-900/20 border border-white/10 light:border-slate-200">
                             <h3 className="font-bold text-lg mb-2">Need Help?</h3>
-                            <p className="text-sm text-slate-400 mb-4">Check the knowledge base for common asset issues before raising a ticket.</p>
+                            <p className="text-sm text-slate-400 light:text-slate-600 mb-4">Check the knowledge base for common asset issues before raising a ticket.</p>
                             <button
                                 onClick={() => setIsKBSearchOpen(true)}
                                 className="w-full py-2 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition-colors"
@@ -172,7 +172,7 @@ export default function TicketsDashboard() {
             {
                 isKBSearchOpen && (
                     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-2xl relative">
+                        <div className="w-full max-w-lg bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl p-6 shadow-2xl relative">
                             <button
                                 onClick={() => setIsKBSearchOpen(false)}
                                 className="absolute top-4 right-4 text-slate-400 hover:text-white"
@@ -188,7 +188,7 @@ export default function TicketsDashboard() {
                             <input
                                 type="text"
                                 placeholder="Search help articles..."
-                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                                className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-xl px-4 py-3 mb-4 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
                                 value={kbQuery}
                                 onChange={(e) => setKbQuery(e.target.value)}
                                 autoFocus

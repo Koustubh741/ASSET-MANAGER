@@ -17,13 +17,13 @@ export default function DashboardSection({ title, children, defaultOpen = true, 
             <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="w-full p-4 border-b border-white/5 bg-white/5 flex items-center justify-between text-left hover:bg-white/[0.07] transition-colors"
+                className="w-full p-4 border-b border-white/5 bg-white/5 light:border-slate-200 light:bg-slate-50 flex items-center justify-between text-left hover:bg-white/[0.07] light:hover:bg-slate-100 transition-colors"
             >
                 <div className="flex items-center gap-2">
-                    {open ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
-                    <span className="font-bold text-white">{title}</span>
+                    {open ? <ChevronDown size={18} className="text-slate-400 light:text-slate-600" /> : <ChevronRight size={18} className="text-slate-400 light:text-slate-600" />}
+                    <span className="font-bold text-white light:text-slate-800">{title}</span>
                     {badge != null && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 light:bg-blue-100 light:text-blue-700 light:border-blue-200">
                             {badge}
                         </span>
                     )}

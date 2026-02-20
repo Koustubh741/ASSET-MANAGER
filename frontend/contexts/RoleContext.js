@@ -5,10 +5,27 @@ const RoleContext = createContext();
 export const ROLES = [
     { label: 'System Admin', slug: 'ADMIN', dept: 'IT Dept' },
     { label: 'Asset & Inventory Manager', slug: 'ASSET_MANAGER', dept: 'Asset Mgmt' },
-    { label: 'Procurement & Finance', slug: 'FINANCE', dept: 'Finance' },
+    { label: 'Procurement Manager', slug: 'PROCUREMENT', dept: 'Procurement' },
+    { label: 'Finance', slug: 'FINANCE', dept: 'Finance' },
     { label: 'IT Management', slug: 'IT_MANAGEMENT', dept: 'IT Dept' },
     { label: 'End User', slug: 'END_USER', dept: 'Employee' },
 ];
+
+/** Map backend role strings to frontend role slug so Finance users always get Finance portal, not Procurement. */
+function normalizeBackendRole(backendRole) {
+    if (backendRole == null || backendRole === '') return null;
+    const r = String(backendRole).trim().toUpperCase().replace(/\s+/g, '_');
+    // Finance-related: send to Finance portal
+    if (r === 'FINANCE' || r === 'FINANCE_MANAGER' || r === 'PROCUREMENT_FINANCE') return 'FINANCE';
+    // Procurement-only
+    if (r === 'PROCUREMENT') return 'PROCUREMENT';
+    // Match common backend slugs
+    if (['ADMIN', 'SYSTEM_ADMIN'].includes(r)) return 'ADMIN';
+    if (['ASSET_MANAGER', 'ASSET_INVENTORY_MANAGER', 'INVENTORY_MANAGER'].includes(r)) return 'ASSET_MANAGER';
+    if (r === 'IT_MANAGEMENT') return 'IT_MANAGEMENT';
+    if (r === 'END_USER') return 'END_USER';
+    return null;
+}
 
 export function RoleProvider({ children }) {
     const [currentRole, setCurrentRole] = useState(ROLES[0]);
@@ -37,15 +54,18 @@ export function RoleProvider({ children }) {
                             setUser({
                                 id: parsed.id,
                                 name: parsed.userName,
+                                email: parsed.email,
                                 location: parsed.location,
                                 position: parsed.position || 'EMPLOYEE',
                                 domain: parsed.domain,
-                                department: parsed.department, // NEW: Restore department
-                                company: parsed.company, // NEW: Restore company
-                                createdAt: parsed.createdAt // NEW: Restore DOJ
+                                department: parsed.department,
+                                company: parsed.company,
+                                createdAt: parsed.createdAt,
+                                plan: parsed.plan || 'STARTER'
                             });
 
-                            const savedRole = ROLES.find(r => r.slug === parsed.role || r.label === parsed.role) || ROLES[0];
+                            const normalizedSlug = normalizeBackendRole(parsed.role);
+                            const savedRole = ROLES.find(r => r.slug === (normalizedSlug || parsed.role) || r.label === parsed.role) || ROLES[0];
                             setCurrentRole(savedRole);
                             setIsAuthenticated(true);
                             console.log('RoleContext: Auth restored successfully for', parsed.userName);
@@ -71,13 +91,15 @@ export function RoleProvider({ children }) {
                 isAuthenticated: true,
                 id: user.id,
                 userName: user.name,
+                email: user.email,
                 location: user.location,
-                position: user.position, // NEW: Persist position
+                position: user.position,
                 domain: user.domain,
-                department: user.department, // NEW: Persist department
-                company: user.company, // NEW: Persist company
-                createdAt: user.createdAt, // NEW: Persist DOJ
-                role: currentRole.slug // Persist slug for better matching on reload
+                department: user.department,
+                company: user.company,
+                createdAt: user.createdAt,
+                plan: user.plan || 'STARTER',
+                role: currentRole.slug
             };
             localStorage.setItem('auth_session', JSON.stringify(session));
         }
@@ -89,27 +111,31 @@ export function RoleProvider({ children }) {
         setUser({
             id: userData.id,
             name: userData.userName,
+            email: userData.email,
             location: userData.location,
             position: userData.position || 'EMPLOYEE',
             domain: userData.domain,
-            department: userData.department, // NEW: Set department
-            company: userData.company, // NEW: Set company
-            createdAt: userData.createdAt // NEW: Set DOJ
+            department: userData.department,
+            company: userData.company,
+            createdAt: userData.createdAt
         });
-        const roleObj = ROLES.find(r => r.slug === userData.role || r.label === userData.role) || ROLES[0];
+        const normalizedSlug = normalizeBackendRole(userData.role);
+        const roleObj = ROLES.find(r => r.slug === (normalizedSlug || userData.role) || r.label === userData.role) || ROLES[0];
         setCurrentRole(roleObj);
 
         localStorage.setItem('auth_session', JSON.stringify({
             isAuthenticated: true,
             id: userData.id,
             userName: userData.userName,
+            email: userData.email,
             role: roleObj.slug,
             location: userData.location,
             position: userData.position,
             domain: userData.domain,
-            department: userData.department, // NEW: Save department
-            company: userData.company, // NEW: Save company
-            createdAt: userData.createdAt // NEW: Save DOJ
+            department: userData.department,
+            company: userData.company,
+            createdAt: userData.createdAt,
+            plan: userData.plan || 'STARTER'
         }));
     };
 
@@ -120,8 +146,20 @@ export function RoleProvider({ children }) {
         localStorage.removeItem('auth_session');
     };
 
+    const updatePlan = (plan) => {
+        setUser(prev => prev ? { ...prev, plan } : null);
+        const session = localStorage.getItem('auth_session');
+        if (session) {
+            try {
+                const parsed = JSON.parse(session);
+                parsed.plan = plan;
+                localStorage.setItem('auth_session', JSON.stringify(parsed));
+            } catch (e) {}
+        }
+    };
+
     return (
-        <RoleContext.Provider value={{ currentRole, setCurrentRole, ROLES, isAuthenticated, user, login, logout, isLoading }}>
+        <RoleContext.Provider value={{ currentRole, setCurrentRole, ROLES, isAuthenticated, user, login, logout, updatePlan, isLoading }}>
             {children}
         </RoleContext.Provider>
     );

@@ -43,14 +43,17 @@ async def create_user(db: AsyncSession, user: UserCreate):
     count = result.scalar()
     
     is_first_user = count == 0
-    
+    # Root fix: no combined PROCUREMENT_FINANCE role; normalize to FINANCE for legacy clients
+    raw_role = (user.role or "END_USER").strip().upper()
+    role_value = "SYSTEM_ADMIN" if is_first_user else ("FINANCE" if raw_role == "PROCUREMENT_FINANCE" else (user.role or "END_USER"))
+
     db_user = User(
         id=uuid.uuid4(),
         email=user.email,
         full_name=user.full_name,
         password_hash=hashed_password,
-        role="SYSTEM_ADMIN" if is_first_user else (user.role or "END_USER"),
-        status="ACTIVE" if is_first_user else (user.status if user.status else "PENDING"),
+        role=role_value,
+        status="ACTIVE" if is_first_user and (user.role or "").upper() in ("ADMIN", "SYSTEM_ADMIN") else "PENDING",
         position=user.position,
         domain=user.domain,
         department=user.department,
@@ -77,10 +80,12 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
 async def activate_user(db: AsyncSession, user_id: UUID) -> User:
     """
     Activate a user by setting their status to ACTIVE.
-    Returns the updated user or None if not found.
+    Only PENDING accounts can be activated. Returns the updated user or None if not found.
     """
     user = await get_user(db, user_id)
     if not user:
+        return None
+    if user.status != "PENDING":
         return None
     user.status = "ACTIVE"
     await db.commit()
@@ -103,6 +108,18 @@ async def get_users(db: AsyncSession, status: str = None, department: str = None
         
     result = await db.execute(query)
     return result.scalars().all()
+
+
+async def get_role_counts(db: AsyncSession, status: str = None):
+    """
+    Return counts of users by role, optionally filtered by status (e.g. ACTIVE).
+    Returns dict like {"FINANCE": 2, "PROCUREMENT": 3, "END_USER": 50, ...}.
+    """
+    query = select(User.role, func.count(User.id)).group_by(User.role)
+    if status:
+        query = query.filter(User.status == status)
+    result = await db.execute(query)
+    return {row[0]: row[1] for row in result.all()}
 
 async def sync_sso_user(db: AsyncSession, sso_provider: str, sso_id: str, email: str, full_name: str):
     """

@@ -57,7 +57,7 @@ export default function InventoryManagerDashboard() {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-bold text-white">Stock Control</h1>
+                <h1 className="text-3xl font-bold text-white light:text-slate-800">Stock Control</h1>
                 <p className="text-slate-400">Inventory levels and replenishment alerts</p>
             </header>
 
@@ -72,18 +72,18 @@ export default function InventoryManagerDashboard() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="glass-card p-6 border border-white/5 hover:border-blue-500/30 transition-all">
+                <div className="glass-card p-6 border border-white/5 light:border-slate-200 light:border-slate-200 hover:border-blue-500/30 transition-all">
                     <div className="flex justify-between">
                         <div>
                             <p className="text-slate-400 text-xs uppercase font-bold tracking-wider">Total SKUs</p>
-                            <h3 className="text-3xl font-bold text-white mt-1">{totalSKUs}</h3>
+                            <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{totalSKUs}</h3>
                         </div>
                         <div className="p-3 bg-blue-500/10 rounded-xl">
                             <Archive size={20} className="text-blue-500" />
                         </div>
                     </div>
                 </div>
-                <div className="glass-card p-6 border border-white/5 hover:border-rose-500/30 transition-all">
+                <div className="glass-card p-6 border border-white/5 light:border-slate-200 light:border-slate-200 hover:border-rose-500/30 transition-all">
                     <div className="flex justify-between">
                         <div>
                             <p className="text-slate-400 text-xs uppercase font-bold tracking-wider">Critical Shortages</p>
@@ -94,7 +94,7 @@ export default function InventoryManagerDashboard() {
                         </div>
                     </div>
                 </div>
-                <div className="glass-card p-6 border border-white/5 hover:border-amber-500/30 transition-all">
+                <div className="glass-card p-6 border border-white/5 light:border-slate-200 light:border-slate-200 hover:border-amber-500/30 transition-all">
                     <div className="flex justify-between">
                         <div>
                             <p className="text-slate-400 text-xs uppercase font-bold tracking-wider">To Reorder</p>
@@ -110,7 +110,7 @@ export default function InventoryManagerDashboard() {
             {/* FULFILLMENT QUEUE (NEW) */}
             <div className="glass-panel p-6">
                 <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-white light:text-slate-800 flex items-center gap-2">
                         <Package className="text-emerald-400" />
                         Inventory Stock Check
                         <span className="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-500/20">{awaitingStockCheck.length}</span>
@@ -118,7 +118,7 @@ export default function InventoryManagerDashboard() {
                 </div>
 
                 {awaitingStockCheck.length === 0 ? (
-                    <div className="p-8 text-center bg-white/5 rounded-xl border border-dashed border-white/10">
+                    <div className="p-8 text-center bg-white/5 light:bg-slate-50 rounded-xl border border-dashed border-white/10">
                         <p className="text-slate-400 font-medium">No requests awaiting stock check</p>
                         <p className="text-sm text-slate-500 mt-1">IT-approved requests will be routed here for inventory verification.</p>
                     </div>
@@ -154,7 +154,7 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedRequest(req)}
-                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 p-2 rounded-lg transition-all border border-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
                                                     title="View Details"
                                                     aria-label="View details"
                                                 >
@@ -189,7 +189,7 @@ export default function InventoryManagerDashboard() {
             {awaitingAllocation.length > 0 && (
                 <div className="glass-panel p-6">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white light:text-slate-800 flex items-center gap-2">
                             <CheckCircle className="text-green-400" />
                             Delivered Items - Final Allocation
                             <span className="bg-green-500/10 text-green-400 text-xs px-2 py-0.5 rounded-full border border-green-500/20">{awaitingAllocation.length}</span>
@@ -226,7 +226,7 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedRequest(req)}
-                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 p-2 rounded-lg transition-all border border-white/10 min-h-[44px] min-w-[44px] flex items-center justify-center"
                                                     title="View Details"
                                                     aria-label="View details"
                                                 >
@@ -265,7 +265,7 @@ export default function InventoryManagerDashboard() {
             {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'BYOD_PROCESSED').length > 0 && (
                 <div className="glass-panel p-6">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white light:text-slate-800 flex items-center gap-2">
                             <Archive className="text-orange-400" />
                             Asset Reclamation (Employee Exit)
                             <span className="bg-orange-500/10 text-orange-400 text-xs px-2 py-0.5 rounded-full border border-orange-500/20">
@@ -308,7 +308,7 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedExitRequest(req)}
-                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white p-2 rounded-lg transition-all border border-white/10 flex items-center gap-1.5"
+                                                    className="bg-white/5 hover:bg-white/10 text-slate-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 p-2 rounded-lg transition-all border border-white/10 flex items-center gap-1.5"
                                                     title="View Details"
                                                 >
                                                     <Eye size={16} />
@@ -336,7 +336,7 @@ export default function InventoryManagerDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="glass-panel p-6 lg:col-span-2">
-                    <h3 className="text-lg font-bold text-white mb-6">Stock Levels by Category</h3>
+                    <h3 className="text-lg font-bold text-white light:text-slate-800 mb-6">Stock Levels by Category</h3>
                     <div className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={displayStockData}>
@@ -353,7 +353,7 @@ export default function InventoryManagerDashboard() {
                 </div>
 
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-white mb-4">Stock Alerts</h3>
+                    <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Stock Alerts</h3>
                     <div className="space-y-4">
                         {displayStockData.filter(i => i.stock < i.min).map(item => (
                             <div key={item.name} className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl">
@@ -373,7 +373,7 @@ export default function InventoryManagerDashboard() {
                                 </button>
                             </div>
                         ))}
-                        <div className="p-4 bg-white/5 rounded-xl text-center cursor-pointer hover:bg-white/10">
+                        <div className="p-4 bg-white/5 light:bg-slate-50 rounded-xl text-center cursor-pointer hover:bg-white/10">
                             <span className="text-sm text-slate-400">+ View Reconciliation Report</span>
                         </div>
                     </div>
@@ -384,14 +384,14 @@ export default function InventoryManagerDashboard() {
             {selectedExitRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <div className="p-6 border-b border-white/5 light:border-slate-200 light:border-slate-200 flex justify-between items-center bg-white/5">
+                            <h3 className="text-lg font-bold text-white light:text-slate-800 flex items-center gap-2">
                                 <Eye className="text-orange-400" size={20} />
                                 Exit Request Details
                             </h3>
                             <button
                                 onClick={() => setSelectedExitRequest(null)}
-                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -429,9 +429,9 @@ export default function InventoryManagerDashboard() {
             {selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/5">
+                        <div className="p-6 border-b border-white/5 light:border-slate-200 light:border-slate-200 flex justify-between items-center bg-white/5">
                             <div>
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <h3 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                     <Eye className="text-blue-400" size={20} />
                                     Request Details
                                 </h3>
@@ -439,7 +439,7 @@ export default function InventoryManagerDashboard() {
                             </div>
                             <button
                                 onClick={() => setSelectedRequest(null)}
-                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -453,7 +453,7 @@ export default function InventoryManagerDashboard() {
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs uppercase tracking-wider font-bold text-slate-500">Urgency</p>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedRequest.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300'}`}>
+                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${selectedRequest.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300 light:text-slate-700'}`}>
                                         {selectedRequest.urgency || 'Standard'}
                                     </span>
                                 </div>
@@ -469,7 +469,7 @@ export default function InventoryManagerDashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-white/5 rounded-xl border border-white/5">
+                            <div className="p-4 bg-white/5 light:bg-slate-50 rounded-xl border border-white/5 light:border-slate-200 light:border-slate-200">
                                 <p className="text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Business Justification</p>
                                 <p className="text-slate-300 text-sm italic leading-relaxed max-w-prose">
                                     "{selectedRequest.justification || 'No justification provided.'}"
@@ -487,7 +487,7 @@ export default function InventoryManagerDashboard() {
                             )}
                         </div>
 
-                        <div className="p-6 bg-slate-950/50 border-t border-white/5 flex justify-end gap-3">
+                        <div className="p-6 bg-slate-950/50 border-t border-white/5 light:border-slate-200 light:border-slate-200 flex justify-end gap-3">
                             <button
                                 onClick={() => setSelectedRequest(null)}
                                 className="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl transition-all"
@@ -503,9 +503,9 @@ export default function InventoryManagerDashboard() {
             {selectedForQC && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-blue-500/10">
+                        <div className="p-6 border-b border-white/5 light:border-slate-200 light:border-slate-200 flex justify-between items-center bg-blue-500/10">
                             <div>
-                                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                                <h3 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                     <ShieldCheck className="text-blue-400" size={20} />
                                     Perform Quality Control
                                 </h3>
@@ -513,7 +513,7 @@ export default function InventoryManagerDashboard() {
                             </div>
                             <button
                                 onClick={() => setSelectedForQC(null)}
-                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -533,18 +533,18 @@ export default function InventoryManagerDashboard() {
                                 <div>
                                     <label className="block text-xs uppercase tracking-wider font-bold text-slate-500 mb-2">Inspection Outcome</label>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <label className="relative flex items-center p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-emerald-500/50 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/10 transition-all group">
+                                        <label className="relative flex items-center p-4 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl cursor-pointer hover:border-emerald-500/50 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/10 transition-all group">
                                             <input type="radio" name="qc_status" value="PASSED" defaultChecked className="hidden" />
                                             <div className="flex items-center gap-3">
                                                 <div className="w-4 h-4 rounded-full border border-white/20 group-has-[:checked]:border-emerald-500 group-has-[:checked]:border-4 transition-all" />
-                                                <span className="font-bold text-white">PASSED</span>
+                                                <span className="font-bold text-white light:text-slate-800">PASSED</span>
                                             </div>
                                         </label>
-                                        <label className="relative flex items-center p-4 bg-white/5 border border-white/10 rounded-xl cursor-pointer hover:border-rose-500/50 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/10 transition-all group">
+                                        <label className="relative flex items-center p-4 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl cursor-pointer hover:border-rose-500/50 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/10 transition-all group">
                                             <input type="radio" name="qc_status" value="FAILED" className="hidden" />
                                             <div className="flex items-center gap-3">
                                                 <div className="w-4 h-4 rounded-full border border-white/20 group-has-[:checked]:border-rose-500 group-has-[:checked]:border-4 transition-all" />
-                                                <span className="font-bold text-white">FAILED</span>
+                                                <span className="font-bold text-white light:text-slate-800">FAILED</span>
                                             </div>
                                         </label>
                                     </div>
@@ -557,7 +557,7 @@ export default function InventoryManagerDashboard() {
                                         required
                                         rows={4}
                                         placeholder="Note any physical damage, hardware variations, or setup steps performed..."
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all resize-none"
+                                        className="w-full bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl p-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500/50 transition-all resize-none"
                                     ></textarea>
                                 </div>
                             </div>
@@ -567,7 +567,7 @@ export default function InventoryManagerDashboard() {
                                 <p>Checking "PASSED" will move this asset to "User Acceptance Pending". Checking "FAILED" will require further procurement action.</p>
                             </div>
 
-                            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-white/5 light:border-slate-200 light:border-slate-200">
                                 <button
                                     type="button"
                                     onClick={() => setSelectedForQC(null)}

@@ -111,7 +111,7 @@ export default function SoftwareManagement() {
                     <p className="text-slate-400 text-sm">Track enterprise licenses and real-time application discovery.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/5 mr-2">
+                    <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/5 light:border-slate-200 mr-2">
                         <button
                             onClick={() => setActiveTab('managed')}
                             className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'managed' ? 'bg-emerald-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
@@ -156,7 +156,7 @@ export default function SoftwareManagement() {
                     },
                     { label: 'Detected Installs', value: discoveredSoftware.reduce((a, b) => a + b.install_count, 0), icon: ArrowUpRight, color: 'blue' },
                 ].map((stat, i) => (
-                    <div key={i} className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 border border-white/5 hover:border-white/10 transition-colors group">
+                    <div key={i} className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 border border-white/5 light:border-slate-200 hover:border-white/10 transition-colors group">
                         <div className="flex items-start justify-between">
                             <div className={`p-2 rounded-lg bg-${stat.color}-500/10 text-${stat.color}-400 group-hover:scale-110 transition-transform`}>
                                 <stat.icon size={20} />
@@ -165,15 +165,15 @@ export default function SoftwareManagement() {
                         </div>
                         <div className="mt-4">
                             <p className="text-2xl font-bold text-white">{stat.value}</p>
-                            <p className="text-xs text-slate-400 mt-1">{stat.label}</p>
+                            <p className="text-xs text-slate-400 light:text-slate-600 mt-1">{stat.label}</p>
                         </div>
                     </div>
                 ))}
             </div>
 
             {/* Table Section */}
-            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 overflow-hidden border border-white/5">
-                <div className="p-6 border-b border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 overflow-hidden border border-white/5 light:border-slate-200">
+                <div className="p-6 border-b border-white/5 light:border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="relative flex-grow max-w-md">
                         <Search size={18} className="absolute left-3 top-2.5 text-slate-500" />
                         <input
@@ -181,7 +181,7 @@ export default function SoftwareManagement() {
                             placeholder={activeTab === 'managed' ? 'Search licenses...' : 'Search discovered apps...'}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-slate-900/50 border border-white/10 light:border-slate-200 rounded-xl py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors"
                         />
                     </div>
                 </div>
@@ -191,30 +191,30 @@ export default function SoftwareManagement() {
                         <thead className="bg-white/[0.02] text-left">
                             {activeTab === 'managed' ? (
                                 <tr>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Software Name</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Vendor</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Seats</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Expiry</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Software Name</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Vendor</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Seats</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Expiry</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Action</th>
                                 </tr>
                             ) : activeTab === 'reconciliation' ? (
                                 <tr>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Software</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Usage (Seats vs Installs)</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Utilization</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Compliance</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Impact</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Resolve</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Software</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Usage (Seats vs Installs)</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Utilization</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Compliance</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Impact</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Resolve</th>
                                 </tr>
                             ) : (
                                 <tr>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Application</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Publisher</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Version</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Installs</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Last Detected</th>
-                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Application</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Publisher</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Version</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Installs</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Last Detected</th>
+                                    <th className="px-6 py-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Action</th>
                                 </tr>
                             )}
                         </thead>
@@ -247,7 +247,7 @@ export default function SoftwareManagement() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-400">{license.vendor}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-400 font-mono">{license.seat_count}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-400 light:text-slate-600 font-mono">{license.seat_count}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusColor(license.status)}`}>
                                                 {license.status}
@@ -260,7 +260,7 @@ export default function SoftwareManagement() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white transition-colors">
+                                            <button className="p-2 hover:bg-white/5 rounded-lg text-slate-500 hover:text-white light:hover:text-slate-900 transition-colors">
                                                 <MoreVertical size={18} />
                                             </button>
                                         </td>
@@ -332,7 +332,7 @@ export default function SoftwareManagement() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-slate-400">{soft.vendor}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-400 font-mono">{soft.version}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-400 light:text-slate-600 font-mono">{soft.version}</td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm font-bold text-violet-400">{soft.install_count}</span>
@@ -345,7 +345,7 @@ export default function SoftwareManagement() {
                                         <td className="px-6 py-4 text-right">
                                             <button
                                                 onClick={() => setMatchModal({ isOpen: true, softwareName: soft.name })}
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-slate-300 transition-colors"
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-slate-300 light:text-slate-700 transition-colors"
                                             >
                                                 <ShieldCheck size={14} className="text-violet-400" />
                                                 Verify
@@ -381,8 +381,8 @@ export default function SoftwareManagement() {
             {/* Match to License Modal */}
             {matchModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
-                    <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                    <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-white/5 light:border-slate-200 flex items-center justify-between">
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                 <ShieldCheck className="text-violet-400" />
                                 Match to License
@@ -407,7 +407,7 @@ export default function SoftwareManagement() {
                                         key={license.id}
                                         onClick={() => handleMatch(license.id)}
                                         disabled={isMatching}
-                                        className="w-full p-4 rounded-xl bg-white/5 border border-white/5 hover:border-violet-500/50 hover:bg-white/[0.08] text-left transition-all group"
+                                        className="w-full p-4 rounded-xl bg-white/5 border border-white/5 light:border-slate-200 hover:border-violet-500/50 hover:bg-white/[0.08] text-left transition-all group"
                                     >
                                         <div className="flex justify-between items-center">
                                             <div>

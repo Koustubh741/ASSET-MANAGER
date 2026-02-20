@@ -1,12 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-import { Plus, Search, Filter } from 'lucide-react'
+import { Plus, Search, Filter, RefreshCw } from 'lucide-react'
 import { useAssetContext } from '@/contexts/AssetContext'
 import AssetTable from '@/components/AssetTable'
 
 export default function AssetsPage() {
-    const { assets: contextAssets } = useAssetContext()
+    const { assets: contextAssets, refreshData } = useAssetContext()
+    const [isRefreshing, setIsRefreshing] = useState(false)
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true)
+        try {
+            await refreshData()
+        } finally {
+            setIsRefreshing(false)
+        }
+    }
     const [assets, setAssets] = useState([])
     const [filteredAssets, setFilteredAssets] = useState([])
     const [search, setSearch] = useState('')
@@ -15,13 +25,13 @@ export default function AssetsPage() {
     const [filterType, setFilterType] = useState('All')
 
     // Derived unique types for filter dropdown
-    const uniqueTypes = ['All', ...new Set(assets.map(a => a.type).filter(Boolean))].sort()
+    const uniqueTypes = ['All', ...new Set((assets || []).map(a => a?.type).filter(Boolean))].sort()
 
 
     useEffect(() => {
         const processAssets = () => {
-            // Use assets from Context (API or Mock)
-            let parsed = [...contextAssets];
+            // Use assets from Context (API or Mock); guard against undefined
+            let parsed = Array.isArray(contextAssets) ? [...contextAssets] : [];
 
             if (parsed.length === 0) {
                 setAssets([]);
@@ -104,12 +114,13 @@ export default function AssetsPage() {
                 });
             }
 
-            // 2. SEMANTIC VALIDATION
+            // 2. SEMANTIC VALIDATION (include Discovered from discovery agent)
             const validStatuses = ['active', 'in use', 'in stock', 'repair', 'maintenance', 'retired', 'available', 'discovered'];
             parsed = parsed.filter(a => {
-                if (!a.status) return false;
-                const s = a.status.toLowerCase();
-                return validStatuses.includes(s) || s === 'available'; // API uses 'available'
+                const raw = (a?.status != null ? String(a.status) : '').trim();
+                if (!raw) return false;
+                const s = raw.toLowerCase();
+                return validStatuses.includes(s);
             });
 
             setAssets(parsed);
@@ -134,7 +145,7 @@ export default function AssetsPage() {
     }, [router.isReady, router.query])
 
     useEffect(() => {
-        let result = [...assets] // Create copy to avoid mutating state
+        let result = Array.isArray(assets) ? [...assets] : []
         const { risk, sort } = router.query || {}
 
         if (search) {
@@ -202,13 +213,24 @@ export default function AssetsPage() {
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-3xl font-bold text-white tracking-tight">Asset Inventory</h2>
+                    <h2 className="text-3xl font-bold text-white light:text-slate-800 tracking-tight">Asset Inventory</h2>
                     <p className="text-slate-400 mt-1">Manage and track all hardware and software assets</p>
                 </div>
-                <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
-                    <Plus size={20} />
-                    <span>Add Asset</span>
-                </Link>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        title="Refresh inventory (picks up newly discovered assets)"
+                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
+                    >
+                        <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+                        <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+                    </button>
+                    <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
+                        <Plus size={20} />
+                        <span>Add Asset</span>
+                    </Link>
+                </div>
             </div>
 
             {/* Filters */}
@@ -266,7 +288,7 @@ export default function AssetsPage() {
                     </select>
 
                     {/* Results Count */}
-                    <div className="bg-slate-800/50 px-3 py-2 rounded-lg border border-white/5 text-xs text-slate-400 font-medium">
+                    <div className="bg-slate-800/50 px-3 py-2 rounded-lg border border-white/5 light:border-slate-200 text-xs text-slate-400 light:text-slate-600 font-medium">
                         Showing <span className="text-white">{filteredAssets.length}</span> assets
                     </div>
                 </div>

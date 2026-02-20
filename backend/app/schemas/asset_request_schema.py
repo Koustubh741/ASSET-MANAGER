@@ -44,7 +44,7 @@ class AssetRequestResponse(AssetRequestBase):
     # IT review tracking (for audit)
     it_reviewed_by: Optional[UUID] = None
     it_reviewed_at: Optional[datetime] = None
-    # Procurement & Finance tracking
+    # Procurement/Finance segment tracking (separate PROCUREMENT, FINANCE roles)
     procurement_finance_status: Optional[str] = None
     procurement_finance_reviewed_by: Optional[UUID] = None
     procurement_finance_reviewed_at: Optional[datetime] = None
@@ -91,12 +91,12 @@ class ByodRegisterRequest(BaseModel):
 
 
 class ProcurementApprovalRequest(BaseModel):
-    """Request body for procurement & finance approval (ID derived from JWT)"""
+    """Request body for Procurement approval (PO validation; ID derived from JWT)"""
     pass
 
 
 class ProcurementRejectionRequest(ProcurementApprovalRequest):
-    """Request body for procurement & finance rejection - requires reason"""
+    """Request body for Procurement or Finance rejection - requires reason"""
     reason: str
 
 

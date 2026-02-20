@@ -163,6 +163,48 @@ class NotificationService:
                 Model: {request.asset_model or 'N/A'}
                 """
             })
+            # Procurement rejected: also notify IT Management
+            if new_status == "PROCUREMENT_REJECTED" or new_status == "PO_REJECTED":
+                it_emails = await self._get_users_by_role("IT_MANAGEMENT")
+                for email in it_emails:
+                    notifications.append({
+                        "to": email,
+                        "subject": f"Procurement Rejected Request #{request_id}",
+                        "body": f"""
+                        Procurement has rejected asset request #{request_id}.
+                        
+                        Reason: {reason or 'No reason provided'}
+                        Reviewed by: {reviewer_name or 'System'}
+                        
+                        Asset Type: {request.asset_type}
+                        """
+                    })
+            # Finance rejected: also notify IT Management and Procurement
+            if new_status == "FINANCE_REJECTED":
+                it_emails = await self._get_users_by_role("IT_MANAGEMENT")
+                proc_emails = await self._get_users_by_role("PROCUREMENT")
+                for email in it_emails:
+                    notifications.append({
+                        "to": email,
+                        "subject": f"Budget Rejected - Request #{request_id}",
+                        "body": f"""
+                        Budget approval was rejected for asset request #{request_id}.
+                        
+                        Reason: {reason or 'No reason provided'}
+                        Reviewed by: {reviewer_name or 'System'}
+                        """
+                    })
+                for email in proc_emails:
+                    notifications.append({
+                        "to": email,
+                        "subject": f"Budget Rejected - Request #{request_id}",
+                        "body": f"""
+                        Budget approval was rejected for asset request #{request_id}.
+                        
+                        Reason: {reason or 'No reason provided'}
+                        Reviewed by: {reviewer_name or 'System'}
+                        """
+                    })
         
         elif new_status == "IT_APPROVED":
             # Notify requester and IT team
@@ -245,6 +287,28 @@ class NotificationService:
         for notif in notifications:
             await self._simulate_email(**notif)
         
+        return True
+
+    async def notify_qc_failed(self, request_id: UUID) -> bool:
+        """Notify PROCUREMENT and FINANCE when QC fails for a request."""
+        result = await self.db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+        request = result.scalars().first()
+        if not request:
+            return False
+        procurement_emails = await self._get_users_by_role("PROCUREMENT")
+        finance_emails = await self._get_users_by_role("FINANCE")
+        body = f"""
+        QC failed for asset request #{request_id}.
+        
+        Asset Type: {request.asset_type}
+        Model: {request.asset_model or 'N/A'}
+        
+        Please review and take action (e.g. return to vendor, reorder).
+        """
+        for email in procurement_emails:
+            await self._simulate_email(to=email, subject=f"QC Failed - Request #{request_id}", body=body)
+        for email in finance_emails:
+            await self._simulate_email(to=email, subject=f"QC Failed - Request #{request_id}", body=body)
         return True
 
 

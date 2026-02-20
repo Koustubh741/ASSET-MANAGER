@@ -24,7 +24,8 @@ from ..schemas.asset_request_schema import (
     MdmEnrollmentRequest,
     DeliveryConfirmationRequest,
 )
-from ..services import asset_request_service
+from ..services import asset_request_service, procurement_service
+from ..services.notification_service import send_notification
 from ..utils.auth_utils import get_current_user
 from ..schemas.user_schema import UserResponse
 from ..models.models import ByodDevice, Asset, AssetAssignment, PurchaseRequest, User, PurchaseOrder, AssetInventory
@@ -32,7 +33,7 @@ from ..services import asset_service
 from ..schemas.asset_schema import AssetCreate
 import uuid as _uuid
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, date
 
 router = APIRouter(
     prefix="/asset-requests",
@@ -207,9 +208,12 @@ async def reject_asset_request(
     if not (manager.department == requester.department or manager.domain == requester.domain):
         raise HTTPException(status_code=403, detail="Mismatch")
     
-    return await asset_request_service.update_asset_request_status_with_validation(
+    res = await asset_request_service.update_asset_request_status_with_validation(
         db, request_id, "MANAGER_REJECTED", current_user.role, current_user.id, current_user.full_name, reason=rejection.reason
     )
+    if res:
+        await send_notification(db, request_id, "status_change", old_status="SUBMITTED", new_status="MANAGER_REJECTED", reviewer_name=current_user.full_name, reason=rejection.reason)
+    return res
 
 # Backward compatibility aliases
 @router.post("/{id}/manager/approve-v2", response_model=AssetRequestResponse)
@@ -294,6 +298,7 @@ async def it_reject_request(
         )
         if not res:
             raise HTTPException(status_code=404, detail="Asset request not found")
+        await send_notification(db, request_id, "status_change", old_status="MANAGER_APPROVED", new_status="IT_REJECTED", reviewer_name=reviewer.full_name, reason=rejection.reason)
         return res
     except HTTPException:
         # Re-raise HTTPException as-is (don't wrap it)
@@ -376,11 +381,12 @@ async def fulfill_company_owned_request(
     return await asset_request_service._populate_requester_info(db, db_request)
 
 
-# ---------------- PROCUREMENT & FINANCE ----------------
+# ---------------- PROCUREMENT and FINANCE (separate roles) ----------------
 
-async def verify_procurement_finance(user_id: UUID, db: AsyncSession) -> User:
+async def verify_procurement_or_finance(user_id: UUID, db: AsyncSession) -> User:
+    """Allow only PROCUREMENT or FINANCE (no combined role)."""
     user = await asset_request_service.get_user_by_id_db(db, user_id)
-    if not user or user.role not in ["PROCUREMENT_FINANCE", "FINANCE"]:
+    if not user or user.role not in ["PROCUREMENT", "FINANCE"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     return user
 
@@ -392,10 +398,10 @@ async def procurement_approve_request(
     current_user = Depends(get_current_user)
 ):
     reviewer = current_user
-    if reviewer.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+    if reviewer.role not in ["PROCUREMENT", "ADMIN", "SYSTEM_ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     try:
-        res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", reviewer.id, reviewer.full_name)
+        res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", reviewer.id, reviewer.full_name, user_role="PROCUREMENT")
         if not res:
             raise HTTPException(status_code=404, detail="Asset request not found")
         return res
@@ -413,11 +419,12 @@ async def procurement_reject_request(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+    if current_user.role not in ["PROCUREMENT", "ADMIN", "SYSTEM_ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
-    res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", current_user.id, current_user.full_name, reason=rejection.reason)
+    res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", current_user.id, current_user.full_name, reason=rejection.reason, user_role="PROCUREMENT")
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
+    await send_notification(db, id, "status_change", old_status="PO_UPLOADED", new_status="PROCUREMENT_REJECTED", reviewer_name=current_user.full_name, reason=rejection.reason)
     return res
 
 @router.post("/{id}/finance/approve", response_model=AssetRequestResponse)
@@ -426,13 +433,24 @@ async def finance_approve_request(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+    if current_user.role not in ["FINANCE", "ADMIN", "SYSTEM_ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     try:
-        res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", current_user.id, current_user.full_name)
-        if not res:
+        from sqlalchemy import desc
+        from ..models.models import PurchaseOrder
+        db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
+        if not db_request:
             raise HTTPException(status_code=404, detail="Asset request not found")
-        return res
+        po_result = await db.execute(select(PurchaseOrder).filter(PurchaseOrder.asset_request_id == id).order_by(desc(PurchaseOrder.created_at)))
+        po = po_result.scalars().first()
+        if not po:
+            raise HTTPException(status_code=400, detail="No Purchase Order found for this request. Procurement must upload and validate PO first.")
+        await procurement_service.validate_finance_budget(db, po.id, current_user.id, "APPROVE")
+        await db.commit()
+        await db.refresh(db_request)
+        return await asset_request_service._populate_requester_info(db, db_request, user_role="FINANCE")
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         with open("d:/ASSET-MANAGER/debug_errors.log", "a") as f:
@@ -447,12 +465,22 @@ async def finance_reject_request(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+    if current_user.role not in ["FINANCE", "ADMIN", "SYSTEM_ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
-    res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", current_user.id, current_user.full_name, reason=rejection.reason)
-    if not res:
+    from sqlalchemy import desc
+    from ..models.models import PurchaseOrder
+    db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
+    if not db_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
-    return res
+    po_result = await db.execute(select(PurchaseOrder).filter(PurchaseOrder.asset_request_id == id).order_by(desc(PurchaseOrder.created_at)))
+    po = po_result.scalars().first()
+    if not po:
+        raise HTTPException(status_code=400, detail="No Purchase Order found for this request.")
+    await procurement_service.validate_finance_budget(db, po.id, current_user.id, "REJECT", reason=rejection.reason)
+    await db.commit()
+    await db.refresh(db_request)
+    await send_notification(db, id, "status_change", old_status="PO_VALIDATED", new_status="FINANCE_REJECTED", reviewer_name=current_user.full_name, reason=rejection.reason)
+    return await asset_request_service._populate_requester_info(db, db_request, user_role="FINANCE")
 
 @router.post("/{id}/procurement/confirm-delivery", response_model=AssetRequestResponse)
 async def procurement_confirm_delivery(
@@ -461,7 +489,7 @@ async def procurement_confirm_delivery(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+    if current_user.role not in ["PROCUREMENT", "ADMIN", "SYSTEM_ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
         
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)

@@ -15,7 +15,7 @@ export default function CustodianDashboard() {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-bold text-white">Custodian Operations</h1>
+                <h1 className="text-3xl font-bold text-white light:text-slate-800">Custodian Operations</h1>
                 <p className="text-slate-400">Physical inventory management and logistics</p>
             </header>
 
@@ -34,7 +34,7 @@ export default function CustodianDashboard() {
                             <Box size={24} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white">850</h3>
+                            <h3 className="text-2xl font-bold text-white light:text-slate-800">850</h3>
                             <p className="text-xs text-slate-400">Assets in Custody</p>
                         </div>
                     </div>
@@ -45,7 +45,7 @@ export default function CustodianDashboard() {
                             <ClipboardCheck size={24} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white">12</h3>
+                            <h3 className="text-2xl font-bold text-white light:text-slate-800">12</h3>
                             <p className="text-xs text-slate-400">Pending Inspections</p>
                         </div>
                     </div>
@@ -56,7 +56,7 @@ export default function CustodianDashboard() {
                             <Truck size={24} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white">5</h3>
+                            <h3 className="text-2xl font-bold text-white light:text-slate-800">5</h3>
                             <p className="text-xs text-slate-400">Inbound Shipments</p>
                         </div>
                     </div>
@@ -67,7 +67,7 @@ export default function CustodianDashboard() {
                             <MapPin size={24} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white">3</h3>
+                            <h3 className="text-2xl font-bold text-white light:text-slate-800">3</h3>
                             <p className="text-xs text-slate-400">Location Mismatches</p>
                         </div>
                     </div>
@@ -77,7 +77,7 @@ export default function CustodianDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Active Deliveries */}
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-white mb-4">Inbound Tracking</h3>
+                    <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Inbound Tracking</h3>
                     <div className="space-y-4">
                         {deliveryQueue.map(order => (
                             <div key={order.id} className="bg-white/5 p-4 rounded-xl flex items-center justify-between">
@@ -98,9 +98,9 @@ export default function CustodianDashboard() {
 
                 {/* Inspection Queue */}
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-white mb-4">Inspection Queue</h3>
+                    <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Inspection Queue</h3>
                     <table className="w-full text-sm text-left">
-                        <thead className="text-slate-500 border-b border-white/10">
+                        <thead className="text-slate-500 border-b border-white/10 light:border-slate-200">
                             <tr>
                                 <th className="pb-2">Asset Type</th>
                                 <th className="pb-2">Serial</th>
@@ -108,9 +108,9 @@ export default function CustodianDashboard() {
                                 <th className="pb-2">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="text-slate-300">
+                        <tbody className="text-slate-300 light:text-slate-700">
                             {inspectionPending.map(item => (
-                                <tr key={item.id} className="border-b border-white/5 last:border-0">
+                                <tr key={item.id} className="border-b border-white/5 light:border-slate-200 last:border-0">
                                     <td className="py-3">{item.type}</td>
                                     <td className="py-3 font-mono text-xs">{item.serial}</td>
                                     <td className="py-3">{item.location}</td>

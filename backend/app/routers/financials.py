@@ -69,7 +69,7 @@ async def get_financial_summary(
     """
     Get comprehensive financial summary for the dashboard.
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+    if not _role_allowed(getattr(current_user, "role", None)):
         raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     # Get all assets
     result = await db.execute(select(Asset))
@@ -142,7 +142,7 @@ async def get_costs_by_asset_type(
     """
     Get cost breakdown by asset type.
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+    if not _role_allowed(getattr(current_user, "role", None)):
         raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     result = await db.execute(select(Asset))
     assets = result.scalars().all()
@@ -179,7 +179,7 @@ async def get_monthly_spend(
     """
     Get monthly spend data for the last N months.
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT", "IT_MANAGEMENT"]:
         raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     result = await db.execute(select(PurchaseOrder))
     pos = result.scalars().all()
@@ -222,7 +222,7 @@ async def get_depreciation_data(
     """
     Calculate depreciation for all assets.
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT_FINANCE", "IT_MANAGEMENT"]:
+    if not _role_allowed(getattr(current_user, "role", None)):
         raise HTTPException(status_code=403, detail="Unauthorized to view financial data")
     result = await db.execute(select(Asset))
     assets = result.scalars().all()
@@ -270,4 +270,67 @@ async def get_depreciation_data(
         "total_depreciation": round(total_depreciation, 2),
         "assets": depreciation_data
     }
+
+
+class ProcurementSummaryResponse(BaseModel):
+    pending_po_count: int
+    pending_po_total_value: float
+    monthly_po_value: List[MonthlySpendResponse]
+
+
+# Roles that can view financials/procurement summary (Procurement & Finance pages + Asset/Inventory Managers with nav access)
+_ALLOWED_FINANCIALS_ROLES = ["ADMIN", "SYSTEM_ADMIN", "FINANCE", "PROCUREMENT", "IT_MANAGEMENT", "ASSET_MANAGER", "ASSET_INVENTORY_MANAGER"]
+
+
+def _role_allowed(user_role: Optional[str]) -> bool:
+    if not user_role:
+        return False
+    return (user_role.strip().upper()) in [r.upper() for r in _ALLOWED_FINANCIALS_ROLES]
+
+
+@router.get("/procurement-summary", response_model=ProcurementSummaryResponse)
+async def get_procurement_summary(
+    months: int = 6,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Procurement dashboard: pending PO count, total value, and monthly spend for charts.
+    """
+    if not _role_allowed(getattr(current_user, "role", None)):
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    try:
+        result = await db.execute(select(PurchaseOrder))
+        pos = result.scalars().all()
+    except Exception:
+        return ProcurementSummaryResponse(
+            pending_po_count=0,
+            pending_po_total_value=0.0,
+            monthly_po_value=[
+                MonthlySpendResponse(month=(date.today() - timedelta(days=30 * i)).strftime("%Y-%m"), total_spend=0.0, po_count=0)
+                for i in range(months)
+            ]
+        )
+    pending_po_count = len([po for po in pos if (po.status or "").upper() in ("UPLOADED", "PENDING", "EXTRACTED", "")])
+    pending_po_total_value = sum(po.total_cost or 0 for po in pos)
+    monthly_data = {}
+    for po in pos:
+        if po.created_at:
+            month_key = po.created_at.strftime("%Y-%m") if hasattr(po.created_at, "strftime") else str(po.created_at)[:7]
+            if month_key not in monthly_data:
+                monthly_data[month_key] = {"total_spend": 0, "po_count": 0}
+            monthly_data[month_key]["total_spend"] += po.total_cost or 0
+            monthly_data[month_key]["po_count"] += 1
+    response = []
+    for i in range(months):
+        month_date = date.today() - timedelta(days=30 * i)
+        month_key = month_date.strftime("%Y-%m")
+        data = monthly_data.get(month_key, {"total_spend": 0, "po_count": 0})
+        response.append(MonthlySpendResponse(month=month_key, total_spend=data["total_spend"], po_count=data["po_count"]))
+    response.sort(key=lambda x: x.month)
+    return ProcurementSummaryResponse(
+        pending_po_count=pending_po_count,
+        pending_po_total_value=pending_po_total_value,
+        monthly_po_value=response
+    )
 

@@ -107,7 +107,7 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                         disabled={isChecking || (result && result.success)}
                         className={`w-full py-2.5 px-4 rounded-lg font-medium shadow-sm flex items-center justify-center gap-2 transition-all ${result && result.success
                                 ? 'bg-emerald-600 text-white cursor-default'
-                                : 'bg-slate-900 text-white hover:bg-slate-800'
+                                : 'bg-slate-900 text-white hover:bg-slate-800 light:bg-slate-700 light:hover:bg-slate-600'
                             }`}
                     >
                         {isChecking ? 'Running Scan...' : result && result.success ? 'Compliant' : 'Run Compliance Check'}

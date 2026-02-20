@@ -59,7 +59,7 @@ export default function LocationsPage() {
                     <p className="text-slate-400 mt-2 text-lg">Manage and monitor assets across your global infrastructure</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white font-medium hover:bg-white/10 transition-all flex items-center gap-2 group">
+                    <button className="px-5 py-2.5 rounded-xl bg-white/5 light:bg-slate-50 border border-white/10 text-white font-medium hover:bg-white/10 transition-all flex items-center gap-2 group">
                         <Globe size={18} className="text-blue-400 group-hover:rotate-12 transition-transform" />
                         <span>Map View</span>
                     </button>
@@ -94,19 +94,19 @@ export default function LocationsPage() {
             </div>
 
             {/* Controls Bar */}
-            <div className="backdrop-blur-md bg-white/5 border border-white/10 shadow-2xl rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="backdrop-blur-md bg-white/5 light:bg-slate-50 border border-white/10 shadow-2xl rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1 group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={20} />
                     <input
                         type="text"
                         placeholder="Filter sites by name, region, or asset count..."
-                        className="w-full bg-slate-900/50 border border-white/5 rounded-xl py-3.5 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 placeholder:text-slate-600 transition-all"
+                        className="w-full bg-slate-900/50 border border-white/5 light:border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 placeholder:text-slate-600 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center gap-3">
-                    <select className="bg-slate-900/50 border border-white/5 rounded-xl px-4 py-3.5 text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer">
+                    <select className="bg-slate-900/50 border border-white/5 light:border-slate-200 rounded-xl px-4 py-3.5 text-slate-300 light:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer">
                         <option>Sort by Asset Count</option>
                         <option>Sort Alphabetically</option>
                         <option>Sort by Uptime</option>
@@ -118,7 +118,7 @@ export default function LocationsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                     Array(6).fill(0).map((_, i) => (
-                        <div key={i} className="h-64 rounded-3xl bg-slate-800/20 animate-pulse border border-white/5" />
+                        <div key={i} className="h-64 rounded-3xl bg-slate-800/20 animate-pulse border border-white/5 light:border-slate-200" />
                     ))
                 ) : (
                     filteredLocations.map((loc, i) => {
@@ -128,7 +128,7 @@ export default function LocationsPage() {
                                 {/* Card Header */}
                                 <div className="p-6 pb-4">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className={`p-3 rounded-2xl ${stats.type === 'Infrastructure' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'} border border-white/5`}>
+                                        <div className={`p-3 rounded-2xl ${stats.type === 'Infrastructure' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'} border border-white/5 light:border-slate-200`}>
                                             {stats.type === 'Infrastructure' ? <Server size={24} /> : <Building2 size={24} />}
                                         </div>
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 uppercase tracking-widest">
@@ -142,31 +142,31 @@ export default function LocationsPage() {
 
                                 {/* Card Body - Stats List */}
                                 <div className="px-6 space-y-4 flex-1">
-                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-white/5 border border-white/5">
+                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
                                         <div className="flex items-center gap-3">
                                             <Server size={18} className="text-slate-400" />
-                                            <span className="text-sm text-slate-300">Total Assets</span>
+                                            <span className="text-sm text-slate-300 light:text-slate-700">Total Assets</span>
                                         </div>
                                         <span className="text-lg font-bold text-white">{loc.count || stats.devices}</span>
                                     </div>
-                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-white/5 border border-white/5">
+                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
                                         <div className="flex items-center gap-3">
                                             <Users size={18} className="text-slate-400" />
-                                            <span className="text-sm text-slate-300">Personnel</span>
+                                            <span className="text-sm text-slate-300 light:text-slate-700">Personnel</span>
                                         </div>
                                         <span className="text-lg font-bold text-white">{stats.activeUsers}</span>
                                     </div>
                                 </div>
 
                                 {/* Card Footer */}
-                                <div className="p-6 mt-4 border-t border-white/5 flex gap-3">
+                                <div className="p-6 mt-4 border-t border-white/5 light:border-slate-200 flex gap-3">
                                     <button
                                         onClick={() => window.location.href = `/assets?location=${encodeURIComponent(loc.name)}`}
                                         className="flex-1 py-3 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-sm font-bold border border-blue-500/20 transition-all flex items-center justify-center gap-2 group/btn"
                                     >
                                         Inventory <ArrowUpRight size={16} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                                     </button>
-                                    <button className="p-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 transition-all">
+                                    <button className="p-3 rounded-xl bg-white/5 light:bg-slate-50 hover:bg-white/10 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 border border-white/5 light:border-slate-200 transition-all">
                                         <ExternalLink size={18} />
                                     </button>
                                 </div>

@@ -55,7 +55,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
         setIsSubmitting(true);
         setError(null);
         try {
-            await onReject(request.id, comment, "Procurement Officer");
+            await onReject(request.id, comment);
             onClose();
         } catch (err) {
             setError(err.message || "Failed to reject request.");
@@ -89,15 +89,15 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <div className="glass-panel w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-white/10">
+            <div className="glass-panel w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-white/10 light:border-slate-200">
 
                 {/* Header */}
-                <div className="bg-white/5 px-6 py-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
-                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-blue-400" />
+                <div className="bg-white/5 px-6 py-4 border-b border-white/10 light:bg-slate-50 light:border-slate-200 flex justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent light:from-blue-100">
+                    <h3 className="text-lg font-bold text-white light:text-slate-800 flex items-center gap-2">
+                        <ShoppingBag className="w-5 h-5 text-blue-400 light:text-blue-600" />
                         Process Procurement Request
                     </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 rounded" aria-label="Close modal" title="Close">
+                    <button onClick={onClose} className="text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 light:focus:ring-offset-slate-100 rounded" aria-label="Close modal" title="Close">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -108,35 +108,35 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                     {/* Key Details Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-4">
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                <label className="text-xs uppercase tracking-wider text-slate-500 font-bold block mb-1">Request Information</label>
+                            <div className="bg-white/5 p-4 rounded-xl border border-white/5 light:bg-slate-50 light:border-slate-200">
+                                <label className="text-xs uppercase tracking-wider text-slate-500 light:text-slate-600 font-bold block mb-1">Request Information</label>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-slate-400">Request ID</span>
-                                        <span className="text-white font-mono text-xs">{request.id.slice(0, 8)}...</span>
+                                        <span className="text-slate-400 light:text-slate-600">Request ID</span>
+                                        <span className="text-white light:text-slate-900 font-mono text-xs">{request.id.slice(0, 8)}...</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-slate-400">Asset Type</span>
-                                        <span className="text-blue-400 font-bold">{request.assetType}</span>
+                                        <span className="text-slate-400 light:text-slate-600">Asset Type</span>
+                                        <span className="text-blue-400 light:text-blue-600 font-bold">{request.assetType}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
-                                        <span className="text-slate-400">Priority</span>
+                                        <span className="text-slate-400 light:text-slate-600">Priority</span>
                                         <span className="px-1.5 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">MEDIUM</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white/5 p-4 rounded-xl border border-white/5">
-                                <label className="text-xs uppercase tracking-wider text-slate-500 font-bold block mb-1">Requester Details</label>
+                            <div className="bg-white/5 p-4 rounded-xl border border-white/5 light:bg-slate-50 light:border-slate-200">
+                                <label className="text-xs uppercase tracking-wider text-slate-500 light:text-slate-600 font-bold block mb-1">Requester Details</label>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 light:bg-indigo-100 flex items-center justify-center text-indigo-400 light:text-indigo-600">
                                         <User size={20} />
                                     </div>
                                     <div className="flex flex-col">
-                                        <div className="text-sm font-bold text-white">{request.requestedBy.name}</div>
-                                        <div className="text-xs text-slate-400 mb-1">{request.requestedBy.email || request.requester_email}</div>
+                                        <div className="text-sm font-bold text-white light:text-slate-900">{request.requestedBy.name}</div>
+                                        <div className="text-xs text-slate-400 light:text-slate-600 mb-1">{request.requestedBy.email || request.requester_email}</div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500">{request.requestedBy.role}</span>
+                                            <span className="text-xs text-slate-500 light:text-slate-600">{request.requestedBy.role}</span>
                                             {request.requester_department && (
                                                 <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
                                                     {request.requester_department}
@@ -148,9 +148,9 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                             </div>
                         </div>
 
-                        <div className="bg-white/5 p-4 rounded-xl border border-white/5 flex flex-col">
-                            <label className="text-xs uppercase tracking-wider text-slate-500 font-bold block mb-1">Business Justification</label>
-                            <div className="text-sm text-slate-300 flex-grow italic leading-relaxed max-w-prose">
+                        <div className="bg-white/5 p-4 rounded-xl border border-white/5 light:bg-slate-50 light:border-slate-200 flex flex-col">
+                            <label className="text-xs uppercase tracking-wider text-slate-500 light:text-slate-600 font-bold block mb-1">Business Justification</label>
+                            <div className="text-sm text-slate-300 light:text-slate-700 flex-grow italic leading-relaxed max-w-prose">
                                 "{request.justification || 'No justification provided.'}"
                             </div>
                         </div>
@@ -168,9 +168,9 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl border border-white/10 light:bg-slate-50 light:border-slate-200">
                                     <div className="space-y-2">
-                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                                        <label className="block text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider flex justify-between items-center">
                                             Physical Serial Number
                                             <button
                                                 onClick={() => setShowScanner(true)}
@@ -186,22 +186,22 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                             value={serialNumber}
                                             onChange={(e) => setSerialNumber(e.target.value)}
                                             placeholder="e.g. SN-12345678"
-                                            className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-white"
+                                            className="w-full px-3 py-2 bg-black/20 border border-white/10 light:bg-white light:border-slate-300 light:text-slate-900 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-white"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        <label className="block text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider">
                                             Final Asset Name
                                         </label>
                                         <input
                                             type="text"
                                             value={receivedAssetName}
                                             onChange={(e) => setReceivedAssetName(e.target.value)}
-                                            className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-white font-medium"
+                                            className="w-full px-3 py-2 bg-black/20 border border-white/10 light:bg-white light:border-slate-300 light:text-slate-900 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-white font-medium"
                                         />
                                     </div>
                                     <div className="space-y-2 col-span-full">
-                                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                        <label className="block text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-wider">
                                             Hardware Model (Optional)
                                         </label>
                                         <input
@@ -209,7 +209,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                             value={receivedAssetModel}
                                             onChange={(e) => setReceivedAssetModel(e.target.value)}
                                             placeholder="e.g. Dell UltraSharp U2723QE"
-                                            className="w-full px-3 py-2 bg-black/20 border border-white/10 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-white"
+                                            className="w-full px-3 py-2 bg-black/20 border border-white/10 light:bg-white light:border-slate-300 light:text-slate-900 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-white"
                                         />
                                     </div>
                                 </div>
@@ -230,10 +230,10 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                         {!isFinanceApproved && (
                             <>
                                 <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide">
+                                    <label className="block text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-wide">
                                         1. Upload Purchase Order (PDF)
                                     </label>
-                                    <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all ${selectedFile ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-white/10 hover:border-blue-500/40 bg-white/5'}`}>
+                                    <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all ${selectedFile ? 'border-emerald-500/40 bg-emerald-500/5 light:bg-emerald-50 light:border-emerald-200' : 'border-white/10 hover:border-blue-500/40 bg-white/5 light:border-slate-200 light:bg-slate-50 light:hover:border-blue-300'}`}>
                                         <input
                                             type="file"
                                             accept=".pdf"
@@ -247,15 +247,15 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                                         <FileText size={24} />
                                                     </div>
                                                     <div className="text-sm font-bold text-emerald-400">{selectedFile.name}</div>
-                                                    <button onClick={(e) => { e.preventDefault(); setSelectedFile(null); }} className="text-xs text-slate-500 underline">Change file</button>
+                                                    <button onClick={(e) => { e.preventDefault(); setSelectedFile(null); }} className="text-xs text-slate-500 light:text-slate-600 underline">Change file</button>
                                                 </>
                                             ) : (
                                                 <>
                                                     <div className="p-3 rounded-full bg-blue-500/20 text-blue-400">
                                                         <Upload size={24} />
                                                     </div>
-                                                    <div className="text-sm text-slate-300">Click or drag & drop PO PDF here</div>
-                                                    <div className="text-xs text-slate-500 font-mono italic">Must be valid PDF under 5MB</div>
+                                                    <div className="text-sm text-slate-300 light:text-slate-600">Click or drag & drop PO PDF here</div>
+                                                    <div className="text-xs text-slate-500 light:text-slate-600 font-mono italic">Must be valid PDF under 5MB</div>
                                                 </>
                                             )}
                                         </div>
@@ -263,13 +263,13 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wide">
+                                    <label className="block text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-wide">
                                         2. Notes / Remarks (Optional)
                                     </label>
                                     <textarea
                                         value={comment}
                                         onChange={(e) => setComment(e.target.value)}
-                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-white min-h-[80px] transition-all"
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 light:bg-white light:border-slate-300 light:text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-white min-h-[80px] transition-all"
                                         placeholder="Enter any notes for Finance or the Requester..."
                                     />
                                 </div>
@@ -279,11 +279,11 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                 </div>
 
                 {/* Footer */}
-                <div className="bg-white/5 px-6 py-4 border-t border-white/10 flex justify-end gap-3">
+                <div className="bg-white/5 px-6 py-4 border-t border-white/10 light:bg-slate-50 light:border-slate-200 flex justify-end gap-3">
                     <button
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors"
+                        className="px-4 py-2 text-sm font-bold text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors"
                     >
                         Cancel
                     </button>

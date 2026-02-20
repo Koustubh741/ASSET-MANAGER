@@ -17,12 +17,12 @@ const SoftwareInstallItem = ({ app }) => {
     };
 
     return (
-        <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-white/5">
+        <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-white/5 light:border-slate-200">
             <div className="flex items-center gap-3">
-                <div className="p-1.5 bg-slate-700 rounded text-slate-300">
+                <div className="p-1.5 bg-slate-700 rounded text-slate-300 light:text-slate-700">
                     <Server size={14} />
                 </div>
-                <span className="text-sm text-slate-200 font-medium">{app}</span>
+                <span className="text-sm text-slate-200 light:text-slate-800 font-medium">{app}</span>
             </div>
 
             {status === 'pending' && (
@@ -55,8 +55,9 @@ export default function ITSupportDashboard() {
     const { user } = useRole();
     const { assets, updateAssetStatus, requests, tickets, itApproveRequest, itRejectRequest, registerByod, exitRequests, processExitByod, refreshData } = useAssetContext();
 
-    // Derived state for queues instead of static state
-    const pendingQueue = assets.filter(a => a.status === ASSET_STATUS.ALLOCATED || a.status === ASSET_STATUS.CONFIGURING);
+    // Derived state for queues instead of static state (guard assets in case context not ready)
+    const safeAssets = Array.isArray(assets) ? assets : [];
+    const pendingQueue = safeAssets.filter(a => (a?.status === ASSET_STATUS.ALLOCATED || a?.status === ASSET_STATUS.CONFIGURING));
 
     // 1. Incoming Asset Requests (Awaiting IT Management Action)
     // NOTE: `AssetContext` merges Tickets into `requests` for some dashboards.
@@ -73,13 +74,16 @@ export default function ITSupportDashboard() {
     const activeTickets = tickets.filter(t => t.status?.toUpperCase() === 'OPEN' || t.status?.toUpperCase() === 'IN_PROGRESS');
 
     // Deployment Queue: Assets ready for deployment
-    const deployedArgs = assets.filter(a => a.status === ASSET_STATUS.READY_FOR_DEPLOYMENT);
+    const deployedArgs = safeAssets.filter(a => (a?.status === ASSET_STATUS.READY_FOR_DEPLOYMENT));
 
     // Disposal Queue: Assets marked for scrap
-    const disposalItems = assets.filter(a => a.status === ASSET_STATUS.SCRAP_CANDIDATE);
+    const disposalItems = safeAssets.filter(a => (a?.status === ASSET_STATUS.SCRAP_CANDIDATE));
 
-    // Discovery Queue: Assets found by agent
-    const discoveredAssets = assets.filter(a => a.status === ASSET_STATUS.DISCOVERED);
+    // Discovery Queue: Assets found by agent (match API "Discovered" or context enum)
+    const discoveredAssets = safeAssets.filter(a => {
+        const s = (a?.status || '').toString().trim();
+        return s === ASSET_STATUS.DISCOVERED || s.toLowerCase() === 'discovered';
+    });
 
     // Legacy fallback states (if we need to write to anything local, but ideally we write to context)
     // We don't need setPendingQueue anymore as it drives from Context.
@@ -256,7 +260,7 @@ export default function ITSupportDashboard() {
     return (
         <div className="space-y-6 relative h-full">
             <header>
-                <h1 className="text-3xl font-bold text-white">Technician Workbench</h1>
+                <h1 className="text-3xl font-bold text-white light:text-slate-800">Technician Workbench</h1>
                 <p className="text-slate-400">IT Support Operations & Device Lifecycle Management</p>
             </header>
 
@@ -280,7 +284,7 @@ export default function ITSupportDashboard() {
                     <p className="text-indigo-300 text-xs font-bold uppercase flex justify-between">
                         Pending Approval <ChevronRight size={14} className="opacity-50" />
                     </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{incomingRequests.length}</h3>
+                    <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{incomingRequests.length}</h3>
                     <div className="mt-2 text-xs text-indigo-200/70 flex items-center gap-1">
                         <Terminal size={12} /> {incomingRequests.filter(i => i.urgency === 'High').length} high priority
                     </div>
@@ -294,7 +298,7 @@ export default function ITSupportDashboard() {
                     <p className="text-amber-300 text-xs font-bold uppercase flex justify-between">
                         Open Tickets <ChevronRight size={14} className="opacity-50" />
                     </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{activeTickets.length}</h3>
+                    <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{activeTickets.length}</h3>
                     <div className="mt-2 text-xs text-amber-200/70 flex items-center gap-1">
                         <Activity size={12} /> {activeTickets.filter(t => t.priority?.toUpperCase() === 'HIGH').length} critical issues
                     </div>
@@ -308,8 +312,8 @@ export default function ITSupportDashboard() {
                     <p className="text-emerald-300 text-xs font-bold uppercase flex justify-between">
                         Ready for User <ChevronRight size={14} className="opacity-50" />
                     </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{deployedArgs.length}</h3>
-                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-1">
+                    <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{deployedArgs.length}</h3>
+                    <div className="mt-2 text-xs text-slate-400 light:text-slate-600 flex items-center gap-1">
                         <User size={12} /> Configure & Verified
                     </div>
                 </div>
@@ -322,7 +326,7 @@ export default function ITSupportDashboard() {
                     <p className="text-slate-400 text-xs font-bold uppercase flex justify-between">
                         Disposal Queue <ChevronRight size={14} className="opacity-50" />
                     </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{disposalItems.length}</h3>
+                    <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{disposalItems.length}</h3>
                     <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                         <Trash2 size={12} /> Pending Data Wipe
                     </div>
@@ -336,7 +340,7 @@ export default function ITSupportDashboard() {
                     <p className="text-purple-300 text-xs font-bold uppercase flex justify-between">
                         Discovered Assets <ChevronRight size={14} className="opacity-50" />
                     </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{discoveredAssets.length}</h3>
+                    <h3 className="text-3xl font-bold text-white light:text-slate-800 mt-1">{discoveredAssets.length}</h3>
                     <div className="mt-2 text-xs text-purple-200/70 flex items-center gap-1">
                         <Activity size={12} /> Found by Auto-Agent
                     </div>
@@ -348,8 +352,8 @@ export default function ITSupportDashboard() {
 
                 {/* JUST THE PENDING SETUP WIDGET (Removed Compliance as requested) */}
                 <div className="glass-panel p-0 overflow-hidden flex flex-col">
-                    <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                        <h3 className="font-bold text-white flex items-center gap-2">
+                    <div className="p-4 border-b border-white/10 light:border-slate-200 bg-white/5 light:bg-slate-50 flex justify-between items-center">
+                        <h3 className="font-bold text-white light:text-slate-800 flex items-center gap-2">
                             <Clock size={16} className="text-indigo-400" />
                             Upcoming Validations & Setups
                         </h3>
@@ -357,13 +361,13 @@ export default function ITSupportDashboard() {
                     </div>
                     <div className="p-4 space-y-3 flex-1">
                         {pendingQueue.slice(0, 5).map((item) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-white/5 hover:border-white/10 transition-colors">
+                            <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-white/5 light:border-slate-200 hover:border-white/10 transition-colors">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-400 border border-white/5">
+                                    <div className="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-400 light:text-slate-600 border border-white/5 light:border-slate-200">
                                         <Wrench size={18} />
                                     </div>
                                     <div>
-                                        <div className="text-sm text-slate-200 font-medium">{item.name}</div>
+                                        <div className="text-sm text-slate-200 light:text-slate-800 font-medium">{item.name}</div>
                                         <div className="text-xs text-slate-500 flex items-center gap-2">
                                             <span>{item.user} ({item.requestedFor})</span>
                                             <span className="w-1 h-1 rounded-full bg-slate-600"></span>
@@ -372,7 +376,7 @@ export default function ITSupportDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300 border border-white/5">{item.id}</span>
+                                    <span className="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300 light:text-slate-700 border border-white/5 light:border-slate-200">{item.id}</span>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); startConfig(item); }}
                                         className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition-colors shadow-lg shadow-indigo-500/20"
@@ -400,28 +404,28 @@ export default function ITSupportDashboard() {
 
                     {/* ---- REQUEST DETAILS MODAL (IT MANAGEMENT REVIEW) ---- */}
                     {activeModal === 'REQUEST_DETAILS' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
-                            <div className="bg-slate-800 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="bg-slate-800 p-6 border-b border-white/10 light:border-slate-200 flex justify-between items-center shrink-0">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                         <FileText size={20} className="text-indigo-400" />
                                         Request Details
                                     </h2>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">{selectedItem.id}</span>
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300'}`}>
+                                        <span className="text-xs font-mono text-slate-400 light:text-slate-600 uppercase tracking-wider">{selectedItem.id}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300 light:text-slate-700'}`}>
                                             {selectedItem.urgency || 'STANDARD'}
                                         </span>
                                     </div>
                                 </div>
-                                <button onClick={() => setActiveModal('PENDING')} className="text-slate-400 hover:text-white p-2">
+                                <button onClick={() => setActiveModal('PENDING')} className="text-slate-400 hover:text-white light:hover:text-slate-900 p-2">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
                                 {/* Requester Info */}
-                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5">
+                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5 light:border-slate-200">
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Requester</label>
                                         <div className="text-white font-medium">{selectedItem.requestedBy?.name}</div>
@@ -436,7 +440,7 @@ export default function ITSupportDashboard() {
 
                                 {/* Asset Details */}
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Asset Information</h3>
+                                    <h3 className="text-sm font-bold text-slate-300 light:text-slate-700 uppercase mb-3 border-b border-white/5 light:border-slate-200 pb-2">Asset Information</h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-xs text-slate-500 uppercase block mb-1">Asset Type</label>
@@ -463,14 +467,14 @@ export default function ITSupportDashboard() {
 
                                 {/* Justification */}
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Business Case</h3>
-                                    <div className="bg-slate-800 p-4 rounded-lg border border-white/5">
+                                    <h3 className="text-sm font-bold text-slate-300 light:text-slate-700 uppercase mb-3 border-b border-white/5 light:border-slate-200 pb-2">Business Case</h3>
+                                    <div className="bg-slate-800 p-4 rounded-lg border border-white/5 light:border-slate-200">
                                         <label className="text-xs text-slate-500 uppercase block mb-2">Justification</label>
                                         <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed max-w-prose">
                                             {selectedItem.justification || "No justification provided."}
                                         </div>
                                         {selectedItem.business_justification && selectedItem.business_justification !== selectedItem.justification && (
-                                            <div className="mt-4 pt-4 border-t border-white/5">
+                                            <div className="mt-4 pt-4 border-t border-white/5 light:border-slate-200">
                                                 <label className="text-xs text-slate-500 uppercase block mb-2">Detailed Business Justification</label>
                                                 <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
                                                     {selectedItem.business_justification}
@@ -483,12 +487,12 @@ export default function ITSupportDashboard() {
                                 {/* Approval History */}
                                 {selectedItem.manager_approvals && selectedItem.manager_approvals.length > 0 && (
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Approval History</h3>
+                                        <h3 className="text-sm font-bold text-slate-300 light:text-slate-700 uppercase mb-3 border-b border-white/5 light:border-slate-200 pb-2">Approval History</h3>
                                         <div className="space-y-2">
                                             {selectedItem.manager_approvals.map((approval, idx) => (
                                                 <div key={idx} className="flex justify-between items-start text-xs bg-slate-800/30 p-2 rounded">
                                                     <div>
-                                                        <span className="font-bold text-slate-300">{approval.reviewer_name}</span>
+                                                        <span className="font-bold text-slate-300 light:text-slate-700">{approval.reviewer_name}</span>
                                                         <span className="text-slate-500 mx-1">({approval.type || 'Review'})</span>
                                                     </div>
                                                     <div className="text-right">
@@ -504,7 +508,7 @@ export default function ITSupportDashboard() {
                                 )}
                             </div>
 
-                            <div className="p-4 bg-slate-800 border-t border-white/10 flex justify-end gap-3 shrink-0">
+                            <div className="p-4 bg-slate-800 border-t border-white/10 light:border-slate-200 flex justify-end gap-3 shrink-0">
                                 <button
                                     onClick={() => {
                                         const reason = prompt("Enter rejection reason:");
@@ -513,7 +517,7 @@ export default function ITSupportDashboard() {
                                             setActiveModal('PENDING'); // Go back to list
                                         }
                                     }}
-                                    className="px-4 py-2 text-rose-400 hover:text-white border border-rose-500/30 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                    className="px-4 py-2 text-rose-400 hover:text-white light:hover:text-slate-900 border border-rose-500/30 hover:bg-rose-500/10 rounded-lg transition-colors"
                                 >
                                     Reject Request
                                 </button>
@@ -562,13 +566,13 @@ export default function ITSupportDashboard() {
 
                     {/* ---- TICKET VIEW MODAL ---- */}
                     {activeModal === 'TICKET_VIEW' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in scale-95 duration-200">
-                            <div className="bg-slate-800 p-4 border-b border-white/10 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in scale-95 duration-200">
+                            <div className="bg-slate-800 p-4 border-b border-white/10 light:border-slate-200 flex justify-between items-center">
+                                <h2 className="text-lg font-bold text-white light:text-slate-800 flex items-center gap-2">
                                     <FileText size={18} className="text-indigo-400" />
                                     Ticket Details
                                 </h2>
-                                <button onClick={() => setActiveModal('TICKETS')} className="text-slate-400 hover:text-white p-2">
+                                <button onClick={() => setActiveModal('TICKETS')} className="text-slate-400 hover:text-white light:hover:text-slate-900 p-2">
                                     <X size={18} />
                                 </button>
                             </div>
@@ -584,15 +588,15 @@ export default function ITSupportDashboard() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Status</label>
-                                        <span className="text-sm text-slate-300">{selectedItem.status}</span>
+                                        <span className="text-sm text-slate-300 light:text-slate-700">{selectedItem.status}</span>
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Priority</label>
-                                        <span className="text-sm text-slate-300">{selectedItem.priority || 'Medium'}</span>
+                                        <span className="text-sm text-slate-300 light:text-slate-700">{selectedItem.priority || 'Medium'}</span>
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Requestor</label>
-                                        <div className="text-sm text-slate-300">{selectedItem.requestor_id || selectedItem.requestor_name || '—'}</div>
+                                        <div className="text-sm text-slate-300 light:text-slate-700">{selectedItem.requestor_id || selectedItem.requestor_name || '—'}</div>
                                     </div>
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase font-bold block mb-1">ID</label>
@@ -600,7 +604,7 @@ export default function ITSupportDashboard() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="p-4 border-t border-white/10 flex justify-end">
+                            <div className="p-4 border-t border-white/10 light:border-slate-200 flex justify-end">
                                 <button
                                     onClick={() => { setActiveModal('TICKETS'); openResolveModal(selectedItem); }}
                                     className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium"
@@ -613,13 +617,13 @@ export default function ITSupportDashboard() {
 
                     {/* ---- ITEM VIEW (Deploy / Disposal) MODAL ---- */}
                     {activeModal === 'ITEM_VIEW' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in scale-95 duration-200">
-                            <div className="bg-slate-800 p-4 border-b border-white/10 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in scale-95 duration-200">
+                            <div className="bg-slate-800 p-4 border-b border-white/10 light:border-slate-200 flex justify-between items-center">
+                                <h2 className="text-lg font-bold text-white light:text-slate-800 flex items-center gap-2">
                                     <FileText size={18} className="text-indigo-400" />
                                     {selectedItem._viewType === 'deploy' ? 'Deployment Asset' : 'Disposal Asset'}
                                 </h2>
-                                <button onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')} className="text-slate-400 hover:text-white p-2">
+                                <button onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')} className="text-slate-400 hover:text-white light:hover:text-slate-900 p-2">
                                     <X size={18} />
                                 </button>
                             </div>
@@ -679,10 +683,10 @@ export default function ITSupportDashboard() {
 
                     {/* ---- CONFIG WIZARD MODAL (5 STEPS) ---- */}
                     {activeModal === 'CONFIG' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
-                            <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 p-6 border-b border-white/10 light:border-slate-200 flex justify-between items-center shrink-0">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                         <Terminal size={20} className="text-indigo-400" />
                                         Workstation Configuration
                                     </h2>
@@ -690,7 +694,7 @@ export default function ITSupportDashboard() {
                                 </div>
                                 <div className="text-right">
                                     <span className="text-xs font-mono text-slate-500 block uppercase tracking-wider">Target User</span>
-                                    <span className="text-sm font-bold text-white">{selectedItem.user}</span>
+                                    <span className="text-sm font-bold text-white light:text-slate-800">{selectedItem.user}</span>
                                 </div>
                             </div>
 
@@ -701,22 +705,22 @@ export default function ITSupportDashboard() {
                                 </div>
 
                                 {/* Step Content */}
-                                <div className="bg-slate-800/30 rounded-xl p-6 border border-white/5 min-h-[300px]">
+                                <div className="bg-slate-800/30 rounded-xl p-6 border border-white/5 light:border-slate-200 min-h-[300px]">
 
                                     {/* STEP 1: ASSET OVERVIEW */}
                                     {configStep === 1 && (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 1: Asset Overview</h3>
+                                            <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Step 1: Asset Overview</h3>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5">
+                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5 light:border-slate-200">
                                                     <span className="text-xs text-slate-500 uppercase">Model</span>
                                                     <div className="text-white font-medium">{selectedItem.model || 'Standard Workstation'}</div>
                                                 </div>
-                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5">
+                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5 light:border-slate-200">
                                                     <span className="text-xs text-slate-500 uppercase">Serial Number</span>
                                                     <div className="text-white font-medium">{selectedItem.serial || 'Unknown'}</div>
                                                 </div>
-                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5 col-span-2">
+                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5 light:border-slate-200 col-span-2">
                                                     <span className="text-xs text-slate-500 uppercase">Specs</span>
                                                     <div className="text-white font-medium">{selectedItem.details || 'Standard Configuration'}</div>
                                                 </div>
@@ -731,19 +735,19 @@ export default function ITSupportDashboard() {
                                     {/* STEP 2: OS SELECTION (NOW SOFTWARE PROVISIONING) */}
                                     {configStep === 2 && (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 2: OS & Image Selection</h3>
+                                            <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Step 2: OS & Image Selection</h3>
                                             <div className="grid grid-cols-1 gap-3">
                                                 <label className="flex items-center gap-4 p-4 bg-slate-800 border-2 border-indigo-500 rounded-lg cursor-pointer">
                                                     <input type="radio" name="os" defaultChecked className="w-5 h-5 text-indigo-600" />
                                                     <div>
-                                                        <div className="font-bold text-white">Windows 11 Enterprise 23H2 (Stable)</div>
+                                                        <div className="font-bold text-white light:text-slate-800">Windows 11 Enterprise 23H2 (Stable)</div>
                                                         <div className="text-xs text-slate-400">Standard Corporate Image v4.2</div>
                                                     </div>
                                                 </label>
-                                                <label className="flex items-center gap-4 p-4 bg-slate-800 border border-white/10 rounded-lg cursor-pointer opacity-60">
+                                                <label className="flex items-center gap-4 p-4 bg-slate-800 border border-white/10 light:border-slate-200 rounded-lg cursor-pointer opacity-60">
                                                     <input type="radio" name="os" className="w-5 h-5 text-indigo-600" />
                                                     <div>
-                                                        <div className="font-bold text-white">Windows 10 Enterprise LTSC</div>
+                                                        <div className="font-bold text-white light:text-slate-800">Windows 10 Enterprise LTSC</div>
                                                         <div className="text-xs text-slate-400">Legacy Systems Only</div>
                                                     </div>
                                                 </label>
@@ -754,8 +758,8 @@ export default function ITSupportDashboard() {
                                     {/* STEP 3: SECURITY TOOLS */}
                                     {configStep === 3 && (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 3: Security Tools Setup</h3>
-                                            <p className="text-sm text-slate-400 mb-4">Manually verify installation or push via MDM.</p>
+                                            <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Step 3: Security Tools Setup</h3>
+                                            <p className="text-sm text-slate-400 light:text-slate-600 mb-4">Manually verify installation or push via MDM.</p>
                                             <div className="space-y-2">
                                                 <SoftwareInstallItem app="CrowdStrike Falcon Sensor" />
                                                 <SoftwareInstallItem app="Zscaler Client Connector" />
@@ -768,12 +772,12 @@ export default function ITSupportDashboard() {
                                     {/* STEP 4: NETWORK */}
                                     {configStep === 4 && (
                                         <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 4: Network Configuration</h3>
+                                            <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Step 4: Network Configuration</h3>
 
                                             <div className="space-y-4">
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-xs text-slate-400 uppercase font-bold">Domain Join</label>
-                                                    <select className="bg-slate-900 border border-white/10 text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                    <label className="text-xs text-slate-400 light:text-slate-600 uppercase font-bold">Domain Join</label>
+                                                    <select className="bg-slate-900 border border-white/10 light:border-slate-200 text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                                                         <option>CORP.GLOBAL (Default)</option>
                                                         <option>DMZ.LOCAL</option>
                                                         <option>WORKGROUP</option>
@@ -781,8 +785,8 @@ export default function ITSupportDashboard() {
                                                 </div>
 
                                                 <div className="flex flex-col gap-1">
-                                                    <label className="text-xs text-slate-400 uppercase font-bold">VLAN Assignment</label>
-                                                    <select className="bg-slate-900 border border-white/10 text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                    <label className="text-xs text-slate-400 light:text-slate-600 uppercase font-bold">VLAN Assignment</label>
+                                                    <select className="bg-slate-900 border border-white/10 light:border-slate-200 text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                                                         <option>VLAN 100 - Employee Workstations</option>
                                                         <option>VLAN 200 - Developers</option>
                                                         <option>VLAN 900 - Guest</option>
@@ -800,7 +804,7 @@ export default function ITSupportDashboard() {
                                     {/* STEP 5: FINAL VALIDATION */}
                                     {configStep === 5 && (
                                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 5: Final Validation</h3>
+                                            <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">Step 5: Final Validation</h3>
                                             <div className="space-y-3">
                                                 {[
                                                     "BIOS Password Set",
@@ -809,7 +813,7 @@ export default function ITSupportDashboard() {
                                                     "Windows Activated",
                                                     "Latest Windows Updates Applied"
                                                 ].map((check, i) => (
-                                                    <label key={i} className="flex items-center gap-3 p-3 bg-slate-800 rounded border border-white/5 cursor-pointer hover:bg-slate-700 transition-colors">
+                                                    <label key={i} className="flex items-center gap-3 p-3 bg-slate-800 rounded border border-white/5 light:border-slate-200 cursor-pointer hover:bg-slate-700 transition-colors">
                                                         <input type="checkbox" defaultChecked={i < 3} className="w-5 h-5 rounded text-indigo-600 bg-slate-700 border-slate-600 focus:ring-indigo-500" />
                                                         <span className="text-slate-200">{check}</span>
                                                     </label>
@@ -824,7 +828,7 @@ export default function ITSupportDashboard() {
                                         <>
                                             <button
                                                 onClick={() => setActiveModal(null)}
-                                                className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                                                className="px-4 py-2 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors"
                                             >
                                                 Cancel
                                             </button>
@@ -853,15 +857,15 @@ export default function ITSupportDashboard() {
                     {/* ---- QUEUE MODALS ---- */}
 
                     {['PENDING', 'TICKETS', 'DEPLOY', 'DISPOSAL'].includes(activeModal) && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
-                            <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center shrink-0">
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
+                            <div className="p-4 border-b border-white/10 light:border-slate-200 bg-white/5 light:bg-slate-50 flex justify-between items-center shrink-0">
+                                <h2 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                     {activeModal === 'PENDING' && 'Pending Setup Assets'}
                                     {activeModal === 'TICKETS' && 'Active IT Support Tickets'}
                                     {activeModal === 'DEPLOY' && 'Ready for Deployment'}
                                     {activeModal === 'DISPOSAL' && 'Disposal & Secure Wipe Queue'}
                                 </h2>
-                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white p-2">
+                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white light:hover:text-slate-900 p-2">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -870,30 +874,30 @@ export default function ITSupportDashboard() {
                                 <table className="w-full text-left border-collapse">
                                     <thead className="bg-slate-800/80 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
                                         <tr>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset / ID</th>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Context</th>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                                            <th className="p-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Asset / ID</th>
+                                            <th className="p-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Context</th>
+                                            <th className="p-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Status</th>
+                                            <th className="p-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
                                         {activeModal === 'PENDING' && (incomingRequests.length === 0 ? (
-                                            <tr><td colSpan="4" className="p-4 text-slate-400 text-center">No incoming requests.</td></tr>
+                                            <tr><td colSpan="4" className="p-4 text-slate-400 light:text-slate-600 text-center">No incoming requests.</td></tr>
                                         ) : incomingRequests.map(req => (
                                             <tr key={req.id} className="hover:bg-white/5 transition-colors group">
                                                 <td className="p-4">
-                                                    <div className="font-bold text-white text-base flex items-center gap-2">
+                                                    <div className="font-bold text-white light:text-slate-800 text-base flex items-center gap-2">
                                                         {req.assetType || req.title}
                                                         {req.assetType === 'BYOD' && <span className="text-[10px] bg-sky-500/20 text-sky-300 px-1.5 rounded border border-sky-500/30">BYOD</span>}
                                                     </div>
                                                     <div className="text-xs text-indigo-400 font-mono mt-1">{req.id}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm text-slate-300 font-medium">{req.requestedBy.name}</div>
+                                                    <div className="text-sm text-slate-300 light:text-slate-700 font-medium">{req.requestedBy.name}</div>
                                                     <div className="text-xs text-slate-500">{req.requestedBy.role} • {req.assetType}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300'}`}>
+                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300 light:text-slate-700'}`}>
                                                         {req.urgency ? req.urgency.toUpperCase() : 'STANDARD'}
                                                     </span>
                                                     <div className="text-xs text-slate-500 mt-1">{req.status}</div>
@@ -902,7 +906,7 @@ export default function ITSupportDashboard() {
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => { setSelectedItem(req); setActiveModal('REQUEST_DETAILS'); }}
-                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                            className="text-xs text-indigo-300 hover:text-white light:hover:text-slate-900 border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
                                                         >
                                                             <Eye size={14} /> View Details
                                                         </button>
@@ -912,7 +916,7 @@ export default function ITSupportDashboard() {
                                                                 const reason = prompt("Enter rejection reason:");
                                                                 if (reason) itRejectRequest(req.id, reason);
                                                             }}
-                                                            className="text-xs text-rose-400 hover:text-white border border-rose-500/30 px-3 py-1.5 rounded flex items-center gap-1"
+                                                            className="text-xs text-rose-400 hover:text-white light:hover:text-slate-900 border border-rose-500/30 px-3 py-1.5 rounded flex items-center gap-1"
                                                         >
                                                             Reject
                                                         </button>
@@ -952,28 +956,28 @@ export default function ITSupportDashboard() {
                                         )))}
 
                                         {activeModal === 'TICKETS' && (activeTickets.length === 0 ? (
-                                            <tr><td colSpan="4" className="p-4 text-slate-400 text-center">No active tickets.</td></tr>
+                                            <tr><td colSpan="4" className="p-4 text-slate-400 light:text-slate-600 text-center">No active tickets.</td></tr>
                                         ) : activeTickets.map(item => (
                                             <tr key={item.id} className="hover:bg-white/5 transition-colors">
                                                 <td className="p-4">
-                                                    <div className="font-bold text-white">{item.subject}</div>
+                                                    <div className="font-bold text-white light:text-slate-800">{item.subject}</div>
                                                     <div className="text-xs text-slate-500 font-mono mt-0.5">{item.id}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm text-slate-300">{item.requestor_id || 'Unknown'}</div>
+                                                    <div className="text-sm text-slate-300 light:text-slate-700">{item.requestor_id || 'Unknown'}</div>
                                                     <div className="text-xs text-slate-500">User</div>
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-2">
                                                         <span className={`w-2 h-2 rounded-full ${item.priority?.toUpperCase() === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'}`}></span>
-                                                        <span className="text-sm text-slate-300">{item.status}</span>
+                                                        <span className="text-sm text-slate-300 light:text-slate-700">{item.status}</span>
                                                     </div>
                                                 </td>
                                                 <td className="p-4 text-right">
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => { setSelectedItem(item); setActiveModal('TICKET_VIEW'); }}
-                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                            className="text-xs text-indigo-300 hover:text-white light:hover:text-slate-900 border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
                                                         >
                                                             <Eye size={14} /> View
                                                         </button>
@@ -987,7 +991,7 @@ export default function ITSupportDashboard() {
                                                         )}
                                                         <button
                                                             onClick={() => openResolveModal(item)}
-                                                            className="text-xs border border-white/10 hover:bg-white/10 text-slate-300 px-4 py-2 rounded flex items-center gap-2 transition-colors ml-auto"
+                                                            className="text-xs border border-white/10 light:border-slate-200 hover:bg-white/10 light:hover:bg-slate-100 text-slate-300 light:text-slate-700 px-4 py-2 rounded flex items-center gap-2 transition-colors ml-auto"
                                                         >
                                                             <CheckCircle size={14} /> Resolve Ticket
                                                         </button>
@@ -1003,7 +1007,7 @@ export default function ITSupportDashboard() {
                                                     <div className="text-xs text-slate-500">{item.id}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm text-slate-300">{item.assignedUser}</div>
+                                                    <div className="text-sm text-slate-300 light:text-slate-700">{item.assignedUser}</div>
                                                     <div className="text-xs text-slate-500">{item.location}</div>
                                                 </td>
                                                 <td className="p-4">
@@ -1016,11 +1020,11 @@ export default function ITSupportDashboard() {
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => { setSelectedItem({ ...item, _viewType: 'deploy' }); setActiveModal('ITEM_VIEW'); }}
-                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                            className="text-xs text-indigo-300 hover:text-white light:hover:text-slate-900 border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
                                                         >
                                                             <Eye size={14} /> View
                                                         </button>
-                                                        <button onClick={() => handleGenerateAck(item)} className="text-xs text-slate-400 hover:text-white border border-white/10 px-3 py-1.5 rounded flex items-center gap-1">
+                                                        <button onClick={() => handleGenerateAck(item)} className="text-xs text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 border border-white/10 light:border-slate-200 px-3 py-1.5 rounded flex items-center gap-1">
                                                             <Printer size={12} /> Ack Form
                                                         </button>
                                                         <button onClick={() => handleHandover(item)} className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded">
@@ -1038,7 +1042,7 @@ export default function ITSupportDashboard() {
                                                     <div className="text-xs text-slate-500">{item.serial}</div>
                                                 </td>
                                                 <td className="p-4">
-                                                    <div className="text-sm text-slate-300">{item.reason}</div>
+                                                    <div className="text-sm text-slate-300 light:text-slate-700">{item.reason}</div>
                                                     <div className="text-xs text-slate-500">Age: {item.age}</div>
                                                 </td>
                                                 <td className="p-4">
@@ -1049,7 +1053,7 @@ export default function ITSupportDashboard() {
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => { setSelectedItem({ ...item, _viewType: 'disposal' }); setActiveModal('ITEM_VIEW'); }}
-                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
+                                                            className="text-xs text-indigo-300 hover:text-white light:hover:text-slate-900 border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
                                                         >
                                                             <Eye size={14} /> View
                                                         </button>
@@ -1071,9 +1075,9 @@ export default function ITSupportDashboard() {
 
                     {/* ---- TICKET RESOLUTION WIZARD (3 STEPS) ---- */}
                     {activeModal === 'RESOLVE_TICKET' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                            <div className="p-6 border-b border-white/10 bg-slate-800/50">
-                                <h3 className="text-lg font-bold text-white flex items-center justify-between">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="p-6 border-b border-white/10 light:border-slate-200 bg-slate-800/50">
+                                <h3 className="text-lg font-bold text-white light:text-slate-800 flex items-center justify-between">
                                     <span>Resolve Incident: {selectedItem.id}</span>
                                     <span className="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-1 rounded">Step {configStep} of 3</span>
                                 </h3>
@@ -1085,11 +1089,11 @@ export default function ITSupportDashboard() {
                                 {/* STEP 1: DIAGNOSIS */}
                                 {configStep === 1 && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                        <h4 className="text-md font-bold text-white mb-2">1. Issue Diagnosis</h4>
+                                        <h4 className="text-md font-bold text-white light:text-slate-800 mb-2">1. Issue Diagnosis</h4>
                                         <div className="space-y-2">
-                                            <label className="text-sm text-slate-300">Problem Description & Root Cause</label>
+                                            <label className="text-sm text-slate-300 light:text-slate-700">Problem Description & Root Cause</label>
                                             <textarea
-                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px]"
+                                                className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px]"
                                                 placeholder="Describe the technical issue and identified root cause..."
                                                 value={resolutionNotes}
                                                 onChange={(e) => setResolutionNotes(e.target.value)}
@@ -1102,7 +1106,7 @@ export default function ITSupportDashboard() {
                                 {configStep === 2 && (
                                     <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                                         <div className="flex justify-between items-center mb-2">
-                                            <h4 className="text-md font-bold text-white">2. Create Resolution Checklist</h4>
+                                            <h4 className="text-md font-bold text-white light:text-slate-800">2. Create Resolution Checklist</h4>
                                             <span className="text-xs text-indigo-400 font-bold">{activeChecklist.length > 0 ? Math.round((activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100) : 0}% Complete</span>
                                         </div>
 
@@ -1111,7 +1115,7 @@ export default function ITSupportDashboard() {
                                             <input
                                                 type="text"
                                                 placeholder="Add verification step..."
-                                                className="flex-1 bg-slate-950 border border-white/10 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                className="flex-1 bg-slate-950 border border-white/10 light:border-slate-200 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter' && e.target.value.trim()) {
                                                         setActiveChecklist([...activeChecklist, { text: e.target.value.trim(), checked: false }]);
@@ -1143,14 +1147,14 @@ export default function ITSupportDashboard() {
                                         </div>
 
                                         {activeChecklist.length === 0 && (
-                                            <div className="text-center py-6 text-slate-500 text-sm border border-dashed border-white/10 rounded-lg">
+                                            <div className="text-center py-6 text-slate-500 text-sm border border-dashed border-white/10 light:border-slate-200 rounded-lg">
                                                 No checklist items added. Add steps to verify resolution.
                                             </div>
                                         )}
 
                                         <div className="space-y-2">
                                             {activeChecklist.map((item, idx) => (
-                                                <div key={idx} className={`flex items-start gap-3 p-3 rounded border transition-colors group ${item.checked ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-slate-800 border-white/5 hover:border-white/10'}`}>
+                                                <div key={idx} className={`flex items-start gap-3 p-3 rounded border transition-colors group ${item.checked ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-slate-800 border-white/5 light:border-slate-200 hover:border-white/10'}`}>
                                                     <label className="flex items-start gap-3 flex-1 cursor-pointer">
                                                         <input
                                                             type="checkbox"
@@ -1189,20 +1193,20 @@ export default function ITSupportDashboard() {
                                             <div className="w-20 h-20 rounded-full bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
                                                 <CheckCircle size={40} />
                                             </div>
-                                            <h3 className="text-xl font-bold text-white">Ready to Resolve</h3>
+                                            <h3 className="text-xl font-bold text-white light:text-slate-800">Ready to Resolve</h3>
                                             <p className="text-slate-400 text-sm mt-1">Completion Score: <span className={`font-bold ${activeChecklist.every(i => i.checked) ? 'text-emerald-400' : 'text-amber-400'}`}>
                                                 {activeChecklist.length > 0 ? Math.round((activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100) : 0}%
                                             </span></p>
                                         </div>
 
-                                        <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5 space-y-3">
+                                        <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5 light:border-slate-200 space-y-3">
                                             <div>
                                                 <span className="text-xs text-slate-500 uppercase">Diagnosis</span>
-                                                <p className="text-sm text-slate-300 mt-1">{resolutionNotes}</p>
+                                                <p className="text-sm text-slate-300 light:text-slate-700 mt-1">{resolutionNotes}</p>
                                             </div>
                                             <div>
                                                 <span className="text-xs text-slate-500 uppercase">Resolution Steps</span>
-                                                <p className="text-sm text-slate-300 mt-1">
+                                                <p className="text-sm text-slate-300 light:text-slate-700 mt-1">
                                                     {activeChecklist.filter(i => i.checked).length} of {activeChecklist.length} checks completed.
                                                 </p>
                                             </div>
@@ -1216,9 +1220,9 @@ export default function ITSupportDashboard() {
 
                             </div>
 
-                            <div className="p-6 border-t border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+                            <div className="p-6 border-t border-white/10 light:border-slate-200 flex justify-between items-center bg-white/5 light:bg-slate-50 shrink-0">
                                 <div className="flex gap-2">
-                                    <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancel</button>
+                                    <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">Cancel</button>
                                     <button
                                         onClick={saveDraft}
                                         className="px-4 py-2 text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/5"
@@ -1244,7 +1248,7 @@ export default function ITSupportDashboard() {
                                     )}
                                     {configStep === 2 && (
                                         <>
-                                            <button onClick={() => setConfigStep(1)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Back</button>
+                                            <button onClick={() => setConfigStep(1)} className="px-4 py-2 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">Back</button>
                                             <button
                                                 onClick={() => {
                                                     const total = activeChecklist.length;
@@ -1265,7 +1269,7 @@ export default function ITSupportDashboard() {
                                     )}
                                     {configStep === 3 && (
                                         <>
-                                            <button onClick={() => setConfigStep(2)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Back</button>
+                                            <button onClick={() => setConfigStep(2)} className="px-4 py-2 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">Back</button>
                                             <button
                                                 onClick={submitProgress}
                                                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-500/20"
@@ -1287,25 +1291,25 @@ export default function ITSupportDashboard() {
 
                     {/* ---- BYOD EXIT DETAILS ---- */}
                     {activeModal === 'BYOD_EXIT_DETAILS' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
-                            <div className="bg-slate-800 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="bg-slate-800 p-6 border-b border-white/10 light:border-slate-200 flex justify-between items-center shrink-0">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                         <ShieldCheck size={20} className="text-blue-400" />
                                         BYOD Exit Details
                                     </h2>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">{selectedItem.id}</span>
+                                        <span className="text-xs font-mono text-slate-400 light:text-slate-600 uppercase tracking-wider">{selectedItem.id}</span>
                                     </div>
                                 </div>
-                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white p-2">
+                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white light:hover:text-slate-900 p-2">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
                                 {/* User Info */}
-                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5">
+                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5 light:border-slate-200">
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Employee</label>
                                         <div className="text-white font-medium">{selectedItem.user_name || 'Unknown'}</div>
@@ -1319,16 +1323,16 @@ export default function ITSupportDashboard() {
 
                                 {/* BYOD Devices Snapshot */}
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Registered Personal Devices</h3>
+                                    <h3 className="text-sm font-bold text-slate-300 light:text-slate-700 uppercase mb-3 border-b border-white/5 light:border-slate-200 pb-2">Registered Personal Devices</h3>
                                     {selectedItem.byod_snapshot && selectedItem.byod_snapshot.length > 0 ? (
                                         <div className="space-y-3">
                                             {selectedItem.byod_snapshot.map((device, idx) => (
-                                                <div key={idx} className="bg-slate-800 p-3 rounded border border-white/5 flex justify-between items-center">
+                                                <div key={idx} className="bg-slate-800 p-3 rounded border border-white/5 light:border-slate-200 flex justify-between items-center">
                                                     <div>
                                                         <div className="font-medium text-white">{device.device_model}</div>
                                                         <div className="text-xs text-slate-400">Serial: {device.serial_number}</div>
                                                     </div>
-                                                    <div className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">
+                                                    <div className="text-xs bg-slate-700 text-slate-300 light:text-slate-700 px-2 py-1 rounded">
                                                         {device.os_version}
                                                     </div>
                                                 </div>
@@ -1340,10 +1344,10 @@ export default function ITSupportDashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-slate-800 border-t border-white/10 flex justify-end gap-3 shrink-0">
+                            <div className="p-4 bg-slate-800 border-t border-white/10 light:border-slate-200 flex justify-end gap-3 shrink-0">
                                 <button
                                     onClick={() => setActiveModal(null)}
-                                    className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                                    className="px-4 py-2 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -1368,7 +1372,7 @@ export default function ITSupportDashboard() {
             {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'ASSETS_PROCESSED').length > 0 && (
                 <div className="glass-panel p-6 animate-in slide-in-from-right-4 duration-500">
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
+                        <h3 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-3">
                             <ShieldCheck className="text-blue-400" />
                             BYOD Exit Compliance
                             <span className="bg-blue-500/10 text-blue-400 text-xs px-2 py-1 rounded-full border border-blue-500/20">
@@ -1379,7 +1383,7 @@ export default function ITSupportDashboard() {
 
                     <div className="space-y-4">
                         {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'ASSETS_PROCESSED').map(req => (
-                            <div key={req.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center group hover:border-blue-500/30 transition-all">
+                            <div key={req.id} className="p-4 bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200 rounded-xl flex justify-between items-center group hover:border-blue-500/30 transition-all">
                                 <div>
                                     <div className="text-white font-bold">{req.user_id}</div>
                                     <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
@@ -1387,7 +1391,7 @@ export default function ITSupportDashboard() {
                                     </div>
                                     <div className="mt-3 flex gap-2">
                                         {req.byod_snapshot?.map((d, i) => (
-                                            <span key={i} className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded border border-white/5">
+                                            <span key={i} className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 light:text-slate-600 rounded border border-white/5 light:border-slate-200">
                                                 {d.device_model} ({d.serial_number})
                                             </span>
                                         ))}
@@ -1396,7 +1400,7 @@ export default function ITSupportDashboard() {
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => { setSelectedItem(req); setActiveModal('BYOD_EXIT_DETAILS'); }}
-                                        className="px-4 py-2 text-blue-400 hover:text-white border border-blue-500/30 hover:bg-blue-500/10 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+                                        className="px-4 py-2 text-blue-400 hover:text-white light:hover:text-slate-900 border border-blue-500/30 hover:bg-blue-500/10 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
                                     >
                                         <Eye size={14} /> View Details
                                     </button>

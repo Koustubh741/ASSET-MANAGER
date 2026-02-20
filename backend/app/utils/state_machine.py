@@ -2,6 +2,13 @@
 State machine validation for AssetRequest workflow
 Enforces valid state transitions according to enterprise ITSM workflow
 """
+
+# Canonical description of the asset request lifecycle (phases, roles, statuses)
+# is in docs/WORKFLOW_FINANCE_PROCUREMENT.md.
+# Main phases: Request → Manager → IT → Manager Confirms IT → Inventory (allocate
+# or route to Procurement) → Procurement (PO) → Finance (budget) → Procurement
+# (delivery) → QC → User acceptance → FULFILLED/CLOSED.
+
 from typing import Dict, List, Set
 
 # Valid state transitions for AssetRequest
@@ -53,8 +60,8 @@ ROLE_REQUIRED_STATES: Dict[str, str] = {
     "SUBMITTED": "MANAGER",  # Manager approval required
     "MANAGER_APPROVED": "IT_MANAGEMENT",  # IT approval required
     "IT_APPROVED": "MANAGER",  # Manager confirms IT decision
-    "PROCUREMENT_REQUESTED": "PROCUREMENT_FINANCE",  # Procurement uploads PO
-    "PO_UPLOADED": "PROCUREMENT_FINANCE",  # Procurement validates PO completeness
+    "PROCUREMENT_REQUESTED": "PROCUREMENT",  # Procurement uploads PO
+    "PO_UPLOADED": "PROCUREMENT",  # Procurement validates PO completeness
     "PO_VALIDATED": "FINANCE",  # Finance validates budget
     "FINANCE_APPROVED": "MANAGER",  # Manager confirms budget allocation
     "QC_PENDING": "ASSET_INVENTORY_MANAGER",  # QC performed by inventory manager
@@ -148,16 +155,15 @@ def validate_state_transition(
     # Check role requirements
     required_role = get_required_role_for_transition(current_status)
     if required_role:
+        # Admin and System Admin can perform any transition
+        if user_role in ("ADMIN", "SYSTEM_ADMIN"):
+            pass
         # Special handling for MANAGER role (END_USER with position=MANAGER)
-        if required_role == "MANAGER":
+        elif required_role == "MANAGER":
             if user_role not in ["END_USER", "MANAGER"]:  # Will be checked separately for position
                 return False, f"Transition from {current_status} requires MANAGER role"
         elif user_role != required_role:
-            # Special handling for PROCUREMENT/FINANCE which often overlap
-            if required_role == "PROCUREMENT_FINANCE" and user_role in ["PROCUREMENT", "FINANCE"]:
-                 pass
-            else:
-                return False, f"Transition from {current_status} requires {required_role} role"
+            return False, f"Transition from {current_status} requires {required_role} role"
     
     # Validate asset type specific transitions
     if current_status == "IT_APPROVED":

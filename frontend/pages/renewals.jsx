@@ -13,14 +13,14 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
         <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-            <div className="relative w-full max-w-md bg-[#0f172a] border-l border-white/10 shadow-2xl h-full overflow-y-auto transform transition-transform duration-300 ease-out">
+            <div className="relative w-full max-w-md bg-[#0f172a] border-l border-white/10 light:border-slate-200 shadow-2xl h-full overflow-y-auto transform transition-transform duration-300 ease-out">
                 {/* Header */}
-                <div className="p-6 border-b border-white/10 bg-slate-900/50 flex justify-between items-start">
+                <div className="p-6 border-b border-white/10 light:border-slate-200 bg-slate-900/50 flex justify-between items-start">
                     <div>
                         <h3 className="text-xl font-bold text-white">Renewal Details</h3>
                         <p className="text-sm text-slate-400 mt-1">ID: {renewal.renewal_id}</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+                    <button onClick={onClose} className="text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors">
                         <XCircle size={24} />
                     </button>
                 </div>
@@ -42,14 +42,14 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
 
                     {/* Key Info Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-800/50 rounded-xl border border-white/5">
+                        <div className="p-4 bg-slate-800/50 rounded-xl border border-white/5 light:border-slate-200">
                             <div className="flex items-center gap-2 text-slate-400 mb-2">
                                 <DollarSign size={16} />
                                 <span className="text-xs font-medium uppercase">Cost</span>
                             </div>
                             <div className="text-lg font-mono text-white">₹{renewal.renewal_cost?.toLocaleString()}</div>
                         </div>
-                        <div className="p-4 bg-slate-800/50 rounded-xl border border-white/5">
+                        <div className="p-4 bg-slate-800/50 rounded-xl border border-white/5 light:border-slate-200">
                             <div className="flex items-center gap-2 text-slate-400 mb-2">
                                 <Calendar size={16} />
                                 <span className="text-xs font-medium uppercase">Period</span>
@@ -60,7 +60,7 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
 
                     {/* Details List */}
                     <div className="space-y-4">
-                        <div className="pb-4 border-b border-white/5">
+                        <div className="pb-4 border-b border-white/5 light:border-slate-200">
                             <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                                 <FileText size={16} className="text-blue-400" /> Request Information
                             </h4>
@@ -84,7 +84,7 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
                             </div>
                         </div>
 
-                        <div className="pb-4 border-b border-white/5">
+                        <div className="pb-4 border-b border-white/5 light:border-slate-200">
                             <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                                 <Building size={16} className="text-purple-400" /> Vendor Details
                             </h4>
@@ -102,7 +102,7 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
 
                         <div>
                             <h4 className="text-sm font-semibold text-white mb-3">Approval History</h4>
-                            <div className="relative pl-4 border-l-2 border-white/10 space-y-6">
+                            <div className="relative pl-4 border-l-2 border-white/10 light:border-slate-200 space-y-6">
                                 {/* Timeline items */}
                                 <div className="relative">
                                     <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-emerald-500"></div>
@@ -140,20 +140,20 @@ const RejectModal = ({ isOpen, onClose, onConfirm }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
-            <div className="relative bg-[#1e293b] rounded-2xl w-full max-w-md border border-white/10 p-6 shadow-2xl">
+            <div className="relative bg-[#1e293b] rounded-2xl w-full max-w-md border border-white/10 light:border-slate-200 p-6 shadow-2xl">
                 <h3 className="text-xl font-bold text-white mb-2">Reject Renewal Request</h3>
                 <p className="text-slate-400 text-sm mb-4">Please provide a reason for rejecting this renewal. This will be logged in the audit trail.</p>
 
                 <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full bg-black/30 border border-white/10 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-red-500/50 h-32 resize-none"
+                    className="w-full bg-black/30 border border-white/10 light:border-slate-200 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-red-500/50 h-32 resize-none"
                     placeholder="Enter rejection reason..."
                     autoFocus
                 />
 
                 <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={onClose} className="px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors">Cancel</button>
+                    <button onClick={onClose} className="px-4 py-2 text-sm text-slate-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 transition-colors">Cancel</button>
                     <button
                         onClick={() => onConfirm(reason)}
                         disabled={!reason.trim()}
@@ -288,7 +288,7 @@ export default function Renewals() {
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => setSelectedRenewal(asset)}
-                    className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                    className="p-1.5 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 transition-colors"
                     title="View Details"
                 >
                     <Eye size={16} />
@@ -324,7 +324,7 @@ export default function Renewals() {
                         Enterprise Workflow: <span className="text-yellow-400">IT</span> <ChevronRight size={14} /> <span className="text-blue-400">Finance</span> <ChevronRight size={14} /> <span className="text-purple-400">Commercial</span>
                     </p>
                 </div>
-                <Link href="/" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg flex items-center transition-colors border border-white/5">
+                <Link href="/" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg flex items-center transition-colors border border-white/5 light:border-slate-200">
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
                 </Link>
             </div>
@@ -333,7 +333,7 @@ export default function Renewals() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div
                     onClick={() => toggleFilter('Requested')}
-                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Requested' ? 'bg-yellow-500/10 border-yellow-500/50 ring-1 ring-yellow-500/50' : 'bg-slate-900/50 hover:bg-slate-800/80 border-white/5'}`}
+                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Requested' ? 'bg-yellow-500/10 border-yellow-500/50 ring-1 ring-yellow-500/50' : 'bg-slate-900/50 hover:bg-slate-800/80 border-white/5 light:border-slate-200'}`}
                 >
                     <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -349,7 +349,7 @@ export default function Renewals() {
 
                 <div
                     onClick={() => toggleFilter('IT_Approved')}
-                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'IT_Approved' ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/50' : 'bg-slate-900/50 hover:bg-slate-800/80 border-white/5'}`}
+                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'IT_Approved' ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/50' : 'bg-slate-900/50 hover:bg-slate-800/80 border-white/5 light:border-slate-200'}`}
                 >
                     <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -365,7 +365,7 @@ export default function Renewals() {
 
                 <div
                     onClick={() => toggleFilter('Finance_Approved')}
-                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Finance_Approved' ? 'bg-purple-500/10 border-purple-500/50 ring-1 ring-purple-500/50' : 'bg-slate-900/50 hover:bg-slate-800/80 border-white/5'}`}
+                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Finance_Approved' ? 'bg-purple-500/10 border-purple-500/50 ring-1 ring-purple-500/50' : 'bg-slate-900/50 hover:bg-slate-800/80 border-white/5 light:border-slate-200'}`}
                 >
                     <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -386,16 +386,16 @@ export default function Renewals() {
                     <div className="bg-blue-500/10 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-500/20 flex items-center gap-2">
                         <Filter size={12} />
                         Filtered by Stage: <span className="font-bold text-white">{filter.replace('_', ' ')}</span>
-                        <button onClick={() => setFilter(null)} className="ml-2 hover:text-white"><XCircle size={14} /></button>
+                        <button onClick={() => setFilter(null)} className="ml-2 hover:text-white light:hover:text-slate-900"><XCircle size={14} /></button>
                     </div>
                 </div>
             )}
 
             {/* Data Table */}
-            <div className="bg-slate-900/50 backdrop-blur border border-white/5 rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-slate-900/50 backdrop-blur border border-white/5 light:border-slate-200 rounded-2xl overflow-hidden shadow-xl">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="border-b border-white/5 bg-white/5">
+                        <tr className="border-b border-white/5 light:border-slate-200 bg-white/5 light:bg-slate-50">
                             <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Asset Details</th>
                             <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Requested By</th>
                             <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Renewal Cost</th>
@@ -422,13 +422,13 @@ export default function Renewals() {
                                 </td>
                                 <td className="p-5">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center text-xs font-bold text-slate-400">
+                                        <div className="w-8 h-8 rounded-full bg-slate-800 border border-white/5 light:border-slate-200 flex items-center justify-center text-xs font-bold text-slate-400">
                                             {asset.assigned_to?.charAt(0) || 'S'}
                                         </div>
                                         <span className="text-slate-300 text-sm">{asset.assigned_to || 'System Admin'}</span>
                                     </div>
                                 </td>
-                                <td className="p-5 text-slate-300 font-mono font-medium">₹{asset.renewal_cost?.toLocaleString()}</td>
+                                <td className="p-5 text-slate-300 light:text-slate-700 font-mono font-medium">₹{asset.renewal_cost?.toLocaleString()}</td>
                                 <td className="p-5">
                                     {getStatusBadge(asset.renewal_status)}
                                 </td>

@@ -9,8 +9,10 @@ import {
 import apiClient from '@/lib/apiClient';
 import cronstrue from 'cronstrue';
 import { AGENT_DETAILS } from '../data/agentDetails';
+import { useAssetContext } from '@/contexts/AssetContext';
 
 export default function AgentsPage() {
+    const { refreshData } = useAssetContext();
     const [agents, setAgents] = useState([
         { id: 'agent-local', name: 'Local Discovery', role: 'Host Integrity', status: 'online', lastSync: '10 mins ago', type: 'System', health: 98, endpoint: '/collect/trigger' },
         { id: 'agent-cloud', name: 'Cloud Monitor', role: 'AWS/Azure/Google Inspector', type: 'Cloud', status: 'online', health: 98, lastSync: '1h ago', endpoint: '/collect/cloud/sync' },
@@ -267,7 +269,7 @@ export default function AgentsPage() {
 
             const response = await apiClient.request(endpoint, {
                 method: method,
-                body: Object.keys(params).length > 0 ? params : undefined
+                body: Object.keys(params).length > 0 ? params : {}
             });
 
             console.log('Discovery Trigger Response:', response);
@@ -291,6 +293,9 @@ export default function AgentsPage() {
                         [agentId]: { percent: 0, status: 'running', message: 'Starting scan...', scanId: response.scan_id }
                     }));
                     pollScanStatus(agentId, response.scan_id);
+                } else {
+                    // Non-async scan (e.g. local discovery): refresh asset inventory immediately
+                    setTimeout(() => refreshData(), 1500);
                 }
 
                 // Handle server scan results specifically
@@ -331,9 +336,10 @@ export default function AgentsPage() {
 
                     if (status.status === 'completed') {
                         showToast(`Scan complete: ${status.devices_found} devices found`, 'success');
-                        // Refresh listings
+                        // Refresh listings and asset inventory context
                         fetchAgentMetrics(agentId);
                         fetchDashboardStats();
+                        refreshData();
                     } else {
                         showToast(`Scan failed: ${status.error || 'Unknown error'}`, 'error');
                     }
@@ -360,8 +366,12 @@ export default function AgentsPage() {
     const testSNMPConnection = async () => {
         setTestingConnection(true);
         try {
-            // Extract first IP from network range for testing
-            const testIp = snmpConfig.networkRange.split('/')[0];
+            // Use first usable host (not network addr .0) — e.g. 192.168.1.0/24 → 192.168.1.1
+            const base = snmpConfig.networkRange.split('/')[0];
+            const octets = base.split('.');
+            const testIp = (octets.length === 4 && octets[3] === '0')
+                ? octets.slice(0, 3).join('.') + '.1'
+                : base;
 
             const response = await apiClient.request('/collect/scan/validate', {
                 method: 'POST',
@@ -478,7 +488,7 @@ export default function AgentsPage() {
                     }`}>
                     {toast.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle2 size={20} />}
                     <span className="text-sm font-bold">{toast.message}</span>
-                    <button onClick={() => setToast(null)} className="ml-2 hover:text-white transition-colors">
+                    <button onClick={() => setToast(null)} className="ml-2 hover:text-white light:hover:text-slate-900 transition-colors">
                         <X size={16} />
                     </button>
                 </div>
@@ -488,33 +498,33 @@ export default function AgentsPage() {
             {configAgent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                        <div className="p-6 border-b border-white/5 light:border-slate-200 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
                                     <Settings size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-white tracking-tight">Agent Configuration</h3>
+                                    <h3 className="text-xl font-bold text-white light:text-slate-800 tracking-tight">Agent Configuration</h3>
                                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{configAgent.name}</p>
                                 </div>
                             </div>
-                            <button onClick={() => setConfigAgent(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                            <button onClick={() => setConfigAgent(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
 
                         <div className="p-0 flex-1 overflow-y-auto custom-scrollbar">
                             {/* Tabs */}
-                            <div className="flex border-b border-white/5 bg-white/5 px-8 pt-6 gap-6 sticky top-0 z-10 backdrop-blur-md">
+                            <div className="flex border-b border-white/5 light:border-slate-200 bg-white/5 light:bg-slate-50 px-8 pt-6 gap-6 sticky top-0 z-10 backdrop-blur-md">
                                 <button
                                     onClick={() => setActiveTab('config')}
-                                    className={`pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'config' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-white'}`}
+                                    className={`pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'config' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-white light:hover:text-slate-900'}`}
                                 >
                                     General settings
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('schedule')}
-                                    className={`pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'schedule' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-white'}`}
+                                    className={`pb-4 text-sm font-bold border-b-2 transition-all ${activeTab === 'schedule' ? 'border-blue-500 text-blue-400' : 'border-transparent text-slate-500 hover:text-white light:hover:text-slate-900'}`}
                                 >
                                     Automation Schedule
                                 </button>
@@ -529,7 +539,7 @@ export default function AgentsPage() {
                                                 type="text"
                                                 value={configAgent.name}
                                                 onChange={(e) => setConfigAgent({ ...configAgent, name: e.target.value })}
-                                                className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                                className="w-full bg-slate-800/50 border border-white/5 light:border-slate-200 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
                                             />
                                         </div>
 
@@ -539,7 +549,7 @@ export default function AgentsPage() {
                                                 type="text"
                                                 value={configAgent.role}
                                                 onChange={(e) => setConfigAgent({ ...configAgent, role: e.target.value })}
-                                                className="w-full bg-slate-800/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                                className="w-full bg-slate-800/50 border border-white/5 light:border-slate-200 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
                                             />
                                         </div>
 
@@ -552,21 +562,21 @@ export default function AgentsPage() {
                                                     <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider">SNMP Configuration</h4>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Network Range (CIDR)</label>
+                                                    <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Network Range (CIDR)</label>
                                                     <input
                                                         type="text"
                                                         value={snmpConfig.networkRange}
                                                         onChange={(e) => setSnmpConfig({ ...snmpConfig, networkRange: e.target.value })}
                                                         placeholder="192.168.1.0/24"
-                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                        className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">SNMP Version</label>
+                                                    <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">SNMP Version</label>
                                                     <select
                                                         value={snmpConfig.snmpVersion}
                                                         onChange={(e) => setSnmpConfig({ ...snmpConfig, snmpVersion: e.target.value })}
-                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                        className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                                                     >
                                                         <option value="v2c">v2c (Standard)</option>
                                                         <option value="v3">v3 (Secure USM)</option>
@@ -577,17 +587,17 @@ export default function AgentsPage() {
                                                     <div className="space-y-4 pt-2 animate-in slide-in-from-top-2 duration-300">
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div className="space-y-2">
-                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Security Username</label>
+                                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Security Username</label>
                                                                 <input
                                                                     type="text"
                                                                     value={snmpConfig.username}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, username: e.target.value })}
                                                                     placeholder="snmp-user"
-                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                                 />
                                                             </div>
                                                             <div className="space-y-2">
-                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight text-blue-400">Context Name <span className="text-[10px] lowercase opacity-60">(Optional)</span></label>
+                                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight text-blue-400">Context Name <span className="text-[10px] lowercase opacity-60">(Optional)</span></label>
                                                                 <input
                                                                     type="text"
                                                                     value={snmpConfig.contextName}
@@ -600,11 +610,11 @@ export default function AgentsPage() {
 
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div className="space-y-2">
-                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Auth Protocol</label>
+                                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Auth Protocol</label>
                                                                 <select
                                                                     value={snmpConfig.authProtocol}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, authProtocol: e.target.value })}
-                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                                                                 >
                                                                     <option value="NONE">None</option>
                                                                     <option value="MD5">MD5</option>
@@ -613,24 +623,24 @@ export default function AgentsPage() {
                                                                 </select>
                                                             </div>
                                                             <div className="space-y-2">
-                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Auth Key</label>
+                                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Auth Key</label>
                                                                 <input
                                                                     type="password"
                                                                     value={snmpConfig.authKey}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, authKey: e.target.value })}
                                                                     placeholder="••••••••"
-                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                                 />
                                                             </div>
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-4">
                                                             <div className="space-y-2">
-                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Priv Protocol</label>
+                                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Priv Protocol</label>
                                                                 <select
                                                                     value={snmpConfig.privProtocol}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, privProtocol: e.target.value })}
-                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                                                                 >
                                                                     <option value="NONE">None</option>
                                                                     <option value="DES">DES</option>
@@ -641,37 +651,37 @@ export default function AgentsPage() {
                                                                 </select>
                                                             </div>
                                                             <div className="space-y-2">
-                                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Priv Key</label>
+                                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Priv Key</label>
                                                                 <input
                                                                     type="password"
                                                                     value={snmpConfig.privKey}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, privKey: e.target.value })}
                                                                     placeholder="••••••••"
-                                                                    className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                                 />
                                                             </div>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Community String</label>
+                                                        <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Community String</label>
                                                         <input
                                                             type="password"
                                                             value={snmpConfig.communityString}
                                                             onChange={(e) => setSnmpConfig({ ...snmpConfig, communityString: e.target.value })}
                                                             placeholder="public"
-                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                            className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                         />
                                                     </div>
                                                 )}
                                                 <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Exclusions (Optional)</label>
+                                                    <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Exclusions (Optional)</label>
                                                     <input
                                                         type="text"
                                                         value={snmpConfig.exclusions}
                                                         onChange={(e) => setSnmpConfig({ ...snmpConfig, exclusions: e.target.value })}
                                                         placeholder="192.168.1.1, 192.168.1.254"
-                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                        className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                     />
                                                 </div>
 
@@ -696,7 +706,13 @@ export default function AgentsPage() {
                                                             )}
                                                         </button>
                                                         <p className="text-xs text-slate-500 mt-2 text-center">
-                                                            Tests credentials against {snmpConfig.networkRange.split('/')[0]}
+                                                            Tests credentials against {(() => {
+                                                                const base = snmpConfig.networkRange.split('/')[0];
+                                                                const octets = base.split('.');
+                                                                return (octets.length === 4 && octets[3] === '0')
+                                                                    ? octets.slice(0, 3).join('.') + '.1'
+                                                                    : base;
+                                                            })()}
                                                         </p>
                                                     </div>
                                                 )}
@@ -712,28 +728,28 @@ export default function AgentsPage() {
                                                 </div>
 
                                                 <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Target IPs</label>
+                                                    <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Target IPs</label>
                                                     <textarea
                                                         value={serverConfig.targets}
                                                         onChange={(e) => setServerConfig({ ...serverConfig, targets: e.target.value })}
                                                         placeholder="192.168.1.15, 10.0.0.50"
                                                         rows={2}
-                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm resize-none"
+                                                        className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm resize-none"
                                                     />
                                                 </div>
 
                                                 <div className="space-y-2">
-                                                    <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">OS Type</label>
+                                                    <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">OS Type</label>
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => setServerConfig({ ...serverConfig, osType: 'linux', username: 'root' })}
-                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'linux' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-transparent text-slate-500 hover:text-white'}`}
+                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'linux' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-transparent text-slate-500 hover:text-white light:hover:text-slate-900'}`}
                                                         >
                                                             Linux (SSH)
                                                         </button>
                                                         <button
                                                             onClick={() => setServerConfig({ ...serverConfig, osType: 'windows', username: 'Administrator' })}
-                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'windows' ? 'bg-blue-500/20 border-blue-500 text-blue-300' : 'bg-white/5 border-transparent text-slate-500 hover:text-white'}`}
+                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'windows' ? 'bg-blue-500/20 border-blue-500 text-blue-300' : 'bg-white/5 border-transparent text-slate-500 hover:text-white light:hover:text-slate-900'}`}
                                                         >
                                                             Windows (WinRM)
                                                         </button>
@@ -742,36 +758,36 @@ export default function AgentsPage() {
 
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Username</label>
+                                                        <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Username</label>
                                                         <input
                                                             type="text"
                                                             value={serverConfig.username}
                                                             onChange={(e) => setServerConfig({ ...serverConfig, username: e.target.value })}
                                                             placeholder={serverConfig.osType === 'linux' ? 'root' : 'Administrator'}
-                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
+                                                            className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Password</label>
+                                                        <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Password</label>
                                                         <input
                                                             type="password"
                                                             value={serverConfig.password}
                                                             onChange={(e) => setServerConfig({ ...serverConfig, password: e.target.value })}
                                                             placeholder="••••••••"
-                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
+                                                            className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
                                                         />
                                                     </div>
                                                 </div>
 
                                                 {serverConfig.osType === 'linux' && (
                                                     <div className="space-y-2">
-                                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Private Key (PEM)</label>
+                                                        <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Private Key (PEM)</label>
                                                         <textarea
                                                             value={serverConfig.privateKey}
                                                             onChange={(e) => setServerConfig({ ...serverConfig, privateKey: e.target.value })}
                                                             placeholder="-----BEGIN RSA PRIVATE KEY-----"
                                                             rows={3}
-                                                            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-[10px] resize-none"
+                                                            className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-[10px] resize-none"
                                                         />
                                                     </div>
                                                 )}
@@ -780,13 +796,13 @@ export default function AgentsPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-blue-500/20 transition-all">
+                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 group hover:border-blue-500/20 transition-all">
                                             <div className="flex items-center gap-4">
                                                 <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
                                                     <Clock size={20} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-sm font-bold text-white">Automated Scanning</h4>
+                                                    <h4 className="text-sm font-bold text-white light:text-slate-800">Automated Scanning</h4>
                                                     <p className="text-[10px] text-slate-500 font-medium tracking-tight">Run discovery automatically on a schedule</p>
                                                 </div>
                                             </div>
@@ -800,7 +816,7 @@ export default function AgentsPage() {
 
                                         <div className={`space-y-4 transition-all duration-300 ${scheduleConfig.is_enabled ? 'opacity-100' : 'opacity-50 pointer-events-none grayscale'}`}>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Quick Presets</label>
+                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Quick Presets</label>
                                                 <div className="flex flex-wrap gap-2">
                                                     {[
                                                         { label: 'Every Hour', value: '0 * * * *' },
@@ -813,7 +829,7 @@ export default function AgentsPage() {
                                                             onClick={() => setScheduleConfig({ ...scheduleConfig, cron_expression: preset.value })}
                                                             className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${scheduleConfig.cron_expression === preset.value
                                                                 ? 'bg-blue-600/20 border-blue-500 text-blue-400'
-                                                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                                                : 'bg-white/5 border-white/10 text-slate-400 light:text-slate-600 hover:bg-white/10'
                                                                 }`}
                                                         >
                                                             {preset.label}
@@ -823,14 +839,14 @@ export default function AgentsPage() {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-xs font-bold text-slate-400 uppercase tracking-tight">Cron Schedule (Advanced)</label>
+                                                <label className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">Cron Schedule (Advanced)</label>
                                                 <div className="relative">
                                                     <input
                                                         type="text"
                                                         value={scheduleConfig.cron_expression}
                                                         onChange={(e) => setScheduleConfig({ ...scheduleConfig, cron_expression: e.target.value })}
                                                         placeholder="0 0 * * *"
-                                                        className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm pr-10"
+                                                        className="w-full px-4 py-2.5 bg-white/5 light:bg-slate-50 border border-white/10 rounded-xl text-white placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm pr-10"
                                                     />
                                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
                                                         <Clock size={14} />
@@ -840,7 +856,7 @@ export default function AgentsPage() {
                                                     <Info size={14} className="text-blue-400 mt-0.5 flex-shrink-0" />
                                                     <div>
                                                         <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-0.5">Schedule Preview</p>
-                                                        <p className="text-xs text-slate-300 font-medium leading-relaxed">
+                                                        <p className="text-xs text-slate-300 light:text-slate-700 font-medium leading-relaxed">
                                                             {(() => {
                                                                 try {
                                                                     return scheduleConfig.cron_expression ? cronstrue.toString(scheduleConfig.cron_expression) : "No schedule set";
@@ -855,13 +871,13 @@ export default function AgentsPage() {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 pt-4">
-                                            <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                            <div className="p-4 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
                                                 <span className="text-[10px] uppercase font-black text-slate-500 block mb-1">Last Run</span>
-                                                <span className="text-sm font-mono text-slate-300">
+                                                <span className="text-sm font-mono text-slate-300 light:text-slate-700">
                                                     {scheduleConfig.last_run ? new Date(scheduleConfig.last_run).toLocaleString() : 'Never'}
                                                 </span>
                                             </div>
-                                            <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                            <div className="p-4 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
                                                 <span className="text-[10px] uppercase font-black text-slate-500 block mb-1">Next Run</span>
                                                 <span className="text-sm font-mono text-blue-400 font-bold">
                                                     {scheduleConfig.next_run ? new Date(scheduleConfig.next_run).toLocaleString() : 'Pending...'}
@@ -873,10 +889,10 @@ export default function AgentsPage() {
                             </div>
                         </div>
 
-                        <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                        <div className="p-6 bg-slate-800/20 border-t border-white/5 light:border-slate-200 flex flex-shrink-0 gap-3">
                             <button
                                 onClick={() => setConfigAgent(null)}
-                                className="flex-1 py-3 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all text-sm"
+                                className="flex-1 py-3 rounded-xl font-bold text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 hover:bg-white/5 transition-all text-sm"
                             >
                                 Cancel
                             </button>
@@ -897,17 +913,17 @@ export default function AgentsPage() {
                 selectedLog && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
                         <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-purple-500/20 shadow-purple-500/10 flex flex-col max-h-[90vh]">
-                            <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-purple-500/10 to-transparent">
+                            <div className="p-6 border-b border-white/5 light:border-slate-200 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-purple-500/10 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
                                         <Activity size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-white tracking-tight">Event Intelligence</h3>
+                                        <h3 className="text-xl font-bold text-white light:text-slate-800 tracking-tight">Event Intelligence</h3>
                                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{selectedLog.event}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedLog(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                <button onClick={() => setSelectedLog(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -943,20 +959,27 @@ export default function AgentsPage() {
                                     <div className="grid grid-cols-1 gap-3">
                                         {Object.entries(selectedLog.details)
                                             .filter(([key]) => key !== 'trigger_source')
-                                            .map(([key, value]) => (
-                                                <div key={key} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-blue-500/20 transition-all">
-                                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">
-                                                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                                    </span>
-                                                    <span className="text-sm font-black text-blue-400 font-mono">
-                                                        {typeof value === 'string'
-                                                            ? value.replace(/_/g, ' ')
-                                                            : typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                                                    </span>
-                                                </div>
-                                            ))}
+                                            .map(([key, value]) => {
+                                                const strVal = typeof value === 'string' ? value.replace(/_/g, ' ') : typeof value === 'object' ? JSON.stringify(value) : String(value);
+                                                const isIpAddress = key.toLowerCase() === 'ip_address' && typeof value === 'string' && value.includes('; ');
+                                                const ipEntries = isIpAddress ? value.split('; ').map(s => s.trim()).filter(Boolean) : [];
+                                                return (
+                                                    <div key={key} className={`p-4 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 group hover:border-blue-500/20 transition-all ${isIpAddress ? 'flex flex-col gap-2' : 'flex items-center justify-between'}`}>
+                                                        <span className="text-xs font-bold text-slate-400 light:text-slate-600 uppercase tracking-tight">
+                                                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                                        </span>
+                                                        {isIpAddress && ipEntries.length > 0 ? (
+                                                            <ul className="text-sm font-black text-blue-400 font-mono list-none p-0 m-0 space-y-1">
+                                                                {ipEntries.map((entry, i) => <li key={i}>{entry}</li>)}
+                                                            </ul>
+                                                        ) : (
+                                                            <span className="text-sm font-black text-blue-400 font-mono">{strVal}</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         {Object.keys(selectedLog.details).length === 0 && (
-                                            <div className="py-8 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">
+                                            <div className="py-8 text-center bg-white/5 light:bg-slate-50 rounded-2xl border border-dashed border-white/10">
                                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">No detailed payload available</p>
                                             </div>
                                         )}
@@ -964,10 +987,10 @@ export default function AgentsPage() {
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                            <div className="p-6 bg-slate-800/20 border-t border-white/5 light:border-slate-200 flex flex-shrink-0 gap-3">
                                 <button
                                     onClick={() => setSelectedLog(null)}
-                                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                    className="flex-1 py-3 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
                                 >
                                     Close Intelligence Data
                                 </button>
@@ -982,17 +1005,17 @@ export default function AgentsPage() {
                 selectedAgentDiscoveries && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
                         <div className="w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
-                            <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                            <div className="p-6 border-b border-white/5 light:border-slate-200 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
                                         <Database size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-white tracking-tight">Agent Discoveries</h3>
+                                        <h3 className="text-xl font-bold text-white light:text-slate-800 tracking-tight">Agent Discoveries</h3>
                                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Findings reported by {selectedAgentDiscoveries.agent.name}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedAgentDiscoveries(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                <button onClick={() => setSelectedAgentDiscoveries(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -1006,7 +1029,7 @@ export default function AgentsPage() {
                                 ) : selectedAgentDiscoveries.data.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {selectedAgentDiscoveries.data.map((item, idx) => (
-                                            <div key={item.id || idx} className="p-5 rounded-2xl bg-white/5 border border-white/5 hover:border-blue-500/20 transition-all group">
+                                            <div key={item.id || idx} className="p-5 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 hover:border-blue-500/20 transition-all group">
                                                 {selectedAgentDiscoveries.agent.type === 'API' ? (
                                                     /* Software License View */
                                                     <>
@@ -1016,7 +1039,7 @@ export default function AgentsPage() {
                                                                     <Package size={18} />
                                                                 </div>
                                                                 <div>
-                                                                    <h4 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-all">{item.name}</h4>
+                                                                    <h4 className="text-sm font-bold text-white light:text-slate-800 group-hover:text-emerald-300 transition-all">{item.name}</h4>
                                                                     <p className="text-[10px] font-mono text-slate-500 uppercase">{item.vendor}</p>
                                                                 </div>
                                                             </div>
@@ -1044,7 +1067,7 @@ export default function AgentsPage() {
                                                                     <Users size={18} />
                                                                 </div>
                                                                 <div>
-                                                                    <h4 className="text-sm font-bold text-white group-hover:text-amber-300 transition-all">{item.full_name}</h4>
+                                                                    <h4 className="text-sm font-bold text-white light:text-slate-800 group-hover:text-amber-300 transition-all">{item.full_name}</h4>
                                                                     <p className="text-[10px] font-mono text-slate-500 uppercase">{item.email}</p>
                                                                 </div>
                                                             </div>
@@ -1072,7 +1095,7 @@ export default function AgentsPage() {
                                                                     <Server size={18} />
                                                                 </div>
                                                                 <div>
-                                                                    <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-all">{item.name}</h4>
+                                                                    <h4 className="text-sm font-bold text-white light:text-slate-800 group-hover:text-blue-300 transition-all">{item.name}</h4>
                                                                     <p className="text-[10px] font-mono text-slate-500 uppercase">{item.serial_number}</p>
                                                                 </div>
                                                             </div>
@@ -1087,7 +1110,19 @@ export default function AgentsPage() {
                                                             </div>
                                                             <div className="flex flex-col">
                                                                 <span className="text-slate-500 font-bold uppercase tracking-tight">IP Address</span>
-                                                                <span className="text-blue-400 font-mono font-bold">{item.specifications?.['IP Address'] || 'N/A'}</span>
+                                                                {(() => {
+                                                                    const raw = item.specifications?.['IP Address'] || 'N/A';
+                                                                    const entries = typeof raw === 'string' && raw.includes('; ') ? raw.split('; ').map(s => s.trim()).filter(Boolean) : [raw];
+                                                                    return entries.length > 1 ? (
+                                                                        <ul className="text-blue-400 font-mono font-bold text-[10px] space-y-0.5 list-none p-0 m-0">
+                                                                            {entries.map((entry, i) => (
+                                                                                <li key={i} className="leading-tight">{entry}</li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    ) : (
+                                                                        <span className="text-blue-400 font-mono font-bold">{raw}</span>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                         </div>
                                                     </>
@@ -1096,7 +1131,7 @@ export default function AgentsPage() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                    <div className="py-20 text-center bg-white/5 light:bg-slate-50 rounded-3xl border border-dashed border-white/10">
                                         <div className="w-16 h-16 rounded-full bg-slate-800/50 flex items-center justify-center mx-auto mb-4 text-slate-600">
                                             <Database size={32} />
                                         </div>
@@ -1106,10 +1141,10 @@ export default function AgentsPage() {
                                 )}
                             </div>
 
-                            <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                            <div className="p-6 bg-slate-800/20 border-t border-white/5 light:border-slate-200 flex flex-shrink-0 gap-3">
                                 <button
                                     onClick={() => setSelectedAgentDiscoveries(null)}
-                                    className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                    className="w-full py-3 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
                                 >
                                     Close Intelligence View
                                 </button>
@@ -1126,17 +1161,17 @@ export default function AgentsPage() {
                 selectedAgentDetails && AGENT_DETAILS && AGENT_DETAILS[selectedAgentDetails.id] && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
                         <div className="w-full max-w-3xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
-                            <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                            <div className="p-6 border-b border-white/5 light:border-slate-200 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
                                         <FileText size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold text-white tracking-tight">{selectedAgentDetails.name}</h3>
+                                        <h3 className="text-xl font-bold text-white light:text-slate-800 tracking-tight">{selectedAgentDetails.name}</h3>
                                         <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{selectedAgentDetails.role} • Technical Documentation</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedAgentDetails(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                                <button onClick={() => setSelectedAgentDetails(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -1145,13 +1180,13 @@ export default function AgentsPage() {
 
                                 {/* Purpose */}
 
-                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                                <div className="p-5 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
 
                                     <div className="flex items-center gap-2 mb-3">
 
                                         <Target className="text-blue-400" size={18} />
 
-                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Purpose</h4>
+                                        <h4 className="text-sm font-bold text-white light:text-slate-800 uppercase tracking-tight">Purpose</h4>
 
                                     </div>
 
@@ -1163,13 +1198,13 @@ export default function AgentsPage() {
 
                                 {/* Discovery Methods */}
 
-                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                                <div className="p-5 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
 
                                     <div className="flex items-center gap-2 mb-3">
 
                                         <Layers className="text-emerald-400" size={18} />
 
-                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Discovery Methods</h4>
+                                        <h4 className="text-sm font-bold text-white light:text-slate-800 uppercase tracking-tight">Discovery Methods</h4>
 
                                     </div>
 
@@ -1193,13 +1228,13 @@ export default function AgentsPage() {
 
                                 {/* Data Sources */}
 
-                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                                <div className="p-5 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
 
                                     <div className="flex items-center gap-2 mb-3">
 
                                         <Database className="text-purple-400" size={18} />
 
-                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Data Sources</h4>
+                                        <h4 className="text-sm font-bold text-white light:text-slate-800 uppercase tracking-tight">Data Sources</h4>
 
                                     </div>
 
@@ -1207,7 +1242,7 @@ export default function AgentsPage() {
 
                                         {AGENT_DETAILS[selectedAgentDetails.id].dataSources.map((source, idx) => (
 
-                                            <div key={idx} className="flex items-center gap-2 text-xs text-slate-300">
+                                            <div key={idx} className="flex items-center gap-2 text-xs text-slate-300 light:text-slate-700">
 
                                                 <div className="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
 
@@ -1225,13 +1260,13 @@ export default function AgentsPage() {
 
                                 {/* Capabilities */}
 
-                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                                <div className="p-5 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
 
                                     <div className="flex items-center gap-2 mb-3">
 
                                         <Zap className="text-amber-400" size={18} />
 
-                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Capabilities</h4>
+                                        <h4 className="text-sm font-bold text-white light:text-slate-800 uppercase tracking-tight">Capabilities</h4>
 
                                     </div>
 
@@ -1239,7 +1274,7 @@ export default function AgentsPage() {
 
                                         {AGENT_DETAILS[selectedAgentDetails.id].capabilities.map((capability, idx) => (
 
-                                            <div key={idx} className="flex items-start gap-2 text-xs text-slate-300">
+                                            <div key={idx} className="flex items-start gap-2 text-xs text-slate-300 light:text-slate-700">
 
                                                 <Check className="text-amber-400 flex-shrink-0 mt-0.5" size={14} />
 
@@ -1257,13 +1292,13 @@ export default function AgentsPage() {
 
                                 {/* Schedule */}
 
-                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                                <div className="p-5 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
 
                                     <div className="flex items-center gap-2 mb-3">
 
                                         <Calendar className="text-cyan-400" size={18} />
 
-                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Execution Schedule</h4>
+                                        <h4 className="text-sm font-bold text-white light:text-slate-800 uppercase tracking-tight">Execution Schedule</h4>
 
                                     </div>
 
@@ -1275,13 +1310,13 @@ export default function AgentsPage() {
 
                                 {/* Output */}
 
-                                <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                                <div className="p-5 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
 
                                     <div className="flex items-center gap-2 mb-3">
 
                                         <FileText className="text-indigo-400" size={18} />
 
-                                        <h4 className="text-sm font-bold text-white uppercase tracking-tight">Output Format</h4>
+                                        <h4 className="text-sm font-bold text-white light:text-slate-800 uppercase tracking-tight">Output Format</h4>
 
                                     </div>
 
@@ -1293,12 +1328,12 @@ export default function AgentsPage() {
 
 
 
-                            <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                            <div className="p-6 bg-slate-800/20 border-t border-white/5 light:border-slate-200 flex flex-shrink-0 gap-3">
                                 <button
 
                                     onClick={() => setSelectedAgentDetails(null)}
 
-                                    className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                    className="w-full py-3 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
 
                                 >
 
@@ -1318,19 +1353,19 @@ export default function AgentsPage() {
             {viewingMetrics && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
-                        <div className="p-6 border-b border-white/5 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
+                        <div className="p-6 border-b border-white/5 light:border-slate-200 flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
                                     <BarChart3 size={20} />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-white tracking-tight">Mission Metrics</h3>
+                                    <h3 className="text-xl font-bold text-white light:text-slate-800 tracking-tight">Mission Metrics</h3>
                                     <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">
                                         Performance data for {agents.find(a => a.id === viewingMetrics)?.name}
                                     </p>
                                 </div>
                             </div>
-                            <button onClick={() => setViewingMetrics(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                            <button onClick={() => setViewingMetrics(null)} className="p-2 rounded-xl hover:bg-white/5 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -1344,7 +1379,7 @@ export default function AgentsPage() {
                             ) : (
                                 <div className="grid grid-cols-2 gap-4">
                                     {Object.entries(agentMetrics[viewingMetrics]).map(([key, value]) => (
-                                        <div key={key} className="p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-blue-500/20 transition-all">
+                                        <div key={key} className="p-4 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 group hover:border-blue-500/20 transition-all">
                                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">{key.replace(/_/g, ' ')}</span>
                                             <span className="text-xl font-black text-blue-400 font-mono">
                                                 {(() => {
@@ -1383,7 +1418,7 @@ export default function AgentsPage() {
                             )}
                         </div>
 
-                        <div className="p-6 bg-slate-800/20 border-t border-white/5 flex flex-shrink-0 gap-3">
+                        <div className="p-6 bg-slate-800/20 border-t border-white/5 light:border-slate-200 flex flex-shrink-0 gap-3">
                             <button
                                 onClick={() => {
                                     fetchAgentMetrics(viewingMetrics);
@@ -1396,7 +1431,7 @@ export default function AgentsPage() {
                             </button>
                             <button
                                 onClick={() => setViewingMetrics(null)}
-                                className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                className="flex-1 py-3 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white rounded-xl font-bold transition-all active:scale-95 text-sm"
                             >
                                 Close
                             </button>
@@ -1451,7 +1486,7 @@ export default function AgentsPage() {
                 {/* Agent Status Cards */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <h3 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                             <Shield className="text-blue-400" size={20} />
                             Active Agent Registry
                         </h3>
@@ -1479,7 +1514,7 @@ export default function AgentsPage() {
 
                                     <div className="flex justify-between items-start mb-6 relative">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5 transition-all ${agent.status === 'online' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-800/50 text-slate-500'}`}>
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5 light:border-slate-200 transition-all ${agent.status === 'online' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-800/50 text-slate-500'}`}>
                                                 {agent.type === 'System' && <Cpu size={24} />}
                                                 {agent.type === 'Cloud' && <Cloud size={24} />}
                                                 {agent.type === 'API' && <RefreshCw size={24} className={isSyncing ? 'animate-spin' : ''} />}
@@ -1487,7 +1522,7 @@ export default function AgentsPage() {
                                                 {agent.type === 'Network' && <Server size={24} />}
                                             </div>
                                             <div>
-                                                <h4 className="text-lg font-bold text-white group-hover:text-blue-300 transition-colors uppercase tracking-tight">{agent.name === 'SNMP Scanner' ? 'SNMP Scanner' : agent.name}</h4>
+                                                <h4 className="text-lg font-bold text-white light:text-slate-800 group-hover:text-blue-300 transition-colors uppercase tracking-tight">{agent.name === 'SNMP Scanner' ? 'SNMP Scanner' : agent.name}</h4>
                                                 <p className="text-slate-500 text-xs font-medium">{agent.role}</p>
                                             </div>
                                         </div>
@@ -1508,7 +1543,7 @@ export default function AgentsPage() {
                                                     <span className="text-blue-400 font-bold uppercase tracking-widest text-[9px] animate-pulse">Scan In Progress</span>
                                                     <span className="text-blue-300 font-mono">{progress.percent}%</span>
                                                 </div>
-                                                <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+                                                <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5 light:border-slate-200">
                                                     <div
                                                         className="h-full bg-blue-500 transition-all duration-300 relative overflow-hidden"
                                                         style={{ width: `${Math.max(progress.percent, 5)}%` }}
@@ -1516,7 +1551,7 @@ export default function AgentsPage() {
                                                         <div className="absolute inset-0 bg-white/20 animate-shimmer" />
                                                     </div>
                                                 </div>
-                                                <p className="text-[10px] text-slate-400 text-center truncate">{progress.message}</p>
+                                                <p className="text-[10px] text-slate-400 light:text-slate-600 text-center truncate">{progress.message}</p>
                                             </>
                                         ) : (
                                             <>
@@ -1524,7 +1559,7 @@ export default function AgentsPage() {
                                                     <span className="text-slate-500 font-bold uppercase tracking-widest text-[9px]">Operational Health</span>
                                                     <span className={`font-bold ${agent.health > 90 ? 'text-emerald-400' : agent.health > 0 ? 'text-amber-400' : 'text-slate-600'}`}>{agent.health}%</span>
                                                 </div>
-                                                <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+                                                <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5 light:border-slate-200">
                                                     <div
                                                         className={`h-full transition-all duration-1000 ${agent.health > 90 ? 'bg-blue-500' : 'bg-slate-700'}`}
                                                         style={{ width: `${agent.health}%` }}
@@ -1534,11 +1569,11 @@ export default function AgentsPage() {
                                         )}
                                     </div>
 
-                                    <div className="flex gap-2 pt-2 relative">
+                                    <div className="flex flex-wrap gap-2 pt-2 relative">
                                         <button
                                             onClick={(e) => { e.stopPropagation(); triggerScan(agent); }}
                                             disabled={isSyncing}
-                                            className={`flex-1 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${isSyncing
+                                            className={`flex-1 min-w-[120px] py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${isSyncing
                                                 ? 'bg-blue-600/40 text-blue-200 cursor-not-allowed'
                                                 : 'bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 active:scale-95'
                                                 }`}
@@ -1556,29 +1591,39 @@ export default function AgentsPage() {
                                                 fetchAgentMetrics(agent.id);
                                                 setViewingMetrics(agent.id);
                                             }}
-                                            className="px-4 py-3 bg-slate-800/50 hover:bg-slate-800 text-slate-400 rounded-xl border border-white/5 transition-all active:scale-95"
+                                            className="px-4 py-3 bg-slate-800/50 hover:bg-slate-800 text-slate-400 light:text-slate-600 rounded-xl border border-white/5 light:border-slate-200 transition-all active:scale-95"
                                             title="View Performance Metrics"
                                         >
                                             <BarChart3 size={16} />
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setConfigAgent(agent); }}
-                                            className="p-3 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+                                            className="p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 hover:bg-white/10 transition-all active:scale-95"
                                             title="Configure Agent"
                                         >
                                             <Settings size={16} />
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setSelectedAgentDetails(agent); }}
-                                            className="p-3 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all active:scale-95"
+                                            className="p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 text-slate-400 light:text-slate-600 hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all active:scale-95"
                                             title="View Agent Details"
                                         >
                                             <Info size={16} />
                                         </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                window.location.href = `/security/port-policies?agentId=${agent.id}`;
+                                            }}
+                                            className="px-3 py-3 rounded-xl bg-slate-900/70 border border-indigo-500/40 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-600/20 hover:text-indigo-100 transition-all active:scale-95"
+                                            title="View Port Policies for this Agent"
+                                        >
+                                            Port Policies
+                                        </button>
                                     </div>
 
                                     {agentMetrics[agent.id] && (
-                                        <div className="mt-4 pt-4 border-t border-white/5 flex gap-4 text-[9px] font-bold text-slate-500 uppercase tracking-widest overflow-hidden">
+                                        <div className="mt-4 pt-4 border-t border-white/5 light:border-slate-200 flex gap-4 text-[9px] font-bold text-slate-500 uppercase tracking-widest overflow-hidden">
                                             <div className="flex items-center gap-1">
                                                 <div className="w-1 h-1 rounded-full bg-blue-400" />
                                                 <span>Duration: {(agentMetrics[agent.id].duration || agentMetrics[agent.id].duration_seconds || 0).toFixed(1)}s</span>
@@ -1598,11 +1643,11 @@ export default function AgentsPage() {
                 {/* Activity Feed */}
                 <div className="space-y-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                        <h3 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                             <Terminal className="text-purple-400" size={20} />
                             Intelligence Feed
                         </h3>
-                        <button onClick={fetchAuditLogs} className="p-2 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white transition-all">
+                        <button onClick={fetchAuditLogs} className="p-2 rounded-lg hover:bg-white/5 text-slate-500 hover:text-white light:hover:text-slate-900 transition-all">
                             <RefreshCw size={14} />
                         </button>
                     </div>
@@ -1618,10 +1663,10 @@ export default function AgentsPage() {
                                 <div key={item.id} className="relative pl-6 pb-6 border-l border-white/10 last:pb-0 group">
                                     <div className={`absolute left-0 top-0 -translate-x-1/2 w-4 h-4 rounded-full border-4 border-slate-900 ${item.status === 'Success' ? 'bg-blue-500 group-hover:bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]' : 'bg-amber-500 group-hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]'} transition-all`} />
                                     <div className="flex justify-between items-start mb-1">
-                                        <h5 className="text-sm font-bold text-white tracking-tight group-hover:text-blue-300 transition-colors uppercase">{item.event}</h5>
+                                        <h5 className="text-sm font-bold text-white light:text-slate-800 tracking-tight group-hover:text-blue-300 transition-colors uppercase">{item.event}</h5>
                                         <span className="text-[10px] font-mono text-slate-500">{item.time}</span>
                                     </div>
-                                    <p className="text-xs text-slate-400 font-medium mb-2">{item.entity}</p>
+                                    <p className="text-xs text-slate-400 light:text-slate-600 font-medium mb-2">{item.entity}</p>
                                     <div className="flex items-center gap-2">
                                         <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter ${item.status === 'Success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-500'}`}>
                                             {item.status}

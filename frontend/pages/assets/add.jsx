@@ -85,7 +85,7 @@ export default function AddAsset() {
                             <a
                                 href="/sample_assets.csv"
                                 download="sample_assets.csv"
-                                className="btn bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10 hover:text-white flex items-center gap-2 text-xs"
+                                className="btn bg-white/5 text-slate-400 border border-white/5 light:border-slate-200 hover:bg-white/10 hover:text-white flex items-center gap-2 text-xs"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     const csvContent = "Asset Name,Segment,Type,Location,Status,Cost\nDell XPS 13,IT,Laptop,Mumbai Office,In Use,85000\nErgo Chair,NON-IT,Chair,Delhi Office,In Use,12000";

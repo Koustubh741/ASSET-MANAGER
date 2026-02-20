@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Package, CheckCircle, AlertTriangle, Clock, Activity, Download, Plus, Layers, LayoutGrid, Calendar, ArrowUpRight, DollarSign, TrendingDown, ShoppingBag, LogOut, Trash, FileText, Filter, Search, UserPlus, Users, Settings, Scan, RefreshCw, Eye, ShieldCheck, X, Terminal, AlertCircle, ChevronRight } from 'lucide-react'
+import { Package, CheckCircle, AlertTriangle, Clock, Activity, Download, Plus, Layers, LayoutGrid, Calendar, ArrowUpRight, DollarSign, TrendingDown, ShoppingBag, LogOut, Trash, FileText, Filter, Search, UserPlus, Users, Settings, Scan, RefreshCw, Eye, ShieldCheck, X, Terminal, AlertCircle, ChevronRight, Wallet } from 'lucide-react'
 import AlertsFeed from '@/components/AlertsFeed'
 import WorkflowVisualizer from '@/components/WorkflowVisualizer'
 import QuickScanner from '@/components/Scanner/QuickScanner';
@@ -15,7 +15,8 @@ import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
 export default function SystemAdminDashboard({ forceView }) {
     const toast = useToast();
     const router = useRouter()
-    const { ROLES, user: currentUser } = useRole()
+    const { ROLES, user: currentUser, currentRole } = useRole()
+    const isAdmin = currentRole?.slug === 'ADMIN' || currentRole?.slug === 'SYSTEM_ADMIN'
     // Asset Context for Requests
     const { incomingRequests, activeTickets, itApproveRequest, itRejectRequest, registerByod } = useAssetContext();
 
@@ -203,8 +204,8 @@ export default function SystemAdminDashboard({ forceView }) {
     }, [timeRange, currentUser]);
 
     useEffect(() => {
-        if (currentUser?.id) fetchPendingUsers();
-    }, [currentUser?.id]);
+        if (isAdmin && currentUser?.id) fetchPendingUsers();
+    }, [isAdmin, currentUser?.id]);
 
     useEffect(() => {
         if (allAssets.length === 0) return;
@@ -257,14 +258,14 @@ export default function SystemAdminDashboard({ forceView }) {
     )
 
     const StatCard = ({ title, value, subtext, icon: Icon, colorClass, gradient, trend }) => (
-        <div className={`backdrop-blur-sm bg-white/5 border border-white/10 shadow-lg rounded-xl transition-all duration-300 hover:border-blue-500/30 hover:-translate-y-1 p-6 relative overflow-hidden group cursor-pointer hover:bg-white/5 transition-all duration-300`}>
+        <div className={`backdrop-blur-sm bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200 shadow-lg rounded-xl transition-all duration-300 hover:border-blue-500/30 hover:-translate-y-1 p-6 relative overflow-hidden group cursor-pointer hover:bg-white/5 transition-all duration-300`}>
             <div className={`absolute -right-6 -top-6 p-8 rounded-full ${gradient} opacity-5 group-hover:opacity-10 transition-all duration-500 blur-2xl`}></div>
             <div className="relative z-10 flex justify-between items-start">
                 <div>
                     <div className={`p-2 w-fit rounded-lg ${gradient} bg-opacity-20 mb-3`}>
                         <Icon className="text-white" size={20} />
                     </div>
-                    <h3 className="text-3xl font-bold text-white mb-1 tracking-tight">{value}</h3>
+                    <h3 className="text-3xl font-bold text-white light:text-slate-800 mb-1 tracking-tight">{value}</h3>
                     <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">{title}</p>
                 </div>
                 {trend && (
@@ -274,7 +275,7 @@ export default function SystemAdminDashboard({ forceView }) {
                     </div>
                 )}
             </div>
-            <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-3">
+            <div className="mt-4 flex items-center justify-between border-t border-white/5 light:border-slate-200 pt-3">
                 <p className="text-slate-500 text-[11px] truncate">{subtext}</p>
                 <div className="h-1 w-12 bg-slate-800 rounded-full overflow-hidden">
                     <div className={`h-full ${colorClass.replace('text-', 'bg-')} w-2/3`}></div>
@@ -290,7 +291,7 @@ export default function SystemAdminDashboard({ forceView }) {
                 <div>
                     {timeRange === 'Requests' ? (
                         <>
-                            <h2 className="text-4xl font-bold text-white tracking-tight leading-tight">
+                            <h2 className="text-4xl font-bold text-white light:text-slate-800 tracking-tight leading-tight">
                                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Requests</span>
                             </h2>
                             <p className="text-slate-400 mt-2 text-sm max-w-md">
@@ -299,7 +300,7 @@ export default function SystemAdminDashboard({ forceView }) {
                         </>
                     ) : (
                         <>
-                            <h2 className="text-4xl font-bold text-white tracking-tight leading-tight">
+                            <h2 className="text-4xl font-bold text-white light:text-slate-800 tracking-tight leading-tight">
                                 Executive <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Overview</span>
                             </h2>
                             <p className="text-slate-400 mt-2 text-sm max-w-md">
@@ -324,7 +325,7 @@ export default function SystemAdminDashboard({ forceView }) {
             {timeRange === 'Overview' && (
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mt-6">
 
-                <div className="flex flex-col md:flex-row gap-4 items-center bg-slate-900/50 p-2 rounded-2xl border border-white/5 backdrop-blur-sm">
+                <div className="flex flex-col md:flex-row gap-4 items-center bg-slate-900/50 p-2 rounded-2xl border border-white/5 light:border-slate-200 backdrop-blur-sm">
 
                     {/* View Toggles: Overview / Analytics / Requests — each is a dedicated page (new URL) */}
                     <div className="flex bg-slate-800/50 p-1 rounded-xl">
@@ -332,7 +333,7 @@ export default function SystemAdminDashboard({ forceView }) {
                             href={`/dashboard/${roleSlug}`}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${timeRange === 'Overview'
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                : 'text-slate-400 hover:text-white light:hover:text-slate-900 hover:bg-white/5'
                                 }`}
                         >
                             <LayoutGrid size={16} />
@@ -342,7 +343,7 @@ export default function SystemAdminDashboard({ forceView }) {
                             href={`/dashboard/${roleSlug}/analytics`}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${timeRange === 'Analytics'
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                : 'text-slate-400 hover:text-white light:hover:text-slate-900 hover:bg-white/5'
                                 }`}
                         >
                             <Activity size={16} />
@@ -352,20 +353,20 @@ export default function SystemAdminDashboard({ forceView }) {
                             href={`/dashboard/${roleSlug}/requests`}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${timeRange === 'Requests'
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                : 'text-slate-400 hover:text-white light:hover:text-slate-900 hover:bg-white/5'
                                 }`}
                         >
                             <Clock size={16} />
                             Requests
                             {pendingUsers.length > 0 && (
-                                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
+                                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white light:text-slate-800">
                                     {pendingUsers.length}
                                 </span>
                             )}
                         </a>
                     </div>
 
-                    <div className="w-px h-8 bg-white/10 hidden md:block"></div>
+                    <div className="w-px h-8 bg-white/10 light:bg-slate-100 hidden md:block"></div>
 
                     {/* Actions */}
                     <div className="flex space-x-2">
@@ -385,7 +386,7 @@ export default function SystemAdminDashboard({ forceView }) {
                             <Activity size={18} className={scanning ? 'animate-pulse' : ''} />
                             <span className="hidden md:inline">{scanning ? 'Scanning...' : 'Scan Network'}</span>
                         </button>
-                        <button onClick={handleExport} className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-white/5 hover:bg-white/10 text-white border border-white/10 flex items-center space-x-2 px-4 py-2.5 rounded-xl">
+                        <button onClick={handleExport} className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white border border-white/10 light:border-slate-200 flex items-center space-x-2 px-4 py-2.5 rounded-xl">
                             <Download size={18} />
                             <span className="hidden md:inline">Export</span>
                         </button>
@@ -528,15 +529,25 @@ export default function SystemAdminDashboard({ forceView }) {
                         gradient="bg-gradient-to-br from-purple-500 to-pink-500"
                     />
                 </Link>
-                <Link href="/procurement">
+                <Link href="/dashboard/system-admin/procurement">
                     <StatCard
                         title="YTD Purchases"
                         value="₹3,25,000"
-                        subtext="Fiscal year spend"
+                        subtext="Procurement step updates"
                         icon={ShoppingBag}
                         colorClass="text-amber-400"
                         gradient="bg-gradient-to-br from-amber-500 to-orange-500"
                         trend="+15%"
+                    />
+                </Link>
+                <Link href="/dashboard/system-admin/finance">
+                    <StatCard
+                        title="Budget Queue"
+                        value="—"
+                        subtext="Finance step updates"
+                        icon={Wallet}
+                        colorClass="text-emerald-400"
+                        gradient="bg-gradient-to-br from-emerald-500 to-teal-500"
                     />
                 </Link>
                 <Link href="/software">
@@ -577,21 +588,21 @@ export default function SystemAdminDashboard({ forceView }) {
                         {/* Alerts & Recent - full width or right column */}
                         <div className="xl:col-span-3 space-y-6 max-w-2xl">
                             {/* Alerts Feed */}
-                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
+                            <div className="backdrop-blur-md bg-white/10 light:bg-slate-100 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <AlertsFeed />
                             </div>
 
                             {/* Recent Assets Mini Table */}
-                            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
+                            <div className="backdrop-blur-md bg-white/10 light:bg-slate-100 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold text-white">New Arrivals</h3>
+                                    <h3 className="text-lg font-bold text-white light:text-slate-800">New Arrivals</h3>
                                     <Link href="/assets?sort=newest" className="text-xs text-blue-400 hover:text-blue-300 font-medium">View All</Link>
                                 </div>
                                 <div className="space-y-3">
                                     {allAssets.slice(0, 4).map((asset) => (
-                                        <div key={asset.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-pointer group">
+                                        <div key={asset.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 hover:bg-white/10 transition-colors cursor-pointer group">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 group-hover:bg-blue-500 group-hover:text-white light:hover:text-slate-900 transition-all">
                                                     <Package size={14} />
                                                 </div>
                                                 <div>
@@ -602,7 +613,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                             <div className={`px-2 py-1 rounded text-[10px] font-medium border ${asset.status === 'In Use' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                 asset.status === 'Repair' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
                                                     asset.status === 'Discovered' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                                        'bg-slate-700 text-slate-300 border-slate-600'
+                                                        'bg-slate-700 text-slate-300 light:text-slate-700 border-slate-600'
                                                 }`}>
                                                 {asset.status}
                                             </div>
@@ -614,40 +625,40 @@ export default function SystemAdminDashboard({ forceView }) {
                     </div>
                 ) : (
                     /* REQUESTS / ACCESS CONTROL VIEW */
-                    <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-8 animate-in slide-in-from-bottom-4 duration-500">
+                    <div className="backdrop-blur-md bg-white/10 light:bg-slate-100 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-8 animate-in slide-in-from-bottom-4 duration-500">
                         {/* Tab bar: Asset Requests | Access Requests | Exit Workflows | Active Users */}
-                        <div className="flex flex-wrap gap-2 mb-6 p-1.5 bg-slate-800/50 rounded-xl border border-white/5">
+                        <div className="flex flex-wrap gap-2 mb-6 p-1.5 bg-slate-800/50 rounded-xl border border-white/5 light:border-slate-200">
                             <button
                                 type="button"
                                 onClick={() => setActiveRequestsTab('asset')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'asset' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'asset' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white light:hover:text-slate-900 hover:bg-white/5'}`}
                             >
                                 <Package size={16} />
                                 Asset Requests
-                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10">{(incomingRequests || []).length}</span>
+                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10 light:bg-slate-100">{(incomingRequests || []).length}</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveRequestsTab('access')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'access' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'access' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white light:hover:text-slate-900 hover:bg-white/5'}`}
                             >
                                 <Activity size={16} />
                                 Access Requests
-                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10">{pendingUsers.length}</span>
+                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10 light:bg-slate-100">{pendingUsers.length}</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveRequestsTab('exit')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'exit' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'exit' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white light:hover:text-slate-900 hover:bg-white/5'}`}
                             >
                                 <LogOut size={16} />
                                 Exit Workflows
-                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10">{exitRequests.length}</span>
+                                <span className="px-2 py-0.5 rounded-md text-xs bg-white/10 light:bg-slate-100">{exitRequests.length}</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveRequestsTab('users')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'users' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeRequestsTab === 'users' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white light:hover:text-slate-900 hover:bg-white/5'}`}
                             >
                                 <Users size={16} />
                                 Active Users
@@ -659,7 +670,7 @@ export default function SystemAdminDashboard({ forceView }) {
                         <div className="mb-6">
                             <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h3 className="text-2xl font-bold text-white">Pending Asset Requests</h3>
+                                    <h3 className="text-2xl font-bold text-white light:text-slate-800">Pending Asset Requests</h3>
                                     <p className="text-slate-400 text-sm mt-1">Review and approve hardware/software allocation requests.</p>
                                 </div>
                                 <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400 text-sm font-medium">
@@ -669,33 +680,33 @@ export default function SystemAdminDashboard({ forceView }) {
                             </div>
 
                             {(!incomingRequests || incomingRequests.length === 0) ? (
-                                <div className="p-8 bg-slate-800/20 border border-white/5 rounded-2xl text-center">
+                                <div className="p-8 bg-slate-800/20 border border-white/5 light:border-slate-200 rounded-2xl text-center">
                                     <p className="text-slate-500 text-sm italic">No pending asset requests.</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="border-b border-white/5">
-                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset / ID</th>
-                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">User</th>
-                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                                                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                                            <tr className="border-b border-white/5 light:border-slate-200">
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Asset / ID</th>
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">User</th>
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Status</th>
+                                                <th className="pb-3 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
                                             {(incomingRequests || []).map((req) => (
                                                 <tr key={req.id} className="group hover:bg-white/[0.02] transition-colors">
                                                     <td className="py-4">
-                                                        <div className="font-bold text-white text-sm">{req.assetType || req.title}</div>
+                                                        <div className="font-bold text-white light:text-slate-800 text-sm">{req.assetType || req.title}</div>
                                                         <div className="text-xs text-slate-500 font-mono">{req.id?.substring(0, 8)}...</div>
                                                     </td>
                                                     <td className="py-4">
-                                                        <div className="text-sm text-slate-300 font-medium">{req.requestedBy?.name}</div>
+                                                        <div className="text-sm text-slate-300 light:text-slate-700 font-medium">{req.requestedBy?.name}</div>
                                                         <div className="text-xs text-slate-500">{req.requestedBy?.department || 'N/A'}</div>
                                                     </td>
                                                     <td className="py-4">
-                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300'}`}>
+                                                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-700 text-slate-300 light:text-slate-700'}`}>
                                                             {req.urgency || 'STANDARD'}
                                                         </span>
                                                         <div className="text-[10px] text-slate-500 mt-1">{req.status}</div>
@@ -703,7 +714,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                     <td className="py-4 text-right">
                                                         <button
                                                             onClick={() => { setSelectedItem(req); setActiveModal('REQUEST_DETAILS'); }}
-                                                            className="text-xs text-indigo-300 hover:text-white border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors ml-auto"
+                                                            className="text-xs text-indigo-300 hover:text-white light:hover:text-slate-900 border border-indigo-500/30 hover:bg-indigo-500/20 px-3 py-1.5 rounded flex items-center gap-1 transition-colors ml-auto"
                                                         >
                                                             <Eye size={14} /> View Details
                                                         </button>
@@ -722,7 +733,7 @@ export default function SystemAdminDashboard({ forceView }) {
                         <div className="mb-6">
                             <div className="flex justify-between items-center mb-8">
                                 <div>
-                                    <h3 className="text-2xl font-bold text-white">Access Requests</h3>
+                                    <h3 className="text-2xl font-bold text-white light:text-slate-800">Access Requests</h3>
                                 <p className="text-slate-400 text-sm mt-1">Manage pending user registrations and platform access permissions.</p>
                             </div>
                             <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-400 text-sm font-medium">
@@ -733,21 +744,21 @@ export default function SystemAdminDashboard({ forceView }) {
 
                         {pendingUsers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-20 text-center">
-                                <div className="p-6 bg-slate-800/50 rounded-full mb-4 border border-white/5">
+                                <div className="p-6 bg-slate-800/50 rounded-full mb-4 border border-white/5 light:border-slate-200">
                                     <CheckCircle size={48} className="text-slate-600" />
                                 </div>
-                                <h4 className="text-lg font-bold text-white">Queue is Clear</h4>
+                                <h4 className="text-lg font-bold text-white light:text-slate-800">Queue is Clear</h4>
                                 <p className="text-slate-400 max-w-xs mt-2">No pending account activations found in the system registry.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
-                                        <tr className="border-b border-white/5">
-                                            <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">User</th>
-                                            <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Requested Role</th>
-                                            <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Location / Dept.</th>
-                                            <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                                        <tr className="border-b border-white/5 light:border-slate-200">
+                                            <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">User</th>
+                                            <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Requested Role</th>
+                                            <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Location / Dept.</th>
+                                            <th className="pb-3 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
@@ -755,7 +766,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                             <tr key={user.id} className="group hover:bg-white/[0.02] transition-colors">
                                                 <td className="py-4">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white">
+                                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-sm font-bold text-white light:text-slate-800">
                                                             {user.full_name?.charAt(0)}
                                                         </div>
                                                         <div>
@@ -765,7 +776,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                     </div>
                                                 </td>
                                                 <td className="py-4">
-                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-800 border border-white/10 text-[11px] font-bold text-slate-300">
+                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-800 border border-white/10 light:border-slate-200 text-[11px] font-bold text-slate-300 light:text-slate-700">
                                                         {ROLES ? (ROLES.find(r => r.slug === user.role)?.label || user.role) : user.role}
                                                     </span>
                                                 </td>
@@ -777,7 +788,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => handleDenyUser(user.id)}
-                                                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 text-xs font-semibold border border-white/5 transition-all"
+                                                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 light:text-slate-600 text-xs font-semibold border border-white/5 light:border-slate-200 transition-all"
                                                         >
                                                             Deny
                                                         </button>
@@ -803,7 +814,7 @@ export default function SystemAdminDashboard({ forceView }) {
                         <div className="mb-6 animate-in fade-in duration-700">
                             {exitRequests.length > 0 ? (
                             <>
-                                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                                <h3 className="text-2xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                     <LogOut className="text-orange-400" size={24} />
                                     Ongoing Exit Workflows
                                     {exitRequests.filter(req => req.status === 'ASSETS_PROCESSED' || req.status === 'BYOD_PROCESSED').length > 0 && (
@@ -813,6 +824,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                     )}
                                 </h3>
                                 <p className="text-slate-400 text-sm mt-1">Users currently in the process of leaving the organization. Reclaim assets before finalizing.</p>
+                                <p className="text-slate-500 text-xs mt-1">Asset &amp; Inventory Manager: process returns. IT Management: process BYOD. System Admin: finalize and disable account.</p>
 
                                 {/* Notification Alert for Processed Assets */}
                                 {exitRequests.filter(req => req.status === 'ASSETS_PROCESSED' || req.status === 'BYOD_PROCESSED').length > 0 && (
@@ -833,11 +845,11 @@ export default function SystemAdminDashboard({ forceView }) {
                                 <div className="mt-6 overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
-                                            <tr className="border-b border-white/5">
-                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">User ID</th>
-                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                                                <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Assets to Reclaim</th>
-                                                <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                                            <tr className="border-b border-white/5 light:border-slate-200">
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">User ID</th>
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Status</th>
+                                                <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Assets to Reclaim</th>
+                                                <th className="pb-3 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
@@ -851,7 +863,7 @@ export default function SystemAdminDashboard({ forceView }) {
 
                                                 return (
                                                     <tr key={req.id} className="group hover:bg-white/[0.02] transition-colors">
-                                                        <td className="py-4 font-mono text-xs text-slate-300">{req.user_id}</td>
+                                                        <td className="py-4 font-mono text-xs text-slate-300 light:text-slate-700">{req.user_id}</td>
                                                         <td className="py-4">
                                                             <span className={`px-2 py-1 rounded text-[10px] font-bold ${req.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400' :
                                                                 req.status === 'READY_FOR_COMPLETION' ? 'bg-indigo-500/10 text-indigo-400' :
@@ -882,7 +894,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                                     ? 'bg-emerald-500/10 text-emerald-500 cursor-not-allowed border border-emerald-500/20'
                                                                     : isReady
                                                                         ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                                                                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5'
+                                                                        : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5 light:border-slate-200'
                                                                     }`}
                                                                 title={req.status === 'COMPLETED' ? "Workflow Finished" : (!isReady ? "All assets and BYOD devices must be processed before final deactivation." : "")}
                                                             >
@@ -898,12 +910,12 @@ export default function SystemAdminDashboard({ forceView }) {
                             </>
                             ) : (
                                 <div>
-                                    <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                                    <h3 className="text-2xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                         <LogOut className="text-orange-400" size={24} />
                                         Ongoing Exit Workflows
                                     </h3>
                                     <p className="text-slate-400 text-sm mt-1">Users currently in the process of leaving the organization. Reclaim assets before finalizing.</p>
-                                    <div className="p-8 bg-slate-800/20 border border-white/5 rounded-2xl text-center mt-6">
+                                    <div className="p-8 bg-slate-800/20 border border-white/5 light:border-slate-200 rounded-2xl text-center mt-6">
                                         <p className="text-slate-500 text-sm italic">No ongoing exit workflows.</p>
                                     </div>
                                 </div>
@@ -914,22 +926,22 @@ export default function SystemAdminDashboard({ forceView }) {
                         {/* ---- ACTIVE PLATFORM USERS SECTION ---- */}
                         {activeRequestsTab === 'users' && (
                         <div className="mb-6">
-                            <h3 className="text-2xl font-bold text-white">Active Platform Users</h3>
+                            <h3 className="text-2xl font-bold text-white light:text-slate-800">Active Platform Users</h3>
                             <p className="text-slate-400 text-sm mt-1 mb-6">Review and manage currently active user accounts and their access status.</p>
 
                             {activeUsers.length === 0 ? (
-                            <div className="p-8 bg-slate-800/20 border border-white/5 rounded-2xl text-center">
+                            <div className="p-8 bg-slate-800/20 border border-white/5 light:border-slate-200 rounded-2xl text-center">
                                 <p className="text-slate-500 text-sm italic">No active users found (excluding system accounts).</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
-                                        <tr className="border-b border-white/5">
-                                            <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">User</th>
-                                            <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Role</th>
-                                            <th className="pb-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Location</th>
-                                            <th className="pb-3 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Action</th>
+                                        <tr className="border-b border-white/5 light:border-slate-200">
+                                            <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">User</th>
+                                            <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Role</th>
+                                            <th className="pb-4 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">Location</th>
+                                            <th className="pb-3 text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
@@ -937,7 +949,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                             <tr key={user.id} className="group hover:bg-white/[0.02] transition-colors">
                                                 <td className="py-4">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center text-sm font-bold text-slate-400">
+                                                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/10 light:border-slate-200 flex items-center justify-center text-sm font-bold text-slate-400">
                                                             {user.full_name?.charAt(0)}
                                                         </div>
                                                         <div>
@@ -962,7 +974,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeactivateUser(user.id)}
-                                                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 text-xs font-medium border border-white/5 transition-all"
+                                                            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 light:text-slate-600 text-xs font-medium border border-white/5 light:border-slate-200 transition-all"
                                                         >
                                                             Deactivate
                                                         </button>
@@ -989,28 +1001,28 @@ export default function SystemAdminDashboard({ forceView }) {
 
                     {/* ---- REQUEST DETAILS MODAL ---- */}
                     {activeModal === 'REQUEST_DETAILS' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
-                            <div className="bg-slate-800 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                        <div className="bg-slate-900 border border-white/10 light:border-slate-200 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                            <div className="bg-slate-800 p-6 border-b border-white/10 light:border-slate-200 flex justify-between items-center shrink-0">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                    <h2 className="text-xl font-bold text-white light:text-slate-800 flex items-center gap-2">
                                         <FileText size={20} className="text-indigo-400" />
                                         Request Details
                                     </h2>
                                     <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">{selectedItem.id}</span>
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300'}`}>
+                                        <span className="text-xs font-mono text-slate-400 light:text-slate-600 uppercase tracking-wider">{selectedItem.id}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${selectedItem.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300 light:text-slate-700'}`}>
                                             {selectedItem.urgency || 'STANDARD'}
                                         </span>
                                     </div>
                                 </div>
-                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white p-2">
+                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white light:hover:text-slate-900 p-2">
                                     <X size={20} />
                                 </button>
                             </div>
 
                             <div className="p-6 overflow-y-auto custom-scrollbar space-y-6">
                                 {/* Requester Info */}
-                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5">
+                                <div className="grid grid-cols-2 gap-4 bg-slate-800/50 p-4 rounded-lg border border-white/5 light:border-slate-200">
                                     <div>
                                         <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Requester</label>
                                         <div className="text-white font-medium">{selectedItem.requestedBy?.name}</div>
@@ -1025,7 +1037,7 @@ export default function SystemAdminDashboard({ forceView }) {
 
                                 {/* Asset Details */}
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Asset Information</h3>
+                                    <h3 className="text-sm font-bold text-slate-300 light:text-slate-700 uppercase mb-3 border-b border-white/5 light:border-slate-200 pb-2">Asset Information</h3>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-xs text-slate-500 uppercase block mb-1">Asset Type</label>
@@ -1052,14 +1064,14 @@ export default function SystemAdminDashboard({ forceView }) {
 
                                 {/* Justification */}
                                 <div>
-                                    <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Business Case</h3>
-                                    <div className="bg-slate-800 p-4 rounded-lg border border-white/5">
+                                    <h3 className="text-sm font-bold text-slate-300 light:text-slate-700 uppercase mb-3 border-b border-white/5 light:border-slate-200 pb-2">Business Case</h3>
+                                    <div className="bg-slate-800 p-4 rounded-lg border border-white/5 light:border-slate-200">
                                         <label className="text-xs text-slate-500 uppercase block mb-2">Justification</label>
                                         <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed max-w-prose">
                                             {selectedItem.justification || "No justification provided."}
                                         </div>
                                         {selectedItem.business_justification && selectedItem.business_justification !== selectedItem.justification && (
-                                            <div className="mt-4 pt-4 border-t border-white/5">
+                                            <div className="mt-4 pt-4 border-t border-white/5 light:border-slate-200">
                                                 <label className="text-xs text-slate-500 uppercase block mb-2">Detailed Business Justification</label>
                                                 <div className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
                                                     {selectedItem.business_justification}
@@ -1072,12 +1084,12 @@ export default function SystemAdminDashboard({ forceView }) {
                                 {/* Approval History */}
                                 {selectedItem.manager_approvals && selectedItem.manager_approvals.length > 0 && (
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-300 uppercase mb-3 border-b border-white/5 pb-2">Approval History</h3>
+                                        <h3 className="text-sm font-bold text-slate-300 light:text-slate-700 uppercase mb-3 border-b border-white/5 light:border-slate-200 pb-2">Approval History</h3>
                                         <div className="space-y-2">
                                             {selectedItem.manager_approvals.map((approval, idx) => (
                                                 <div key={idx} className="flex justify-between items-start text-xs bg-slate-800/30 p-2 rounded">
                                                     <div>
-                                                        <span className="font-bold text-slate-300">{approval.reviewer_name}</span>
+                                                        <span className="font-bold text-slate-300 light:text-slate-700">{approval.reviewer_name}</span>
                                                         <span className="text-slate-500 mx-1">({approval.type || 'Review'})</span>
                                                     </div>
                                                     <div className="text-right">
@@ -1093,7 +1105,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                 )}
                             </div>
 
-                            <div className="p-4 bg-slate-800 border-t border-white/10 flex justify-end gap-3 shrink-0">
+                            <div className="p-4 bg-slate-800 border-t border-white/10 light:border-slate-200 flex justify-end gap-3 shrink-0">
                                 <button
                                     onClick={() => {
                                         const reason = prompt("Enter rejection reason:");
@@ -1102,7 +1114,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                             setActiveModal(null);
                                         }
                                     }}
-                                    className="px-4 py-2 text-rose-400 hover:text-white border border-rose-500/30 hover:bg-rose-500/10 rounded-lg transition-colors"
+                                    className="px-4 py-2 text-rose-400 hover:text-white light:hover:text-slate-900 border border-rose-500/30 hover:bg-rose-500/10 rounded-lg transition-colors"
                                 >
                                     Reject Request
                                 </button>

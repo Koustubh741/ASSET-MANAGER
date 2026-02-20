@@ -5,7 +5,6 @@ export const ROLE_LABELS = {
     ASSET_INVENTORY_MANAGER: 'Inventory team',
     PROCUREMENT_MANAGER: 'Procurement',
     PROCUREMENT: 'Procurement',
-    PROCUREMENT_FINANCE: 'Procurement & Finance',
     IT_MANAGEMENT: 'IT Management',
     END_USER: 'End user',
     MANAGER: 'Manager',

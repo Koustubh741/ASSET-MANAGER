@@ -169,7 +169,7 @@ export default function NetworkTopology() {
                     <Network size={32} className="absolute inset-0 m-auto text-blue-500 animate-pulse" />
                 </div>
                 <div className="text-center">
-                    <h2 className="text-xl font-bold text-white mb-2">Analyzing Network Fabric</h2>
+                    <h2 className="text-xl font-bold text-white light:text-slate-800 mb-2">Analyzing Network Fabric</h2>
                     <p className="text-slate-500 text-sm font-mono">Mapping node dependencies & operational status...</p>
                 </div>
             </div>
@@ -185,9 +185,9 @@ export default function NetworkTopology() {
             }}></div>
 
             {/* --- TOP HEADER --- */}
-            <header className="z-20 border-b border-white/5 bg-slate-900/40 backdrop-blur-md px-8 py-4 flex items-center justify-between shadow-2xl">
+            <header className="z-20 border-b border-white/5 light:border-slate-200 bg-slate-900/40 backdrop-blur-md px-8 py-4 flex items-center justify-between shadow-2xl">
                 <div className="flex items-center gap-6">
-                    <Link href="/enterprise" className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-slate-400 hover:text-white">
+                    <Link href="/enterprise" className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900">
                         <ArrowLeft size={18} />
                     </Link>
                     <div>
@@ -195,25 +195,25 @@ export default function NetworkTopology() {
                             <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
                                 <Network size={18} />
                             </div>
-                            <h1 className="text-xl font-bold text-white tracking-tight">Infrastructure Topology</h1>
+                            <h1 className="text-xl font-bold text-white light:text-slate-800 tracking-tight">Infrastructure Topology</h1>
                         </div>
                         <p className="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mt-1">Foundational Asset Map • v1.5</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex bg-slate-800/80 p-1 rounded-xl border border-white/5">
+                    <div className="flex bg-slate-800/80 p-1 rounded-xl border border-white/5 light:border-slate-200">
                         {['all', 'Server', 'Network', 'Database'].map(type => (
                             <button
                                 key={type}
                                 onClick={() => setFilterType(type)}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterType === type ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filterType === type ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-white light:hover:text-slate-900'}`}
                             >
                                 {type.charAt(0).toUpperCase() + type.slice(1)}
                             </button>
                         ))}
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold border border-white/5 transition-all">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold border border-white/5 light:border-slate-200 transition-all">
                         <RefreshCcw size={14} />
                         Re-Scan
                     </button>
@@ -277,7 +277,7 @@ export default function NetworkTopology() {
                             className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
                         >
                             {node.isLabel ? (
-                                <div className="px-3 py-1 bg-slate-800/40 backdrop-blur-sm border border-white/5 rounded-full">
+                                <div className="px-3 py-1 bg-slate-800/40 backdrop-blur-sm border border-white/5 light:border-slate-200 rounded-full">
                                     <span className="text-[10px] font-black text-slate-500 tracking-[0.2em]">{node.name}</span>
                                 </div>
                             ) : (
@@ -295,7 +295,7 @@ export default function NetworkTopology() {
                                     </div>
 
                                     <div className="mt-2 text-center max-w-[120px]">
-                                        <p className="text-[10px] font-bold text-white truncate px-2 py-0.5 rounded-full bg-slate-900/80 border border-white/5 whitespace-nowrap group-hover:bg-blue-600 transition-colors">
+                                        <p className="text-[10px] font-bold text-white light:text-slate-800 truncate px-2 py-0.5 rounded-full bg-slate-900/80 border border-white/5 light:border-slate-200 whitespace-nowrap group-hover:bg-blue-600 transition-colors">
                                             {node.name}
                                         </p>
                                         <p className="text-[8px] text-slate-500 uppercase mt-0.5 tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">
@@ -312,24 +312,24 @@ export default function NetworkTopology() {
 
                 {/* Insights Panel (Bottom Left) */}
                 <div className="absolute bottom-8 left-8 w-80 z-30 animate-in slide-in-from-left-4 duration-700">
-                    <div className="glass-panel p-6 border border-white/5 bg-slate-900/60 backdrop-blur-xl shadow-2xl">
+                    <div className="glass-panel p-6 border border-white/5 light:border-slate-200 bg-slate-900/60 backdrop-blur-xl shadow-2xl">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                            <h3 className="text-sm font-bold text-white light:text-slate-800 flex items-center gap-2">
                                 <Zap size={16} className="text-yellow-400" />
                                 Network Health
                             </h3>
-                            <button className="text-slate-500 hover:text-white transition-colors">
+                            <button className="text-slate-500 hover:text-white light:hover:text-slate-900 transition-colors">
                                 <Maximize2 size={14} />
                             </button>
                         </div>
 
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                <div className="p-3 rounded-xl bg-white/5 border border-white/5 light:border-slate-200">
                                     <p className="text-[10px] text-slate-500 uppercase font-bold">Uptime</p>
                                     <p className="text-lg font-mono text-emerald-400">99.98%</p>
                                 </div>
-                                <div className="p-3 rounded-xl bg-white/5 border border-white/5">
+                                <div className="p-3 rounded-xl bg-white/5 border border-white/5 light:border-slate-200">
                                     <p className="text-[10px] text-slate-500 uppercase font-bold">Latency</p>
                                     <p className="text-lg font-mono text-blue-400">12ms</p>
                                 </div>
@@ -358,13 +358,13 @@ export default function NetworkTopology() {
                                         <selectedNode.icon size={20} />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-white">{selectedNode.name}</h4>
+                                        <h4 className="font-bold text-white light:text-slate-800">{selectedNode.name}</h4>
                                         <p className="text-[10px] text-slate-500 uppercase font-bold">{selectedNode.type}</p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setSelectedNode(null)}
-                                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white transition-all"
+                                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-500 hover:text-white light:hover:text-slate-900 transition-all"
                                 >
                                     <ArrowLeft size={16} className="rotate-180" />
                                 </button>
@@ -373,7 +373,7 @@ export default function NetworkTopology() {
                             <div className="space-y-6">
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Metadata</label>
-                                    <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/5">
+                                    <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/5 light:border-slate-200">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-slate-400">Status</span>
                                             <span className={selectedNode.status === 'Active' ? 'text-emerald-400' : 'text-amber-400'}>{selectedNode.status}</span>
@@ -407,11 +407,11 @@ export default function NetworkTopology() {
 
                 {/* Global Status Bar (Bottom) */}
                 <div className="absolute bottom-8 right-8 z-30 hidden xl:flex gap-3">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-xl shadow-lg">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/60 backdrop-blur-xl border border-white/5 light:border-slate-200 rounded-xl shadow-lg">
                         <Activity size={12} className="text-purple-400" />
                         <span className="text-[10px] font-mono text-slate-400">CPU Usage: <span className="text-white">42%</span></span>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/60 backdrop-blur-xl border border-white/5 rounded-xl shadow-lg">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-900/60 backdrop-blur-xl border border-white/5 light:border-slate-200 rounded-xl shadow-lg">
                         <Shield size={12} className="text-emerald-400" />
                         <span className="text-[10px] font-mono text-slate-400">Traffic: <span className="text-white">Encrypted</span></span>
                     </div>

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { User, Bell, Shield, Database, RefreshCw, Save, Moon, Sun, Monitor, AlertTriangle, Check, X, Lock } from 'lucide-react'
+import { User, Bell, Shield, RefreshCw, Save, Moon, Sun, Monitor, AlertTriangle, Check, X, Lock, Zap } from 'lucide-react'
+import { useRole } from '@/contexts/RoleContext'
+import apiClient from '@/lib/apiClient'
 
 // Simple Toast Component
 const Toast = ({ message, type, onClose }) => (
@@ -16,10 +18,10 @@ const Modal = ({ isOpen, title, children, onClose, onConfirm, confirmText = "Con
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="glass-panel w-full max-w-md p-6 relative animate-in zoom-in-95 duration-200">
-                <h3 className="text-xl font-bold text-white mb-4">{title}</h3>
-                <div className="mb-6 text-slate-300">{children}</div>
+                <h3 className="text-xl font-bold text-white light:text-slate-800 mb-4">{title}</h3>
+                <div className="mb-6 text-slate-300 light:text-slate-700">{children}</div>
                 <div className="flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 hover:bg-white/5 transition-colors">Cancel</button>
+                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-slate-300 light:text-slate-700 hover:bg-white/5 transition-colors">Cancel</button>
                     <button
                         onClick={onConfirm}
                         className={`px-4 py-2 rounded-lg font-medium text-white shadow-lg transition-all ${type === 'danger' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'}`}
@@ -32,8 +34,17 @@ const Modal = ({ isOpen, title, children, onClose, onConfirm, confirmText = "Con
     )
 }
 
+const PLANS = [
+    { value: 'STARTER', label: 'Starter' },
+    { value: 'PROFESSIONAL', label: 'Professional (3,000 AI queries/mo)' },
+    { value: 'BUSINESS', label: 'Business (Unlimited AI)' },
+    { value: 'ENTERPRISE', label: 'Enterprise' },
+]
+
 export default function Settings() {
+    const { user, updatePlan } = useRole()
     const [loading, setLoading] = useState(false)
+    const [planLoading, setPlanLoading] = useState(false)
     const [toast, setToast] = useState(null) // { message, type }
 
     // State
@@ -89,8 +100,10 @@ export default function Settings() {
             root.classList.remove('light');
         } else if (themeName === 'system') {
             const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (systemDark) root.classList.add('dark');
-            else {
+            if (systemDark) {
+                root.classList.add('dark');
+                root.classList.remove('light');
+            } else {
                 root.classList.remove('dark');
                 root.classList.add('light');
             }
@@ -144,6 +157,20 @@ export default function Settings() {
         setTimeout(() => window.location.reload(), 1000)
     }
 
+    const handlePlanChange = async (e) => {
+        const plan = e.target.value
+        setPlanLoading(true)
+        try {
+            await apiClient.updateMyPlan(plan)
+            updatePlan(plan)
+            showToast(`Plan updated to ${plan}`)
+        } catch (err) {
+            showToast(err?.message || 'Failed to update plan', 'error')
+        } finally {
+            setPlanLoading(false)
+        }
+    }
+
     return (
         <div className="space-y-8 pb-8">
             {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
@@ -158,15 +185,15 @@ export default function Settings() {
             >
                 <div className="space-y-4">
                     <div>
-                        <label className="text-sm text-slate-400 block mb-1">Current Password</label>
+                        <label className="text-sm text-slate-400 light:text-slate-600 block mb-1">Current Password</label>
                         <input type="password" value="********" disabled className="input-field opacity-50 cursor-not-allowed" />
                     </div>
                     <div>
-                        <label className="text-sm text-slate-400 block mb-1">New Password</label>
+                        <label className="text-sm text-slate-400 light:text-slate-600 block mb-1">New Password</label>
                         <input type="password" placeholder="Enter new password" className="input-field" />
                     </div>
                     <div>
-                        <label className="text-sm text-slate-400 block mb-1">Confirm Password</label>
+                        <label className="text-sm text-slate-400 light:text-slate-600 block mb-1">Confirm Password</label>
                         <input type="password" placeholder="Confirm new password" className="input-field" />
                     </div>
                     <div className="flex items-center gap-2 text-emerald-400 text-xs">
@@ -203,7 +230,7 @@ export default function Settings() {
 
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-4xl font-bold text-white tracking-tight">Settings</h2>
+                    <h2 className="text-4xl font-bold text-white light:text-slate-800 tracking-tight">Settings</h2>
                     <p className="text-slate-400 mt-2 text-lg">Manage your account and application preferences.</p>
                 </div>
                 <button
@@ -217,6 +244,27 @@ export default function Settings() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Subscription Plan (Demo) */}
+                <div className="lg:col-span-1">
+                    <div className="glass-panel p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Zap size={20} className="text-amber-400" />
+                            <h3 className="text-lg font-bold text-white light:text-slate-800">AI Assistant Plan (Demo)</h3>
+                        </div>
+                        <p className="text-sm text-slate-400 light:text-slate-600 mb-4">Switch plans for testing. Affects AI Assistant access.</p>
+                        <select
+                            value={user?.plan || 'STARTER'}
+                            onChange={handlePlanChange}
+                            disabled={planLoading}
+                            className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-blue-500/50 outline-none"
+                        >
+                            {PLANS.map(p => (
+                                <option key={p.value} value={p.value}>{p.label}</option>
+                            ))}
+                        </select>
+                        {planLoading && <span className="text-xs text-slate-500 mt-2 block">Updating...</span>}
+                    </div>
+                </div>
                 {/* User Profile */}
                 <div className="lg:col-span-1 space-y-6">
                     <div className="glass-panel p-6">
@@ -250,7 +298,7 @@ export default function Settings() {
                                 </div>
                             ) : (
                                 <>
-                                    <h3 className="text-xl font-bold text-white">{settings.profile.name}</h3>
+                                    <h3 className="text-xl font-bold text-white light:text-slate-800">{settings.profile.name}</h3>
                                     <p className="text-blue-400 font-medium">{settings.profile.role}</p>
                                     <p className="text-slate-500 text-sm mt-1">{settings.profile.email}</p>
                                 </>
@@ -267,13 +315,13 @@ export default function Settings() {
                                             setIsEditingProfile(true)
                                         }
                                     }}
-                                    className={`w-full py-2 px-4 rounded-lg transition-colors text-sm font-medium border ${isEditingProfile ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/5'}`}
+                                    className={`w-full py-2 px-4 rounded-lg transition-colors text-sm font-medium border ${isEditingProfile ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 hover:bg-white/10 text-slate-300 light:text-slate-700 border-white/5 light:border-slate-200'}`}
                                 >
                                     {isEditingProfile ? 'Save Profile' : 'Edit Profile'}
                                 </button>
                                 <button
                                     onClick={() => setModal({ type: 'password', isOpen: true })}
-                                    className="w-full py-2 px-4 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors text-sm font-medium border border-white/5"
+                                    className="w-full py-2 px-4 rounded-lg bg-white/5 light:bg-slate-50 hover:bg-white/10 text-slate-300 light:text-slate-700 transition-colors text-sm font-medium border border-white/5 light:border-slate-200"
                                 >
                                     Change Password
                                 </button>
@@ -282,7 +330,7 @@ export default function Settings() {
                     </div>
 
                     <div className="glass-panel p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center">
+                        <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4 flex items-center">
                             <Shield className="mr-3 text-emerald-400" size={20} />
                             Security Status
                         </h3>
@@ -295,7 +343,7 @@ export default function Settings() {
                             </div>
                             <div className="flex justify-between items-center p-2">
                                 <span className="text-slate-400 text-sm">Last Login</span>
-                                <span className="text-slate-200 text-sm">{new Date(settings.security.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-slate-200 light:text-slate-800 text-sm">{new Date(settings.security.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <div className="flex justify-between items-center p-2">
                                 <span className="text-slate-400 text-sm">Password Strength</span>
@@ -309,14 +357,14 @@ export default function Settings() {
                 <div className="lg:col-span-2 space-y-6">
                     {/* Appearance */}
                     <div className="glass-panel p-6">
-                        <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                        <h3 className="text-xl font-bold text-white light:text-slate-800 mb-6 flex items-center">
                             <Monitor className="mr-3 text-blue-400" size={24} />
                             Appearance
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <button
                                 onClick={() => handleThemeChange('dark')}
-                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${settings.theme === 'dark' ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10'
+                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${settings.theme === 'dark' ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-white/5 light:bg-slate-50 hover:bg-white/10'
                                     }`}
                             >
                                 <div className="w-full h-24 bg-slate-900 rounded-lg border border-white/10 flex items-center justify-center overflow-hidden relative">
@@ -328,7 +376,7 @@ export default function Settings() {
 
                             <button
                                 onClick={() => handleThemeChange('light')}
-                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${settings.theme === 'light' ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10'
+                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${settings.theme === 'light' ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-white/5 light:bg-slate-50 hover:bg-white/10'
                                     }`}
                             >
                                 <div className="w-full h-24 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden relative">
@@ -339,7 +387,7 @@ export default function Settings() {
 
                             <button
                                 onClick={() => handleThemeChange('system')}
-                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${settings.theme === 'system' ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-white/5 hover:bg-white/10'
+                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${settings.theme === 'system' ? 'border-blue-500 bg-blue-500/10' : 'border-white/5 bg-white/5 light:bg-slate-50 hover:bg-white/10'
                                     }`}
                             >
                                 <div className="w-full h-24 bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden relative border border-white/10">
@@ -347,7 +395,7 @@ export default function Settings() {
                                         <div className="w-1/2 h-full bg-slate-900"></div>
                                         <div className="w-1/2 h-full bg-slate-100"></div>
                                     </div>
-                                    <Monitor size={24} className="relative z-10 text-slate-400 mix-blend-difference" />
+                                    <Monitor size={24} className="relative z-10 text-slate-400 light:text-slate-600 mix-blend-difference" />
                                 </div>
                                 <span className="text-slate-300 font-medium">System</span>
                             </button>
@@ -356,7 +404,7 @@ export default function Settings() {
 
                     {/* Notifications */}
                     <div className="glass-panel p-6">
-                        <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                        <h3 className="text-xl font-bold text-white light:text-slate-800 mb-6 flex items-center">
                             <Bell className="mr-3 text-yellow-400" size={24} />
                             Notifications
                         </h3>
@@ -367,7 +415,7 @@ export default function Settings() {
                                 { id: 'system', title: 'System Updates', desc: 'Notifications about system maintenance' },
                                 { id: 'reports', title: 'Weekly Reports', desc: 'Receive weekly asset summary reports' }
                             ].map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors">
+                                <div key={item.id} className="flex items-center justify-between p-4 rounded-lg bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 hover:bg-white/10 transition-colors">
                                     <div>
                                         <p className="text-slate-200 font-medium">{item.title}</p>
                                         <p className="text-slate-500 text-sm">{item.desc}</p>
@@ -386,26 +434,6 @@ export default function Settings() {
                                     </label>
                                 </div>
                             ))}
-                        </div>
-                    </div>
-
-                    {/* Data Management */}
-                    <div className="glass-panel p-6 border-l-4 border-l-rose-500">
-                        <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-                            <Database className="mr-3 text-rose-400" size={24} />
-                            Data Management
-                        </h3>
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <p className="text-slate-200 font-medium">Reset Mock Data</p>
-                                <p className="text-slate-500 text-sm">Clear all assigned assets and regenerate sample data.</p>
-                            </div>
-                            <button
-                                onClick={() => setModal({ type: 'reset', isOpen: true })}
-                                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg transition-colors text-sm font-medium"
-                            >
-                                Reset Database
-                            </button>
                         </div>
                     </div>
                 </div>

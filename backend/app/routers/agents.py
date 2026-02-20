@@ -132,11 +132,18 @@ async def validate_agent_config(
         cidr = config.get('networkRange')
         if cidr and not validate_cidr(cidr):
             return AgentValidationResponse(valid=False, error="Invalid CIDR format")
-            
-        community = config.get('communityString')
-        if not community:
-            return AgentValidationResponse(valid=False, error="Community string required")
-            
+
+        version = config.get('snmpVersion', 'v2c')
+        if version == 'v3':
+            if not config.get('username'):
+                return AgentValidationResponse(valid=False, error="SNMPv3: Username is required")
+            # Auth key required if priv key is set
+            if config.get('privKey') and not config.get('authKey'):
+                return AgentValidationResponse(valid=False, error="SNMPv3: Auth key required when privacy is enabled")
+        else:
+            if not config.get('communityString'):
+                return AgentValidationResponse(valid=False, error="SNMPv2c: Community string is required")
+
     return AgentValidationResponse(valid=True, message="Configuration valid")
 
 def validate_cidr(cidr: str) -> bool:

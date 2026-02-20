@@ -103,7 +103,7 @@ const PricingPage = () => {
                         <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-white' : 'text-slate-500'}`}>Monthly</span>
                         <button
                             onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                            className="relative w-14 h-7 rounded-full bg-slate-800 border border-white/10 p-1 transition-colors duration-300 pointer-events-auto cursor-pointer"
+                            className="relative w-14 h-7 rounded-full bg-slate-800 border border-white/10 light:border-slate-200 p-1 transition-colors duration-300 pointer-events-auto cursor-pointer"
                         >
                             <div className={`w-5 h-5 rounded-full bg-blue-500 transition-transform duration-300 shadow-lg shadow-blue-500/50 ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'}`} />
                         </button>
@@ -129,7 +129,7 @@ const PricingPage = () => {
                                     </div>
                                 )}
 
-                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center mb-6 border border-white/10 group-hover:rotate-12 transition-transform duration-500`}>
+                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center mb-6 border border-white/10 light:border-slate-200 group-hover:rotate-12 transition-transform duration-500`}>
                                     <Icon size={24} className={tier.iconColor} />
                                 </div>
 
@@ -159,7 +159,7 @@ const PricingPage = () => {
 
                                 <button className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-300 ${tier.highlight
                                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/40'
-                                    : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                                    : 'bg-white/5 border border-white/10 light:border-slate-200 hover:bg-white/10'
                                     }`}>
                                     {tier.cta}
                                 </button>
@@ -168,7 +168,7 @@ const PricingPage = () => {
                     })}
                 </div>
 
-                <footer className="mt-16 p-8 rounded-3xl bg-slate-900/20 border border-white/5 text-center animate-in fade-in duration-1000 delay-500">
+                <footer className="mt-16 p-8 rounded-3xl bg-slate-900/20 border border-white/5 light:border-slate-200 text-center animate-in fade-in duration-1000 delay-500">
                     <p className="text-slate-400 mb-6">Need a custom plan for your non-profit or educational institution?</p>
                     <Link href="/contact" className="text-blue-400 font-semibold hover:text-blue-300 hover:underline transition-all">
                         Talk to our experts today →

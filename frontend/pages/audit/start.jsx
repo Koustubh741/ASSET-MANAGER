@@ -27,9 +27,9 @@ export default function AuditStartPage() {
 
     return (
         <div className="min-h-screen p-8 bg-slate-950 text-slate-100 flex flex-col items-center justify-center">
-            <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl overflow-hidden glass-panel shadow-2xl">
+            <div className="w-full max-w-2xl bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl overflow-hidden glass-panel shadow-2xl">
                 {/* Header */}
-                <div className="bg-slate-900/50 p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="bg-slate-900/50 p-6 border-b border-white/10 light:border-slate-200 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href="/audit/overview" className="p-2 hover:bg-white/10 rounded-lg text-slate-400">
                             <ArrowLeft size={20} />
@@ -93,7 +93,7 @@ export default function AuditStartPage() {
 
                             <div className="space-y-3">
                                 {assets.map(asset => (
-                                    <div key={asset.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+                                    <div key={asset.id} className="flex items-center justify-between p-4 bg-white/5 light:bg-slate-50 rounded-xl border border-white/5">
                                         <div>
                                             <div className="font-medium">{asset.name}</div>
                                             <div className="text-xs text-slate-500">{asset.id}</div>
@@ -114,7 +114,7 @@ export default function AuditStartPage() {
                                 ))}
                             </div>
 
-                            <div className="flex justify-between mt-8 pt-4 border-t border-white/10">
+                            <div className="flex justify-between mt-8 pt-4 border-t border-white/10 light:border-slate-200">
                                 <div className="text-sm text-slate-400">
                                     {assets.filter(a => a.scanned).length} / {assets.length} Verified
                                 </div>

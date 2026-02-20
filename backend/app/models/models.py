@@ -146,6 +146,11 @@ class User(Base):
     location = Column(String(100), nullable=True)
     phone = Column(String(20), nullable=True)
     company = Column(String(255), nullable=True) # New field
+
+    # Subscription / Plan (AI Assistant access)
+    plan = Column(String(50), nullable=False, default="STARTER")  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
+    ai_queries_this_month = Column(Integer, nullable=False, default=0)
+    ai_queries_reset_at = Column(DateTime(timezone=True), nullable=True)
     
     # SSO Integration
     sso_provider = Column(String(50), nullable=True) # google, azure, okta
@@ -233,8 +238,8 @@ class AssetRequest(Base):
     it_reviewed_by = Column(UUID(as_uuid=True), nullable=True)
     it_reviewed_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Procurement & Finance approval tracking
-    procurement_finance_status = Column(String(50), nullable=True)  # APPROVED | REJECTED
+    # Procurement/Finance segment approval tracking (separate roles: PROCUREMENT, FINANCE)
+    procurement_finance_status = Column(String(50), nullable=True)  # PO_VALIDATED | APPROVED | REJECTED | DELIVERED
     procurement_finance_reviewed_by = Column(UUID(as_uuid=True), nullable=True)
     procurement_finance_reviewed_at = Column(DateTime(timezone=True), nullable=True)
     procurement_finance_rejection_reason = Column(Text, nullable=True)
@@ -345,6 +350,33 @@ class PurchaseInvoice(Base):
     total_amount = Column(Float, nullable=True)
     created_by = Column(UUID(as_uuid=True), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class FinanceRecord(Base):
+    """
+    High-level finance record linked to an asset request / purchase order.
+    This models the Finance segment separately from the core AssetRequest and PurchaseOrder.
+    """
+    __tablename__ = "finance_records"
+    __table_args__ = {"schema": "finance"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    asset_request_id = Column(UUID(as_uuid=True), ForeignKey("asset.asset_requests.id"), nullable=False, index=True)
+    purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("procurement.purchase_orders.id"), nullable=True, index=True)
+
+    # Finance workflow state
+    finance_status = Column(String(50), nullable=False, default="FINANCE_REVIEW_PENDING")
+    finance_approver_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
+    finance_approver_name = Column(String(255), nullable=True)
+    finance_decision_reason = Column(Text, nullable=True)
+
+    # Optional payment details (for future extension)
+    payment_reference = Column(String(255), nullable=True)
+    payment_status = Column(String(50), nullable=True)  # e.g. PAYMENT_SCHEDULED, PAID
+    payment_date = Column(DateTime(timezone=True), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class ExitRequest(Base):
@@ -464,7 +496,7 @@ class ApiToken(Base):
 
 class ProcurementLog(Base):
     """
-    Audit logs for procurement and finance actions
+    Audit logs for Procurement and Finance segment actions (separate roles).
     """
     __tablename__ = "procurement_logs"
     __table_args__ = {"schema": "audit"}
@@ -579,7 +611,35 @@ class AgentSchedule(Base):
     next_run = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
+
+class Company(Base):
+    """
+    Company/Tenant model for deployment-level configuration.
+    Single company per deployment (single-tenant).
+    """
+    __tablename__ = "companies"
+    __table_args__ = {"schema": "public"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String(255), nullable=False)
+    legal_name = Column(String(255), nullable=True)
+    tax_id = Column(String(100), nullable=True)
+    logo_url = Column(String(500), nullable=True)
+    primary_color = Column(String(50), nullable=True)
+    timezone = Column(String(100), nullable=False, default="UTC")
+    currency = Column(String(10), nullable=False, default="USD")
+    locale = Column(String(20), nullable=False, default="en")
+    contact_email = Column(String(255), nullable=True)
+    support_email = Column(String(255), nullable=True)
+    website = Column(String(500), nullable=True)
+    industry = Column(String(100), nullable=True)
+    address = Column(Text, nullable=True)
+    setup_completed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
 class PasswordResetToken(Base):
     """
     Model for storing password reset tokens

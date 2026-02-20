@@ -77,7 +77,7 @@ export default function TicketDetailPage() {
         <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
             <div className="max-w-5xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
@@ -106,16 +106,16 @@ export default function TicketDetailPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10">
+                        <div className="glass-panel p-6 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200">
                             <h3 className="font-semibold text-lg mb-4 text-slate-200">Description</h3>
                             <p className="text-slate-300 leading-relaxed">{ticket.description}</p>
                         </div>
 
-                        <div className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10">
+                        <div className="glass-panel p-6 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/10 light:border-slate-200">
                             <h3 className="font-semibold text-lg mb-4 text-slate-200 flex items-center gap-2">
                                 <MessageSquare size={18} /> Activity Log
                             </h3>
-                            <div className="space-y-6 border-l-2 border-white/10 pl-6 ml-2">
+                            <div className="space-y-6 border-l-2 border-white/10 light:border-slate-200 pl-6 ml-2">
                                 {(ticket.timeline || []).map((h, i) => (
                                     <div key={i} className="relative">
                                         <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-800 border-2 border-slate-600" />
@@ -134,7 +134,7 @@ export default function TicketDetailPage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
-                        <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10">
+                        <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200">
                             <h3 className="font-semibold text-sm uppercase tracking-wider text-slate-500 mb-4">Details</h3>
                             <div className="space-y-4">
                                 <div>
@@ -152,7 +152,7 @@ export default function TicketDetailPage() {
                                         <Clock size={14} className="text-slate-500" /> {new Date(ticket.created_at).toLocaleDateString()}
                                     </div>
                                 </div>
-                                <div className="pt-4 border-t border-white/10">
+                                <div className="pt-4 border-t border-white/10 light:border-slate-200">
                                     <div className="text-xs text-slate-500 mb-1">Impacted Asset</div>
                                     {ticket.related_asset_id ? (
                                         <Link href={`/assets/${ticket.related_asset_id}`} className="text-blue-400 hover:text-blue-300 text-sm font-mono block truncate">
@@ -167,7 +167,7 @@ export default function TicketDetailPage() {
 
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-slate-300 font-medium transition-colors hover:text-white"
+                            className="w-full py-3 bg-white/5 light:bg-slate-50 hover:bg-white/10 rounded-xl border border-white/10 light:border-slate-200 text-slate-300 light:text-slate-700 font-medium transition-colors hover:text-white light:hover:text-slate-900"
                         >
                             Update Ticket / Resolve
                         </button>
@@ -178,14 +178,14 @@ export default function TicketDetailPage() {
             {/* Action Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-2xl">
+                    <div className="w-full max-w-md bg-slate-900 border border-white/10 light:border-slate-200 rounded-2xl p-6 shadow-2xl">
                         <h3 className="text-xl font-bold text-white mb-4">Update Ticket</h3>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">New Status</label>
                                 <select
-                                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2 text-white"
+                                    className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-xl px-4 py-2 text-white"
                                     value={newStatus}
                                     onChange={(e) => setNewStatus(e.target.value)}
                                 >
@@ -198,7 +198,7 @@ export default function TicketDetailPage() {
                             <div>
                                 <label className="block text-xs text-slate-500 mb-1">Update Notes</label>
                                 <textarea
-                                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2 text-white h-24"
+                                    className="w-full bg-slate-950 border border-white/10 light:border-slate-200 rounded-xl px-4 py-2 text-white h-24"
                                     placeholder="Enter details about the action taken..."
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
@@ -207,7 +207,7 @@ export default function TicketDetailPage() {
                             <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 font-medium transition-colors"
+                                    className="flex-1 py-2 bg-white/5 light:bg-slate-50 hover:bg-white/10 rounded-xl text-slate-400 font-medium transition-colors"
                                 >
                                     Cancel
                                 </button>

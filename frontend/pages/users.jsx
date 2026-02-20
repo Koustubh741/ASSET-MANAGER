@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, User, Monitor, Disc, Ticket, Search, Mail, Check, X, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, User, Monitor, Disc, Ticket, Search, Mail, Check, X, ShieldAlert, Plus } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useRole } from '@/contexts/RoleContext';
@@ -11,6 +11,17 @@ export default function UsersPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createForm, setCreateForm] = useState({
+        email: '',
+        password: '',
+        full_name: '',
+        role: 'END_USER',
+        status: 'ACTIVE',
+        position: 'TEAM_MEMBER',
+        department: ''
+    });
+    const [creating, setCreating] = useState(false);
 
     const isAdmin = currentRole?.slug === 'ADMIN' || currentRole?.slug === 'SYSTEM_ADMIN';
 
@@ -44,6 +55,35 @@ export default function UsersPage() {
         } catch (e) {
             console.error("Failed to deny user:", e);
             alert("Failed to deny user: " + e.message);
+        }
+    };
+
+    const handleCreateUser = async (e) => {
+        e.preventDefault();
+        if (!createForm.email || !createForm.password || !createForm.full_name) {
+            alert("Please fill in email, password, and full name");
+            return;
+        }
+        setCreating(true);
+        try {
+            await apiClient.createUser(createForm);
+            alert("User created successfully!");
+            setShowCreateModal(false);
+            setCreateForm({
+                email: '',
+                password: '',
+                full_name: '',
+                role: 'END_USER',
+                status: 'ACTIVE',
+                position: 'TEAM_MEMBER',
+                department: ''
+            });
+            window.location.reload();
+        } catch (e) {
+            console.error("Failed to create user:", e);
+            alert("Failed to create user: " + (e.message || 'Unknown error'));
+        } finally {
+            setCreating(false);
         }
     };
 
@@ -172,7 +212,7 @@ export default function UsersPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                        <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors">
                             <ArrowLeft size={24} />
                         </Link>
                         <div>
@@ -180,6 +220,15 @@ export default function UsersPage() {
                             <p className="text-slate-400 mt-1">Track assets and licenses by employee</p>
                         </div>
                     </div>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl font-medium transition-colors"
+                        >
+                            <Plus size={18} />
+                            Create User
+                        </button>
+                    )}
                 </div>
 
                 {/* Pending Approvals Section (Admin Only) */}
@@ -200,14 +249,14 @@ export default function UsersPage() {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleApprove(user.id)}
-                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors"
+                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white light:hover:text-slate-900 transition-colors"
                                             title="Approve"
                                         >
                                             <Check size={18} />
                                         </button>
                                         <button
                                             onClick={() => handleDeny(user.id)}
-                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors"
+                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white light:hover:text-slate-900 transition-colors"
                                             title="Deny"
                                         >
                                             <X size={18} />
@@ -220,7 +269,7 @@ export default function UsersPage() {
                 )}
 
                 {/* Toolbar */}
-                <div className="glass-panel p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center">
+                <div className="glass-panel p-4 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/10 flex items-center">
                     <Search className="text-slate-500 ml-2" size={20} />
                     <input
                         type="text"
@@ -258,22 +307,22 @@ export default function UsersPage() {
                             </div>
 
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                                    <div className="flex items-center gap-3 text-slate-300">
+                                <div className="flex items-center justify-between p-3 bg-white/5 light:bg-slate-50 rounded-xl">
+                                    <div className="flex items-center gap-3 text-slate-300 light:text-slate-700">
                                         <Monitor size={18} className="text-blue-400" />
                                         <span className="text-sm font-medium">Assets</span>
                                     </div>
                                     <span className="font-mono text-white font-bold">{user.assets_count}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                                    <div className="flex items-center gap-3 text-slate-300">
+                                <div className="flex items-center justify-between p-3 bg-white/5 light:bg-slate-50 rounded-xl">
+                                    <div className="flex items-center gap-3 text-slate-300 light:text-slate-700">
                                         <Disc size={18} className="text-purple-400" />
                                         <span className="text-sm font-medium">Software</span>
                                     </div>
                                     <span className="font-mono text-white font-bold">{user.software_count}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                                    <div className="flex items-center gap-3 text-slate-300">
+                                <div className="flex items-center justify-between p-3 bg-white/5 light:bg-slate-50 rounded-xl">
+                                    <div className="flex items-center gap-3 text-slate-300 light:text-slate-700">
                                         <Ticket size={18} className="text-rose-400" />
                                         <span className="text-sm font-medium">Tickets</span>
                                     </div>
@@ -281,7 +330,7 @@ export default function UsersPage() {
                                 </div>
                             </div>
 
-                            <div className="mt-6 pt-4 border-t border-white/5 flex justify-end">
+                            <div className="mt-6 pt-4 border-t border-white/5 light:border-slate-200 flex justify-end">
                                 <button
                                     onClick={() => setSelectedUser(user)}
                                     className="text-sm text-cyan-400 hover:text-cyan-300 font-medium"
@@ -322,7 +371,7 @@ export default function UsersPage() {
                             </div>
                             <button
                                 onClick={() => setSelectedUser(null)}
-                                className="text-slate-400 hover:text-white"
+                                className="text-slate-400 hover:text-white light:hover:text-slate-900"
                             >
                                 <ArrowLeft size={24} className="rotate-180" />
                             </button>
@@ -338,14 +387,14 @@ export default function UsersPage() {
                                 </h4>
                                 <div className="space-y-3">
                                     {selectedUser.assigned_assets.map(asset => (
-                                        <Link href={`/assets/${asset.id}`} key={asset.id} className="block p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 transition-all group">
+                                        <Link href={`/assets/${asset.id}`} key={asset.id} className="block p-4 rounded-xl bg-white/5 light:bg-slate-50 hover:bg-white/10 border border-white/5 light:border-slate-200 hover:border-blue-500/30 transition-all group">
                                             <div className="flex justify-between items-center">
                                                 <div>
                                                     <div className="font-medium text-slate-200 group-hover:text-blue-300">{asset.name}</div>
                                                     <div className="text-xs text-slate-500 font-mono mt-1">{asset.id}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-sm text-slate-300">{asset.category}</div>
+                                                    <div className="text-sm text-slate-300 light:text-slate-700">{asset.category}</div>
                                                     <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">{asset.status}</span>
                                                 </div>
                                             </div>
@@ -362,7 +411,7 @@ export default function UsersPage() {
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {selectedUser.software_licenses.map((license, i) => (
-                                        <div key={license.id} className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3">
+                                        <div key={license.id} className="p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 flex items-center gap-3">
                                             <div className="w-8 h-8 rounded bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-bold">L</div>
                                             <div>
                                                 <div className="text-sm font-medium text-slate-200">
@@ -383,14 +432,14 @@ export default function UsersPage() {
                                 </h4>
                                 <div className="space-y-3">
                                     {selectedUser.tickets.map(ticket => (
-                                        <div key={ticket.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                                        <div key={ticket.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
                                             <div>
                                                 <div className="text-sm font-medium text-slate-200">
                                                     {ticket.subject}
                                                 </div>
                                                 <div className="text-xs text-slate-500">{ticket.id} • {ticket.status} • {new Date(ticket.created_at).toLocaleDateString()}</div>
                                             </div>
-                                            <Link href={`/tickets/${ticket.id}`} className="text-xs text-rose-400 hover:text-white font-bold bg-rose-500/10 px-3 py-1 rounded-lg">
+                                            <Link href={`/tickets/${ticket.id}`} className="text-xs text-rose-400 hover:text-white light:hover:text-slate-900 font-bold bg-rose-500/10 px-3 py-1 rounded-lg">
                                                 View
                                             </Link>
                                         </div>
@@ -400,6 +449,130 @@ export default function UsersPage() {
                             </div>
 
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create User Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl">
+                        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                            <h2 className="text-2xl font-bold text-white">Create New User</h2>
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Email *</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={createForm.email}
+                                    onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                                    className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    placeholder="user@example.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Password *</label>
+                                <input
+                                    type="password"
+                                    required
+                                    value={createForm.password}
+                                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                                    className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    placeholder="Enter password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-300 mb-2">Full Name *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={createForm.full_name}
+                                    onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
+                                    className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Role *</label>
+                                    <select
+                                        value={createForm.role}
+                                        onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    >
+                                        <option value="END_USER">End User</option>
+                                        <option value="MANAGER">Manager</option>
+                                        <option value="IT_MANAGEMENT">IT Management</option>
+                                        <option value="ASSET_MANAGER">Asset Manager</option>
+                                        <option value="ASSET_INVENTORY_MANAGER">Asset & Inventory Manager</option>
+                                        <option value="PROCUREMENT">Procurement Manager</option>
+                                        <option value="FINANCE">Finance</option>
+                                        <option value="ADMIN">Admin</option>
+                                        <option value="SYSTEM_ADMIN">System Admin</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Status</label>
+                                    <select
+                                        value={createForm.status}
+                                        onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
+                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    >
+                                        <option value="ACTIVE">Active</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="DISABLED">Disabled</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Position</label>
+                                    <select
+                                        value={createForm.position}
+                                        onChange={(e) => setCreateForm({ ...createForm, position: e.target.value })}
+                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    >
+                                        <option value="TEAM_MEMBER">Team Member</option>
+                                        <option value="MANAGER">Manager</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-300 mb-2">Department</label>
+                                    <input
+                                        type="text"
+                                        value={createForm.department}
+                                        onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })}
+                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        placeholder="e.g. Procurement, Finance, IT"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                                    disabled={creating}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={creating}
+                                    className="px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                                >
+                                    {creating ? 'Creating...' : 'Create User'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

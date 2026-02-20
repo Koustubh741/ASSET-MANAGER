@@ -20,7 +20,7 @@ export const OWNER_ROLE = {
     ASSET_INVENTORY_MANAGER: 'ASSET_INVENTORY_MANAGER',
     PROCUREMENT: 'PROCUREMENT',
     FINANCE: 'FINANCE',
-    PROCUREMENT_FINANCE: 'PROCUREMENT_FINANCE', // legacy fallback
+    PROCUREMENT_FINANCE: 'PROCUREMENT_FINANCE', // legacy only: backend may send; workflow uses only PROCUREMENT and FINANCE
     SYSTEM_ADMIN: 'SYSTEM_ADMIN'
 };
 
@@ -63,10 +63,12 @@ export function AssetProvider({ children }) {
             case REQUEST_STATUS.MANAGER_CONFIRMED_IT:
                 return assetType === 'BYOD' ? OWNER_ROLE.IT_MANAGEMENT : OWNER_ROLE.ASSET_INVENTORY_MANAGER;
             case REQUEST_STATUS.PROCUREMENT_REQUIRED:
-                if (procurementStage === 'PO_CREATED' || procurementStage === 'PO_UPLOADED') return OWNER_ROLE.FINANCE;
+                if (procurementStage === 'PO_CREATED' || procurementStage === 'PO_UPLOADED') return OWNER_ROLE.PROCUREMENT;
+                if (procurementStage === 'PO_VALIDATED') return OWNER_ROLE.FINANCE;
                 if (procurementStage === 'FINANCE_APPROVED' || status === 'FINANCE_APPROVED') return OWNER_ROLE.PROCUREMENT;
                 return OWNER_ROLE.PROCUREMENT;
-            case 'PO_UPLOADED': return OWNER_ROLE.FINANCE;
+            case 'PO_UPLOADED': return OWNER_ROLE.PROCUREMENT;
+            case 'PO_VALIDATED': return OWNER_ROLE.FINANCE;
             case 'FINANCE_APPROVED': return OWNER_ROLE.PROCUREMENT;
             case 'PROCUREMENT_APPROVED': return OWNER_ROLE.PROCUREMENT;
             case 'QC_PENDING': return OWNER_ROLE.ASSET_INVENTORY_MANAGER;
@@ -105,6 +107,7 @@ export function AssetProvider({ children }) {
                 if (currentRole?.slug === 'ADMIN' ||
                     currentRole?.slug === 'ASSET_MANAGER' ||
                     currentRole?.slug === 'FINANCE' ||
+                    currentRole?.slug === 'PROCUREMENT' ||
                     currentRole?.slug === 'IT_MANAGEMENT'
                 ) {
                     // Admin-level/Centralized roles see EVERYTHING (higher limit so pending requests aren't cut off)
@@ -183,17 +186,17 @@ export function AssetProvider({ children }) {
                     if (rawStatus === 'IN_USE') status = 'FULFILLED';
                     if (rawStatus === 'MANAGER_REJECTED' || rawStatus === 'IT_REJECTED' || rawStatus === 'PROCUREMENT_REJECTED' || rawStatus === 'USER_REJECTED' || rawStatus === 'BYOD_REJECTED' || rawStatus === 'QC_FAILED') status = 'REJECTED';
                     if (rawStatus === 'PO_UPLOADED') status = 'PROCUREMENT_REQUIRED';
+                    if (rawStatus === 'PO_VALIDATED') status = 'PO_VALIDATED'; // Keep so Finance queue can filter; deriveOwnerRole returns FINANCE
                     if (rawStatus === 'FINANCE_APPROVED') status = 'PROCUREMENT_REQUIRED';
                     if (rawStatus === 'MANAGER_CONFIRMED_IT') status = 'MANAGER_CONFIRMED_IT';
                     if (rawStatus === 'USER_ACCEPTANCE_PENDING') status = 'USER_ACCEPTANCE_PENDING';
                     if (rawStatus === 'MANAGER_CONFIRMED_ASSIGNMENT') status = 'MANAGER_CONFIRMED_ASSIGNMENT';
                     if (rawStatus === 'BYOD_COMPLIANCE_CHECK') status = 'BYOD_COMPLIANCE_CHECK';
 
-                    // Root Fix: Only set procurementStage if it's actually approved/rejected or part of a PO flow
-                    // If it's null/empty, don't default to AWAITING_DECISION which triggers the badge
-                    const procurementStage = r.procurement_finance_status ?
-                        (r.procurement_finance_status === 'APPROVED' ? 'FINANCE_APPROVED' : r.procurement_finance_status) :
-                        null;
+                    // Map procurement_finance_status and status for Finance/Procurement queues and WorkflowProgressBar
+                    const procurementStage = (r.procurement_finance_status === 'APPROVED' || r.status === 'FINANCE_APPROVED') ? 'FINANCE_APPROVED' :
+                        (r.procurement_finance_status === 'PO_VALIDATED' || r.status === 'PO_VALIDATED') ? 'PO_VALIDATED' :
+                        r.procurement_finance_status ? r.procurement_finance_status : null;
                     const ownerRole = deriveOwnerRole(status, r.asset_type || r.type || 'Standard', procurementStage);
 
                     console.log(`[AssetContext] Request ${r.id}: rawStatus=${rawStatus}, mappedStatus=${status}, ownerRole=${ownerRole}`);
@@ -207,7 +210,8 @@ export function AssetProvider({ children }) {
                             name: r.requester_name || r.requester_id || 'Employee',
                             email: r.requester_email || '',
                             department: r.requester_department || 'N/A',
-                            position: r.requester_position || 'Employee'
+                            position: r.requester_position || 'Employee',
+                            role: r.requester_role || r.requester_position || 'Employee'
                         },
                         procurementStage: procurementStage,
                         inventoryDecision: r.qc_status === 'PASSED' ? 'AVAILABLE' : (r.qc_status === 'FAILED' ? 'NOT_AVAILABLE' : (['IN_USE', 'FULFILLED', 'USER_ACCEPTANCE_PENDING'].includes(status) ? 'AVAILABLE' : null)),
@@ -721,7 +725,16 @@ export function AssetProvider({ children }) {
         try {
             console.log(`[Procurement] Uploading PO for request ${reqId}...`);
             const response = await apiClient.uploadPO(reqId, file);
-            console.log(`[Procurement] PO Upload Response:`, response); // contains extracted details
+            console.log(`[Procurement] PO Upload Response:`, response);
+
+            // Immediately validate/approve the PO so it routes to Finance
+            // (button says "Approve & Upload PO" - upload + approve is a single step)
+            try {
+                await apiClient.procurementApproveRequest(reqId);
+                console.log(`[Procurement] PO auto-approved for request ${reqId}`);
+            } catch (approveError) {
+                console.warn(`[Procurement] Auto-approve failed (PO uploaded, manual review may be needed):`, approveError);
+            }
 
             // Refresh data to reflect status changes
             loadData();

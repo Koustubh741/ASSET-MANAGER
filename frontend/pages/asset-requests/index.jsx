@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import Layout from '@/components/Layout';
 import AssetRequestsList from '@/components/AssetRequestsList';
 import { FileText, Plus } from 'lucide-react';
 
 export default function AssetRequestsPage() {
     return (
-        <Layout>
-            <div className="p-6 max-w-[1600px] mx-auto space-y-6">
+        <div className="p-6 max-w-[1600px] mx-auto space-y-6">
 
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -15,7 +13,7 @@ export default function AssetRequestsPage() {
                             <FileText className="w-8 h-8 text-indigo-400" />
                             Asset Requests
                         </h1>
-                        <p className="text-slate-400 mt-1">
+                        <p className="text-slate-400 light:text-slate-600 mt-1">
                             Manage asset approvals, BYOD compliance, and procurement workflows.
                         </p>
                     </div>
@@ -30,6 +28,5 @@ export default function AssetRequestsPage() {
                 <AssetRequestsList />
 
             </div>
-        </Layout>
     );
 }

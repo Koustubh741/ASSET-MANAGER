@@ -21,7 +21,7 @@ async def test_reg():
             password="password123",
             full_name="Test Dept User",
             department="Engineering",
-            domain="Data/AI",
+            domain="DATA_AI",
             role="END_USER",
             status="ACTIVE"
         )

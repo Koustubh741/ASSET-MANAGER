@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Form
+from pydantic import BaseModel
 from uuid import UUID
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -98,9 +99,8 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     db_user = await user_service.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    # Set default status if not provided
-    if not user.status:
-        user.status = "PENDING"
+    # All new sign-ups are PENDING until System Admin activates.
+    user.status = "PENDING"
     return await user_service.create_user(db=db, user=user)
 
 @router.post("/login", response_model=LoginResponse)
@@ -205,6 +205,33 @@ async def get_current_user_info(current_user = Depends(auth_utils.get_current_us
     Returns the user object associated with the provided JWT token.
     """
     return current_user
+
+
+class PlanUpdate(BaseModel):
+    plan: str  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
+
+
+@router.patch("/me/plan", response_model=UserResponse)
+async def update_my_plan(
+    body: PlanUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(auth_utils.get_current_user),
+):
+    """
+    Update the current user's plan (for demo/testing). In production, plan would be set by billing.
+    """
+    # Root Fix: Demo endpoint - allows self plan update for testing; restrict to admin or remove in production
+    valid_plans = ["STARTER", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"]
+    if body.plan not in valid_plans:
+        raise HTTPException(status_code=400, detail=f"Invalid plan. Must be one of: {valid_plans}")
+    user = await user_service.get_user(db, current_user.id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if hasattr(user, "plan"):
+        user.plan = body.plan
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 @router.get("/sso/login/{provider}")

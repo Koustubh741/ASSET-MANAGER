@@ -5,7 +5,7 @@ Accounts created for workflow testing (BYOD, asset requests, etc.).
 | Email | Password | Role | Department | Domain |
 |-------|----------|------|------------|--------|
 | koustubh@gmail.com | password@123 | — | — | — |
-| JohnathanPine@gmail.com | password@123 | Manager | Engineering | Data/AI |
+| JohnathanPine@gmail.com | password@123 | Manager | Engineering | DATA_AI |
 | richardroper@gmail.com | password@123 | IT Management | IT Management | Infrastructure |
 
 ## BYOD Workflow Quick Reference

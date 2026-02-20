@@ -45,7 +45,7 @@ export default function AllTicketsPage() {
         <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
             <div className="max-w-7xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
 
@@ -54,9 +54,9 @@ export default function AllTicketsPage() {
                     </h1>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10">
+                <div className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 light:border-slate-200">
                     <table className="w-full text-left text-sm">
-                        <thead className="text-slate-400 uppercase font-medium text-xs border-b border-white/10">
+                        <thead className="text-slate-400 uppercase font-medium text-xs border-b border-white/10 light:border-slate-200">
                             <tr>
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Subject</th>
@@ -88,7 +88,7 @@ export default function AllTicketsPage() {
                                                 {t.priority}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-300">{t.status}</td>
+                                        <td className="px-6 py-4 text-slate-300 light:text-slate-700">{t.status}</td>
                                         <td className="px-6 py-4 text-slate-400">{t.user}</td>
                                         <td className="px-6 py-4 text-right">
                                             <Link href={`/tickets/${t.id}`} className="text-rose-400 hover:text-rose-300 font-medium">View</Link>

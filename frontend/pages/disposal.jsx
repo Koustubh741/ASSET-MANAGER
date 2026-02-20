@@ -10,21 +10,21 @@ const ActionModal = ({ isOpen, onClose, title, data, onConfirm, actionLabel, ste
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
-            <div className={`relative rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border ${stepType === 'dispose' ? 'bg-[#1a0505] border-red-900/50' : 'bg-[#0f172a] border-white/10'}`}>
+            <div className={`relative rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 border ${stepType === 'dispose' ? 'bg-[#1a0505] border-red-900/50' : 'bg-[#0f172a] border-white/10 light:border-slate-200'}`}>
 
                 {/* Header */}
-                <div className={`px-6 py-4 border-b flex justify-between items-center ${stepType === 'dispose' ? 'bg-red-900/20 border-red-900/30' : 'bg-slate-900/50 border-white/10'}`}>
+                <div className={`px-6 py-4 border-b flex justify-between items-center ${stepType === 'dispose' ? 'bg-red-900/20 border-red-900/30' : 'bg-slate-900/50 border-white/10 light:border-slate-200'}`}>
                     <h3 className={`text-lg font-bold flex items-center gap-2 ${stepType === 'dispose' ? 'text-red-400' : 'text-white'}`}>
                         {stepType === 'dispose' && <AlertTriangle size={20} />}
                         {title}
                     </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors"><X size={20} /></button>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors"><X size={20} /></button>
                 </div>
 
                 {/* Content */}
                 <div className="p-6 space-y-6">
                     {/* Asset Confirmation */}
-                    <div className="bg-black/20 rounded-xl p-4 border border-white/5">
+                    <div className="bg-black/20 rounded-xl p-4 border border-white/5 light:border-slate-200">
                         <p className="text-xs text-slate-500 uppercase font-semibold mb-1">Asset Target</p>
                         <h4 className="text-white font-medium text-lg">{data.name}</h4>
                         <p className="text-slate-400 text-sm font-mono">{data.serial_number}</p>
@@ -34,11 +34,11 @@ const ActionModal = ({ isOpen, onClose, title, data, onConfirm, actionLabel, ste
                     {stepType === 'validate' && (
                         <div className="space-y-3">
                             <h4 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Validation Summary</h4>
-                            <div className="flex justify-between text-sm py-2 border-b border-white/5">
+                            <div className="flex justify-between text-sm py-2 border-b border-white/5 light:border-slate-200">
                                 <span className="text-slate-400">Current Status</span>
                                 <span className="text-slate-200">{data.status}</span>
                             </div>
-                            <div className="flex justify-between text-sm py-2 border-b border-white/5">
+                            <div className="flex justify-between text-sm py-2 border-b border-white/5 light:border-slate-200">
                                 <span className="text-slate-400">Last Assignment</span>
                                 <span className="text-slate-200">{data.assigned_to || 'None'}</span>
                             </div>
@@ -51,7 +51,7 @@ const ActionModal = ({ isOpen, onClose, title, data, onConfirm, actionLabel, ste
                             <div className="bg-yellow-500/10 rounded-lg p-3 text-sm text-yellow-200 border border-yellow-500/20">
                                 This action creates a permanent data destruction record. Ensure the device is connected.
                             </div>
-                            <div className="flex justify-between text-sm py-2 border-b border-white/5">
+                            <div className="flex justify-between text-sm py-2 border-b border-white/5 light:border-slate-200">
                                 <span className="text-slate-400">Wipe Method</span>
                                 <span className="text-slate-200 font-mono">DoD 5220.22-M (3 Pass)</span>
                             </div>
@@ -72,8 +72,8 @@ const ActionModal = ({ isOpen, onClose, title, data, onConfirm, actionLabel, ste
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-slate-900/50 border-t border-white/10 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
+                <div className="px-6 py-4 bg-slate-900/50 border-t border-white/10 light:border-slate-200 flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 text-sm text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">Cancel</button>
                     <button
                         onClick={() => onConfirm(data.id)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium text-white shadow-lg transition-all flex items-center gap-2
@@ -182,10 +182,10 @@ export default function Disposal() {
         <div className="space-y-8 pb-20">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold text-white tracking-tight">Disposal & Retirement</h2>
+                    <h2 className="text-3xl font-bold text-white light:text-slate-800 tracking-tight">Disposal & Retirement</h2>
                     <p className="text-slate-400 mt-1">End-of-life Governance: Validation ➝ Wipe ➝ Dispose</p>
                 </div>
-                <Link href="/" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg flex items-center transition-colors border border-white/5">
+                <Link href="/" className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg flex items-center transition-colors border border-white/5 light:border-slate-200">
                     <ArrowLeft size={16} className="mr-2" /> Dashboard
                 </Link>
             </div>
@@ -202,7 +202,7 @@ export default function Disposal() {
             )}
 
             {!error && assets.length === 0 && (
-                <div className="bg-slate-900/40 border border-white/5 rounded-2xl p-12 text-center">
+                <div className="bg-slate-900/40 border border-white/5 light:border-slate-200 rounded-2xl p-12 text-center">
                     <div className="bg-white/5 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <CheckCircle className="text-slate-500" size={40} />
                     </div>
@@ -221,7 +221,7 @@ export default function Disposal() {
                         }`}>
                         <div className="flex justify-between items-start mb-4">
                             <div>
-                                <h3 className="font-bold text-white text-lg">{asset.name}</h3>
+                                <h3 className="font-bold text-white light:text-slate-800 text-lg">{asset.name}</h3>
                                 <p className="text-slate-400 text-sm font-mono">{asset.serial_number}</p>
                             </div>
                             <div className={`p-2 rounded-lg ${asset.disposal_status === 'RETIRED' ? 'bg-slate-800 text-slate-500' : 'bg-white/5 text-white'
@@ -269,7 +269,7 @@ export default function Disposal() {
                             )}
 
                             {asset.disposal_status === 'RETIRED' && (
-                                <div className="text-center py-2 text-slate-500 bg-white/5 rounded-lg text-sm flex items-center justify-center border border-white/5 cursor-not-allowed">
+                                <div className="text-center py-2 text-slate-500 bg-white/5 rounded-lg text-sm flex items-center justify-center border border-white/5 light:border-slate-200 cursor-not-allowed">
                                     <CheckCircle size={14} className="mr-2" /> Archived & Locked
                                 </div>
                             )}

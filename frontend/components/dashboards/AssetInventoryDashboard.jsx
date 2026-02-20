@@ -20,14 +20,14 @@ export default function AssetInventoryDashboard() {
     return (
         <div className="space-y-6">
             {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-2 bg-slate-900/50 p-1.5 rounded-xl border border-white/5 backdrop-blur-sm w-fit">
+            <div className="flex flex-wrap gap-2 bg-slate-900/50 light:bg-slate-100 p-1.5 rounded-xl border border-white/5 light:border-slate-200 backdrop-blur-sm w-fit">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${activeTab === tab.id
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                                : 'text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 hover:bg-white/5 light:hover:bg-slate-100'
                             }`}
                     >
                         <tab.icon size={16} />

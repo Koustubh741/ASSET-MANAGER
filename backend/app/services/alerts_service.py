@@ -98,7 +98,7 @@ async def get_alerts(
         q = select(AssetRequest).where(
             and_(
                 AssetRequest.procurement_finance_status.isnot(None),
-                AssetRequest.procurement_finance_status.in_(["APPROVED", "PROCUREMENT_APPROVED"]),
+                AssetRequest.procurement_finance_status.in_(["APPROVED"]),  # Finance-approved; no combined role
                 AssetRequest.procurement_finance_reviewed_at >= cutoff_dt,
             )
         ).order_by(desc(AssetRequest.procurement_finance_reviewed_at)).limit(10)

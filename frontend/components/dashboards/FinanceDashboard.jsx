@@ -45,21 +45,21 @@ const RenderStructuredData = ({ data }) => {
                 const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                 return (
-                    <div key={key} className={`${isLongText ? 'col-span-full' : ''} group relative px-4 py-3 rounded-xl bg-white/[0.01] border border-white/20 hover:bg-white/[0.03] transition-all duration-300 ring-1 ring-white/10 hover:ring-indigo-500/40 shadow-lg`}>
+                    <div key={key} className={`${isLongText ? 'col-span-full' : ''} group relative px-4 py-3 rounded-xl bg-white/[0.01] border border-white/20 hover:bg-white/[0.03] transition-all duration-300 ring-1 ring-white/10 hover:ring-indigo-500/40 shadow-lg light:bg-slate-50 light:border-slate-200 light:ring-slate-200`}>
                         {/* Shimmer Border */}
                         <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
                         <div className="flex items-center gap-2 mb-1.5">
                             {getIcon(key)}
-                            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{displayKey}</span>
+                            <span className="text-[11px] font-bold text-slate-400 light:text-slate-600 uppercase tracking-widest">{displayKey}</span>
                         </div>
 
                         {isLongText ? (
-                            <div className="mt-2 text-sm text-slate-200 leading-relaxed font-sans bg-black/40 p-4 rounded-lg border border-white/15 whitespace-pre-wrap selection:bg-indigo-500/40">
+                            <div className="mt-2 text-sm text-slate-200 leading-relaxed font-sans bg-black/40 p-4 rounded-lg border border-white/15 whitespace-pre-wrap selection:bg-indigo-500/40 light:text-slate-800 light:bg-slate-100 light:border-slate-200">
                                 {value}
                             </div>
                         ) : (
-                            <div className={`text-base font-bold tracking-tight ${isConfidence ? getConfidenceColor(value) : 'text-white'}`}>
+                            <div className={`text-base font-bold tracking-tight ${isConfidence ? getConfidenceColor(value) : 'text-white light:text-slate-900'}`}>
                                 {typeof value === 'number' && key.toLowerCase().includes('cost')
                                     ? `₹ ${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                                     : (isConfidence ? `${(value * 100).toFixed(1)}% Match` : String(value))}
@@ -75,19 +75,30 @@ const RenderStructuredData = ({ data }) => {
     );
 };
 
+const DEFAULT_CHART_DATA = [
+    { name: 'Jan', value: 4000000 },
+    { name: 'Feb', value: 3950000 },
+    { name: 'Mar', value: 3880000 },
+    { name: 'Apr', value: 4200000 },
+    { name: 'May', value: 4100000 },
+    { name: 'Jun', value: 4020000 },
+];
+
 export default function FinanceDashboard() {
     const toast = useToast();
     const { requests, financeApprove, financeReject } = useAssetContext();
 
-    // ENTERPRISE: Requests awaiting budget approval
-    // ENTERPRISE: Requests awaiting budget approval
-    const budgetApprovals = requests.filter(r => r.currentOwnerRole === 'FINANCE' && (r.procurementStage === 'PO_CREATED' || r.procurementStage === 'PO_UPLOADED'));
+    // Items arrive at Finance when Procurement has validated the PO (procurementStage === 'PO_VALIDATED')
+    const budgetApprovals = requests.filter(r => r.currentOwnerRole === 'FINANCE' && r.procurementStage === 'PO_VALIDATED');
 
     const [editingPos, setEditingPos] = useState({});
     const [editData, setEditData] = useState({});
     const [showPoTable, setShowPoTable] = useState(false);
     const [poDetails, setPoDetails] = useState({});
     const [expandedPoLogs, setExpandedPoLogs] = useState({});
+    const [financialSummary, setFinancialSummary] = useState(null);
+    const [depreciationData, setDepreciationData] = useState(null);
+    const [chartData, setChartData] = useState(DEFAULT_CHART_DATA);
 
     const handleEditToggle = (requestId, po) => {
         if (editingPos[requestId]) {
@@ -124,7 +135,6 @@ export default function FinanceDashboard() {
         const fetchPODetails = async () => {
             const details = {};
             for (const req of budgetApprovals) {
-                if (req.procurementStage !== 'PO_UPLOADED') continue;
                 try {
                     const po = await apiClient.getPO(req.id);
                     if (po) details[req.id] = po;
@@ -136,31 +146,71 @@ export default function FinanceDashboard() {
         };
 
         if (budgetApprovals.length > 0) fetchPODetails();
-    }, [budgetApprovals.length]); // Re-run if list changes
+    }, [budgetApprovals.length]);
 
-    const data = [
-        { name: 'Jan', value: 4000000 },
-        { name: 'Feb', value: 3950000 },
-        { name: 'Mar', value: 3880000 },
-        { name: 'Apr', value: 4200000 }, // Purchase spike
-        { name: 'May', value: 4100000 },
-        { name: 'Jun', value: 4020000 },
-    ];
+    useEffect(() => {
+        apiClient.getFinancialSummary()
+            .then(res => setFinancialSummary(res))
+            .catch(() => setFinancialSummary(null));
+        apiClient.getMonthlySpend(6)
+            .then(list => {
+                const mapped = list.map(d => ({
+                    name: d.month.length >= 7 ? d.month.slice(5, 7) + '/' + d.month.slice(2, 4) : d.month,
+                    value: d.total_spend || 0
+                }));
+                if (mapped.length) setChartData(mapped);
+            })
+            .catch(() => {});
+        apiClient.getDepreciation('straight-line', 5)
+            .then(res => setDepreciationData(res))
+            .catch(() => setDepreciationData(null));
+    }, []);
+
+    const totalBookValue = financialSummary?.total_asset_value ?? 4020000;
+    const ytdDepreciation = depreciationData?.total_depreciation ?? 380000;
+
+    const exportFinanceIntel = () => {
+        const headers = ['Request ID', 'Asset Type', 'Requester', 'Justification', 'Vendor', 'Total Cost', 'Status'];
+        const rows = budgetApprovals.map(req => {
+            const po = poDetails[req.id];
+            return [
+                req.id,
+                req.assetType,
+                req.requestedBy?.name || '',
+                (req.justification || '').slice(0, 200),
+                po?.vendor_name ?? '',
+                po?.total_cost ?? '',
+                req.procurementStage || 'PENDING'
+            ];
+        });
+        const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `finance-budget-queue-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Export downloaded.');
+    };
 
     return (
         <div className="space-y-6">
-            <header className="flex justify-between items-center bg-slate-900/40 backdrop-blur-3xl p-8 rounded-[24px] border border-white/20 ring-1 ring-white/10 shadow-2xl relative overflow-hidden group">
+            <header className="flex justify-between items-center bg-slate-900/40 backdrop-blur-3xl p-8 rounded-[24px] border border-white/20 ring-1 ring-white/10 shadow-2xl relative overflow-hidden group light:bg-white light:border-slate-200 light:ring-slate-200">
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none"></div>
                 <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-white/30 to-transparent group-hover:via-white/50 transition-all duration-1000"></div>
 
                 <div className="relative z-10">
-                    <h2 className="text-4xl font-black text-white tracking-tight flex items-center gap-3">
+                    <h2 className="text-4xl font-black text-white tracking-tight flex items-center gap-3 light:text-slate-900">
                         <div className="w-2 h-10 bg-indigo-500 rounded-full"></div>
                         Financial <span className="text-indigo-400">Governance</span>
                     </h2>
-                    <p className="text-slate-400 text-[12px] font-bold uppercase tracking-[0.4em] mt-2 ml-5 italic">Asset valuation & capital intelligence</p>
+                    <p className="text-slate-400 text-[12px] font-bold uppercase tracking-[0.4em] mt-2 ml-5 italic light:text-slate-600">Asset valuation & capital intelligence</p>
                 </div>
-                <button className="relative z-10 flex items-center gap-3 bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-xl border border-white/20 transition-all active:scale-95 text-[11px] font-black uppercase tracking-[0.2em] shadow-xl">
+                <button
+                    onClick={exportFinanceIntel}
+                    className="relative z-10 flex items-center gap-3 bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white px-6 py-3 rounded-xl border border-white/20 transition-all active:scale-95 text-[11px] font-black uppercase tracking-[0.2em] shadow-xl light:border-slate-200 light:text-slate-900 light:hover:bg-slate-100"
+                >
                     <Download size={20} className="text-indigo-400" /> Export Financial Intel
                 </button>
             </header>
@@ -173,7 +223,7 @@ export default function FinanceDashboard() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="group relative glass-card p-6 overflow-hidden ring-1 ring-white/20 hover:ring-emerald-500/50 transition-all duration-500 border border-white/20 shadow-2xl">
+                <div className="group relative glass-card p-6 overflow-hidden ring-1 ring-white/20 hover:ring-emerald-500/50 transition-all duration-500 border border-white/20 shadow-2xl light:border-slate-200 light:ring-slate-200">
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 to-teal-400 opacity-60"></div>
                     <div className="absolute -inset-0.5 bg-gradient-to-br from-emerald-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-inherit -z-10"></div>
                     <div className="flex items-center justify-between mb-4">
@@ -181,18 +231,18 @@ export default function FinanceDashboard() {
                             <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:scale-110 transition-transform duration-500">
                                 <DollarSign size={24} />
                             </div>
-                            <h3 className="text-slate-300 text-sm font-black uppercase tracking-[0.2em]">Total Book Value</h3>
+                            <h3 className="text-slate-300 text-sm font-black uppercase tracking-[0.2em] light:text-slate-700">Total Book Value</h3>
                         </div>
                         <TrendSparkline data={[30, 45, 35, 60, 55, 80]} color="#10b981" />
                     </div>
-                    <p className="text-4xl font-black text-white tracking-tighter">₹40.2<span className="text-xl text-slate-500 ml-1">Lacs</span></p>
+                    <p className="text-4xl font-black text-white tracking-tighter light:text-slate-900">₹{(totalBookValue / 100000).toFixed(1)}<span className="text-xl text-slate-500 ml-1 light:text-slate-600">Lacs</span></p>
                     <div className="flex items-baseline gap-2 mt-2">
                         <span className="text-sm font-black text-rose-400">-5.2%</span>
-                        <span className="text-[11px] text-slate-400 uppercase font-bold italic tracking-widest">YoY Depreciation</span>
+                        <span className="text-[11px] text-slate-400 light:text-slate-600 uppercase font-bold italic tracking-widest">YoY Depreciation</span>
                     </div>
                 </div>
 
-                <div className="group relative glass-card p-6 overflow-hidden ring-1 ring-white/20 hover:ring-purple-500/50 transition-all duration-500 border border-white/20 shadow-2xl">
+                <div className="group relative glass-card p-6 overflow-hidden ring-1 ring-white/20 hover:ring-purple-500/50 transition-all duration-500 border border-white/20 shadow-2xl light:border-slate-200 light:ring-slate-200">
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 to-indigo-400 opacity-60"></div>
                     <div className="absolute -inset-0.5 bg-gradient-to-br from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-inherit -z-10"></div>
                     <div className="flex items-center justify-between mb-4">
@@ -200,15 +250,15 @@ export default function FinanceDashboard() {
                             <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform duration-500">
                                 <TrendingDown size={24} />
                             </div>
-                            <h3 className="text-slate-300 text-sm font-black uppercase tracking-[0.2em]">YTD Depreciation</h3>
+                            <h3 className="text-slate-300 text-sm font-black uppercase tracking-[0.2em] light:text-slate-700">YTD Depreciation</h3>
                         </div>
                         <TrendSparkline data={[20, 30, 45, 50, 65, 70]} color="#a855f7" />
                     </div>
-                    <p className="text-4xl font-black text-white tracking-tighter">₹3.8<span className="text-xl text-slate-500 ml-1">Lacs</span></p>
-                    <p className="text-[11px] text-slate-400 mt-2 uppercase font-bold italic tracking-widest">Straight-line projection</p>
+                    <p className="text-4xl font-black text-white tracking-tighter light:text-slate-900">₹3.8<span className="text-xl text-slate-500 ml-1 light:text-slate-600">Lacs</span></p>
+                    <p className="text-[11px] text-slate-400 light:text-slate-600 mt-2 uppercase font-bold italic tracking-widest">Straight-line projection</p>
                 </div>
 
-                <div className="group relative glass-card p-6 overflow-hidden bg-white/[0.03] ring-1 ring-white/20 hover:ring-amber-500/50 transition-all duration-500 border border-white/20 shadow-2xl">
+                <div className="group relative glass-card p-6 overflow-hidden bg-white/[0.03] ring-1 ring-white/20 hover:ring-amber-500/50 transition-all duration-500 border border-white/20 shadow-2xl light:border-slate-200 light:ring-slate-200">
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-500 to-orange-400 opacity-60"></div>
                     <div className="absolute -inset-0.5 bg-gradient-to-br from-amber-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-inherit -z-10"></div>
                     <div className="flex items-center justify-between mb-4">
@@ -216,7 +266,7 @@ export default function FinanceDashboard() {
                             <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform duration-500">
                                 <PieChart size={24} />
                             </div>
-                            <h3 className="text-slate-300 text-sm font-black uppercase tracking-[0.2em]">Budget Queue</h3>
+                            <h3 className="text-slate-300 text-sm font-black uppercase tracking-[0.2em] light:text-slate-700">Budget Queue</h3>
                         </div>
                         <div className="flex -space-x-2">
                             {[1, 2, 3].map(i => (
@@ -226,11 +276,11 @@ export default function FinanceDashboard() {
                             ))}
                         </div>
                     </div>
-                    <p className="text-4xl font-black text-white tracking-tighter">{budgetApprovals.length}<span className="text-xl text-slate-500 ml-1">Pending</span></p>
+                    <p className="text-4xl font-black text-white tracking-tighter light:text-slate-900">{budgetApprovals.length}<span className="text-xl text-slate-500 ml-1 light:text-slate-600">Pending</span></p>
 
                     <button
                         onClick={() => setShowPoTable(v => !v)}
-                        className="mt-4 w-full text-[11px] font-black uppercase tracking-[0.2em] px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/20 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg"
+                        className="mt-4 w-full text-[11px] font-black uppercase tracking-[0.2em] px-5 py-3 rounded-xl bg-white/5 light:bg-slate-50 hover:bg-white/10 text-white border border-white/20 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg light:border-slate-200 light:text-slate-900 light:hover:bg-slate-100"
                     >
                         {showPoTable ? <CheckCircle size={16} className="text-emerald-400" /> : <Activity size={16} className="text-indigo-400" />}
                         {showPoTable ? 'Close Analytics Table' : 'Open Extraction Audit'}
@@ -239,50 +289,50 @@ export default function FinanceDashboard() {
             </div>
 
             {showPoTable && (
-                <div className="glass-panel p-8 border border-white/20 ring-1 ring-white/10 shadow-3xl animate-in fade-in slide-in-from-bottom-8 duration-1000 relative overflow-hidden">
+                <div className="glass-panel p-8 border border-white/20 ring-1 ring-white/10 shadow-3xl animate-in fade-in slide-in-from-bottom-8 duration-1000 relative overflow-hidden light:border-slate-200 light:ring-slate-200">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none"></div>
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div>
                             <h3 className="text-3xl font-black text-white tracking-tight">Purchase Intelligence Audit</h3>
-                            <p className="text-[12px] text-slate-400 font-bold uppercase tracking-[0.3em] mt-2 italic shadow-sm">Cross-referencing extracted telemetry with budget requests</p>
+                            <p className="text-[12px] text-slate-400 light:text-slate-600 font-bold uppercase tracking-[0.3em] mt-2 italic shadow-sm">Cross-referencing extracted telemetry with budget requests</p>
                         </div>
                         <div className="flex gap-4">
-                            <div className="px-5 py-2.5 bg-white/5 rounded-xl border border-white/20 text-[11px] font-black text-slate-300 uppercase tracking-widest shadow-xl ring-1 ring-white/10">
+                            <div className="px-5 py-2.5 bg-white/5 light:bg-slate-50 rounded-xl border border-white/20 text-[11px] font-black text-slate-300 light:text-slate-700 uppercase tracking-widest shadow-xl ring-1 ring-white/10">
                                 {budgetApprovals.length} Audit Nodes
                             </div>
                         </div>
                     </div>
 
-                    <div className="overflow-auto rounded-[20px] border border-white/20 bg-black/40 ring-1 ring-white/10 shadow-2xl">
+                    <div className="overflow-auto rounded-[20px] border border-white/20 bg-black/40 ring-1 ring-white/10 shadow-2xl light:bg-white light:border-slate-200 light:ring-slate-200">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-white/[0.03] border-b border-white/20">
-                                    <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Telemetry ID</th>
-                                    <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Matched Vendor</th>
-                                    <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Extracted Value</th>
-                                    <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest text-center">Batch Vol</th>
-                                    <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Audit Status</th>
-                                    <th className="p-6 text-[11px] font-black text-slate-400 uppercase tracking-widest">Structured Payload</th>
+                                <tr className="bg-white/[0.03] border-b border-white/20 light:bg-slate-50 light:border-slate-200">
+                                    <th className="p-6 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest">Telemetry ID</th>
+                                    <th className="p-6 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest">Matched Vendor</th>
+                                    <th className="p-6 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest text-right">Extracted Value</th>
+                                    <th className="p-6 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest text-center">Batch Vol</th>
+                                    <th className="p-6 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest">Audit Status</th>
+                                    <th className="p-6 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest">Structured Payload</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-white/5">
+                            <tbody className="divide-y divide-white/5 light:divide-slate-200">
                                 {budgetApprovals.map(req => {
                                     const po = poDetails[req.id];
                                     return (
-                                        <tr key={req.id} className="group hover:bg-white/[0.03] transition-colors border-b border-white/5 last:border-0">
+                                        <tr key={req.id} className="group hover:bg-white/[0.03] transition-colors border-b border-white/5 light:border-slate-200 last:border-0">
                                             <td className="p-5 text-xs text-indigo-400 font-mono font-bold tracking-tighter truncate max-w-[120px]">{req.id}</td>
                                             <td className="p-5">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
+                                                    <div className="w-8 h-8 rounded-lg bg-white/5 light:bg-slate-50 flex items-center justify-center text-slate-400 light:text-slate-600 group-hover:text-white light:group-hover:text-slate-900 transition-colors">
                                                         <User size={14} />
                                                     </div>
-                                                    <span className="text-sm font-bold text-slate-200">{po?.vendor_name || 'PENDING'}</span>
+                                                    <span className="text-sm font-bold text-slate-200 light:text-slate-800">{po?.vendor_name || 'PENDING'}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-5 text-sm font-black text-white text-right font-mono">
+                                            <td className="p-5 text-sm font-black text-white text-right font-mono light:text-slate-900">
                                                 {po?.total_cost != null ? `₹${Number(po.total_cost).toLocaleString()}` : '--'}
                                             </td>
-                                            <td className="p-5 text-sm text-slate-400 text-center font-mono">{po?.quantity ?? '0'}</td>
+                                            <td className="p-5 text-sm text-slate-400 light:text-slate-600 text-center font-mono">{po?.quantity ?? '0'}</td>
                                             <td className="p-5">
                                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border transition-all ${po?.status === 'extracted'
                                                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
@@ -300,10 +350,10 @@ export default function FinanceDashboard() {
                                                             </div>
                                                             Inspect Trace
                                                         </summary>
-                                                        <div className="mt-6 bg-slate-950/90 backdrop-blur-3xl border border-white/10 ring-2 ring-indigo-500/10 rounded-[20px] p-8 shadow-3xl relative overflow-hidden">
+                                                        <div className="mt-6 bg-slate-950/90 backdrop-blur-3xl border border-white/10 light:border-slate-200 ring-2 ring-indigo-500/10 rounded-[20px] p-8 shadow-3xl relative overflow-hidden">
                                                             <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/10 rounded-full blur-[80px] -mr-24 -mt-24 pointer-events-none" />
-                                                            <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
-                                                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Deep Extraction Telemetry</h4>
+                                                            <div className="flex items-center justify-between mb-6 border-b border-white/10 light:border-slate-200 pb-4">
+                                                                <h4 className="text-[10px] font-black text-slate-400 light:text-slate-600 uppercase tracking-[0.3em]">Deep Extraction Telemetry</h4>
                                                                 <span className="text-[9px] font-mono text-slate-600 uppercase">{req.id}</span>
                                                             </div>
                                                             <RenderStructuredData data={po.extracted_data} />
@@ -331,7 +381,7 @@ export default function FinanceDashboard() {
                                 <DollarSign size={26} className="text-emerald-400" />
                             </div>
                             Finance Review Queue
-                            <span className="text-[11px] font-black bg-white/10 px-3 py-1.5 rounded-lg text-slate-300 border border-white/20 tracking-widest uppercase shadow-md">
+                            <span className="text-[11px] font-black bg-white/10 px-3 py-1.5 rounded-lg text-slate-300 light:text-slate-700 border border-white/20 tracking-widest uppercase shadow-md">
                                 {budgetApprovals.length} pending
                             </span>
                         </h3>
@@ -355,7 +405,7 @@ export default function FinanceDashboard() {
                                                     <div>
                                                         <h4 className="text-3xl font-black text-white tracking-tight leading-none mb-3">{req.assetType}</h4>
                                                         <div className="flex items-center gap-4">
-                                                            <span className="text-[12px] font-mono text-slate-400 px-2 py-1 bg-white/5 rounded border border-white/15 font-bold">{req.id}</span>
+                                                            <span className="text-[12px] font-mono text-slate-400 light:text-slate-600 px-2 py-1 bg-white/5 light:bg-slate-50 rounded border border-white/15 font-bold">{req.id}</span>
                                                             <div className="flex items-center gap-2 text-[11px] font-black text-emerald-400 uppercase tracking-widest">
                                                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                                                                 {req.procurementStage}
@@ -364,15 +414,15 @@ export default function FinanceDashboard() {
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-8 py-6 border-y border-white/10">
+                                                <div className="grid grid-cols-2 gap-8 py-6 border-y border-white/10 light:border-slate-200">
                                                     <div className="space-y-2">
-                                                        <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest">
                                                             <User size={14} className="text-slate-500" /> Requester
                                                         </div>
                                                         <p className="text-base font-black text-slate-100">{req.requestedBy.name}</p>
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <div className="flex items-center gap-2 text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest">
                                                             <PieChart size={14} className="text-slate-500" /> Business Unit
                                                         </div>
                                                         <p className="text-base font-black text-slate-100">{req.requestedBy.role}</p>
@@ -380,8 +430,8 @@ export default function FinanceDashboard() {
                                                 </div>
 
                                                 <div className="space-y-3">
-                                                    <div className="text-[11px] font-black text-slate-400 uppercase tracking-widest opacity-80">Strategic Justification</div>
-                                                    <p className="text-base text-slate-300 leading-relaxed italic border-l-4 border-indigo-500/40 pl-5 py-2 bg-white/[0.01] rounded-r-xl">
+                                                    <div className="text-[11px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest opacity-80">Strategic Justification</div>
+                                                    <p className="text-base text-slate-300 light:text-slate-700 leading-relaxed italic border-l-4 border-indigo-500/40 pl-5 py-2 bg-white/[0.01] rounded-r-xl">
                                                         "{req.justification}"
                                                     </p>
                                                 </div>
@@ -392,13 +442,13 @@ export default function FinanceDashboard() {
                                                 {po ? (
                                                     <div className="space-y-8">
                                                         <div className="flex items-center justify-between">
-                                                            <div className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                                                            <div className="text-[11px] font-black text-slate-300 light:text-slate-700 uppercase tracking-[0.2em] flex items-center gap-2">
                                                                 <Activity size={14} className="text-emerald-400" />
                                                                 Extraction Engine Result
                                                             </div>
                                                             <button
                                                                 onClick={() => handleEditToggle(req.id, po)}
-                                                                className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all shadow-lg ${editingPos[req.id] ? 'bg-rose-500 text-white border-rose-600' : 'bg-white/5 text-slate-300 border-white/20 hover:bg-white/10'}`}
+                                                                className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all shadow-lg ${editingPos[req.id] ? 'bg-rose-500 text-white border-rose-600' : 'bg-white/5 text-slate-300 light:text-slate-700 border-white/20 hover:bg-white/10'}`}
                                                             >
                                                                 {editingPos[req.id] ? 'Cancel Edit' : 'Manual entry Req.'}
                                                             </button>
@@ -406,7 +456,7 @@ export default function FinanceDashboard() {
 
                                                         <div className="grid grid-cols-2 gap-6">
                                                             <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/15 hover:bg-white/[0.04] transition-all group/field ring-1 ring-white/5 hover:ring-white/10 shadow-xl">
-                                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                                <div className="text-[10px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-2">
                                                                     <User size={12} className="text-indigo-400" /> Vendor Identification
                                                                 </div>
                                                                 {editingPos[req.id] ? (
@@ -426,7 +476,7 @@ export default function FinanceDashboard() {
                                                             </div>
 
                                                             <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/15 hover:bg-white/[0.04] transition-all ring-1 ring-white/5 hover:ring-white/10 shadow-xl">
-                                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                                <div className="text-[10px] font-black text-slate-400 light:text-slate-600 uppercase tracking-widest mb-2 flex items-center gap-2">
                                                                     <DollarSign size={12} className="text-emerald-400" /> Financial Commitment
                                                                 </div>
                                                                 {editingPos[req.id] ? (
@@ -452,7 +502,7 @@ export default function FinanceDashboard() {
 
                                                         <button
                                                             onClick={() => setExpandedPoLogs(prev => ({ ...prev, [req.id]: !prev[req.id] }))}
-                                                            className="w-full py-3 bg-gradient-to-r from-transparent via-white/5 to-transparent border-y border-white/15 text-[10px] font-black text-slate-300 hover:text-white uppercase tracking-[0.4em] transition-all hover:bg-white/5"
+                                                            className="w-full py-3 bg-gradient-to-r from-transparent via-white/5 to-transparent border-y border-white/15 text-[10px] font-black text-slate-300 light:text-slate-700 hover:text-white uppercase tracking-[0.4em] transition-all hover:bg-white/5"
                                                         >
                                                             {expandedPoLogs[req.id] ? 'CONSOLIDATE AUDIT LOGS' : 'VERIFY DEEP TELEMETRY'}
                                                         </button>
@@ -479,7 +529,7 @@ export default function FinanceDashboard() {
                                                                     const reason = prompt("State reason for budgetary rejection:");
                                                                     if (reason) financeReject(req.id, reason, "Finance Manager");
                                                                 }}
-                                                                className="flex-1 py-4 rounded-xl bg-white/5 hover:bg-rose-500/10 text-rose-400 border border-white/10 hover:border-rose-500/20 transition-all font-black text-[10px] uppercase tracking-[0.2em] active:scale-95"
+                                                                className="flex-1 py-4 rounded-xl bg-white/5 light:bg-slate-50 hover:bg-rose-500/10 text-rose-400 border border-white/10 light:border-slate-200 hover:border-rose-500/20 transition-all font-black text-[10px] uppercase tracking-[0.2em] active:scale-95"
                                                             >
                                                                 Escalate/Reject
                                                             </button>
@@ -496,7 +546,7 @@ export default function FinanceDashboard() {
                                         </div>
 
                                         {expandedPoLogs[req.id] && (
-                                            <div className="mt-10 pt-10 border-t border-white/10 animate-in fade-in zoom-in-95 duration-500">
+                                            <div className="mt-10 pt-10 border-t border-white/10 light:border-slate-200 animate-in fade-in zoom-in-95 duration-500">
                                                 <RenderStructuredData data={po.extracted_data} />
                                             </div>
                                         )}
@@ -509,10 +559,10 @@ export default function FinanceDashboard() {
             )}
 
             <div className="glass-panel p-6">
-                <h3 className="text-lg font-bold text-white mb-6">Asset Value Trend (6 Months)</h3>
+                <h3 className="text-lg font-bold text-white light:text-slate-800 mb-6">Asset Value Trend (6 Months)</h3>
                 <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={data}>
+                        <AreaChart data={chartData}>
                             <defs>
                                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="5%" stopColor="#8884d8" stopOpacity={0.3} />

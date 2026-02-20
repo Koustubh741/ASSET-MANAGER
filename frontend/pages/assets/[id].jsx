@@ -110,7 +110,7 @@ export default function AssetDetail() {
     return (
         <div className="space-y-6">
             <div className="flex items-center space-x-4">
-                <Link href="/assets" className="p-2 hover:bg-white/10 rounded-full text-slate-300 hover:text-white transition-colors">
+                <Link href="/assets" className="p-2 hover:bg-white/10 rounded-full text-slate-300 light:text-slate-700 hover:text-white light:hover:text-slate-900 transition-colors">
                     <ArrowLeft size={24} />
                 </Link>
                 <div>
@@ -181,6 +181,22 @@ export default function AssetDetail() {
                                     {asset.specifications?.Condition || 'Excellent'}
                                 </p>
                             </div>
+                            {(asset.specifications?.['IP Address'] || asset.specifications?.ip_address) && (
+                                <div className="col-span-2 md:col-span-3">
+                                    <p className="text-sm text-slate-400 mb-1">IP Address</p>
+                                    {(() => {
+                                        const raw = asset.specifications?.['IP Address'] || asset.specifications?.ip_address || '';
+                                        const entries = typeof raw === 'string' && raw.includes('; ') ? raw.split('; ').map(s => s.trim()).filter(Boolean) : [raw];
+                                        return entries.length > 1 ? (
+                                            <ul className="font-mono text-blue-400/90 text-sm space-y-0.5 list-none p-0 m-0">
+                                                {entries.map((entry, i) => <li key={i}>{entry}</li>)}
+                                            </ul>
+                                        ) : (
+                                            <p className="font-medium text-slate-100 font-mono">{raw}</p>
+                                        );
+                                    })()}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -221,7 +237,7 @@ export default function AssetDetail() {
                             </p>
 
                             {asset.renewal_status ? (
-                                <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10">
+                                <div className="p-4 bg-slate-800/50 rounded-lg border border-white/10 light:border-slate-200">
                                     <p className="text-sm text-slate-400">Current Status</p>
                                     <p className="text-lg font-bold text-blue-400 mt-1">{asset.renewal_status.replace(/_/g, ' ')}</p>
                                     {asset.renewal_reason && (
@@ -258,7 +274,7 @@ export default function AssetDetail() {
                                         <textarea
                                             name="reason"
                                             required
-                                            className="w-full bg-slate-800/50 border border-white/10 rounded-lg p-3 text-slate-200 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                            className="w-full bg-slate-800/50 border border-white/10 light:border-slate-200 rounded-lg p-3 text-slate-200 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                                             rows="3"
                                             placeholder="e.g., Device failing in field, license expired..."
                                         />
@@ -266,7 +282,7 @@ export default function AssetDetail() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-400 mb-1">Urgency</label>
-                                            <select name="urgency" className="w-full bg-slate-800/50 border border-white/10 rounded-lg p-2.5 text-slate-200 text-sm outline-none">
+                                            <select name="urgency" className="w-full bg-slate-800/50 border border-white/10 light:border-slate-200 rounded-lg p-2.5 text-slate-200 text-sm outline-none">
                                                 <option value="Low">Low</option>
                                                 <option value="Medium">Medium</option>
                                                 <option value="High">High</option>
@@ -277,7 +293,7 @@ export default function AssetDetail() {
                                             <input
                                                 type="number"
                                                 name="cost"
-                                                className="w-full bg-slate-800/50 border border-white/10 rounded-lg p-2.5 text-slate-200 text-sm outline-none"
+                                                className="w-full bg-slate-800/50 border border-white/10 light:border-slate-200 rounded-lg p-2.5 text-slate-200 text-sm outline-none"
                                                 placeholder="0.00"
                                             />
                                         </div>
@@ -310,7 +326,7 @@ export default function AssetDetail() {
                                     <p className="font-medium">{asset.location || "Unknown"}</p>
                                 </div>
                             </div>
-                            <Link href={`/assets/assign?id=${asset.id}`} className="block w-full text-center py-2 px-4 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all backdrop-blur-sm">
+                            <Link href={`/assets/assign?id=${asset.id}`} className="block w-full text-center py-2 px-4 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 light:border-slate-200 transition-all backdrop-blur-sm">
                                 Change Assignment
                             </Link>
                         </div>
@@ -342,7 +358,7 @@ export default function AssetDetail() {
                                             type="date"
                                             value={warrantyFormData.purchase_date}
                                             onChange={(e) => setWarrantyFormData({ ...warrantyFormData, purchase_date: e.target.value })}
-                                            className="flex-1 bg-slate-800/50 border border-white/10 rounded-lg p-2 text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
+                                            className="flex-1 bg-slate-800/50 border border-white/10 light:border-slate-200 rounded-lg p-2 text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
                                         />
                                     </div>
                                 </div>
@@ -354,7 +370,7 @@ export default function AssetDetail() {
                                             type="date"
                                             value={warrantyFormData.warranty_expiry}
                                             onChange={(e) => setWarrantyFormData({ ...warrantyFormData, warranty_expiry: e.target.value })}
-                                            className="flex-1 bg-slate-800/50 border border-white/10 rounded-lg p-2 text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
+                                            className="flex-1 bg-slate-800/50 border border-white/10 light:border-slate-200 rounded-lg p-2 text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
                                         />
                                     </div>
                                 </div>
@@ -442,7 +458,7 @@ export default function AssetDetail() {
                                 Export to PDF
                             </button>
 
-                            <div id="digital-identity-card" className="space-y-4 p-4 bg-white/5 rounded-lg border border-white/5">
+                            <div id="digital-identity-card" className="space-y-4 p-4 bg-white/5 light:bg-slate-50 rounded-lg border border-white/5">
                                 <h4 className="text-sm font-semibold text-slate-400 text-center mb-2">Digital Asset Card</h4>
                                 <div className="text-center mb-4">
                                     <p className="text-lg font-bold text-white">{asset.name}</p>

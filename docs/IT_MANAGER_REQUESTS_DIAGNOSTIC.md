@@ -11,7 +11,7 @@
 ### 1. Which dashboard do you see?
 
 - **Expected:** Page heading should include **"IT Support"** or **"IT Management"**.
-- **If you see:** "System Admin", "Asset & Inventory Manager", "Procurement & Finance", or "End User" → **Role mismatch**.
+- **If you see:** "System Admin", "Asset & Inventory Manager", "Procurement Manager", "Finance", or "End User" (when you expect IT) → **Role mismatch**.
 
 ### 2. Browser console (F12 → Console)
 

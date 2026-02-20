@@ -10,11 +10,10 @@ import logging
 import time
 import hmac
 import hashlib
-import argparse
 import ssl
 from datetime import datetime, timezone
 from dataclasses import dataclass, field, asdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 from dotenv import load_dotenv
 
 # ── Environment & Logging ─────────────────────────────────────────────────────
@@ -218,6 +217,103 @@ def get_software_info() -> List[Dict[str, str]]:
         logger.error(f"Software discovery failed: {e}")
     return software_list
 
+
+def get_all_primary_ips_with_names() -> List[Tuple[str, str]]:
+    """
+    Get all connected IPv4 addresses with adapter/interface names.
+    Returns list of (adapter_name, ip). Physical adapters first, then virtual.
+    Skips loopback (127.x). On Windows skips disconnected adapters.
+    """
+    try:
+        if platform.system() == "Windows":
+            out = subprocess.check_output("ipconfig", shell=True).decode(errors="replace")
+            current_name = ""
+            current_connected = True
+            current_ips: List[str] = []
+            physical: List[Tuple[str, str]] = []
+            virtual: List[Tuple[str, str]] = []
+            seen: Set[str] = set()
+
+            def flush_adapter() -> None:
+                for ip in current_ips:
+                    if ip in seen or ip.startswith("127."):
+                        continue
+                    seen.add(ip)
+                    name = current_name or "Unknown"
+                    entry = (name, ip)
+                    if ip.startswith("192.168.41.") or ip.startswith("192.168.21."):
+                        virtual.append(entry)
+                    else:
+                        physical.append(entry)
+
+            for line in out.splitlines():
+                line_stripped = line.strip()
+                line_lower = line_stripped.lower()
+                if "media state" in line_lower and "disconnected" in line_lower:
+                    current_connected = False
+                if "adapter" in line_lower and ":" in line_stripped:
+                    if current_connected:
+                        flush_adapter()
+                    current_ips = []
+                    current_connected = True
+                    # e.g. "Ethernet adapter Ethernet 2:" -> "Ethernet 2"
+                    idx = line_lower.find("adapter ")
+                    if idx >= 0:
+                        name_part = line_stripped[idx + len("adapter "):].rstrip(":")
+                        current_name = name_part.strip() if name_part else "Unknown"
+                    else:
+                        current_name = "Unknown"
+                if "ipv4 address" in line_lower and ":" in line_stripped:
+                    parts = line_stripped.split(":", 1)
+                    if len(parts) == 2:
+                        ip = parts[1].strip().split("%")[0].strip()
+                        if ip and len(ip.split(".")) == 4:
+                            try:
+                                octets = [int(x) for x in ip.split(".")]
+                                if all(0 <= o <= 255 for o in octets):
+                                    current_ips.append(ip)
+                            except ValueError:
+                                pass
+            if current_connected:
+                flush_adapter()
+
+            return physical + virtual
+
+        # Linux: collect interface name + IP from "ip -4 addr show"
+        try:
+            out = subprocess.check_output(
+                ["ip", "-4", "addr", "show"], stderr=subprocess.DEVNULL
+            ).decode(errors="replace")
+        except (FileNotFoundError, subprocess.CalledProcessError):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.connect(("8.8.8.8", 80))
+                    return [("default", s.getsockname()[0])]
+            except OSError:
+                return []
+        result: List[Tuple[str, str]] = []
+        current_iface = ""
+        seen_linux: Set[str] = set()
+        for line in out.splitlines():
+            line = line.strip()
+            if line and line[0].isdigit() and ":" in line:
+                # e.g. "2: eth0: <BROADCAST,...>"
+                current_iface = line.split(":", 2)[1].strip()
+            if line.startswith("inet "):
+                parts = line.split(None, 2)
+                if len(parts) >= 2:
+                    addr = parts[1].split("/")[0]
+                    if addr and not addr.startswith("127.") and addr not in seen_linux:
+                        seen_linux.add(addr)
+                        result.append((current_iface or "unknown", addr))
+        return result
+    except Exception as e:
+        logger.debug(f"Primary IP detection failed: {e}")
+    fallback = socket.gethostbyname(socket.gethostname())
+    if fallback and not fallback.startswith("127."):
+        return [("default", fallback)]
+    return []
+
 # ── Backend Communication ───────────────────────────────────────────────────
 def send_to_backend(endpoint: str, payload: Dict[str, Any], config: AgentConfig) -> bool:
     """Send data to backend with modern HMAC authentication."""
@@ -250,15 +346,13 @@ def send_to_backend(endpoint: str, payload: Dict[str, Any], config: AgentConfig)
 
 # ── Main Execution ──────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="Production Local Discovery Agent")
-    parser.add_argument("--dry-run", action="store_true", help="Scan without sending to backend")
-    args = parser.parse_args()
-
     config = AgentConfig.from_env()
     metrics = DiscoveryMetrics()
-    
-    logger.info(f"Starting discovery sweep for {socket.gethostname()}")
-    
+
+    ips_with_names = get_all_primary_ips_with_names()
+    ip_address_str = "; ".join(f"{name}: {ip}" for name, ip in ips_with_names) if ips_with_names else socket.gethostbyname(socket.gethostname())
+    logger.info(f"Starting discovery sweep for {socket.gethostname()} (IPs: {ip_address_str})")
+
     hardware = get_hardware_info()
     software = get_software_info()
     metrics.software_count = len(software)
@@ -266,27 +360,21 @@ def main():
     payload = {
         "agent_id": config.agent_id,
         "hostname": socket.gethostname(),
-        "ip_address": socket.gethostbyname(socket.gethostname()),
+        "ip_address": ip_address_str,
         "hardware": hardware,
         "os": {
             "name": platform.system(),
             "version": platform.release(),
-            "uptime_sec": int(time.time()) # Simplified
+            "uptime_sec": int(time.time())  # Simplified
         },
-        "software": software[:500], # Limit payload
+        "software": software[:500],  # Limit payload
         "metadata": {"collector_version": "2.0.0-prod"}
     }
 
-    if args.dry_run:
-        logger.info("[DRY RUN] Discovery complete. Payload generated but not sent.")
-        metrics.sync_success = True
-    else:
-        metrics.sync_success = send_to_backend("", payload, config)
+    metrics.sync_success = send_to_backend("", payload, config)
 
-    # Report metrics
     metrics.finalize()
-    if not args.dry_run:
-        send_to_backend("/metrics", metrics.to_dict(), config)
+    send_to_backend("/metrics", metrics.to_dict(), config)
 
     logger.info("="*40)
     logger.info(f"Discovery Summary:")

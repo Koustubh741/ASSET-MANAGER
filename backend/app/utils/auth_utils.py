@@ -86,10 +86,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     if payload is None:
         raise credentials_exception
     
-    user_id: str = payload.get("user_id")
-    if user_id is None:
+    user_id_raw = payload.get("user_id")
+    if user_id_raw is None:
         raise credentials_exception
-    
+    try:
+        user_id = uuid.UUID(str(user_id_raw)) if isinstance(user_id_raw, str) else user_id_raw
+    except (ValueError, TypeError):
+        raise credentials_exception
+
     # Use async session context manager
     async with AsyncSessionLocal() as db:
         user = await user_service.get_user(db, user_id)

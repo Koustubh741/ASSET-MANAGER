@@ -37,7 +37,7 @@ export default function FinancialCenterPage() {
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
@@ -48,7 +48,7 @@ export default function FinancialCenterPage() {
 
                 {/* KPI Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10">
+                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-yellow-500/10 text-yellow-400 rounded-lg"><DollarSign size={20} /></div>
                             <span className="text-xs text-emerald-400 flex items-center gap-1">+12% <TrendingUp size={12} /></span>
@@ -56,7 +56,7 @@ export default function FinancialCenterPage() {
                         <div className="text-2xl font-bold text-white">₹{(data.total_spend / 1000000).toFixed(2)}M</div>
                         <div className="text-sm text-slate-500">Total Asset Value</div>
                     </div>
-                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10">
+                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-blue-500/10 text-blue-400 rounded-lg"><CreditCard size={20} /></div>
                             <span className="text-xs text-slate-500">YTD</span>
@@ -64,7 +64,7 @@ export default function FinancialCenterPage() {
                         <div className="text-2xl font-bold text-white">₹{(data.ytd_spend / 1000).toFixed(0)}k</div>
                         <div className="text-sm text-slate-500">Spend This Year</div>
                     </div>
-                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10">
+                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-purple-500/10 text-purple-400 rounded-lg"><TrendingUp size={20} /></div>
                             <span className="text-xs text-orange-400 flex items-center gap-1">+5% <TrendingUp size={12} /></span>
@@ -72,7 +72,7 @@ export default function FinancialCenterPage() {
                         <div className="text-2xl font-bold text-white">₹{(data.projected / 1000).toFixed(0)}k</div>
                         <div className="text-sm text-slate-500">Projected Renewal Cost</div>
                     </div>
-                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10">
+                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-2 bg-red-500/10 text-red-400 rounded-lg"><TrendingDown size={20} /></div>
                             <span className="text-xs text-slate-500">Monthly</span>
@@ -84,14 +84,14 @@ export default function FinancialCenterPage() {
 
                 {/* Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10">
+                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200">
                         <h3 className="font-bold text-lg text-white mb-6">Spend by Category</h3>
                         <div className="h-64 flex items-center justify-center">
                             {/* Assuming PieChart takes data prop. If not compatible, we fallback to mock visual */}
                             <PieChart data={data.category_spend} />
                         </div>
                     </div>
-                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10">
+                    <div className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 light:border-slate-200">
                         <h3 className="font-bold text-lg text-white mb-6">Depreciation Trend (6 Months)</h3>
                         <div className="h-64 flex items-center justify-center">
                             <BarChart data={data.depreciation} />
