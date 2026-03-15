@@ -11,7 +11,11 @@ class PurchaseOrderBase(BaseModel):
 class PurchaseOrderUpdate(BaseModel):
     vendor_name: Optional[str] = None
     total_cost: Optional[float] = None
+    capex_opex: Optional[str] = None
+    tax_amount: Optional[float] = None
+    shipping_handling: Optional[float] = None
     expected_delivery_date: Optional[datetime] = None
+    extracted_data: Optional[Dict[str, Any]] = None
 
 class PurchaseOrderCreate(PurchaseOrderBase):
     uploaded_by: str

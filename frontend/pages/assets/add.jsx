@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-import { ArrowLeft, Save, Download, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Download, Loader2, Plus, X as CloseIcon } from 'lucide-react'
 import Link from 'next/link'
 import apiClient from '@/lib/apiClient'
 
@@ -17,34 +17,62 @@ export default function AddAsset() {
         location: '',
         purchase_date: '',
         warranty_expiry: '',
-        specifications: { cpu: '', ram: '', storage: '' }
+        specifications: [
+            { key: 'Processor', value: '' },
+            { key: 'RAM', value: '' },
+            { key: 'Storage', value: '' }
+        ]
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleChange = (e) => {
         const { name, value } = e.target
-        if (name.startsWith('spec_')) {
-            const specField = name.replace('spec_', '')
-            setFormData(prev => ({
-                ...prev,
-                specifications: { ...prev.specifications, [specField]: value }
-            }))
-        } else {
-            setFormData(prev => ({ ...prev, [name]: value }))
-        }
+        setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handleSpecChange = (index, field, value) => {
+        setFormData(prev => {
+            const newSpecs = [...prev.specifications]
+            newSpecs[index][field] = value
+            return { ...prev, specifications: newSpecs }
+        })
+    }
+
+    const addSpecField = () => {
+        setFormData(prev => ({
+            ...prev,
+            specifications: [...prev.specifications, { key: '', value: '' }]
+        }))
+    }
+
+    const removeSpecField = (index) => {
+        setFormData(prev => ({
+            ...prev,
+            specifications: prev.specifications.filter((_, i) => i !== index)
+        }))
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setIsSubmitting(true)
         try {
+            // Convert specs array to object
+            const specsObj = {}
+            formData.specifications.forEach(spec => {
+                const k = spec.key.trim()
+                if (k && spec.value.trim() !== '') {
+                    specsObj[k] = spec.value
+                }
+            })
+
             // Prepare data for API (ensure dates are correct format or null)
             const submissionData = {
                 ...formData,
+                specifications: Object.keys(specsObj).length > 0 ? specsObj : null,
                 purchase_date: formData.purchase_date || null,
                 warranty_expiry: formData.warranty_expiry || null
             }
-            
+
             await apiClient.createAsset(submissionData)
             alert(`Asset "${formData.name}" created successfully in database!`)
             router.push('/assets')
@@ -59,10 +87,10 @@ export default function AddAsset() {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="flex items-center space-x-4">
-                <Link href="/assets" className="p-2 hover:bg-white/10 rounded-full text-slate-300 hover:text-white transition-colors">
+                <Link href="/assets" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white transition-colors">
                     <ArrowLeft size={24} />
                 </Link>
-                <h2 className="text-3xl font-bold text-white tracking-tight">Add New Asset</h2>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Add New Asset</h2>
             </div>
 
             {/* Smart Import Section - Enabled */}
@@ -71,13 +99,13 @@ export default function AddAsset() {
                 <div className="relative z-10">
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <span className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg">
-                                    <Save size={18} className="text-white" />
+                                    <Save size={18} className="text-slate-900 dark:text-white" />
                                 </span>
                                 Smart Import (CSV / Excel)
                             </h3>
-                            <p className="text-slate-400 text-sm mt-1 max-w-xl">
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-xl">
                                 Upload a CSV or Excel file to bulk import assets. New assets will be added to your inventory instantly.
                             </p>
                         </div>
@@ -85,7 +113,7 @@ export default function AddAsset() {
                             <a
                                 href="/sample_assets.csv"
                                 download="sample_assets.csv"
-                                className="btn bg-white/5 text-slate-400 border border-white/5 light:border-slate-200 hover:bg-white/10 hover:text-white flex items-center gap-2 text-xs"
+                                className="btn bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 hover:text-slate-900 dark:text-white flex items-center gap-2 text-xs"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     const csvContent = "Asset Name,Segment,Type,Location,Status,Cost\nDell XPS 13,IT,Laptop,Mumbai Office,In Use,85000\nErgo Chair,NON-IT,Chair,Delhi Office,In Use,12000";
@@ -247,91 +275,123 @@ export default function AddAsset() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Basic Info */}
                     <div className="space-y-6">
-                        <h3 className="text-xl font-bold text-white border-b border-white/10 pb-4 flex items-center">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-4 flex items-center">
                             <span className="w-2 h-6 bg-blue-500 rounded-full mr-3"></span>
                             Basic Information
                         </h3>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Asset Name</label>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Asset Name</label>
                             <input required name="name" value={formData.name} onChange={handleChange} className="input-field" placeholder="e.g. MacBook Pro 16" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Segment</label>
-                            <select name="segment" value={formData.segment} onChange={handleChange} className="input-field bg-slate-900/50">
-                                <option className="bg-slate-900">IT</option>
-                                <option className="bg-slate-900">NON-IT</option>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Segment</label>
+                            <select name="segment" value={formData.segment} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
+                                <option className="bg-white dark:bg-slate-900">IT</option>
+                                <option className="bg-white dark:bg-slate-900">NON-IT</option>
                             </select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Type</label>
-                                <select name="type" value={formData.type} onChange={handleChange} className="input-field bg-slate-900/50">
-                                    <option className="bg-slate-900">Laptop</option>
-                                    <option className="bg-slate-900">Desktop</option>
-                                    <option className="bg-slate-900">Server</option>
-                                    <option className="bg-slate-900">Monitor</option>
-                                    <option className="bg-slate-900">Mobile</option>
+                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Type</label>
+                                <select name="type" value={formData.type} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
+                                    <option className="bg-white dark:bg-slate-900">Laptop</option>
+                                    <option className="bg-white dark:bg-slate-900">Desktop</option>
+                                    <option className="bg-white dark:bg-slate-900">Server</option>
+                                    <option className="bg-white dark:bg-slate-900">Monitor</option>
+                                    <option className="bg-white dark:bg-slate-900">Mobile</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Status</label>
-                                <select name="status" value={formData.status} onChange={handleChange} className="input-field bg-slate-900/50">
-                                    <option className="bg-slate-900">In Use</option>
-                                    <option className="bg-slate-900">In Stock</option>
-                                    <option className="bg-slate-900">Repair</option>
-                                    <option className="bg-slate-900">Retired</option>
+                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
+                                <select name="status" value={formData.status} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
+                                    <option className="bg-white dark:bg-slate-900">In Use</option>
+                                    <option className="bg-white dark:bg-slate-900">In Stock</option>
+                                    <option className="bg-white dark:bg-slate-900">Repair</option>
+                                    <option className="bg-white dark:bg-slate-900">Retired</option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Vendor</label>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Vendor</label>
                             <input required name="vendor" value={formData.vendor} onChange={handleChange} className="input-field" placeholder="e.g. Apple, Dell" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Model</label>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Model</label>
                             <input required name="model" value={formData.model} onChange={handleChange} className="input-field" placeholder="e.g. M3 Max" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Serial Number</label>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Serial Number</label>
                             <input required name="serial_number" value={formData.serial_number} onChange={handleChange} className="input-field" />
                         </div>
                     </div>
 
                     {/* Details */}
                     <div className="space-y-6">
-                        <h3 className="text-xl font-bold text-white border-b border-white/10 pb-4 flex items-center">
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-4 flex items-center">
                             <span className="w-2 h-6 bg-purple-500 rounded-full mr-3"></span>
                             Details & Specs
                         </h3>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Location</label>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Location</label>
                             <input name="location" value={formData.location} onChange={handleChange} className="input-field" placeholder="e.g. New York HQ" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Purchase Date</label>
+                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Purchase Date</label>
                                 <input type="date" name="purchase_date" value={formData.purchase_date} onChange={handleChange} className="input-field" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-400 mb-2">Warranty Expiry</label>
+                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Warranty Expiry</label>
                                 <input type="date" name="warranty_expiry" value={formData.warranty_expiry} onChange={handleChange} className="input-field" />
                             </div>
                         </div>
 
-                        <div className="pt-2">
-                            <label className="block text-sm font-medium text-slate-400 mb-3">Specifications</label>
-                            <div className="grid grid-cols-3 gap-3">
-                                <input name="spec_cpu" value={formData.specifications.cpu} onChange={handleChange} className="input-field text-sm" placeholder="CPU" />
-                                <input name="spec_ram" value={formData.specifications.ram} onChange={handleChange} className="input-field text-sm" placeholder="RAM" />
-                                <input name="spec_storage" value={formData.specifications.storage} onChange={handleChange} className="input-field text-sm" placeholder="Storage" />
+                        <div className="pt-2 border-t border-slate-200 dark:border-white/5 space-y-3 mt-4">
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400">Custom Specifications</label>
+                                <button type="button" onClick={addSpecField} className="text-xs text-blue-400 hover:text-blue-300 px-2 py-1 rounded bg-blue-500/10 flex items-center gap-1 transition-colors">
+                                    <Plus size={14} /> Add Field
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {formData.specifications.map((spec, index) => (
+                                    <div key={index} className="flex items-center gap-2 group">
+                                        <input
+                                            name={`spec_key_${index}`}
+                                            value={spec.key}
+                                            onChange={(e) => handleSpecChange(index, 'key', e.target.value)}
+                                            className="input-field text-sm w-1/3 bg-white dark:bg-slate-900/50"
+                                            placeholder="Key (e.g. Uptime)"
+                                        />
+                                        <input
+                                            name={`spec_val_${index}`}
+                                            value={spec.value}
+                                            onChange={(e) => handleSpecChange(index, 'value', e.target.value)}
+                                            className="input-field text-sm flex-1 bg-white dark:bg-slate-900/50"
+                                            placeholder="Value"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeSpecField(index)}
+                                            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg opacity-50 hover:opacity-100 transition-all"
+                                            title="Remove Field"
+                                        >
+                                            <CloseIcon size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {formData.specifications.length === 0 && (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic text-center py-2 bg-white dark:bg-slate-900/20 rounded border border-dashed border-slate-200 dark:border-white/5">No custom specifications added.</p>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex justify-end pt-6 border-t border-white/10">
-                    <button 
-                        type="submit" 
+                <div className="flex justify-end pt-6 border-t border-slate-200 dark:border-white/10">
+                    <button
+                        type="submit"
                         disabled={isSubmitting}
                         className="btn btn-primary flex items-center space-x-2 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
                     >

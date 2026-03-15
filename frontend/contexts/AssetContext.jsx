@@ -10,18 +10,22 @@ export const ASSET_STATUS = {
     AVAILABLE: 'Available',
     RETIRED: 'Retired',
     MAINTENANCE: 'Maintenance',
-    DISCOVERED: 'Discovered'
+    DISCOVERED: 'Discovered',
+    ALLOCATED: 'Allocated',
+    CONFIGURING: 'Configuring',
+    READY_FOR_DEPLOYMENT: 'Ready for Deployment',
+    SCRAP_CANDIDATE: 'Scrap Candidate'
 };
 
 export const OWNER_ROLE = {
     END_USER: 'END_USER',
     MANAGER: 'MANAGER',
     IT_MANAGEMENT: 'IT_MANAGEMENT',
-    ASSET_INVENTORY_MANAGER: 'ASSET_INVENTORY_MANAGER',
+    ASSET_MANAGER: 'ASSET_MANAGER',
     PROCUREMENT: 'PROCUREMENT',
     FINANCE: 'FINANCE',
-    PROCUREMENT_FINANCE: 'PROCUREMENT_FINANCE', // legacy only: backend may send; workflow uses only PROCUREMENT and FINANCE
-    SYSTEM_ADMIN: 'SYSTEM_ADMIN'
+    PROCUREMENT_FINANCE: 'PROCUREMENT_FINANCE',
+    ADMIN: 'ADMIN'
 };
 
 export const REQUEST_STATUS = {
@@ -59,9 +63,9 @@ export function AssetProvider({ children }) {
         switch (status) {
             case REQUEST_STATUS.REQUESTED: return OWNER_ROLE.MANAGER;
             case REQUEST_STATUS.MANAGER_APPROVED: return OWNER_ROLE.IT_MANAGEMENT;
-            case REQUEST_STATUS.IT_APPROVED: return OWNER_ROLE.MANAGER; // Manager must confirm technical decision
+            case REQUEST_STATUS.IT_APPROVED: return OWNER_ROLE.MANAGER;
             case REQUEST_STATUS.MANAGER_CONFIRMED_IT:
-                return assetType === 'BYOD' ? OWNER_ROLE.IT_MANAGEMENT : OWNER_ROLE.ASSET_INVENTORY_MANAGER;
+                return assetType === 'BYOD' ? OWNER_ROLE.IT_MANAGEMENT : OWNER_ROLE.ASSET_MANAGER;
             case REQUEST_STATUS.PROCUREMENT_REQUIRED:
                 if (procurementStage === 'PO_CREATED' || procurementStage === 'PO_UPLOADED') return OWNER_ROLE.PROCUREMENT;
                 if (procurementStage === 'PO_VALIDATED') return OWNER_ROLE.FINANCE;
@@ -71,7 +75,7 @@ export function AssetProvider({ children }) {
             case 'PO_VALIDATED': return OWNER_ROLE.FINANCE;
             case 'FINANCE_APPROVED': return OWNER_ROLE.PROCUREMENT;
             case 'PROCUREMENT_APPROVED': return OWNER_ROLE.PROCUREMENT;
-            case 'QC_PENDING': return OWNER_ROLE.ASSET_INVENTORY_MANAGER;
+            case 'QC_PENDING': return OWNER_ROLE.ASSET_MANAGER;
             case REQUEST_STATUS.USER_ACCEPTANCE_PENDING: return OWNER_ROLE.END_USER;
             case REQUEST_STATUS.MANAGER_CONFIRMED_ASSIGNMENT: return OWNER_ROLE.MANAGER;
             case REQUEST_STATUS.BYOD_COMPLIANCE_CHECK: return OWNER_ROLE.IT_MANAGEMENT;
@@ -108,12 +112,14 @@ export function AssetProvider({ children }) {
                     currentRole?.slug === 'ASSET_MANAGER' ||
                     currentRole?.slug === 'FINANCE' ||
                     currentRole?.slug === 'PROCUREMENT' ||
-                    currentRole?.slug === 'IT_MANAGEMENT'
+                    currentRole?.slug === 'IT_MANAGEMENT' ||
+                    currentRole?.slug === 'IT_SUPPORT' ||
+                    currentRole?.slug === 'SUPPORT_SPECIALIST'
                 ) {
                     // Admin-level/Centralized roles see EVERYTHING (higher limit so pending requests aren't cut off)
                     apiAssetRequests = await apiClient.getAssetRequests({ limit: 300 });
                     apiAssets = await apiClient.getAssets();
-                    apiTickets = await apiClient.getTickets();
+                    apiTickets = await apiClient.getTickets(0, 300);
                     console.log(`[AssetContext] Admin fetch: ${apiAssetRequests.length} requests, ${apiAssets.length} assets, ${apiTickets.length} tickets`);
                 } else if (user?.position === 'MANAGER') {
                     if (!user.department && !user.domain) {
@@ -196,7 +202,7 @@ export function AssetProvider({ children }) {
                     // Map procurement_finance_status and status for Finance/Procurement queues and WorkflowProgressBar
                     const procurementStage = (r.procurement_finance_status === 'APPROVED' || r.status === 'FINANCE_APPROVED') ? 'FINANCE_APPROVED' :
                         (r.procurement_finance_status === 'PO_VALIDATED' || r.status === 'PO_VALIDATED') ? 'PO_VALIDATED' :
-                        r.procurement_finance_status ? r.procurement_finance_status : null;
+                            r.procurement_finance_status ? r.procurement_finance_status : null;
                     const ownerRole = deriveOwnerRole(status, r.asset_type || r.type || 'Standard', procurementStage);
 
                     console.log(`[AssetContext] Request ${r.id}: rawStatus=${rawStatus}, mappedStatus=${status}, ownerRole=${ownerRole}`);
@@ -226,7 +232,6 @@ export function AssetProvider({ children }) {
                 const mappedTickets = apiTickets.map(t => {
                     const rawStatus = (t.status || '').toUpperCase();
                     let status = rawStatus;
-                    if (rawStatus === 'OPEN') status = 'REQUESTED';
 
                     return {
                         ...t,

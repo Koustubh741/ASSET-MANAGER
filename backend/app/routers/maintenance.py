@@ -26,7 +26,7 @@ async def create_maintenance_record(
     db: AsyncSession = Depends(get_db),
     it_user = Depends(auth_utils.get_current_user)
 ):
-    if it_user.role not in ["IT_USER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"]:
+    if it_user.role not in ["IT_USER", "IT_MANAGEMENT", "ADMIN", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     return await maintenance_service.create_maintenance_record(db, record, technician=it_user.full_name)
 
@@ -37,7 +37,7 @@ async def update_maintenance_record(
     db: AsyncSession = Depends(get_db),
     it_user = Depends(auth_utils.get_current_user)
 ):
-    if it_user.role not in ["IT_USER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"]:
+    if it_user.role not in ["IT_USER", "IT_MANAGEMENT", "ADMIN", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     updated = await maintenance_service.update_maintenance_record(db, record_id, record_update)
     if not updated:

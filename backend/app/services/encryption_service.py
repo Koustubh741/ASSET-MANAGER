@@ -3,6 +3,9 @@ from cryptography.fernet import Fernet
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # Generate key if not present (fordev/test) but prefer env var
 ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', Fernet.generate_key().decode())
 cipher = Fernet(ENCRYPTION_KEY.encode())

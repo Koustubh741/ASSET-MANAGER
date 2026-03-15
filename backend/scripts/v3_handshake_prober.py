@@ -1,3 +1,4 @@
+
 import asyncio
 import os
 import sys
@@ -6,10 +7,10 @@ from sqlalchemy import select
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database.database import AsyncSessionLocal
-from app.models.models import AgentConfiguration
-from app.services.snmp_service import SNMPScanner
-from app.services.encryption_service import decrypt_value
+from backend.app.database.database import AsyncSessionLocal
+from backend.app.models.models import AgentConfiguration
+from backend.app.services.snmp_service import SNMPScanner, ScanConfig, SNMPv3Credentials, AuthProtocol, PrivProtocol
+from backend.app.services.encryption_service import decrypt_value
 
 async def probe_v3_handshake(target_ip):
     print(f"[*] SNMP v3 PROBER: Testing '{target_ip}'...")
@@ -29,9 +30,9 @@ async def probe_v3_handshake(target_ip):
         priv_key = decrypt_value(configs['privKey'].config_value)
         
         # Combinations to try
-        auth_protos = ['SHA', 'SHA256', 'MD5']
-        priv_protos = ['AES256', 'AES', 'DES']
-        contexts = ['', 'default', 'vlan-1', 'vlan100', 'vlan-all']
+        auth_protos = [AuthProtocol.SHA, AuthProtocol.SHA256, AuthProtocol.MD5]
+        priv_protos = [PrivProtocol.AES, PrivProtocol.AES256, PrivProtocol.DES]
+        contexts = ['', 'default', 'vlan-1', 'vlan100']
         
         print(f"[*] Starting Protocol + Context Brute-Force for user: {user}")
         
@@ -39,28 +40,29 @@ async def probe_v3_handshake(target_ip):
             for auth in auth_protos:
                 for priv in priv_protos:
                     display_ctx = f"'{ctx}'" if ctx else "empty"
-                    print(f"    - Trying Context:{display_ctx} | Auth:{auth} | Priv:{priv}...", end='\r')
+                    print(f"    - Trying Context:{display_ctx} | Auth:{auth.value} | Priv:{priv.value}...", end='\r')
                     
-                    v3_data = {
-                        'username': user,
-                        'authKey': auth_key,
-                        'authProtocol': auth,
-                        'privKey': priv_key,
-                        'privProtocol': priv
-                    }
-                    
-                    scanner = SNMPScanner(v3_data=v3_data, context_name=ctx)
-                try:
-                    info = await asyncio.wait_for(scanner.get_device_info(target_ip), timeout=3.0)
-                    if info:
-                        print(f"\n[MATCH FOUND!]")
-                        print(f"    >>> Context: {'(empty)' if not ctx else ctx}")
-                        print(f"    >>> AuthProtocol: {auth}")
-                        print(f"    >>> PrivProtocol: {priv}")
-                        print(f"    >>> Device: {info['vendor']} {info['type']} ({info['name']})")
-                        return
-                except:
-                    continue
+                    try:
+                        v3_creds = SNMPv3Credentials(
+                            username=user,
+                            auth_key=auth_key,
+                            auth_protocol=auth,
+                            priv_key=priv_key,
+                            priv_protocol=priv
+                        )
+                        config = ScanConfig(v3=v3_creds, context_name=ctx, timeout=2.0)
+                        scanner = SNMPScanner(config)
+                        
+                        info = await asyncio.wait_for(scanner.poll_device(target_ip), timeout=3.0)
+                        if info:
+                            print(f"\n[MATCH FOUND!]")
+                            print(f"    >>> Context: {'(empty)' if not ctx else ctx}")
+                            print(f"    >>> AuthProtocol: {auth.value}")
+                            print(f"    >>> PrivProtocol: {priv.value}")
+                            print(f"    >>> Device: {info.vendor} {info.device_type} ({info.name})")
+                            return
+                    except Exception:
+                        continue
         
         print("\n[FAILURE] No protocol combination worked. This device might:")
         print("    1. Require a Context Name (e.g. 'vlan-1')")

@@ -1,10 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
-from ..models.models import SoftwareLicense, DiscoveredSoftware
+from ..models.models import SoftwareLicense, DiscoveredSoftware, AssetRequest, Ticket, User, ProcurementLog
 from ..schemas.software_schema import SoftwareLicenseCreate, SoftwareLicenseUpdate
 from uuid import UUID
 import uuid
+from datetime import datetime
 
 async def get_all_licenses(db: AsyncSession):
     with open("software_debug.log", "a") as f:
@@ -169,6 +170,7 @@ async def get_compliance_report(db: AsyncSession):
     return report
 
 
+
 async def match_discovered_to_license(db: AsyncSession, discovered_name: str, license_id: UUID):
     """
     Manually link a discovered application name to a managed license.
@@ -191,3 +193,109 @@ async def match_discovered_to_license(db: AsyncSession, discovered_name: str, li
         await db.refresh(db_license)
     
     return db_license
+
+async def request_license_seats(db: AsyncSession, license_id: UUID, requester_id: UUID):
+    """
+    Creates an AssetRequest for software seats based on a compliance risk.
+    """
+    db_license = await get_license(db, license_id)
+    if not db_license:
+        return None
+        
+    # 1. Calculate how many seats are needed (naive: installs - seats + buffer)
+    discovery_summary = await get_discovered_software_summary(db)
+    discovery_map = {item["name"].lower(): item["install_count"] for item in discovery_summary}
+    
+    install_count = discovery_map.get(db_license.name.lower(), 0)
+    if db_license.matched_names:
+        for matched_name in db_license.matched_names:
+            install_count += discovery_map.get(matched_name.lower(), 0)
+            
+    needed = max(int(install_count - db_license.seat_count), 1)
+    
+    # 2. Create the AssetRequest
+    asset_request = AssetRequest(
+        id=uuid.uuid4(),
+        requester_id=requester_id,
+        asset_name=db_license.name,
+        asset_type="SOFTWARE",
+        asset_ownership_type="COMPANY_OWNED",
+        asset_vendor=db_license.vendor,
+        cost_estimate=(db_license.cost / db_license.seat_count * needed) if db_license.seat_count > 0 else 0,
+        justification=f"Compliance Risk: {install_count} installs detected for {db_license.seat_count} licensed seats.",
+        business_justification=f"Automated seat request to resolve software compliance gap for {db_license.name}.",
+        status="SUBMITTED",
+        specifications={"requested_seats": needed, "license_id": str(license_id)}
+    )
+    db.add(asset_request)
+    
+    # Audit Log
+    log = ProcurementLog(
+        id=uuid.uuid4(),
+        reference_id=asset_request.id,
+        action="SOFTWARE_SEATS_REQUESTED",
+        performed_by=str(requester_id),
+        role="ASSET_MANAGER",
+        metadata_={"license_id": str(license_id), "seats_needed": needed}
+    )
+    db.add(log)
+    
+    await db.commit()
+    await db.refresh(asset_request)
+    return asset_request
+
+async def optimize_license_usage(db: AsyncSession, license_id: UUID, requester_id: UUID):
+    """
+    Creates a support ticket to optimize/reclaim underutilized software licenses.
+    """
+    db_license = await get_license(db, license_id)
+    if not db_license:
+        return None
+        
+    # 1. Calculate utilization
+    discovery_summary = await get_discovered_software_summary(db)
+    discovery_map = {item["name"].lower(): item["install_count"] for item in discovery_summary}
+    
+    install_count = discovery_map.get(db_license.name.lower(), 0)
+    if db_license.matched_names:
+        for matched_name in db_license.matched_names:
+            install_count += discovery_map.get(matched_name.lower(), 0)
+            
+    utilization = (install_count / db_license.seat_count * 100) if db_license.seat_count > 0 else 0
+    savings = (db_license.seat_count - install_count) * (db_license.cost / db_license.seat_count) if db_license.seat_count > 0 else 0
+
+    # 2. Find an IT_MANAGEMENT user to auto-assign to
+    it_user_result = await db.execute(
+        select(User).filter(User.role == "IT_MANAGEMENT").limit(1)
+    )
+    it_user = it_user_result.scalars().first()
+
+    # 3. Create the Support Ticket
+    ticket = Ticket(
+        id=uuid.uuid4(),
+        subject=f"RECLAIM: Underutilized Software - {db_license.name}",
+        description=(
+            f"The software '{db_license.name}' by {db_license.vendor} is currently underutilized.\n\n"
+            f"Current Installs: {install_count}\n"
+            f"Licensed Seats: {db_license.seat_count}\n"
+            f"Utilization: {round(utilization, 1)}%\n"
+            f"Potential Annual Savings: ${round(savings, 2)}\n\n"
+            f"Action Required: Identify assets where '{db_license.name}' is installed but not used, and reclaim {int(db_license.seat_count - install_count)} seats."
+        ),
+        status="Open",
+        priority="Medium",
+        category="Software",
+        requestor_id=requester_id,
+        assigned_to_id=it_user.id if it_user else None,
+        timeline=[{
+            "action": "AUTO_ASSIGNED",
+            "note": f"Auto-assigned to IT Management on creation (Assignee: {it_user.full_name if it_user else 'None'}).",
+            "actor": "System",
+            "timestamp": datetime.utcnow().isoformat()
+        }]
+    )
+    db.add(ticket)
+    
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket, it_user

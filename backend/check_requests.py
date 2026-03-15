@@ -1,31 +1,27 @@
-import sys
-import os
-sys.path.append(os.path.join(os.getcwd(), "app"))
 
-from app.database.database import SessionLocal
+import asyncio
+import os
+import sys
+
+# Add the backend directory to sys.path so we can import 'app'
+sys.path.append(os.getcwd())
+
+from sqlalchemy import select
+from app.database.database import get_db_context
 from app.models.models import AssetRequest
 
-db = SessionLocal()
+async def check_requests():
+    async with get_db_context() as session:
+        result = await session.execute(select(AssetRequest))
+        requests = result.scalars().all()
+        print(f"Total Asset Requests: {len(requests)}")
+        
+        for req in requests:
+            print(f"ID: {req.id}, Status: {req.status}, Role: {getattr(req, 'current_owner_role', 'N/A')}, Stage: {getattr(req, 'procurement_stage', 'N/A')}")
+            # Note: I need to check the actual attribute names in the model
+            # AssetRequest has 'status' and 'procurement_finance_status'
+            # The frontend uses 'currentOwnerRole' and 'procurementStage'
+            # Let's check models.py again for how these are mapped to DB or if they are local props
 
-print("\n=== All Asset Requests ===")
-reqs = db.query(AssetRequest).all()
-print(f"Total requests: {len(reqs)}")
-
-print("\n=== Last 5 Requests ===")
-for r in reqs[-5:]:
-    print(f"ID: {r.id}")
-    print(f"  Asset: {r.asset_name}")
-    print(f"  Status: {r.status}")
-    print(f"  Procurement Stage: {r.procurement_finance_status}")
-    print()
-
-print("\n=== PROCUREMENT_REQUIRED Requests ===")
-proc_reqs = db.query(AssetRequest).filter(AssetRequest.status == 'PROCUREMENT_REQUIRED').all()
-print(f"Found {len(proc_reqs)} requests")
-for r in proc_reqs:
-    print(f"ID: {r.id}")
-    print(f"  Asset: {r.asset_name}")
-    print(f"  Procurement Stage: {r.procurement_finance_status}")
-    print()
-
-db.close()
+if __name__ == "__main__":
+    asyncio.run(check_requests())

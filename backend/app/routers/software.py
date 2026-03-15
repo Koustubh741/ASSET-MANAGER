@@ -38,7 +38,7 @@ async def create_license(
     db: AsyncSession = Depends(get_db),
     admin = Depends(auth_utils.get_current_user)
 ):
-    if admin.role not in ["ADMIN", "SYSTEM_ADMIN", "ASSET_MANAGER"]:
+    if admin.role not in ["ADMIN", "ASSET_MANAGER"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     return await software_service.create_license(db, license)
 
@@ -62,7 +62,7 @@ async def get_reconciliation_report(
     """
     Get license compliance and reconciliation report.
     """
-    if admin.role not in ["ADMIN", "SYSTEM_ADMIN", "ASSET_MANAGER"]:
+    if admin.role not in ["ADMIN", "ASSET_MANAGER"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     return await software_service.get_compliance_report(db)
 
@@ -75,7 +75,7 @@ async def match_software(
     """
     Manually match a discovered software name to a managed license.
     """
-    if admin.role not in ["ADMIN", "SYSTEM_ADMIN", "ASSET_MANAGER"]:
+    if admin.role not in ["ADMIN", "ASSET_MANAGER"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     result = await software_service.match_discovered_to_license(
@@ -86,3 +86,41 @@ async def match_software(
     if not result:
         raise HTTPException(status_code=404, detail="License not found")
     return result
+
+@router.post("/{license_id}/request-seats", status_code=201)
+async def request_license_seats(
+    license_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin = Depends(auth_utils.get_current_user)
+):
+    """
+    Automated seat request for a license at risk.
+    """
+    if admin.role not in ["ADMIN", "ASSET_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+        
+    result = await software_service.request_license_seats(db, license_id, admin.id)
+    if not result:
+        raise HTTPException(status_code=404, detail="License not found")
+    return {"message": "Request submitted successfully", "request_id": result.id}
+
+@router.post("/{license_id}/optimize", status_code=201)
+async def optimize_license(
+    license_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    admin = Depends(auth_utils.get_current_user)
+):
+    """
+    Automated optimization ticket for underutilized license.
+    """
+    if admin.role not in ["ADMIN", "ASSET_MANAGER"]:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+        
+    result, it_user = await software_service.optimize_license_usage(db, license_id, admin.id)
+    if not result:
+        raise HTTPException(status_code=404, detail="License not found")
+    return {
+        "message": "Optimization ticket created", 
+        "ticket_id": result.id,
+        "assigned_to": it_user.full_name if it_user else None
+    }

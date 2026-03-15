@@ -3,8 +3,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                <p className="text-slate-200 font-bold mb-2">{label}</p>
+            <div className="bg-white dark:bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
+                <p className="text-slate-900 dark:text-slate-200 font-bold mb-2">{label}</p>
                 {payload.map((entry, index) => (
                     <p key={index} className="text-sm" style={{ color: entry.color }}>
                         {entry.name}: <span className="font-mono font-bold">{entry.value}</span>
@@ -17,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function TrendLineChart({ data }) {
-    if (!data || data.length === 0) return <div className="text-center text-slate-500 py-10">No trend data available</div>
+    if (!data || data.length === 0) return <div className="text-center text-slate-500 dark:text-slate-400 py-10">No trend data available</div>
 
     return (
         <ResponsiveContainer width="100%" height="100%">

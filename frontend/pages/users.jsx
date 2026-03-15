@@ -114,7 +114,8 @@ export default function UsersPage() {
                 // 1. Initialize from User List (if available)
                 if (apiUsers && Array.isArray(apiUsers)) {
                     apiUsers.forEach(u => {
-                        userMap[u.full_name] = {
+                        const key = u.email || u.id || u.full_name;
+                        userMap[key] = {
                             id: u.id,
                             name: u.full_name,
                             role: u.role || 'Employee',
@@ -134,8 +135,19 @@ export default function UsersPage() {
                 apiAssets.forEach(asset => {
                     const userName = asset.assigned_to;
                     if (userName && userName !== 'Unassigned') {
-                        if (!userMap[userName]) {
-                            userMap[userName] = {
+                        // Try to find by name (legacy/discovery behavior) if not already mapped by email
+                        // This identifies that asset.assigned_to might be a name or an email
+                        let key = userName;
+
+                        // Check if it's already in the map (e.g. by email)
+                        const existingKey = Object.keys(userMap).find(k =>
+                            k === userName || userMap[k].name === userName || userMap[k].email === userName
+                        );
+
+                        if (existingKey) {
+                            key = existingKey;
+                        } else {
+                            userMap[key] = {
                                 id: userName,
                                 name: userName,
                                 role: 'Employee',
@@ -150,14 +162,14 @@ export default function UsersPage() {
                         }
 
                         if (asset.type?.toUpperCase() === 'SOFTWARE' || asset.type?.toUpperCase() === 'LICENSE') {
-                            if (userMap[userName].software_licenses) {
-                                userMap[userName].software_licenses.push(asset);
-                                userMap[userName].software_count += 1;
+                            if (userMap[key].software_licenses) {
+                                userMap[key].software_licenses.push(asset);
+                                userMap[key].software_count += 1;
                             }
                         } else {
-                            if (userMap[userName].assigned_assets) {
-                                userMap[userName].assigned_assets.push(asset);
-                                userMap[userName].assets_count += 1;
+                            if (userMap[key].assigned_assets) {
+                                userMap[key].assigned_assets.push(asset);
+                                userMap[key].assets_count += 1;
                             }
                         }
                     }
@@ -167,8 +179,14 @@ export default function UsersPage() {
                 apiTickets.forEach(ticket => {
                     const userName = ticket.requestor_id;
                     if (userName) {
-                        if (!userMap[userName]) {
-                            userMap[userName] = {
+                        const existingKey = Object.keys(userMap).find(k =>
+                            k === userName || userMap[k].name === userName || userMap[k].email === userName
+                        );
+
+                        const key = existingKey || userName;
+
+                        if (!userMap[key]) {
+                            userMap[key] = {
                                 id: userName,
                                 name: userName,
                                 role: 'Employee',
@@ -181,9 +199,9 @@ export default function UsersPage() {
                                 tickets: []
                             };
                         }
-                        if (userMap[userName].tickets) {
-                            userMap[userName].tickets.push(ticket);
-                            userMap[userName].tickets_count += 1;
+                        if (userMap[key].tickets) {
+                            userMap[key].tickets.push(ticket);
+                            userMap[key].tickets_count += 1;
                         }
                     }
                 });
@@ -204,26 +222,26 @@ export default function UsersPage() {
         u.email?.toLowerCase().includes(search.toLowerCase())
     );
 
-    if (loading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-500">Loading inventory...</div>;
+    if (loading) return <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center text-slate-500 dark:text-slate-400">Loading inventory...</div>;
 
     return (
-        <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white light:hover:text-slate-900 transition-colors">
+                        <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                             <ArrowLeft size={24} />
                         </Link>
                         <div>
-                            <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">User Inventory</h1>
-                            <p className="text-slate-400 mt-1">Track assets and licenses by employee</p>
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">User Inventory</h1>
+                            <p className="text-slate-500 dark:text-slate-400 mt-1">Track assets and licenses by employee</p>
                         </div>
                     </div>
                     {isAdmin && (
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-xl font-medium transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-slate-900 dark:text-white rounded-xl font-medium transition-colors"
                         >
                             <Plus size={18} />
                             Create User
@@ -240,23 +258,23 @@ export default function UsersPage() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {pendingUsers.map(user => (
-                                <div key={user.id} className="bg-slate-900 border border-white/10 p-4 rounded-xl flex justify-between items-center group hover:border-amber-500/30 transition-all">
+                                <div key={user.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-4 rounded-xl flex justify-between items-center group hover:border-amber-500/30 transition-all">
                                     <div>
-                                        <h3 className="font-bold text-slate-200">{user.full_name}</h3>
-                                        <p className="text-xs text-slate-400">{user.email}</p>
+                                        <h3 className="font-bold text-slate-900 dark:text-slate-200">{user.full_name}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
                                         <p className="text-xs text-amber-500/80 mt-1 uppercase font-mono">{user.role}</p>
                                     </div>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleApprove(user.id)}
-                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white light:hover:text-slate-900 transition-colors"
+                                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-slate-900 dark:hover:text-white transition-colors"
                                             title="Approve"
                                         >
                                             <Check size={18} />
                                         </button>
                                         <button
                                             onClick={() => handleDeny(user.id)}
-                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white light:hover:text-slate-900 transition-colors"
+                                            className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-slate-900 dark:hover:text-white transition-colors"
                                             title="Deny"
                                         >
                                             <X size={18} />
@@ -269,12 +287,12 @@ export default function UsersPage() {
                 )}
 
                 {/* Toolbar */}
-                <div className="glass-panel p-4 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/10 flex items-center">
-                    <Search className="text-slate-500 ml-2" size={20} />
+                <div className="glass-panel p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center">
+                    <Search className="text-slate-500 dark:text-slate-400 ml-2" size={20} />
                     <input
                         type="text"
                         placeholder="Search employees..."
-                        className="bg-transparent border-none outline-none text-white ml-4 flex-1"
+                        className="bg-transparent border-none outline-none text-slate-900 dark:text-white ml-4 flex-1"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -283,54 +301,54 @@ export default function UsersPage() {
                 {/* Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredUsers.map(user => (
-                        <div key={user.id} className="glass-panel p-6 rounded-2xl bg-slate-900 border border-white/10 hover:border-cyan-500/30 transition-all group">
+                        <div key={user.id} className="glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 hover:border-cyan-500/30 transition-all group">
                             <div className="flex items-start justify-between mb-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
                                         <User size={24} />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-lg text-slate-100">{user.name}</h3>
+                                        <h3 className="font-bold text-lg text-slate-900 dark:text-slate-100">{user.name}</h3>
                                         <div className="flex flex-col">
-                                            <p className="text-sm text-slate-400">{user.role}</p>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">{user.role}</p>
                                             {user.email && (
-                                                <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
+                                                <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                                     <Mail size={12} /> {user.email}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 </div>
-                                <span className={`text-xs px-2 py-1 rounded-full border ${user.status?.toUpperCase() === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-400'}`}>
+                                <span className={`text-xs px-2 py-1 rounded-full border ${user.status?.toUpperCase() === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-500/10 text-slate-500 dark:text-slate-400'}`}>
                                     {user.status}
                                 </span>
                             </div>
 
                             <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3 bg-white/5 light:bg-slate-50 rounded-xl">
-                                    <div className="flex items-center gap-3 text-slate-300 light:text-slate-700">
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl">
+                                    <div className="flex items-center gap-3 text-slate-700 dark:text-slate-700">
                                         <Monitor size={18} className="text-blue-400" />
                                         <span className="text-sm font-medium">Assets</span>
                                     </div>
-                                    <span className="font-mono text-white font-bold">{user.assets_count}</span>
+                                    <span className="font-mono text-slate-900 dark:text-white font-bold">{user.assets_count}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 bg-white/5 light:bg-slate-50 rounded-xl">
-                                    <div className="flex items-center gap-3 text-slate-300 light:text-slate-700">
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl">
+                                    <div className="flex items-center gap-3 text-slate-700 dark:text-slate-700">
                                         <Disc size={18} className="text-purple-400" />
                                         <span className="text-sm font-medium">Software</span>
                                     </div>
-                                    <span className="font-mono text-white font-bold">{user.software_count}</span>
+                                    <span className="font-mono text-slate-900 dark:text-white font-bold">{user.software_count}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 bg-white/5 light:bg-slate-50 rounded-xl">
-                                    <div className="flex items-center gap-3 text-slate-300 light:text-slate-700">
+                                <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-xl">
+                                    <div className="flex items-center gap-3 text-slate-700 dark:text-slate-700">
                                         <Ticket size={18} className="text-rose-400" />
                                         <span className="text-sm font-medium">Tickets</span>
                                     </div>
-                                    <span className="font-mono text-white font-bold">{user.tickets_count}</span>
+                                    <span className="font-mono text-slate-900 dark:text-white font-bold">{user.tickets_count}</span>
                                 </div>
                             </div>
 
-                            <div className="mt-6 pt-4 border-t border-white/5 light:border-slate-200 flex justify-end">
+                            <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/5 flex justify-end">
                                 <button
                                     onClick={() => setSelectedUser(user)}
                                     className="text-sm text-cyan-400 hover:text-cyan-300 font-medium"
@@ -346,17 +364,17 @@ export default function UsersPage() {
             {/* User Details Modal */}
             {selectedUser && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+                    <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
 
                         {/* Modal Header */}
-                        <div className="p-6 border-b border-white/10 flex items-center justify-between bg-slate-900 z-10">
+                        <div className="p-6 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-white dark:bg-slate-900 z-10">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center justify-center">
                                     <User size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-xl text-slate-100">{selectedUser.name}</h3>
-                                    <div className="flex items-center gap-3 text-sm text-slate-400">
+                                    <h3 className="font-bold text-xl text-slate-900 dark:text-slate-100">{selectedUser.name}</h3>
+                                    <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
                                         <span>{selectedUser.role}</span>
                                         <span>•</span>
                                         <span>{selectedUser.status}</span>
@@ -371,7 +389,7 @@ export default function UsersPage() {
                             </div>
                             <button
                                 onClick={() => setSelectedUser(null)}
-                                className="text-slate-400 hover:text-white light:hover:text-slate-900"
+                                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                             >
                                 <ArrowLeft size={24} className="rotate-180" />
                             </button>
@@ -387,20 +405,20 @@ export default function UsersPage() {
                                 </h4>
                                 <div className="space-y-3">
                                     {selectedUser.assigned_assets.map(asset => (
-                                        <Link href={`/assets/${asset.id}`} key={asset.id} className="block p-4 rounded-xl bg-white/5 light:bg-slate-50 hover:bg-white/10 border border-white/5 light:border-slate-200 hover:border-blue-500/30 transition-all group">
+                                        <Link href={`/assets/${asset.id}`} key={asset.id} className="block p-4 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 border border-slate-200 dark:border-white/5 hover:border-blue-500/30 transition-all group">
                                             <div className="flex justify-between items-center">
                                                 <div>
-                                                    <div className="font-medium text-slate-200 group-hover:text-blue-300">{asset.name}</div>
-                                                    <div className="text-xs text-slate-500 font-mono mt-1">{asset.id}</div>
+                                                    <div className="font-medium text-slate-900 dark:text-slate-200 group-hover:text-blue-300">{asset.name}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">{asset.id}</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-sm text-slate-300 light:text-slate-700">{asset.category}</div>
-                                                    <span className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">{asset.status}</span>
+                                                    <div className="text-sm text-slate-700 dark:text-slate-700">{asset.category}</div>
+                                                    <span className="text-xs px-2 py-0.5 rounded bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-700">{asset.status}</span>
                                                 </div>
                                             </div>
                                         </Link>
                                     ))}
-                                    {selectedUser.assets_count === 0 && <div className="text-slate-500 italic">No assets assigned.</div>}
+                                    {selectedUser.assets_count === 0 && <div className="text-slate-500 dark:text-slate-400 italic">No assets assigned.</div>}
                                 </div>
                             </div>
 
@@ -411,17 +429,17 @@ export default function UsersPage() {
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     {selectedUser.software_licenses.map((license, i) => (
-                                        <div key={license.id} className="p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200 flex items-center gap-3">
+                                        <div key={license.id} className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5 flex items-center gap-3">
                                             <div className="w-8 h-8 rounded bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-bold">L</div>
                                             <div>
-                                                <div className="text-sm font-medium text-slate-200">
+                                                <div className="text-sm font-medium text-slate-900 dark:text-slate-200">
                                                     {license.name}
                                                 </div>
-                                                <div className="text-xs text-slate-500">{license.model} • {license.status}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">{license.model} • {license.status}</div>
                                             </div>
                                         </div>
                                     ))}
-                                    {selectedUser.software_count === 0 && <div className="text-slate-500 italic">No software licenses assigned.</div>}
+                                    {selectedUser.software_count === 0 && <div className="text-slate-500 dark:text-slate-400 italic">No software licenses assigned.</div>}
                                 </div>
                             </div>
 
@@ -432,19 +450,19 @@ export default function UsersPage() {
                                 </h4>
                                 <div className="space-y-3">
                                     {selectedUser.tickets.map(ticket => (
-                                        <div key={ticket.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
+                                        <div key={ticket.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
                                             <div>
-                                                <div className="text-sm font-medium text-slate-200">
+                                                <div className="text-sm font-medium text-slate-900 dark:text-slate-200">
                                                     {ticket.subject}
                                                 </div>
-                                                <div className="text-xs text-slate-500">{ticket.id} • {ticket.status} • {new Date(ticket.created_at).toLocaleDateString()}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">{ticket.id} • {ticket.status} • {new Date(ticket.created_at).toLocaleDateString()}</div>
                                             </div>
-                                            <Link href={`/tickets/${ticket.id}`} className="text-xs text-rose-400 hover:text-white light:hover:text-slate-900 font-bold bg-rose-500/10 px-3 py-1 rounded-lg">
+                                            <Link href={`/tickets/${ticket.id}`} className="text-xs text-rose-400 hover:text-slate-900 dark:hover:text-white font-bold bg-rose-500/10 px-3 py-1 rounded-lg">
                                                 View
                                             </Link>
                                         </div>
                                     ))}
-                                    {selectedUser.tickets_count === 0 && <div className="text-slate-500 italic">No recent tickets.</div>}
+                                    {selectedUser.tickets_count === 0 && <div className="text-slate-500 dark:text-slate-400 italic">No recent tickets.</div>}
                                 </div>
                             </div>
 
@@ -456,57 +474,57 @@ export default function UsersPage() {
             {/* Create User Modal */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl">
-                        <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                            <h2 className="text-2xl font-bold text-white">Create New User</h2>
+                    <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl">
+                        <div className="p-6 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
+                            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Create New User</h2>
                             <button
                                 onClick={() => setShowCreateModal(false)}
-                                className="text-slate-400 hover:text-white transition-colors"
+                                className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
                             >
                                 <X size={24} />
                             </button>
                         </div>
                         <form onSubmit={handleCreateUser} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Email *</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Email *</label>
                                 <input
                                     type="email"
                                     required
                                     value={createForm.email}
                                     onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                                    className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     placeholder="user@example.com"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Password *</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Password *</label>
                                 <input
                                     type="password"
                                     required
                                     value={createForm.password}
                                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                                    className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     placeholder="Enter password"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Full Name *</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Full Name *</label>
                                 <input
                                     type="text"
                                     required
                                     value={createForm.full_name}
                                     onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
-                                    className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                    className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     placeholder="John Doe"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Role *</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Role *</label>
                                     <select
                                         value={createForm.role}
                                         onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     >
                                         <option value="END_USER">End User</option>
                                         <option value="MANAGER">Manager</option>
@@ -520,11 +538,11 @@ export default function UsersPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Status</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Status</label>
                                     <select
                                         value={createForm.status}
                                         onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     >
                                         <option value="ACTIVE">Active</option>
                                         <option value="PENDING">Pending</option>
@@ -534,32 +552,32 @@ export default function UsersPage() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Position</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Position</label>
                                     <select
                                         value={createForm.position}
                                         onChange={(e) => setCreateForm({ ...createForm, position: e.target.value })}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                     >
                                         <option value="TEAM_MEMBER">Team Member</option>
                                         <option value="MANAGER">Manager</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-2">Department</label>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Department</label>
                                     <input
                                         type="text"
                                         value={createForm.department}
                                         onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })}
-                                        className="w-full px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                                         placeholder="e.g. Procurement, Finance, IT"
                                     />
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
-                                    className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                                    className="px-4 py-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
                                     disabled={creating}
                                 >
                                     Cancel
@@ -567,7 +585,7 @@ export default function UsersPage() {
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                                    className="px-6 py-2 bg-cyan-500 hover:bg-cyan-600 text-slate-900 dark:text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                                 >
                                     {creating ? 'Creating...' : 'Create User'}
                                 </button>

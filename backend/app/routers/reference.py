@@ -176,12 +176,12 @@ async def get_roles(current_user = Depends(get_current_user)):
         {"slug": "END_USER", "label": "End User", "description": "Regular employee"},
         {"slug": "IT_MANAGEMENT", "label": "IT Management", "description": "IT department management"},
         {"slug": "ASSET_MANAGER", "label": "Asset Manager", "description": "Asset inventory management"},
-        {"slug": "ASSET_INVENTORY_MANAGER", "label": "Inventory Manager", "description": "Stock and inventory control"},
+        {"slug": "ASSET_MANAGER", "label": "Inventory Manager", "description": "Stock and inventory control"},
         {"slug": "PROCUREMENT", "label": "Procurement Manager", "description": "Procurement operations"},
         {"slug": "FINANCE", "label": "Finance", "description": "Finance approvals and governance"},
         {"slug": "FINANCE", "label": "Finance", "description": "Finance department"},
         {"slug": "ADMIN", "label": "Administrator", "description": "System administrator"},
-        {"slug": "SYSTEM_ADMIN", "label": "System Admin", "description": "Full system access"},
+        {"slug": "ADMIN", "label": "System Admin", "description": "Full system access"},
     ]
 
 

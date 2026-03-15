@@ -107,11 +107,11 @@ const ManagerApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
 
                 {/* Header */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-800 flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-indigo-600" />
                         {getTitle()}
                     </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close modal" title="Close">
+                    <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-500 dark:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close modal" title="Close">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -125,19 +125,19 @@ const ManagerApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
 
                     {/* Requester Info */}
                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <label className="text-[10px] uppercase font-bold text-slate-400 block mb-2">Requester Details</label>
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-2">Requester Details</label>
                         <div className="space-y-1">
                             <div className="flex justify-between text-xs">
-                                <span className="text-slate-500">Name:</span>
-                                <span className="font-bold text-slate-800">{request.requester_name}</span>
+                                <span className="text-slate-500 dark:text-slate-400">Name:</span>
+                                <span className="font-bold text-slate-900 dark:text-slate-800">{request.requester_name}</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                                <span className="text-slate-500">Department:</span>
+                                <span className="text-slate-500 dark:text-slate-400">Department:</span>
                                 <span className="font-medium text-indigo-600">{request.requester_department || 'General'}</span>
                             </div>
                             <div className="flex justify-between text-xs">
-                                <span className="text-slate-500">Email:</span>
-                                <span className="text-slate-600 italic">{request.requester_email || 'N/A'}</span>
+                                <span className="text-slate-500 dark:text-slate-400">Email:</span>
+                                <span className="text-slate-500 dark:text-slate-400 italic">{request.requester_email || 'N/A'}</span>
                             </div>
                         </div>
                     </div>
@@ -182,7 +182,7 @@ const ManagerApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
                     <button
                         onClick={() => handleAction('APPROVE')}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2"
+                        className="px-4 py-2 text-sm font-medium text-slate-900 dark:text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2"
                     >
                         {isSubmitting ? 'Processing...' : 'Confirm Approval'}
                     </button>

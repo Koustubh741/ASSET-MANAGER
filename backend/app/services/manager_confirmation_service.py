@@ -86,42 +86,9 @@ async def manager_confirm_stage(
     auto_routed = False
     reserved_asset_id = None
     
-    if stage == "IT_APPROVAL" and decision == "CONFIRM":
-        if db_request.asset_ownership_type == "COMPANY_OWNED":
-            from .inventory_helper import check_inventory_availability, reserve_inventory_asset
-            
-            # Check if matching asset is in stock
-            available_asset_id = await check_inventory_availability(
-                db=db,
-                asset_type=db_request.asset_type,
-                asset_model=db_request.asset_model
-            )
-            
-            if available_asset_id:
-                # Asset available - reserve it and route to USER_ACCEPTANCE_PENDING
-                success = await reserve_inventory_asset(
-                    db=db,
-                    asset_id=available_asset_id,
-                    request_id=request_id
-                )
-                
-                if success:
-                    new_status = "USER_ACCEPTANCE_PENDING"
-                    auto_routed = True
-                    reserved_asset_id = available_asset_id
-                    db_request.asset_id = available_asset_id
-                    print(f"[AUTO-ROUTE] Asset {available_asset_id} reserved from inventory")
-            else:
-                # No asset available - route to procurement
-                new_status = "PROCUREMENT_REQUESTED"
-                auto_routed = True
-                print(f"[AUTO-ROUTE] No inventory available, routing to PROCUREMENT_REQUESTED")
-        
-        elif db_request.asset_ownership_type == "BYOD":
-            # BYOD path - route to compliance check
-            new_status = "BYOD_COMPLIANCE_CHECK"
-            auto_routed = True
-            print(f"[AUTO-ROUTE] BYOD request routing to compliance check")
+    # [MANUAL OVERRIDE] Removed auto-routing to allow Inventory Manager to manually check stock
+    # as per user request to fix visibility of "Not Available" options.
+    pass
     
     # Update status
     db_request.status = new_status
@@ -162,5 +129,16 @@ async def manager_confirm_stage(
     
     await db.commit()
     await db.refresh(db_request)
+    
+    # Notify stakeholders about the stage confirmation
+    from .notification_service import send_notification
+    await send_notification(
+        db=db,
+        request_id=request_id,
+        event_type="status_change",
+        old_status=f"STAGE_{stage}_PENDING", # Synthetic old state for notification context if needed
+        new_status=new_status,
+        reviewer_name=manager_name
+    )
     
     return await _populate_requester_info(db, db_request, user_role="MANAGER")

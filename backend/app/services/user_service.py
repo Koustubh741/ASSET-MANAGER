@@ -29,7 +29,8 @@ def verify_password(plain_password, hashed_password):
         return plain_password == hashed_password
 
 async def get_user_by_email(db: AsyncSession, email: str):
-    result = await db.execute(select(User).filter(User.email == email))
+    normalized_email = email.strip().lower()
+    result = await db.execute(select(User).filter(User.email == normalized_email))
     return result.scalars().first()
 
 async def get_user(db: AsyncSession, user_id: UUID):
@@ -43,28 +44,61 @@ async def create_user(db: AsyncSession, user: UserCreate):
     count = result.scalar()
     
     is_first_user = count == 0
-    # Root fix: no combined PROCUREMENT_FINANCE role; normalize to FINANCE for legacy clients
+    # Root fix: Unified slugs. First user is always ADMIN.
+    normalized_email = user.email.strip().lower()
     raw_role = (user.role or "END_USER").strip().upper()
-    role_value = "SYSTEM_ADMIN" if is_first_user else ("FINANCE" if raw_role == "PROCUREMENT_FINANCE" else (user.role or "END_USER"))
+    role_value = "ADMIN" if is_first_user else raw_role
 
     db_user = User(
         id=uuid.uuid4(),
-        email=user.email,
+        email=normalized_email,
         full_name=user.full_name,
         password_hash=hashed_password,
         role=role_value,
-        status="ACTIVE" if is_first_user and (user.role or "").upper() in ("ADMIN", "SYSTEM_ADMIN") else "PENDING",
+        status="ACTIVE" if is_first_user and role_value == "ADMIN" else "PENDING",
         position=user.position,
         domain=user.domain,
         department=user.department,
         location=user.location,
         phone=user.phone,
-        company=user.company
+        company=user.company,
+        manager_id=user.manager_id,
+        persona=user.persona
     )
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
     return db_user
+
+async def get_user_hierarchy(db: AsyncSession):
+    """
+    Build and return the complete organization hierarchy.
+    """
+    # Fetch all active users
+    result = await db.execute(select(User).filter(User.status == "ACTIVE"))
+    users = result.scalars().all()
+    
+    # Map users by ID for quick lookup
+    user_map = {str(u.id): {
+        "id": str(u.id),
+        "name": u.full_name,
+        "role": u.role,
+        "position": u.position,
+        "department": u.department,
+        "manager_id": str(u.manager_id) if u.manager_id else None,
+        "children": []
+    } for u in users}
+    
+    roots = []
+    for user_id, user_data in user_map.items():
+        manager_id = user_data["manager_id"]
+        if manager_id and manager_id in user_map:
+            user_map[manager_id]["children"].append(user_data)
+        else:
+            # If no manager or manager not found/not active, it's a root
+            roots.append(user_data)
+            
+    return roots
 
 async def authenticate_user(db: AsyncSession, email: str, password: str):
     user = await get_user_by_email(db, email)
@@ -94,10 +128,11 @@ async def activate_user(db: AsyncSession, user_id: UUID) -> User:
 
 async def get_users(db: AsyncSession, status: str = None, department: str = None):
     query = select(User)
-    if status:
-        query = query.filter(User.status == status)
     
-    if department:
+    if status is not None:
+        query = query.filter(User.status == status)
+        
+    if department is not None:
         from sqlalchemy import or_
         query = query.filter(
             or_(
@@ -129,12 +164,13 @@ async def sync_sso_user(db: AsyncSession, sso_provider: str, sso_id: str, email:
     3. Update or create user.
     """
     # 1. Try to find by SSO ID
+    normalized_email = email.strip().lower()
     result = await db.execute(select(User).filter(User.sso_provider == sso_provider, User.sso_id == sso_id))
     user = result.scalars().first()
     
     if not user:
         # 2. Try to find by email
-        result = await db.execute(select(User).filter(User.email == email))
+        result = await db.execute(select(User).filter(User.email == normalized_email))
         user = result.scalars().first()
         
         if user:
@@ -145,13 +181,14 @@ async def sync_sso_user(db: AsyncSession, sso_provider: str, sso_id: str, email:
             # 3. Create new user
             user = User(
                 id=uuid.uuid4(),
-                email=email,
+                email=normalized_email,
                 full_name=full_name,
                 password_hash="SSO_MANAGED_" + str(uuid.uuid4()), # Placeholder
                 sso_provider=sso_provider,
                 sso_id=sso_id,
                 status="ACTIVE", # SSO users are usually pre-authenticated
-                role="END_USER"
+                role="END_USER",
+                persona="STANDARD_USER" # Default persona for SSO newcomers
             )
             db.add(user)
     

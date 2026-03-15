@@ -1,0 +1,20 @@
+{
+    "executionEnvironments": [
+        {
+            "root": "backend",
+            "pythonVersion": "3.10",
+            "extraPaths": [
+                "backend"
+            ]
+        }
+    ],
+    "typeCheckingMode": "basic",
+    "diagnosticSeverityOverrides": {
+        "reportMissingImports": "none",
+        "reportOptionalMemberAccess": "warning",
+        "reportGeneralTypeIssues": "warning"
+    },
+    "exclude": [
+        "**/__pycache__"
+    ]
+}

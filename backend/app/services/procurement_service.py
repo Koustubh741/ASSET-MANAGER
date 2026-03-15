@@ -54,6 +54,12 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
     db.add(po)
     
     # Comprehensive Audit Log
+    confidence_score = extracted.get("confidence_score", 0)
+    is_low_confidence = confidence_score < 0.6
+    
+    if is_low_confidence:
+        print(f"WARNING: Low confidence extraction ({confidence_score}) for request {asset_request_id}")
+    
     log = ProcurementLog(
         id=uuid.uuid4(),
         reference_id=po.id,
@@ -65,7 +71,9 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
             "vendor": po.vendor_name,
             "total_cost": po.total_cost,
             "extracted_at": datetime.now().isoformat(),
-            "extraction_success": extracted.get("confidence_score", 0) > 0.3
+            "extraction_success": confidence_score > 0.3,
+            "low_confidence": is_low_confidence,
+            "confidence_score": round(confidence_score, 2)
         }
     )
     db.add(log)
@@ -80,6 +88,11 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
     
     await db.commit()
     await db.refresh(po)
+    
+    # Notify procurement team to validate PO
+    from .notification_service import send_notification
+    await send_notification(db, asset_request_id, "status_change", old_status="SUBMITTED", new_status="PO_UPLOADED", reviewer_name="System/Procurement Scanner")
+    
     return po
 
 
@@ -130,6 +143,11 @@ async def validate_po_completeness(db: AsyncSession, po_id: UUID, reviewer_id: U
     
     await db.commit()
     await db.refresh(po)
+    
+    # Notify following budget approval or rejection
+    from .notification_service import send_notification
+    await send_notification(db, po.asset_request_id, "status_change", old_status="PO_UPLOADED", new_status=log_action, reviewer_name=str(reviewer_id), reason=reason)
+    
     return po
 
 async def validate_finance_budget(db: AsyncSession, po_id: UUID, reviewer_id: UUID, action: str, reason: str = None):

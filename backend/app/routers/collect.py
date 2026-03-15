@@ -5,7 +5,7 @@ from ..models.models import AuditLog
 import uuid as uuid_lib
 from ..services import discovery_service, snmp_service, software_service, user_sync_service, barcode_service
 from ..schemas.discovery_schema import DiscoveryPayload, SaaSDiscoveryPayload, UserSyncPayload, BarcodeScanPayload
-from .auth import check_system_admin
+from .auth import check_ADMIN
 import os
 import logging
 import subprocess
@@ -166,7 +166,7 @@ async def collect_agent_metrics(
 async def get_agent_metrics(
     agent_id: str,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Retrieve the latest operational metrics for a specific agent.
@@ -251,7 +251,7 @@ async def collect_discovery_data(
 @router.post("/trigger", response_model=dict)
 async def trigger_discovery_sweep(
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Manually trigger a local discovery sweep.
@@ -297,29 +297,57 @@ async def _run_snmp_scan_background(
                 cidr, community, v3_data, context_name, progress_cb=progress_cb
             )
 
+            from sqlalchemy.exc import IntegrityError as SAIntegrityError
+            from ..services.discovery_enricher import discovery_enricher
             count = 0
             for dev in devices:
-                payload = DiscoveryPayload(
-                    agent_id="00000000-0000-0000-0000-000000000000",
-                    hostname=dev["name"],
-                    ip_address=dev["ip_address"],
-                    hardware=DiscoveryHardware(
-                        cpu="Network CPU",
-                        ram_mb=0,
-                        serial=dev["serial_number"],
-                        model=dev["model"],
-                        vendor=dev["vendor"],
-                        type=dev["type"]
-                    ),
-                    os=DiscoveryOS(
-                        name="Embedded/Firmware",
-                        version="Unknown",
-                        uptime_sec=0
+                # Root Fix: process each device inside its own savepoint.
+                # Any IntegrityError (null serial, unique constraint, etc.) rolls back
+                # only this device and the scan continues for all other devices.
+                try:
+                    async with db.begin_nested():   # SAVEPOINT per device
+                        payload = DiscoveryPayload(
+                            agent_id="00000000-0000-0000-0000-000000000000",
+                            hostname=dev["name"],
+                            ip_address=dev["ip_address"],
+                            hardware=DiscoveryHardware(
+                                cpu=dev.get("cpu", "Network CPU"),
+                                ram_mb=dev.get("ram_mb", 0),
+                                serial=dev.get("serial_number") or None,
+                                model=dev["model"],
+                                vendor=dev["vendor"],
+                                type=dev["type"],
+                                storage_gb=dev.get("storage_gb", 0)
+                            ),
+                            os=DiscoveryOS(
+                                name="Embedded/Firmware",
+                                version="Unknown",
+                                uptime_sec=0
+                            ),
+                            neighbors=dev.get("neighbors", [])
+                        )
+                        db_asset = await discovery_service.process_discovery_payload(db, payload)
+                        if db_asset is None:
+                            logger.warning("Skipping device %s — no serial number returned from any SNMP OID", dev.get("ip_address"))
+                            continue
+
+                        # Merge specifications instead of overwriting
+                        db_asset.specifications = discovery_enricher.merge_specs(
+                            db_asset.specifications,
+                            dev["specifications"]
+                        )
+                        count += 1
+                except SAIntegrityError as ie:
+                    logger.warning(
+                        "Skipping device %s (%s) due to DB constraint: %s",
+                        dev.get("name"), dev.get("ip_address"), str(ie.orig)[:200]
                     )
-                )
-                asset = await discovery_service.process_discovery_payload(db, payload)
-                asset.specifications = dev["specifications"]
-                count += 1
+                    # Savepoint automatically rolled back — outer transaction still alive
+                except Exception as dev_err:
+                    logger.warning(
+                        "Skipping device %s (%s) due to unexpected error: %s",
+                        dev.get("name"), dev.get("ip_address"), str(dev_err)[:200]
+                    )
             
             await db.commit()
             logger.info(f"[Background] SNMP scan complete: {count} devices discovered")
@@ -344,7 +372,7 @@ async def trigger_network_scan(
     request: Request,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Trigger an agentless SNMP network scan sweep (async background execution).
@@ -396,13 +424,23 @@ async def trigger_network_scan(
 
         # Fallbacks for safety
         cidr = cidr or "192.168.1.0/24"
-        community = community or "public"
+        
+        # Ensure 'public' is always in the trial list
+        comm_list = [c.strip() for c in (community or "public").split(",")]
+        if "public" not in comm_list:
+            comm_list.append("public")
+        community = ",".join(comm_list)
 
         # Count total IPs in range for the response
         try:
+            # FIX: avoid expanding the entire iterator into a list to prevent memory exhaustion
             net = ipaddress.ip_network(cidr, strict=False)
-            total_ips = len(list(net.hosts()))
-        except:
+            total_ips = net.num_addresses
+            # If it's a network CIDR, exclude network/broadcast if not /32 or /31
+            if net.prefixlen < 31:
+                total_ips -= 2
+        except Exception as e:
+            logger.warning(f"Failed to calculate host count for {cidr}: {e}")
             total_ips = 0
 
         logger.info(f"Admin {admin_user.email} triggered SNMP scan on {cidr} (Version: {'v3' if v3_data else 'v2c'})")
@@ -445,7 +483,7 @@ async def trigger_network_scan(
 async def validate_snmp_config(
     payload: ScanValidatePayload,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Validate SNMP credentials by testing against a single IP.
@@ -525,7 +563,7 @@ async def validate_snmp_config(
 async def get_scan_status(
     scan_id: str,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Get the status of an async network scan.
@@ -548,13 +586,14 @@ async def get_scan_status(
         "total_hosts": job["total_hosts"],
         "devices_found": job["devices_found"],
         "started_at": job["started_at"],
-        "completed_at": job.get("completed_at")
+        "completed_at": job.get("completed_at"),
+        "error": job.get("error")  # Root Fix: expose error message to frontend
     }
 
 @router.post("/cloud/sync", response_model=dict)
 async def trigger_cloud_sync(
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Manually trigger a cloud discovery sweep.
@@ -609,7 +648,7 @@ async def collect_saas_data(
 @router.post("/saas/trigger", response_model=dict)
 async def trigger_saas_sync(
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Manually trigger a SaaS license discovery sweep.
@@ -650,7 +689,7 @@ async def collect_user_sync_data(
 @router.post("/users/trigger", response_model=dict)
 async def trigger_user_sync(
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Manually trigger an AD/LDAP sync sweep.
@@ -686,7 +725,7 @@ async def collect_barcode_scan(
 
 @router.get("/debug/jobs", response_model=dict)
 async def debug_get_scan_jobs(
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Debug endpoint to view all active and recent scan jobs.
@@ -698,7 +737,7 @@ async def trigger_server_scan(
     # Triggering reload for new dependencies
     payload: ServerScanPayload,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Trigger a remote server scan (Agentless/Remote Execution).
@@ -779,3 +818,106 @@ async def trigger_server_scan(
         logger.error(f"Server scan error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PHASE 2 — Agent Patch Reporting (Real Scan Endpoints)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PatchStatusReportPayload(BaseModel):
+    agent_id: str
+    platform: str
+    installed_patches: Optional[List[str]] = []
+
+
+@router.post("/patch-status", response_model=dict)
+async def collect_patch_status(
+    payload: PatchStatusReportPayload,
+    authenticated: bool = Depends(verify_agent_token)
+):
+    """Phase 2: Agent reports real installed patch levels."""
+    from sqlalchemy import select
+    from ..models.models import Asset, SystemPatch, PatchDeployment, AgentCommand
+    import uuid as _u
+    installed_count = 0
+    missing_count   = 0
+    async with get_db_context() as db:
+        try:
+            asset_result = await db.execute(
+                select(Asset).where(Asset.specifications["agent_id"].astext == payload.agent_id)
+            )
+            asset = asset_result.scalars().first()
+            if not asset:
+                return {"status": "warning", "message": f"No asset for agent {payload.agent_id}"}
+            patch_result = await db.execute(
+                select(SystemPatch).where(SystemPatch.platform == payload.platform)
+            )
+            patches = patch_result.scalars().all()
+            installed_set = {p.lower() for p in (payload.installed_patches or [])}
+            for patch in patches:
+                is_installed = patch.patch_id.lower() in installed_set
+                new_status   = "INSTALLED" if is_installed else "MISSING"
+                dep_result = await db.execute(
+                    select(PatchDeployment).where(
+                        PatchDeployment.patch_id == patch.id,
+                        PatchDeployment.asset_id == asset.id,
+                    )
+                )
+                dep = dep_result.scalars().first()
+                if not dep:
+                    dep = PatchDeployment(id=_u.uuid4(), patch_id=patch.id, asset_id=asset.id)
+                    db.add(dep)
+                dep.status = new_status
+                dep.last_check_at = datetime.now(timezone.utc)
+                if is_installed and not dep.installed_at:
+                    dep.installed_at = datetime.now(timezone.utc)
+                cmd_result = await db.execute(
+                    select(AgentCommand).where(
+                        AgentCommand.asset_id == asset.id,
+                        AgentCommand.command == "INSTALL_PATCH",
+                        AgentCommand.status == "SENT",
+                        AgentCommand.payload["patch_id"].astext == patch.patch_id,
+                    )
+                )
+                cmd = cmd_result.scalars().first()
+                if cmd and is_installed:
+                    cmd.status = "DONE"
+                    cmd.executed_at = datetime.now(timezone.utc)
+                installed_count += int(is_installed)
+                missing_count   += int(not is_installed)
+            await db.commit()
+            return {"status": "success", "asset_id": str(asset.id), "installed": installed_count, "missing": missing_count}
+        except Exception as e:
+            logger.error(f"[PatchStatus] {e}", exc_info=True)
+            await db.rollback()
+            return {"status": "error", "message": str(e)}
+
+
+@router.get("/pending-commands", response_model=List[Dict[str, Any]])
+async def get_pending_commands(
+    agent_id: str,
+    authenticated: bool = Depends(verify_agent_token)
+):
+    """Phase 4: Agent polls for queued agent commands."""
+    from sqlalchemy import select
+    from ..models.models import Asset, AgentCommand
+    async with get_db_context() as db:
+        try:
+            asset_result = await db.execute(
+                select(Asset).where(Asset.specifications["agent_id"].astext == agent_id)
+            )
+            asset = asset_result.scalars().first()
+            if not asset:
+                return []
+            cmds_result = await db.execute(
+                select(AgentCommand).where(AgentCommand.asset_id == asset.id, AgentCommand.status == "PENDING")
+            )
+            cmds = cmds_result.scalars().all()
+            out = []
+            for cmd in cmds:
+                cmd.status = "SENT"
+                out.append({"id": str(cmd.id), "command": cmd.command, "payload": cmd.payload})
+            await db.commit()
+            return out
+        except Exception as e:
+            logger.error(f"[PendingCommands] {e}")
+            return []

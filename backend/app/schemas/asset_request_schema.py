@@ -24,6 +24,7 @@ class AssetRequestBase(BaseModel):
     justification: Optional[str] = None
     business_justification: Optional[str] = None
     reason: Optional[str] = None
+    specifications: Optional[Dict[str, Any]] = {}
 
 class AssetRequestCreate(AssetRequestBase):
     asset_ownership_type: str  # COMPANY_OWNED | BYOD (required for new requests)
@@ -61,6 +62,11 @@ class AssetRequestResponse(AssetRequestBase):
     purchase_order: Optional[Dict[str, Any]] = None
     purchase_invoice: Optional[Dict[str, Any]] = None
     procurement_logs: Optional[List[Dict[str, Any]]] = None
+    
+    # Virtual fields for frontend compatibility
+    current_owner_role: Optional[str] = None
+    procurement_stage: Optional[str] = None
+    
     created_at: datetime
     updated_at: datetime
     
@@ -123,7 +129,8 @@ class ITRejectionRequest(BaseModel):
 
 class ITDiagnosisRequest(BaseModel):
     """Request body for IT diagnosis (ID derived from JWT)"""
-    outcome: str  # "repair" | "secure"
+    outcome: Optional[str] = None  # "repair" | "secure"
+    notes: Optional[str] = None
 
 
 class ManagerConfirmationRequest(BaseModel):

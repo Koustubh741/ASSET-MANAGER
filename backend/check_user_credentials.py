@@ -41,13 +41,13 @@ async def check_user():
             print(f"  Domain: {user.domain}")
             print(f"  Status: {user.status}")
             print(f"  Full Name: {user.full_name}")
-            print(f"  Has Password Hash: {'Yes' if user.hashed_password else 'No'}")
+            print(f"  Has Password Hash: {'Yes' if user.password_hash else 'No'}")
             
             if user.status != 'ACTIVE':
                 print(f"\n[WARNING] User status is '{user.status}', not 'ACTIVE'")
                 print("  This will prevent login even with correct credentials")
             
-            if not user.hashed_password:
+            if not user.password_hash:
                 print("\n[ERROR] User has no password set!")
                 print("  This user cannot log in")
         

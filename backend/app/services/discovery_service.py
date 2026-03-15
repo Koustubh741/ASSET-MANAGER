@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
-from ..models.models import Asset, User, DiscoveredSoftware, DiscoveryScan, DiscoveryDiff, AgentConfiguration, AuditLog
+from sqlalchemy import select, delete, or_, func
+from sqlalchemy.exc import IntegrityError
+from ..models.models import Asset, User, DiscoveredSoftware, DiscoveryScan, DiscoveryDiff, AgentConfiguration, AuditLog, AssetRelationship
 from ..schemas.discovery_schema import DiscoveryPayload
 from datetime import datetime, timezone
 import uuid
@@ -118,9 +119,11 @@ async def _resolve_user_id(
 async def process_discovery_payload(
     db: AsyncSession,
     payload: DiscoveryPayload,
-) -> Asset:
+) -> Asset | None:
     """
     Process an incoming discovery payload and upsert the asset.
+    Returns None (without raising) if the payload cannot be safely persisted
+    (e.g. no serial number available for a new asset insert).
 
     Steps:
       1. Open / retrieve the scan session record.
@@ -155,9 +158,14 @@ async def process_discovery_payload(
         assigned_location_id = await _resolve_location_id(db, payload)
         assigned_user_id     = await _resolve_user_id(db, payload)
 
-        # ── 3. Build specifications blob ─────────────────────────────────
-        # Base specs from hardware/OS
-        specs: dict[str, str] = {
+        # ── 3. Build & Enrich specifications blob ───────────────────────
+        from .discovery_enricher import discovery_enricher
+        
+        # Universal enrichment pipeline: Sanitize -> Detect Vendor -> Detect Type -> Detect Model
+        discovery_enricher.fully_enrich_hardware(payload.hardware, payload.metadata)
+
+        # Base specs from hardware/OS (include all fields — clean_specs will filter noise)
+        raw_specs: dict[str, str] = {
             "OS":           f"{payload.os.name} {payload.os.version}",
             "Processor":    payload.hardware.cpu,
             "RAM":          f"{round(payload.hardware.ram_mb / 1024)} GB",
@@ -165,13 +173,24 @@ async def process_discovery_payload(
             "Condition":    payload.hardware.condition or "Excellent",
             "IP Address":   payload.ip_address,
             "Last Scan":    _utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "Serial Number": payload.hardware.serial,
+            # AD / agent fields — may be placeholder; clean_specs will drop them
+            "Agent ID":     str(payload.agent_id),
             "AD User":      payload.hardware.ad_user,
             "Primary User": payload.hardware.primary_user,
             "AD Domain":    payload.hardware.ad_domain,
-            "Agent ID":     str(payload.agent_id),
         }
 
-        # Human-friendly uptime, if available
+        # Incorporate sanitized metadata descriptions/location/uptime
+        meta = payload.metadata or {}
+        if meta.get("snmp_description") or meta.get("description"):
+            raw_specs["Description"] = meta.get("snmp_description") or meta.get("description")
+        if meta.get("snmp_location"):
+            raw_specs["Location"] = meta["snmp_location"]
+        if meta.get("snmp_uptime"):
+            raw_specs["Uptime"] = meta["snmp_uptime"]
+
+        # Uptime from agent payload (seconds)
         try:
             if payload.os.uptime_sec and payload.os.uptime_sec > 0:
                 total_sec = int(payload.os.uptime_sec)
@@ -185,13 +204,15 @@ async def process_discovery_payload(
                     parts.append(f"{hours}h")
                 if minutes or not parts:
                     parts.append(f"{minutes}m")
-                specs["Uptime"] = " ".join(parts)
+                raw_specs["Uptime"] = " ".join(parts)
         except Exception:
-            # Uptime is optional; ignore formatting errors
             pass
 
-        # Network / disk detail from metadata (best-effort)
-        meta = payload.metadata or {}
+        # Root Fix: standardize keys then clean placeholder/noise values
+        # (filtering zeroed Agent IDs, "Unknown" AD fields, raw SNMP timeticks, etc.)
+        specs = discovery_enricher.standardize_specs(raw_specs)
+        specs = discovery_enricher.clean_specs(specs)
+
         network = meta.get("network") or []
         disks = meta.get("disks") or []
 
@@ -245,11 +266,78 @@ async def process_discovery_payload(
             except Exception:
                 pass
 
-        # ── 4. Look up existing asset ────────────────────────────────────
-        asset_result = await db.execute(
-            select(Asset).filter(Asset.serial_number == payload.hardware.serial)
+        # ── 4. Look up existing asset (4-tier dedup chain) ───────────────
+        db_asset: Asset | None = None
+        ZEROED_UUID = "00000000-0000-0000-0000-000000000000"
+        agent_id_str = str(payload.agent_id)
+        is_agentless = (agent_id_str == ZEROED_UUID)
+        valid_serial = (
+            payload.hardware.serial
+            and payload.hardware.serial.lower() not in ("unknown", "n/a", "", "none")
         )
-        db_asset: Asset | None = asset_result.scalars().first()
+
+        # 4a. Exact Serial Number match (strongest dedup signal)
+        if valid_serial:
+            asset_result = await db.execute(
+                select(Asset).filter(Asset.serial_number == payload.hardware.serial)
+            )
+            db_asset = asset_result.scalars().first()
+            if db_asset:
+                logger.debug("[dedup-4a] Matched asset %s by serial '%s'", db_asset.id, payload.hardware.serial)
+
+        # 4b. Agent ID + Hostname (exact — handles normal re-scans from same agent)
+        if not db_asset and not is_agentless:
+            fallback_result = await db.execute(
+                select(Asset).filter(Asset.name == payload.hostname)
+            )
+            for cand in fallback_result.scalars().all():
+                cand_specs = cand.specifications or {}
+                if str(cand_specs.get("Agent ID")) == agent_id_str:
+                    db_asset = cand
+                    logger.debug(
+                        "[dedup-4b] Matched asset %s by agent_id+hostname '%s'",
+                        cand.id, payload.hostname,
+                    )
+                    break
+
+        # 4c. Hostname-only fallback (handles agent reinstall / stub merging / SNMP updates)
+        #     Safe to merge when the candidate:
+        #       - is a stub (serial starts with 'STUB-'), OR
+        #       - has no Agent ID set in its specs (was imported / created without agent)
+        if not db_asset:
+            hostname_result = await db.execute(
+                select(Asset).filter(Asset.name == payload.hostname)
+            )
+            for cand in hostname_result.scalars().all():
+                cand_specs = cand.specifications or {}
+                stored_agent = str(cand_specs.get("Agent ID", "")).strip()
+                is_stub = (cand.serial_number or "").startswith("STUB-")
+                has_no_agent = not stored_agent or stored_agent == ZEROED_UUID or stored_agent == "None"
+                if is_stub or has_no_agent:
+                    db_asset = cand
+                    logger.info(
+                        "[dedup-4c] Merged asset %s via hostname-only fallback "
+                        "(hostname='%s', was_stub=%s, had_no_agent=%s)",
+                        cand.id, payload.hostname, is_stub, has_no_agent,
+                    )
+                    break
+
+        # 4d. IP Address last-resort dedup (catches reinstalled agents or SNMP host changes)
+        if not db_asset and payload.ip_address:
+            # Walk candidate assets that store this IP in their specifications JSONB
+            ip_result = await db.execute(
+                select(Asset).filter(
+                    Asset.specifications["IP Address"].as_string() == payload.ip_address
+                )
+            )
+            for cand in ip_result.scalars().all():
+                if not (cand.serial_number or "").startswith("STUB-"):
+                    db_asset = cand
+                    logger.info(
+                        "[dedup-4d] Matched asset %s by IP address '%s'",
+                        cand.id, payload.ip_address,
+                    )
+                    break
 
         # ── 5a. UPDATE existing asset ────────────────────────────────────
         if db_asset:
@@ -270,11 +358,34 @@ async def process_discovery_payload(
                         )
 
             db_asset.name           = payload.hostname
-            db_asset.model          = payload.hardware.model
-            db_asset.vendor         = payload.hardware.vendor
+            db_asset.model          = payload.hardware.model or "Unknown Model"
+            db_asset.vendor         = payload.hardware.vendor or "Unknown Vendor"
             db_asset.type           = payload.hardware.type or db_asset.type
-            db_asset.specifications = specs
+            db_asset.specifications = discovery_enricher.merge_specs(db_asset.specifications, specs)
             db_asset.updated_at     = _utcnow()
+
+            # Root Fix: Only update serial_number if the new value isn't already
+            # owned by a *different* asset. Prevents UniqueViolationError when
+            # SNMP maps a new device (e.g. CCTV camera) onto an existing asset
+            # record by hostname, then tries to write a serial number that
+            # belongs to another asset (e.g. a laptop).
+            new_serial = payload.hardware.serial
+            if new_serial and new_serial.lower() not in ("unknown", "n/a", "", "none"):
+                if new_serial != db_asset.serial_number:
+                    conflict_result = await db.execute(
+                        select(Asset).filter(
+                            Asset.serial_number == new_serial,
+                            Asset.id != db_asset.id
+                        )
+                    )
+                    if conflict_result.scalars().first() is None:
+                        # Safe to update — no other asset owns this serial
+                        db_asset.serial_number = new_serial
+                    else:
+                        logger.warning(
+                            "Skipping serial_number update for asset %s: '%s' is already owned by another asset.",
+                            db_asset.id, new_serial
+                        )
 
             # Only overwrite location/user when the payload provides them
             if assigned_location_id:
@@ -301,12 +412,17 @@ async def process_discovery_payload(
 
         # ── 5b. CREATE new asset ─────────────────────────────────────────
         else:
+            # Root Fix: We used to skip creation if serial_number was None.
+            # Now that serial_number is nullable in the DB, we allow creation
+            # so scannable devices (printers, cameras) appear in the inventory.
+            pass
+
             db_asset = Asset(
                 id=uuid.uuid4(),
                 name=payload.hostname,
                 type=payload.hardware.type or "Desktop",
-                model=payload.hardware.model,
-                vendor=payload.hardware.vendor,
+                model=payload.hardware.model or "Unknown Model",
+                vendor=payload.hardware.vendor or "Unknown Vendor",
                 serial_number=payload.hardware.serial,
                 assigned_to_id=assigned_user_id,
                 location_id=assigned_location_id,
@@ -368,6 +484,85 @@ async def process_discovery_payload(
                     version=(soft.version or "Unknown")[:SOFTWARE_VERSION_MAX],
                     vendor=(soft.vendor  or "Unknown")[:SOFTWARE_VENDOR_MAX],
                 ))
+
+        # ── 7. Sync Network Relationships ───────────────────────────────
+        if payload.neighbors:
+            # Drop old relationships where this asset is the source
+            await db.execute(
+                delete(AssetRelationship).where(
+                    AssetRelationship.source_asset_id == db_asset.id,
+                    AssetRelationship.relationship_type == "connected_to"
+                )
+            )
+
+            for neighbor in payload.neighbors:
+                neighbor_name = neighbor.get("neighbor_name")
+                if not neighbor_name:
+                    continue
+
+                # Attempt to find the target asset by its hostname or serial
+                target_result = await db.execute(
+                    select(Asset).filter(
+                        or_(
+                            func.lower(Asset.name) == neighbor_name.lower(),
+                            func.lower(Asset.serial_number) == neighbor_name.lower()
+                        )
+                    )
+                )
+                target_asset = target_result.scalars().first()
+
+                if not target_asset:
+                    # Create a "Stub" asset for the discovered neighbor
+                    logger.info("Creating stub asset for discovered neighbor: %s", neighbor_name)
+                    target_asset = Asset()
+                    target_asset.id = uuid.uuid4()
+                    target_asset.name = neighbor_name
+                    target_asset.type = "Networking"
+                    target_asset.model = "Neighbor Node"
+                    target_asset.vendor = "Unknown Vendor"
+                    target_asset.serial_number = f"STUB-{neighbor_name}"
+                    target_asset.status = "Discovered"
+                    target_asset.segment = "IT"
+                    target_asset.specifications = {
+                        "Discovery": "Neighbor (LLDP/SNMP)",
+                        "IP Address": neighbor.get("neighbor_ip", "N/A"),
+                        "Last Seen": _utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+                    }
+                    
+                    db.add(target_asset)
+                    try:
+                        async with db.begin_nested():
+                            await db.flush()
+                        logger.info("Successfully created stub asset: %s (ID: %s)", neighbor_name, target_asset.id)
+                    except IntegrityError:
+                        logger.warning("IntegrityError creating stub %s. It was likely inserted by a parallel device payload.", neighbor_name)
+                        db.expunge(target_asset)
+                        target_result = await db.execute(
+                            select(Asset).filter(Asset.serial_number == f"STUB-{neighbor_name}")
+                        )
+                        target_asset = target_result.scalars().first()
+                    except Exception as flush_exc:
+                        logger.error("Failed to flush stub asset %s: %s", neighbor_name, str(flush_exc))
+                        raise
+                else:
+                    # Enrich existing stub with IP if it's currently N/A
+                    if target_asset.model == "Neighbor Node" and neighbor.get("neighbor_ip"):
+                        specs = dict(target_asset.specifications or {})
+                        if specs.get("IP Address") in (None, "N/A", ""):
+                            specs["IP Address"] = neighbor.get("neighbor_ip")
+                            target_asset.specifications = specs
+                            logger.info("Enriched existing stub asset %s with IP %s", neighbor_name, specs["IP Address"])
+
+                if target_asset and target_asset.id != db_asset.id:
+                    db.add(AssetRelationship(
+                        id=uuid.uuid4(),
+                        source_asset_id=db_asset.id,
+                        target_asset_id=target_asset.id,
+                        relationship_type="connected_to",
+                        description=f"Automated discovery via SNMP/LLDP on port {neighbor.get('neighbor_port', 'unknown')}",
+                        criticality=3.0,
+                        metadata_={"source": "SNMP_SCAN", "port": neighbor.get("neighbor_port")}
+                    ))
 
         # ── 7. Commit ────────────────────────────────────────────────────
         await db.commit()

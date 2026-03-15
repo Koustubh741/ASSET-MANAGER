@@ -3,6 +3,10 @@ import sys
 import os
 import argparse
 import json
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Add backend to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -43,6 +47,11 @@ async def run_scanner(cidr: str = None, community: str = None):
 
             if 'default_location_id' in config:
                 default_location_id = config['default_location_id'].config_value
+
+            if 'contextName' in config:
+                context_name = config['contextName'].config_value
+            else:
+                context_name = ""
                 
             # Check version
             version = config.get('snmpVersion').config_value if 'snmpVersion' in config else 'v2c'
@@ -71,13 +80,15 @@ async def run_scanner(cidr: str = None, community: str = None):
     
     # Fallbacks
     cidr = cidr or "192.168.1.0/24"
+    context_name = context_name if 'context_name' in locals() else ""
+    
     if not v3_data:
         community = community or "public"
         print(f"[*] Starting SNMP v2c Scan on {cidr} (Community: {community})...")
     else:
         print(f"[*] Starting SNMP v3 Scan on {cidr} (User: {v3_data.get('username')})...")
 
-    devices = await scan_network_range(cidr, community, v3_data, context_name)
+    devices = await scan_network_range(cidr, community or "public", v3_data, context_name)
     
     if not devices:
         print("[!] No SNMP-responsive devices found.")
@@ -95,31 +106,37 @@ async def run_scanner(cidr: str = None, community: str = None):
                 hostname=dev["name"],
                 ip_address=dev["ip_address"],
                 hardware=DiscoveryHardware(
-                    cpu="Network CPU",
-                    ram_mb=0,
+                    cpu=dev.get("cpu", "Network CPU"),
+                    ram_mb=dev.get("ram_mb", 0),
                     serial=dev["serial_number"],
                     model=dev["model"],
                     vendor=dev["vendor"],
-                    type=dev["type"]
+                    type=dev["type"],
+                    storage_gb=dev.get("storage_gb", 0)
                 ),
                 os=DiscoveryOS(
                     name="Embedded/Firmware",
                     version="Unknown",
                     uptime_sec=0
                 ),
-                metadata={"method": "SNMP Sweep"}
+                neighbors=dev.get("neighbors", []),
+                metadata={
+                    "method": "SNMP Sweep",
+                    "snmp_description": dev.get("description"), # Pass cleaned description
+                    "snmp_location": dev.get("location"),
+                    "snmp_uptime": dev.get("uptime")
+                }
             )
             
             # Use the existing discovery service to upsert
-            # Since snmp_service returned a partial dict, we manually apply specs
+            # Standard enrichment logic will handle the specs
             asset = await process_discovery_payload(db, payload)
-            
-            # Override specifications with our detailed SNMP info
-            asset.specifications = dev["specifications"]
-            await db.commit()
-            print(f"[OK] Discovered {dev['vendor']} {dev['type']} ({dev['ip_address']})")
+            print(f"[OK] Discovered {dev['vendor']} {dev['model']} ({dev['ip_address']})")
 
 if __name__ == "__main__":
+    import logging
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+    
     parser = argparse.ArgumentParser(description="Agentless SNMP Asset Scanner")
     parser.add_argument("--range", default=None, help="CIDR range to scan")
     parser.add_argument("--community", default=None, help="SNMP community string")

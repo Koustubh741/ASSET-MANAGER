@@ -346,6 +346,12 @@ class ApiClient {
         return this.request('/assets/stats');
     }
 
+    async provisionSoftware(assetId, softwareName) {
+        return this.request(`/assets/${assetId}/provision?software_name=${encodeURIComponent(softwareName)}`, {
+            method: 'POST'
+        });
+    }
+
     async getAlerts(params = {}) {
         const q = new URLSearchParams(params);
         const query = q.toString();
@@ -577,9 +583,10 @@ class ApiClient {
     }
 
     // Tickets
-    async getTickets(skip = 0, limit = 100, department = null) {
+    async getTickets(skip = 0, limit = 100, department = null, search = null) {
         const queryParams = { skip, limit };
         if (department) queryParams.department = department;
+        if (search) queryParams.search = search;
         const params = new URLSearchParams(queryParams);
         return this.request(`/tickets/?${params.toString()}`);
     }
@@ -641,6 +648,36 @@ class ApiClient {
                 percentage: percentage
             }),
         });
+    }
+
+    async getTicketStatsByCategory(days = 30) {
+        return this.request(`/tickets/stats/category?range_days=${days}`);
+    }
+
+    async getOEMMetrics() {
+        return this.request('/analytics/oem/metrics');
+    }
+
+    async getTicketSolverStats(days = null) {
+        const query = days ? `?range_days=${days}` : '';
+        return this.request(`/tickets/stats/solvers${query}`);
+    }
+
+    async getSolverPortfolio(userId) {
+        return this.request(`/tickets/solvers/${userId}/portfolio`);
+    }
+
+    // Categories (Dynamic Styling)
+    async getCategoryConfigs() {
+        return this.request('/categories/configs');
+    }
+
+    async updateCategoryConfig(config) {
+        return this.post('/categories/configs', config);
+    }
+
+    async suggestIcon(categoryName) {
+        return this.request(`/categories/suggest-icon/${encodeURIComponent(categoryName)}`);
     }
 
     // Users
@@ -979,8 +1016,41 @@ class ApiClient {
         return this.request(`/port-policies/${policyId}/enforcement`);
     }
 
-    async getAgentPortPolicyState(agentId) {
-        return this.request(`/agents/${agentId}/port-policies/state`);
+    // Automation Rules
+    async getAutomationRules() {
+        return this.request('/tickets/automation/rules');
+    }
+
+    async createAutomationRule(ruleData) {
+        return this.request('/tickets/automation/rules', {
+            method: 'POST',
+            body: ruleData,
+        });
+    }
+
+    async deleteAutomationRule(ruleId) {
+        return this.request(`/tickets/automation/rules/${ruleId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // SLA Policies
+    async getSLAPolicies() {
+        return this.request('/tickets/sla-policies');
+    }
+
+    async createSLAPolicy(policyData) {
+        const { name, priority, res_min, rem_min } = policyData;
+        const params = new URLSearchParams({ name, priority, res_min, rem_min });
+        return this.request(`/tickets/sla-policies?${params.toString()}`, {
+            method: 'POST',
+        });
+    }
+
+    async deleteSLAPolicy(policyId) {
+        return this.request(`/tickets/sla-policies/${policyId}`, {
+            method: 'DELETE',
+        });
     }
 }
 

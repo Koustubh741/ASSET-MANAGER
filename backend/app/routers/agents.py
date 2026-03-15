@@ -11,7 +11,7 @@ from app.models.models import AgentConfiguration, AgentSchedule, DiscoveryScan, 
 from app.schemas.agent_schema import AgentConfigUpdate, AgentConfigResponse, AgentValidationResponse, AgentScheduleUpdate, AgentScheduleResponse
 from app.services.encryption_service import encrypt_value, decrypt_value
 from app.scheduler import scheduler
-from .auth import check_system_admin
+from .auth import check_ADMIN
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime
 import sys
@@ -37,7 +37,7 @@ SENSITIVE_KEYS = ['communityString', 'password', 'apiKey', 'secretKey', 'token',
 async def get_agent_config(
     agent_id: str,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Retrieve configuration for a specific agent"""
     try:
@@ -68,7 +68,7 @@ async def update_agent_config(
     agent_id: str,
     update_data: AgentConfigUpdate,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Update agent configuration with validation and encryption"""
     config = update_data.config
@@ -123,7 +123,7 @@ async def update_agent_config(
 async def validate_agent_config(
     agent_id: str,
     update_data: AgentConfigUpdate,
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Validate configuration without saving"""
     config = update_data.config
@@ -160,9 +160,9 @@ async def run_snmp_scan_job():
     try:
         await run_scanner()
         
-        # Update last_run
+        # FIX BUG 4: Update last_run on the correct agent schedule (agent-snmp, not agent-local)
         async with AsyncSessionLocal() as session:
-            stmt = select(AgentSchedule).where(AgentSchedule.agent_id == 'agent-local')
+            stmt = select(AgentSchedule).where(AgentSchedule.agent_id == 'agent-snmp')
             result = await session.execute(stmt)
             schedule = result.scalars().first()
             if schedule:
@@ -171,15 +171,16 @@ async def run_snmp_scan_job():
     except Exception as e:
         print(f"[!] Scheduled Scan Failed: {e}")
 
+# FIX BUG 3: Map 'agent-snmp' (not 'agent-local') to the SNMP scan job
 JOB_MAPPINGS = {
-    'agent-local': run_snmp_scan_job
+    'agent-snmp': run_snmp_scan_job
 }
 
 @router.get("/{agent_id}/schedule", response_model=AgentScheduleResponse)
 async def get_agent_schedule(
     agent_id: str,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Get active schedule for agent"""
     result = await db.execute(
@@ -206,7 +207,7 @@ async def update_agent_schedule(
     agent_id: str,
     update_data: AgentScheduleUpdate,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Update agent schedule and reconfigure APScheduler"""
     
@@ -265,7 +266,7 @@ async def get_discovery_scans(
     limit: int = 50,
     agent_id: str = None,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Retrieve recent discovery scan sessions"""
     try:
@@ -299,7 +300,7 @@ async def get_discovery_scans(
 async def get_scan_diffs(
     scan_id: str,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Retrieve configuration changes detected during a specific scan"""
     try:
@@ -332,7 +333,7 @@ async def get_asset_change_history(
     asset_id: str,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """Retrieve configuration change history for a specific asset"""
     try:

@@ -20,6 +20,11 @@ from app.routers import (
     port_policies,
     setup,
     ai_assistant,
+    gate_pass,
+    patch_management,
+    remote_assistance,
+    categories,
+    analytics_oem,
 )
 
 api_router = APIRouter()
@@ -45,3 +50,8 @@ api_router.include_router(alerts.router)
 api_router.include_router(port_policies.router)
 api_router.include_router(setup.router)
 api_router.include_router(ai_assistant.router)
+api_router.include_router(gate_pass.router)
+api_router.include_router(patch_management.router)
+api_router.include_router(remote_assistance.router)
+api_router.include_router(categories.router)
+api_router.include_router(analytics_oem.router)

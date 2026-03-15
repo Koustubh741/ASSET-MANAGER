@@ -96,7 +96,7 @@ async def test_diff_tracking():
         
         print(f"\n[+] Detected {len(diffs)} configuration changes:")
         for diff in diffs:
-            print(f"  - {diff.field_name}: '{diff.old_value}' → '{diff.new_value}'")
+            print(f"  - {diff.field_name}: '{diff.old_value}' -> '{diff.new_value}'")
         
         # 5. Mark scan as complete
         scan2.status = "COMPLETED"
@@ -104,8 +104,8 @@ async def test_diff_tracking():
         scan2.assets_processed = 1
         await db.commit()
         
-        print(f"\n[✓] Diff tracking test completed successfully!")
-        print(f"[✓] Scan ID for verification: {scan_id2}")
+        print(f"\n[OK] Diff tracking test completed successfully!")
+        print(f"[OK] Scan ID for verification: {scan_id2}")
 
 if __name__ == "__main__":
     asyncio.run(test_diff_tracking())

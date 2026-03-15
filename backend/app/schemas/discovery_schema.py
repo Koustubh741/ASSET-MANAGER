@@ -5,7 +5,7 @@ from uuid import UUID
 class DiscoveryHardware(BaseModel):
     cpu: str
     ram_mb: int
-    serial: str
+    serial: Optional[str] = None
     model: str
     vendor: Optional[str] = "Unknown"
     type: Optional[str] = "Desktop"
@@ -34,6 +34,7 @@ class DiscoveryPayload(BaseModel):
     hardware: DiscoveryHardware
     os: DiscoveryOS
     software: Optional[List[DiscoverySoftware]] = []
+    neighbors: Optional[List[Dict[str, Any]]] = []
     metadata: Optional[Dict[str, Any]] = {}
 
 class SaaSDiscoveryItem(BaseModel):

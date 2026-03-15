@@ -73,7 +73,7 @@ const AssetTimeline = ({ assetId }) => {
             case 'STATUS_CHANGE': return 'text-cyan-400';
             case 'DISCOVERED': return 'text-indigo-400';
             case 'SOFT_DELETED': return 'text-rose-400';
-            default: return 'text-slate-400';
+            default: return 'text-slate-500 dark:text-slate-400';
         }
     };
 
@@ -86,7 +86,7 @@ const AssetTimeline = ({ assetId }) => {
     const currentStageIndex = STAGES.findIndex(s => s.label === data.current_stage);
 
     if (loading) return (
-        <div className="p-24 flex flex-col justify-center items-center relative overflow-hidden bg-slate-950/20 rounded-[3rem]">
+        <div className="p-24 flex flex-col justify-center items-center relative overflow-hidden bg-slate-100 dark:bg-slate-950/20 rounded-[3rem]">
             <div className="absolute inset-0 z-0 opacity-20">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/30 blur-[120px] rounded-full animate-pulse"></div>
             </div>
@@ -102,7 +102,7 @@ const AssetTimeline = ({ assetId }) => {
                 </div>
                 <div className="text-center">
                     <h3 className="text-xs font-black uppercase tracking-[0.4em] text-blue-500/80 mb-2">Syncing Neural Core</h3>
-                    <p className="text-[9px] text-slate-500 font-bold tracking-widest uppercase">Fetching Temporal Asset Data</p>
+                    <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold tracking-widest uppercase">Fetching Temporal Asset Data</p>
                 </div>
             </div>
         </div>
@@ -111,7 +111,7 @@ const AssetTimeline = ({ assetId }) => {
     return (
         <div className="w-full space-y-12 animate-in fade-in zoom-in-95 duration-1000">
             {/* --- HYPER-PREMIUM STAGE MONITOR --- */}
-            <div className="relative px-8 py-10 bg-slate-900/40 backdrop-blur-3xl border border-white/5 rounded-[3rem] overflow-hidden group/header">
+            <div className="relative px-8 py-10 bg-white dark:bg-slate-900/40 backdrop-blur-3xl border border-slate-200 dark:border-white/5 rounded-[3rem] overflow-hidden group/header">
                 {/* Parallax Background Orbs */}
                 <div className="absolute -top-32 -left-32 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full group-hover/header:bg-blue-500/20 transition-all duration-1000"></div>
                 <div className="absolute top-1/2 -right-32 -translate-y-1/2 w-64 h-64 bg-emerald-500/5 blur-[100px] rounded-full"></div>
@@ -130,9 +130,9 @@ const AssetTimeline = ({ assetId }) => {
                                     onClick={() => setFilterStage(isFiltered ? null : stage.label)}
                                 >
                                     {/* Stage Indicator */}
-                                    <div className={`relative w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 border-2 ${isCurrent ? 'bg-slate-950 border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)] scale-110' :
+                                    <div className={`relative w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 border-2 ${isCurrent ? 'bg-slate-100 dark:bg-slate-950 border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)] scale-110' :
                                             isCompleted ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
-                                                'bg-slate-900/80 border-white/5 text-slate-700'
+                                                'bg-white dark:bg-slate-900/80 border-slate-200 dark:border-white/5 text-slate-700'
                                         } ${isFiltered ? 'scale-110 !border-white shadow-[0_0_40px_rgba(255,255,255,0.2)]' : ''}`}>
 
                                         {isCurrent && (
@@ -147,11 +147,11 @@ const AssetTimeline = ({ assetId }) => {
 
                                     {/* Stage Labeling */}
                                     <div className="mt-5 text-center">
-                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] transition-colors ${isCurrent ? 'text-white' : isCompleted ? 'text-slate-400' : 'text-slate-700'
+                                        <p className={`text-[10px] font-black uppercase tracking-[0.1em] transition-colors ${isCurrent ? 'text-slate-900 dark:text-white' : isCompleted ? 'text-slate-500 dark:text-slate-400' : 'text-slate-700'
                                             }`}>
                                             {stage.label}
                                         </p>
-                                        <p className="text-[8px] text-slate-600 font-medium tracking-tight mt-0.5 opacity-0 group-hover/stage:opacity-100 transition-opacity">
+                                        <p className="text-[8px] text-slate-500 dark:text-slate-400 font-medium tracking-tight mt-0.5 opacity-0 group-hover/stage:opacity-100 transition-opacity">
                                             {stage.description}
                                         </p>
                                     </div>
@@ -166,7 +166,7 @@ const AssetTimeline = ({ assetId }) => {
                                 </div>
 
                                 {idx < STAGES.length - 1 && (
-                                    <div className="flex-1 h-[2px] mx-6 relative overflow-hidden bg-slate-800/50 rounded-full max-w-[80px]">
+                                    <div className="flex-1 h-[2px] mx-6 relative overflow-hidden bg-slate-50 dark:bg-slate-800/50 rounded-full max-w-[80px]">
                                         <div
                                             className={`absolute inset-0 transition-all duration-1000 ${idx < currentStageIndex ? 'bg-gradient-to-r from-emerald-500 to-blue-500' :
                                                     'bg-transparent'
@@ -189,7 +189,7 @@ const AssetTimeline = ({ assetId }) => {
             <div className="relative pl-14 pr-4 py-4 min-h-[500px]">
                 {/* The "Neural" Flow Path */}
                 <div className="absolute left-[27px] top-0 bottom-0 w-[2px]">
-                    <div className="absolute inset-0 bg-slate-900 overflow-hidden">
+                    <div className="absolute inset-0 bg-white dark:bg-slate-900 overflow-hidden">
                         {/* Static Path Background */}
                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent"></div>
 
@@ -238,23 +238,23 @@ const AssetTimeline = ({ assetId }) => {
                                 <div
                                     className={`absolute -left-[44px] top-2 w-10 h-10 flex items-center justify-center rounded-[1rem] border transition-all duration-500 z-10 cursor-pointer backdrop-blur-3xl shadow-2xl ${isSelected
                                             ? 'bg-blue-600 border-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.5)] scale-110'
-                                            : 'bg-slate-900 border-white/5 hover:border-white/20'
+                                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/5 hover:border-slate-300 dark:border-white/20'
                                         }`}
                                     onClick={() => setSelectedId(isSelected ? null : event.id)}
                                 >
-                                    <div className={`${isSelected ? 'text-white' : eventColor}`}>
+                                    <div className={`${isSelected ? 'text-slate-900 dark:text-white' : eventColor}`}>
                                         {getIcon(event.type)}
                                     </div>
 
                                     {/* Connecting Wire Line */}
-                                    <div className="absolute right-[-14px] top-1/2 -translate-y-1/2 w-4 h-[1px] bg-white/10 group-hover:bg-white/20 transition-all duration-500"></div>
+                                    <div className="absolute right-[-14px] top-1/2 -translate-y-1/2 w-4 h-[1px] bg-slate-200 dark:bg-white/10 group-hover:bg-white/20 transition-all duration-500"></div>
                                 </div>
 
                                 {/* Intelligent Event Card */}
                                 <div
                                     className={`relative ml-4 bg-gradient-to-br transition-all duration-700 rounded-[2rem] p-8 cursor-pointer border shadow-2xl overflow-hidden ${isSelected
                                             ? 'from-blue-600/10 to-transparent border-blue-500/30'
-                                            : 'from-slate-900/50 to-transparent border-white/5 hover:border-white/10 hover:shadow-blue-500/5'
+                                            : 'from-slate-900/50 to-transparent border-slate-200 dark:border-white/5 hover:border-slate-200 dark:border-white/10 hover:shadow-blue-500/5'
                                         }`}
                                     onClick={() => setSelectedId(isSelected ? null : event.id)}
                                 >
@@ -264,35 +264,35 @@ const AssetTimeline = ({ assetId }) => {
                                     <div className="flex flex-col lg:flex-row justify-between gap-8 relative z-10">
                                         <div className="space-y-4 max-w-2xl">
                                             <div className="flex items-center gap-4">
-                                                <div className={`text-[10px] font-black uppercase tracking-[0.25em] px-3 py-1 rounded-full border border-white/5 bg-white/5 ${eventColor}`}>
+                                                <div className={`text-[10px] font-black uppercase tracking-[0.25em] px-3 py-1 rounded-full border border-slate-200 dark:border-white/5 bg-slate-100 dark:bg-white/5 ${eventColor}`}>
                                                     {event.type}
                                                 </div>
-                                                <h4 className="text-lg font-black text-white/95 tracking-tightest">
+                                                <h4 className="text-lg font-black text-slate-900 dark:text-white/95 tracking-tightest">
                                                     {event.title}
                                                 </h4>
                                             </div>
 
-                                            <p className="text-sm text-slate-400 leading-relaxed font-medium">
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                                                 {event.description}
                                             </p>
 
                                             <div className="flex items-center gap-6 pt-2">
                                                 <div className="flex items-center gap-2 group/performer">
-                                                    <div className="w-6 h-6 rounded-full bg-slate-800 border border-white/5 flex items-center justify-center overflow-hidden">
-                                                        <User size={12} className="text-slate-500 group-hover/performer:text-blue-400 transition-colors" />
+                                                    <div className="w-6 h-6 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/5 flex items-center justify-center overflow-hidden">
+                                                        <User size={12} className="text-slate-500 dark:text-slate-400 group-hover/performer:text-blue-400 transition-colors" />
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter">Initiator</span>
-                                                        <span className="text-[11px] text-slate-300 font-bold">{event.performer || 'System Core'}</span>
+                                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Initiator</span>
+                                                        <span className="text-[11px] text-slate-700 dark:text-slate-300 font-bold">{event.performer || 'System Core'}</span>
                                                     </div>
                                                 </div>
 
-                                                <div className="h-6 w-[1px] bg-white/5"></div>
+                                                <div className="h-6 w-[1px] bg-slate-100 dark:bg-white/5"></div>
 
                                                 <div className="flex items-center gap-2">
-                                                    <History size={12} className="text-slate-500" />
+                                                    <History size={12} className="text-slate-500 dark:text-slate-400" />
                                                     <div className="flex flex-col">
-                                                        <span className="text-[9px] font-bold text-slate-600 uppercase tracking-tighter">Frequency Count</span>
+                                                        <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Frequency Count</span>
                                                         <span className="text-[11px] text-blue-400 font-mono font-bold">
                                                             {data.stats[event.type] || 0} Instances
                                                         </span>
@@ -303,9 +303,9 @@ const AssetTimeline = ({ assetId }) => {
 
                                         <div className="flex flex-col items-end lg:justify-between h-full pt-1">
                                             <div className="flex flex-col items-end space-y-2">
-                                                <div className="flex items-center gap-2 px-4 py-2 bg-black/40 border border-white/5 rounded-2xl shadow-inner">
-                                                    <Calendar size={12} className="text-slate-600" />
-                                                    <span className="text-[11px] font-bold text-slate-400">
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-black/40 border border-slate-200 dark:border-white/5 rounded-2xl shadow-sm dark:shadow-inner">
+                                                    <Calendar size={12} className="text-slate-500 dark:text-slate-400" />
+                                                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                                                         {new Date(event.timestamp).toLocaleString([], {
                                                             weekday: 'short',
                                                             month: 'short',
@@ -324,9 +324,9 @@ const AssetTimeline = ({ assetId }) => {
                                                     <div className="space-y-3">
                                                         {event.changes.map((change, i) => (
                                                             <div key={i} className="space-y-1">
-                                                                <p className="text-[10px] text-slate-400 font-bold">{change.field}</p>
+                                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{change.field}</p>
                                                                 <div className="flex items-center justify-between text-[11px] font-mono">
-                                                                    <span className="text-slate-600/80 truncate max-w-[80px]">{change.old}</span>
+                                                                    <span className="text-slate-500 dark:text-slate-400/80 truncate max-w-[80px]">{change.old}</span>
                                                                     <ArrowRightCircle size={10} className="text-emerald-500 flex-shrink-0" />
                                                                     <span className="text-emerald-400 font-black truncate max-w-[80px]">{change.new}</span>
                                                                 </div>
@@ -351,13 +351,13 @@ const AssetTimeline = ({ assetId }) => {
                         <div className="py-32 flex flex-col items-center animate-in fade-in duration-1000">
                             <div className="relative mb-8">
                                 <Network size={64} className="text-slate-900 absolute -inset-1 blur-md" />
-                                <Network size={64} className="text-slate-800" />
+                                <Network size={64} className="text-slate-900 dark:text-slate-800" />
                             </div>
-                            <h3 className="text-xs font-black text-slate-600 uppercase tracking-[0.4em]">Intelligence Void</h3>
+                            <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.4em]">Intelligence Void</h3>
                             <p className="text-[10px] text-slate-700 font-bold mt-2 uppercase tracking-tightest">No data mapped to {filterStage} stage</p>
                             <button
                                 onClick={() => setFilterStage(null)}
-                                className="mt-8 px-10 py-3 rounded-full bg-blue-600/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 hover:bg-blue-600 hover:text-white transition-all duration-500"
+                                className="mt-8 px-10 py-3 rounded-full bg-blue-600/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 hover:bg-blue-600 hover:text-slate-900 dark:text-white transition-all duration-500"
                             >
                                 Recalibrate Sensory Filter
                             </button>

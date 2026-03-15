@@ -213,20 +213,20 @@ export default function AssetsPage() {
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-3xl font-bold text-white light:text-slate-800 tracking-tight">Asset Inventory</h2>
-                    <p className="text-slate-400 mt-1">Manage and track all hardware and software assets</p>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Asset Inventory</h2>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track all hardware and software assets</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleRefresh}
                         disabled={isRefreshing}
                         title="Refresh inventory (picks up newly discovered assets)"
-                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-slate-200 dark:bg-white/10 hover:bg-white/20 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
                     >
                         <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
                         <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                     </button>
-                    <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
+                    <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-slate-900 dark:text-white shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
                         <Plus size={20} />
                         <span>Add Asset</span>
                     </Link>
@@ -234,62 +234,62 @@ export default function AssetsPage() {
             </div>
 
             {/* Filters */}
-            <div className="backdrop-blur-md bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="backdrop-blur-md bg-slate-200 dark:bg-white/10 dark:bg-white/5 border border-slate-300 dark:border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 dark:text-slate-400" size={20} />
                     <input
                         type="text"
                         placeholder="Search by anything (Name, Spec, Location, Cost...)"
-                        className="w-full bg-slate-800/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-slate-500"
+                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-slate-500 dark:text-slate-400"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center space-x-4 w-full md:w-auto">
-                    <div className="flex items-center space-x-2 text-slate-400">
+                    <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
                         <Filter size={20} />
                         <span className="font-medium hidden md:inline">Filter:</span>
                     </div>
 
                     <select
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
                         value={filterSegment}
                         onChange={(e) => setFilterSegment(e.target.value)}
                     >
-                        <option value="All" className="bg-slate-900 text-white">All Segments</option>
-                        <option value="IT" className="bg-slate-900 text-white">IT</option>
-                        <option value="NON-IT" className="bg-slate-900 text-white">NON-IT</option>
+                        <option value="All" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">All Segments</option>
+                        <option value="IT" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">IT</option>
+                        <option value="NON-IT" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">NON-IT</option>
                     </select>
 
                     <select
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                     >
                         {uniqueTypes.map(t => (
-                            <option key={t} value={t} className="bg-slate-900 text-white">
+                            <option key={t} value={t} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                                 {t === 'All' ? 'All Types' : t}
                             </option>
                         ))}
                     </select>
 
                     <select
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-50 dark:bg-slate-800/50"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
-                        <option value="All" className="bg-slate-900 text-white">All Status</option>
-                        <option value="In Use" className="bg-slate-900 text-white">In Use</option>
-                        <option value="In Stock" className="bg-slate-900 text-white">In Stock</option>
-                        <option value="Repair" className="bg-slate-900 text-white">Repair</option>
-                        <option value="Maintenance" className="bg-slate-900 text-white">Maintenance</option>
-                        <option value="Discovered" className="bg-slate-900 text-white">Discovered</option>
-                        <option value="Retired" className="bg-slate-900 text-white">Retired</option>
+                        <option value="All" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">All Status</option>
+                        <option value="In Use" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">In Use</option>
+                        <option value="In Stock" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">In Stock</option>
+                        <option value="Repair" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Repair</option>
+                        <option value="Maintenance" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Maintenance</option>
+                        <option value="Discovered" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Discovered</option>
+                        <option value="Retired" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Retired</option>
                     </select>
 
                     {/* Results Count */}
-                    <div className="bg-slate-800/50 px-3 py-2 rounded-lg border border-white/5 light:border-slate-200 text-xs text-slate-400 light:text-slate-600 font-medium">
-                        Showing <span className="text-white">{filteredAssets.length}</span> assets
+                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/5 text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">
+                        Showing <span className="text-slate-900 dark:text-white">{filteredAssets.length}</span> assets
                     </div>
                 </div>
             </div>

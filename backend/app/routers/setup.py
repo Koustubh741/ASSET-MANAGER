@@ -7,7 +7,7 @@ from ..database.database import get_db
 from ..utils import auth_utils
 from ..schemas.company_schema import CompanyCreate, CompanyResponse
 from ..services import company_service
-from .auth import check_system_admin
+from .auth import check_ADMIN
 
 router = APIRouter(
     prefix="/setup",
@@ -34,7 +34,6 @@ class SetupCompletePayload(BaseModel):
 @router.get("/status", response_model=SetupStatusResponse)
 async def get_setup_status(
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(auth_utils.get_current_user),
 ):
     """
     Return setup completion status. Any authenticated user can call this.
@@ -50,10 +49,10 @@ async def get_setup_status(
 async def complete_setup(
     payload: SetupCompletePayload,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(check_ADMIN),
 ):
     """
-    Complete the setup wizard. SYSTEM_ADMIN only.
+    Complete the setup wizard. ADMIN only.
     Creates/updates company and locations, marks setup as complete.
     """
     locations_data = [loc.model_dump() for loc in payload.locations]
@@ -69,10 +68,10 @@ async def complete_setup(
 @router.get("/company", response_model=CompanyResponse)
 async def get_company(
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(check_ADMIN),
 ):
     """
-    Get current company. SYSTEM_ADMIN only.
+    Get current company. ADMIN only.
     """
     company = await company_service.get_company(db)
     if not company:

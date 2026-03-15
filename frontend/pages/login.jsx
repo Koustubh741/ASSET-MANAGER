@@ -75,14 +75,14 @@ export default function Login() {
 
     const DEPARTMENTS = Object.keys(DEPT_DOMAIN_MAP);
 
-    // Role → default department (so department falls under the selected role)
+    // Role Slider Mapping → default department
     const ROLE_DEFAULT_DEPARTMENT = {
-        'System Admin': 'IT',
-        'IT Management': 'IT',
-        'Finance': 'Finance',
-        'Procurement Manager': 'Procurement',
-        'Asset & Inventory Manager': 'Asset Management',
-        'End User': 'Engineering' // generic default; user can change
+        'ADMIN': 'IT',
+        'IT_MANAGEMENT': 'IT',
+        'FINANCE': 'Finance',
+        'PROCUREMENT': 'Procurement',
+        'ASSET_MANAGER': 'Asset Management',
+        'END_USER': 'Engineering'
     };
 
     // Form States
@@ -116,10 +116,13 @@ export default function Login() {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         const next = { ...formData, [name]: value };
-        if (name === 'role' && ROLE_DEFAULT_DEPARTMENT[value]) {
-            next.department = ROLE_DEFAULT_DEPARTMENT[value];
-            const domains = DEPT_DOMAIN_MAP[next.department];
-            next.domain = domains && domains[0] ? domains[0] : next.domain;
+        if (name === 'role') {
+            const roleSlug = ROLES.find(r => r.label === value)?.slug;
+            if (roleSlug && ROLE_DEFAULT_DEPARTMENT[roleSlug]) {
+                next.department = ROLE_DEFAULT_DEPARTMENT[roleSlug];
+                const domains = DEPT_DOMAIN_MAP[next.department];
+                next.domain = domains && domains[0] ? domains[0] : next.domain;
+            }
         }
         if (name === 'department') {
             const domains = DEPT_DOMAIN_MAP[value];
@@ -254,11 +257,11 @@ export default function Login() {
     const glowShadow = isLoginMode ? 'shadow-emerald-500/50' : 'shadow-purple-500/50';
 
     return (
-        <div className="min-h-screen bg-slate-950 light:bg-slate-100 flex items-center justify-center p-6 overflow-hidden relative">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-6 overflow-hidden relative">
 
             {/* Background Effects */}
-            <div className={`absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 light:opacity-40 ${isLoginMode ? 'bg-emerald-900/20' : 'bg-purple-900/20'}`}></div>
-            <div className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 light:opacity-30 ${isLoginMode ? 'bg-emerald-900/10' : 'bg-purple-900/10'}`}></div>
+            <div className={`absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 opacity-40 ${isLoginMode ? 'bg-emerald-900/20' : 'bg-purple-900/20'}`}></div>
+            <div className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 opacity-30 ${isLoginMode ? 'bg-emerald-900/10' : 'bg-purple-900/10'}`}></div>
 
             <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center z-10">
 
@@ -310,10 +313,10 @@ export default function Login() {
 
                         {/* Header */}
                         <div className="text-center mb-8">
-                            <h1 className={`text-3xl font-bold mb-2 transition-colors duration-500 ${glowColor}`}>
+                            <h1 className={`text-xl font-bold mb-2 transition-colors duration-500 ${glowColor}`}>
                                 {isLoginMode ? 'Welcome Back' : 'Create Account'}
                             </h1>
-                            <p className="text-slate-400 text-sm light:text-slate-600">
+                            <p className="text-slate-500 dark:text-slate-400 text-slate-500 dark:text-slate-400 dark:text-sm">
                                 {isLoginMode ? 'Enter your details to access your workspace' : 'Join the team and start managing assets'}
                             </p>
                         </div>
@@ -328,34 +331,34 @@ export default function Login() {
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
-                                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest light:text-slate-600">Personal Identity</h3>
+                                            <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-slate-500 dark:text-slate-400">Personal Identity</h3>
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">Full Name</label>
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Full Name</label>
                                                 <div className="relative group">
-                                                    <User size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600 group-focus-within:text-purple-400 light:group-focus-within:text-purple-600 transition-colors" />
+                                                    <User size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                     <input
                                                         type="text"
                                                         name="name"
                                                         value={formData.name}
                                                         onChange={handleInputChange}
                                                         placeholder="John Doe"
-                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
                                                     />
                                                 </div>
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">Phone</label>
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Phone</label>
                                                 <div className="relative group">
-                                                    <Phone size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600 group-focus-within:text-purple-400 light:group-focus-within:text-purple-600 transition-colors" />
+                                                    <Phone size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                     <input
                                                         type="tel"
                                                         name="phone"
                                                         value={formData.phone}
                                                         onChange={handleInputChange}
                                                         placeholder="+1 555-0000"
-                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
                                                     />
                                                 </div>
                                             </div>
@@ -366,50 +369,50 @@ export default function Login() {
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2 mb-2">
                                             <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
-                                            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest light:text-slate-600">Professional Scoping</h3>
+                                            <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-slate-500 dark:text-slate-400">Professional Scoping</h3>
                                         </div>
 
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">Company</label>
+                                            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Company</label>
                                             <div className="relative group">
-                                                <Building2 size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600 group-focus-within:text-purple-400 light:group-focus-within:text-purple-600 transition-colors" />
+                                                <Building2 size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                 <input
                                                     type="text"
                                                     name="company"
                                                     value={formData.company}
                                                     onChange={handleInputChange}
                                                     placeholder="Organization Name"
-                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">System Access Level</label>
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">System Access Level</label>
                                                 <div className="relative group">
-                                                    <Briefcase size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600 group-focus-within:text-purple-400 light:group-focus-within:text-purple-600 transition-colors" />
+                                                    <Briefcase size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                     <select
                                                         name="role"
                                                         value={formData.role}
                                                         onChange={handleInputChange}
-                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
                                                     >
                                                         {ROLES.map(role => (
-                                                            <option key={role.label} value={role.label} className="bg-slate-900 light:bg-white light:text-slate-900">{role.label}</option>
+                                                            <option key={role.slug} value={role.label} className="bg-white dark:bg-slate-900 text-slate-900">{role.label}</option>
                                                         ))}
                                                     </select>
-                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 light:text-slate-600">▼</div>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 dark:text-slate-400">▼</div>
                                                 </div>
-                                                <p className="text-[9px] text-slate-500 mt-1 italic pl-1 light:text-slate-600">Determines system permissions</p>
+                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 italic pl-1 text-slate-500 dark:text-slate-400">Determines system permissions</p>
                                             </div>
 
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">Position / Hierarchy</label>
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Position / Hierarchy</label>
                                                 <div className="flex gap-2">
                                                     <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${!formData.isManager
                                                         ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                                                        : 'border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5 light:border-slate-200 light:bg-slate-100 light:text-slate-600 light:hover:bg-slate-200'
+                                                        : 'border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200'
                                                         }`}>
                                                         <input
                                                             type="radio"
@@ -422,7 +425,7 @@ export default function Login() {
                                                     </label>
                                                     <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${formData.isManager
                                                         ? 'border-purple-500/40 bg-purple-500/15 text-purple-400'
-                                                        : 'border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5 light:border-slate-200 light:bg-slate-100 light:text-slate-600 light:hover:bg-slate-200'
+                                                        : 'border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200'
                                                         }`}>
                                                         <input
                                                             type="radio"
@@ -434,58 +437,58 @@ export default function Login() {
                                                         <span className="font-bold text-[10px]">MGR</span>
                                                     </label>
                                                 </div>
-                                                <p className="text-[9px] text-slate-500 mt-1 italic pl-1 light:text-slate-600">Determines data scoping</p>
+                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 italic pl-1 text-slate-500 dark:text-slate-400">Determines data scoping</p>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">Department</label>
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Department</label>
                                                 <div className="relative group">
-                                                    <Building2 size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600 group-focus-within:text-purple-400 light:group-focus-within:text-purple-600 transition-colors" />
+                                                    <Building2 size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                     <select
                                                         name="department"
                                                         value={formData.department}
                                                         onChange={handleInputChange}
-                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
                                                     >
                                                         {DEPARTMENTS.map(dept => (
-                                                            <option key={dept} value={dept} className="bg-slate-900 light:bg-white light:text-slate-900">{dept}</option>
+                                                            <option key={dept} value={dept} className="bg-white dark:bg-slate-900 text-slate-900">{dept}</option>
                                                         ))}
                                                     </select>
-                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 light:text-slate-600">▼</div>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 dark:text-slate-400">▼</div>
                                                 </div>
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">Domain / Team</label>
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Domain / Team</label>
                                                 <div className="relative group">
-                                                    <Disc size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600 group-focus-within:text-purple-400 light:group-focus-within:text-purple-600 transition-colors" />
+                                                    <Disc size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                     <select
                                                         name="domain"
                                                         value={formData.domain}
                                                         onChange={handleInputChange}
-                                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
                                                     >
                                                         {(DEPT_DOMAIN_MAP[formData.department] || []).map(domain => (
-                                                            <option key={domain} value={domain} className="bg-slate-900 light:bg-white light:text-slate-900">{domain}</option>
+                                                            <option key={domain} value={domain} className="bg-white dark:bg-slate-900 text-slate-900">{domain}</option>
                                                         ))}
                                                     </select>
-                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 light:text-slate-600">▼</div>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 dark:text-slate-400">▼</div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="space-y-1">
-                                            <label className="text-[10px] font-semibold text-slate-500 uppercase ml-1 light:text-slate-600">Physical Location</label>
+                                            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Physical Location</label>
                                             <div className="relative group">
-                                                <MapPin size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600 group-focus-within:text-purple-400 light:group-focus-within:text-purple-600 transition-colors" />
+                                                <MapPin size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                 <input
                                                     type="text"
                                                     name="location"
                                                     value={formData.location}
                                                     onChange={handleInputChange}
                                                     placeholder="Office/Site Location"
-                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
                                                 />
                                             </div>
                                         </div>
@@ -494,36 +497,36 @@ export default function Login() {
                             )}
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Email Address</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Email Address</label>
                                 <div className="relative">
-                                    <Mail size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600" />
+                                    <Mail size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         placeholder="name@company.com"
-                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
+                                        className={`w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Password</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Password</label>
                                 <div className="relative">
-                                    <Lock size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600" />
+                                    <Lock size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={formData.password}
                                         onChange={handleInputChange}
                                         placeholder="••••••••"
-                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
+                                        className={`w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-2.5 text-slate-500 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors"
+                                        className="absolute right-3 top-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                                     >
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                     </button>
@@ -532,21 +535,21 @@ export default function Login() {
 
                             {!isLoginMode && ( // Confirm Password
                                 <div className="space-y-1 animate-in slide-in-from-left-4 fade-in duration-300">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Confirm Password</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Confirm Password</label>
                                     <div className="relative">
-                                        <Check size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600" />
+                                        <Check size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
                                         <input
                                             type={showConfirmPassword ? "text" : "password"}
                                             name="confirmPassword"
                                             value={formData.confirmPassword}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-3 top-2.5 text-slate-500 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors"
+                                            className="absolute right-3 top-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
                                         >
                                             {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                         </button>
@@ -565,7 +568,7 @@ export default function Login() {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 ${glowBg} ${glowShadow} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full py-3 rounded-xl font-bold text-slate-900 dark:text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 ${glowBg} ${glowShadow} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 {isLoading ? 'Processing...' : (isLoginMode ? 'Login' : 'Create Account')} <ArrowRight size={18} />
                             </button>
@@ -575,29 +578,30 @@ export default function Login() {
                         {isLoginMode && (
                             <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
                                 <div className="relative flex items-center">
-                                    <div className="flex-grow border-t border-white/10 light:border-slate-200"></div>
-                                    <span className="flex-shrink mx-4 text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Or continue with SSO</span>
-                                    <div className="flex-grow border-t border-white/10 light:border-slate-200"></div>
+                                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
+                                    <span className="flex-shrink mx-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Or continue with SSO</span>
+                                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-3">
                                     <button
                                         onClick={() => handleSSOLogin('google')}
-                                        className="flex items-center justify-center p-2.5 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-white/5 light:border-slate-200 light:bg-white light:hover:bg-slate-100 transition-all group"
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-white hover:bg-slate-100 transition-all group"
                                     >
                                         <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Google" />
                                     </button>
                                     <button
                                         onClick={() => handleSSOLogin('azure')}
-                                        className="flex items-center justify-center p-2.5 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-white/5 light:border-slate-200 light:bg-white light:hover:bg-slate-100 transition-all group"
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-white hover:bg-slate-100 transition-all group"
                                     >
-                                        <img src="https://img.icons8.com/color/48/000000/azure-1.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Azure" />
+                                        <img src="https://authjs.dev/img/providers/azure.svg" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Azure" />
                                     </button>
                                     <button
                                         onClick={() => handleSSOLogin('okta')}
-                                        className="flex items-center justify-center p-2.5 rounded-xl border border-white/10 bg-slate-900/50 hover:bg-white/5 light:border-slate-200 light:bg-white light:hover:bg-slate-100 transition-all group"
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-white hover:bg-slate-100 transition-all group"
                                     >
-                                        <img src="https://img.icons8.com/color/48/000000/okta.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Okta" />
+                                        <img src="https://authjs.dev/img/providers/okta.svg" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Okta" />
                                     </button>
+
                                 </div>
                             </div>
                         )}
@@ -605,13 +609,13 @@ export default function Login() {
                         {isLoginMode && (
                             <div className="mt-4 text-center">
                                 <Link href="/forgot-password" title="Recover your password">
-                                    <span className="text-xs text-slate-500 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors cursor-pointer">Forgot Password?</span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">Forgot Password?</span>
                                 </Link>
                             </div>
                         )}
 
-                        <div className="mt-6 pt-6 border-t border-white/5 light:border-slate-200 text-center md:hidden">
-                            <p className="text-sm text-slate-400 light:text-slate-600 mb-2">
+                        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/5 text-center md:hidden">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
                                 {isLoginMode ? "Don't have an account?" : "Already have an account?"}
                             </p>
                             <button
@@ -626,7 +630,7 @@ export default function Login() {
                     {/* Instructional Arrow purely visual */}
                     <div className="absolute -left-32 top-1/2 hidden md:block opacity-60 pointer-events-none">
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-slate-500 light:text-slate-600 text-xs font-handwriting rotate-[-12deg]">Pull to switch!</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-xs font-handwriting rotate-[-12deg]">Pull to switch!</span>
                             <svg width="60" height="40" viewBox="0 0 60 40">
                                 <path d="M10 10 Q 30 5 50 20" stroke="#64748b" strokeWidth="2" fill="none" markerEnd="url(#arrowhead)" strokeDasharray="4 2" />
                                 <defs>

@@ -114,7 +114,7 @@ export default function Setup() {
                     })),
             });
             toast.success('Setup completed successfully!');
-            const targetPath = currentRole?.label === 'System Admin' ? '/dashboard/system-admin' : '/';
+            const targetPath = currentRole?.slug === 'ADMIN' ? '/dashboard/system-admin' : '/';
             router.push(targetPath);
         } catch (err) {
             const msg = err.message || 'Setup failed. Please try again.';
@@ -126,9 +126,9 @@ export default function Setup() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 light:bg-slate-100 flex items-center justify-center p-6 overflow-hidden relative">
-            <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/20 light:opacity-40" />
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/10 light:opacity-30" />
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-6 overflow-hidden relative">
+            <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/20 opacity-40" />
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/10 opacity-30" />
 
             <div className="w-full max-w-2xl z-10">
                 <div className="glass-panel p-8 md:p-10 border border-emerald-500/20 shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)]">
@@ -137,14 +137,13 @@ export default function Setup() {
                         {STEPS.map((s, i) => (
                             <div key={s.id} className="flex items-center">
                                 <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                                        step >= s.id ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-500 light:bg-slate-200 light:text-slate-600'
-                                    }`}
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${step >= s.id ? 'bg-emerald-500 text-slate-900 dark:text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 bg-slate-200 text-slate-500 dark:text-slate-400'
+                                        }`}
                                 >
                                     {step > s.id ? <Check size={18} /> : <s.icon size={18} />}
                                 </div>
                                 {i < STEPS.length - 1 && (
-                                    <div className={`w-12 md:w-16 h-0.5 mx-1 ${step > s.id ? 'bg-emerald-500' : 'bg-slate-800'}`} />
+                                    <div className={`w-12 md:w-16 h-0.5 mx-1 ${step > s.id ? 'bg-emerald-500' : 'bg-slate-50 dark:bg-slate-800'}`} />
                                 )}
                             </div>
                         ))}
@@ -154,10 +153,10 @@ export default function Setup() {
                     {step === 1 && (
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <h1 className="text-2xl font-bold text-emerald-400">Welcome to ITSM Asset Manager</h1>
-                            <p className="text-slate-400 light:text-slate-600">
+                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400">
                                 Let's configure your organization. This platform helps you manage:
                             </p>
-                            <ul className="space-y-2 text-slate-300 light:text-slate-700">
+                            <ul className="space-y-2 text-slate-700 dark:text-slate-700">
                                 <li className="flex items-center gap-2">
                                     <Package size={18} className="text-emerald-500 flex-shrink-0" />
                                     Asset lifecycle tracking and inventory
@@ -171,7 +170,7 @@ export default function Setup() {
                                     IT support ticketing and helpdesk
                                 </li>
                             </ul>
-                            <p className="text-slate-400 light:text-slate-600 text-sm">We'll collect your company details and primary locations to get started.</p>
+                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm">We'll collect your company details and primary locations to get started.</p>
                         </div>
                     )}
 
@@ -181,53 +180,53 @@ export default function Setup() {
                             <h2 className="text-xl font-bold text-emerald-400">Company Information</h2>
                             <div className="grid gap-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Company Name *</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Company Name *</label>
                                     <input
                                         type="text"
                                         name="name"
                                         value={company.name}
                                         onChange={handleCompanyChange}
                                         placeholder="Acme Inc."
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Legal Name</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Legal Name</label>
                                     <input
                                         type="text"
                                         name="legal_name"
                                         value={company.legal_name}
                                         onChange={handleCompanyChange}
                                         placeholder="Acme Corporation"
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Timezone</label>
+                                        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Timezone</label>
                                         <select
                                             name="timezone"
                                             value={company.timezone}
                                             onChange={handleCompanyChange}
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                         >
                                             {TIMEZONES.map((tz) => (
-                                                <option key={tz} value={tz} className="bg-slate-900 light:bg-white light:text-slate-900">
+                                                <option key={tz} value={tz} className="bg-white dark:bg-slate-900 text-slate-900">
                                                     {tz}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Currency</label>
+                                        <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Currency</label>
                                         <select
                                             name="currency"
                                             value={company.currency}
                                             onChange={handleCompanyChange}
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                         >
                                             {CURRENCIES.map((c) => (
-                                                <option key={c} value={c} className="bg-slate-900 light:bg-white light:text-slate-900">
+                                                <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-900">
                                                     {c}
                                                 </option>
                                             ))}
@@ -235,41 +234,41 @@ export default function Setup() {
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Contact Email</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Contact Email</label>
                                     <input
                                         type="email"
                                         name="contact_email"
                                         value={company.contact_email}
                                         onChange={handleCompanyChange}
                                         placeholder="admin@company.com"
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Industry</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Industry</label>
                                     <select
                                         name="industry"
                                         value={company.industry}
                                         onChange={handleCompanyChange}
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     >
-                                        <option value="" className="bg-slate-900 light:bg-white light:text-slate-900">Select...</option>
+                                        <option value="" className="bg-white dark:bg-slate-900 text-slate-900">Select...</option>
                                         {INDUSTRIES.map((ind) => (
-                                            <option key={ind} value={ind} className="bg-slate-900 light:bg-white light:text-slate-900">
+                                            <option key={ind} value={ind} className="bg-white dark:bg-slate-900 text-slate-900">
                                                 {ind}
                                             </option>
                                         ))}
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Address</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Address</label>
                                     <textarea
                                         name="address"
                                         value={company.address}
                                         onChange={handleCompanyChange}
                                         placeholder="123 Main St, City, Country"
                                         rows={2}
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50 resize-none"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 px-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50 resize-none"
                                     />
                                 </div>
                             </div>
@@ -280,12 +279,12 @@ export default function Setup() {
                     {step === 3 && (
                         <div className="space-y-4 animate-in fade-in duration-300">
                             <h2 className="text-xl font-bold text-emerald-400">Primary Locations</h2>
-                            <p className="text-slate-400 light:text-slate-600 text-sm">Add your main office or site locations.</p>
+                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm">Add your main office or site locations.</p>
                             <div className="space-y-4">
                                 {locations.map((loc, idx) => (
-                                    <div key={idx} className="p-4 rounded-xl bg-slate-900/50 border border-white/5 light:bg-slate-50 light:border-slate-200 space-y-3">
+                                    <div key={idx} className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 bg-slate-50 border-slate-200 space-y-3">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Location {idx + 1}</span>
+                                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Location {idx + 1}</span>
                                             {locations.length > 1 && (
                                                 <button
                                                     type="button"
@@ -302,22 +301,22 @@ export default function Setup() {
                                                 placeholder="Location name *"
                                                 value={loc.name}
                                                 onChange={(e) => handleLocationChange(idx, 'name', e.target.value)}
-                                                className="w-full bg-slate-800/50 border border-white/10 rounded-lg py-2 px-3 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                             />
                                             <input
                                                 type="text"
                                                 placeholder="Address"
                                                 value={loc.address}
                                                 onChange={(e) => handleLocationChange(idx, 'address', e.target.value)}
-                                                className="w-full bg-slate-800/50 border border-white/10 rounded-lg py-2 px-3 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                             />
                                             <select
                                                 value={loc.timezone}
                                                 onChange={(e) => handleLocationChange(idx, 'timezone', e.target.value)}
-                                                className="w-full bg-slate-800/50 border border-white/10 rounded-lg py-2 px-3 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                             >
                                                 {TIMEZONES.map((tz) => (
-                                                    <option key={tz} value={tz} className="bg-slate-900 light:bg-white light:text-slate-900">
+                                                    <option key={tz} value={tz} className="bg-white dark:bg-slate-900 text-slate-900">
                                                         {tz}
                                                     </option>
                                                 ))}
@@ -342,19 +341,19 @@ export default function Setup() {
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <h2 className="text-xl font-bold text-emerald-400">Review & Finish</h2>
                             <div className="space-y-4">
-                                <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5">
-                                    <h3 className="text-sm font-semibold text-slate-400 mb-2">Company</h3>
-                                    <p className="text-white font-medium">{company.name}</p>
-                                    {company.legal_name && <p className="text-slate-400 text-sm">{company.legal_name}</p>}
-                                    <p className="text-slate-500 text-sm mt-1">{company.timezone} · {company.currency}</p>
+                                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5">
+                                    <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">Company</h3>
+                                    <p className="text-slate-900 dark:text-white font-medium">{company.name}</p>
+                                    {company.legal_name && <p className="text-slate-500 dark:text-slate-400 text-sm">{company.legal_name}</p>}
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{company.timezone} · {company.currency}</p>
                                 </div>
-                                <div className="p-4 rounded-xl bg-slate-900/50 border border-white/5">
-                                    <h3 className="text-sm font-semibold text-slate-400 mb-2">Locations</h3>
+                                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5">
+                                    <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">Locations</h3>
                                     <ul className="space-y-1">
                                         {locations.filter((l) => l.name?.trim()).map((loc, i) => (
-                                            <li key={i} className="text-white text-sm">
+                                            <li key={i} className="text-slate-900 dark:text-white text-sm">
                                                 {loc.name}
-                                                {loc.address && <span className="text-slate-500"> — {loc.address}</span>}
+                                                {loc.address && <span className="text-slate-500 dark:text-slate-400"> — {loc.address}</span>}
                                             </li>
                                         ))}
                                     </ul>
@@ -371,7 +370,7 @@ export default function Setup() {
                             type="button"
                             onClick={prevStep}
                             disabled={step === 1}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 text-slate-400 light:border-slate-200 light:text-slate-600 hover:bg-white/5 light:hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 border-slate-200 text-slate-500 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ArrowLeft size={18} />
                             Back
@@ -380,7 +379,7 @@ export default function Setup() {
                             <button
                                 type="button"
                                 onClick={nextStep}
-                                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600"
+                                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-emerald-500 text-slate-900 dark:text-white hover:bg-emerald-600"
                             >
                                 Next
                                 <ArrowRight size={18} />
@@ -390,7 +389,7 @@ export default function Setup() {
                                 type="button"
                                 onClick={handleComplete}
                                 disabled={isLoading}
-                                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-70"
+                                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-emerald-500 text-slate-900 dark:text-white hover:bg-emerald-600 disabled:opacity-70"
                             >
                                 {isLoading ? 'Completing...' : 'Complete Setup'}
                                 <Check size={18} />

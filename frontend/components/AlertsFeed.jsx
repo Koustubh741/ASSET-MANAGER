@@ -79,16 +79,16 @@ export default function AlertsFeed() {
 
     if (loading) {
         return (
-            <div className="p-8 text-center border border-white/5 rounded-xl bg-white/5">
-                <p className="text-slate-400 text-sm">Loading alerts...</p>
+            <div className="p-8 text-center border border-slate-200 dark:border-white/5 rounded-xl bg-slate-100 dark:bg-white/5">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">Loading alerts...</p>
             </div>
         );
     }
 
     if (alerts.length === 0) {
         return (
-            <div className="p-8 text-center border border-white/5 rounded-xl bg-white/5">
-                <p className="text-slate-400 text-sm">{error ? 'Could not load alerts.' : 'No active alerts'}</p>
+            <div className="p-8 text-center border border-slate-200 dark:border-white/5 rounded-xl bg-slate-100 dark:bg-white/5">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">{error ? 'Could not load alerts.' : 'No active alerts'}</p>
             </div>
         );
     }
@@ -96,14 +96,14 @@ export default function AlertsFeed() {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-bold text-white flex items-center">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center">
                     <span className="relative flex h-3 w-3 mr-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
                     </span>
                     Live Alerts
                 </h3>
-                <button className="text-slate-400 hover:text-white text-xs font-medium transition-colors">
+                <button className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white text-xs font-medium transition-colors">
                     Clear All
                 </button>
             </div>
@@ -122,13 +122,13 @@ export default function AlertsFeed() {
                             <div className="flex-1">
                                 <div className="flex justify-between items-start">
                                     <h4 className={`text-sm font-semibold ${alert.color}`}>{alert.title}</h4>
-                                    <span className="text-[10px] text-slate-400 font-medium">{alert.time}</span>
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{alert.time}</span>
                                 </div>
-                                <p className="text-slate-300 text-xs mt-1 leading-relaxed">
+                                <p className="text-slate-700 dark:text-slate-300 text-xs mt-1 leading-relaxed">
                                     {alert.message}
                                 </p>
                                 <Link href={alert.link}>
-                                    <div className="mt-3 flex items-center text-[10px] font-medium text-slate-400 hover:text-white transition-colors group">
+                                    <div className="mt-3 flex items-center text-[10px] font-medium text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors group">
                                         View Details
                                         <ArrowRight size={12} className="ml-1 transition-transform group-hover:translate-x-1" />
                                     </div>
@@ -139,7 +139,7 @@ export default function AlertsFeed() {
                 })}
             </div>
 
-            <Link href="/notifications" className="block w-full py-3 text-center text-xs text-slate-400 hover:text-white font-medium border-t border-white/5 hover:bg-white/5 transition-colors">
+            <Link href="/notifications" className="block w-full py-3 text-center text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white font-medium border-t border-slate-200 dark:border-white/5 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 transition-colors">
                 View All Notifications
             </Link>
         </div>

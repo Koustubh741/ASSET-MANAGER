@@ -38,10 +38,10 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-            <div className="glass-panel w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 border border-white/10 relative">
+            <div className="glass-panel w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 border border-slate-200 dark:border-white/10 relative">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg z-[101] transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="absolute top-4 right-4 p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-lg z-[101] transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     aria-label="Close scanner"
                     title="Close"
                 >
@@ -49,15 +49,15 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, onClose }) => {
                 </button>
 
                 <div className="p-6">
-                    <h3 className="text-lg font-bold text-white mb-2">Scan Barcode</h3>
-                    <p className="text-xs text-slate-400 mb-6">Point your camera at the serial number barcode on the box.</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Scan Barcode</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Point your camera at the serial number barcode on the box.</p>
 
-                    <div id="reader" className="overflow-hidden rounded-xl border border-white/10 bg-black/40"></div>
+                    <div id="reader" className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-black/40"></div>
 
                     <div className="mt-6 flex justify-center">
                         <button
                             onClick={onClose}
-                            className="px-6 py-2 text-sm font-bold text-slate-400 hover:text-white transition-colors"
+                            className="px-6 py-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors"
                         >
                             Cancel Scanning
                         </button>

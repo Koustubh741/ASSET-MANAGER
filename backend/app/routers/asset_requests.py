@@ -40,6 +40,9 @@ router = APIRouter(
     tags=["asset-requests"]
 )
 
+# Root Fix: Staff roles that are authorized to perform lifecycle transitions (Procurement, Finance, Inventory)
+STAFF_ROLES = {"ADMIN", "PROCUREMENT", "ASSET_MANAGER", "FINANCE", "IT_MANAGEMENT"}
+
 @router.get("", response_model=List[AssetRequestResponse])
 async def get_asset_requests(
     skip: int = 0,
@@ -63,13 +66,16 @@ async def get_asset_requests(
     
     # Root Fix: Reinforce department scoping for managers, BUT exempt global roles
     # IT_MANAGEMENT, ASSET_MANAGER, FINANCE need to see requests from ALL departments
-    exclude_roles = ["ADMIN", "SYSTEM_ADMIN", "IT_MANAGEMENT", "ASSET_MANAGER", "FINANCE", "PROCUREMENT"]
+    exclude_roles = ["ADMIN", "IT_MANAGEMENT", "ASSET_MANAGER", "FINANCE", "PROCUREMENT"]
     
     # CRITICAL: Check role FIRST before checking position
     # IT managers have position=MANAGER but role=IT_MANAGEMENT, they should see ALL requests
     if current_user.role not in exclude_roles and current_user.position == "MANAGER":
         if not department:
             department = current_user.department or current_user.domain
+        # Unified scoping: Managers see Dept OR Domain OR their OWN requests
+        # We pass effective_requester_id to the service to enable this OR logic
+        effective_requester_id = current_user.id
         
     return await asset_request_service.get_all_asset_requests(
         db, 
@@ -136,7 +142,10 @@ async def create_asset_request(
     
     await verify_active_end_user(requester_id, db)
     
-    return await asset_request_service.create_asset_request_v2(db, request, requester_id, initial_status="SUBMITTED")
+    res = await asset_request_service.create_asset_request_v2(db, request, requester_id, initial_status="SUBMITTED")
+    if res:
+        await send_notification(db, res.id, "submitted")
+    return res
 
 
 async def verify_manager_authorization(
@@ -182,9 +191,12 @@ async def approve_asset_request(
     if not (manager.department == requester.department or manager.domain == requester.domain):
         raise HTTPException(status_code=403, detail="Manager/Requester domain mismatch")
     
-    return await asset_request_service.update_asset_request_status_with_validation(
+    res = await asset_request_service.update_asset_request_status_with_validation(
         db, request_id, "MANAGER_APPROVED", current_user.role, current_user.id, current_user.full_name, decision="APPROVED"
     )
+    if res:
+        await send_notification(db, request_id, "status_change", old_status="SUBMITTED", new_status="MANAGER_APPROVED", reviewer_name=current_user.full_name)
+    return res
 
 @router.post("/{request_id}/manager/reject", response_model=AssetRequestResponse)
 async def reject_asset_request(
@@ -266,6 +278,7 @@ async def it_approve_request(
             print(f"[IT_APPROVE] Request {request_id} not found or update failed")
             raise HTTPException(status_code=404, detail="Asset request not found")
         print(f"[IT_APPROVE] Successfully approved request {request_id}")
+        await send_notification(db, request_id, "status_change", old_status="MANAGER_APPROVED", new_status="IT_APPROVED", reviewer_name=reviewer.full_name)
         return res
     except HTTPException:
         # Re-raise HTTPException as-is (don't wrap it)
@@ -335,9 +348,9 @@ async def byod_register_device(
 
 # ---------------- COMPANY-OWNED FULFILLMENT ROUTE ----------------
 
-async def verify_asset_inventory_manager(user_id: UUID, db: AsyncSession) -> User:
+async def verify_ASSET_MANAGER(user_id: UUID, db: AsyncSession) -> User:
     user = await asset_request_service.get_user_by_id_db(db, user_id)
-    if not user or user.role not in ["ASSET_INVENTORY_MANAGER", "ASSET_MANAGER"]:
+    if not user or user.role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
     return user
 
@@ -348,7 +361,7 @@ async def fulfill_company_owned_request(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    reviewer = await verify_asset_inventory_manager(current_user.id, db)
+    reviewer = await verify_ASSET_MANAGER(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
     if not db_request or db_request.status != "IT_APPROVED":
         raise HTTPException(status_code=403, detail="Not IT_APPROVED")
@@ -398,12 +411,13 @@ async def procurement_approve_request(
     current_user = Depends(get_current_user)
 ):
     reviewer = current_user
-    if reviewer.role not in ["PROCUREMENT", "ADMIN", "SYSTEM_ADMIN"]:
+    if reviewer.role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
     try:
         res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", reviewer.id, reviewer.full_name, user_role="PROCUREMENT")
         if not res:
             raise HTTPException(status_code=404, detail="Asset request not found")
+        await send_notification(db, id, "status_change", old_status="PO_UPLOADED", new_status="PROCUREMENT_APPROVED", reviewer_name=reviewer.full_name)
         return res
     except Exception as e:
         import traceback
@@ -419,7 +433,7 @@ async def procurement_reject_request(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["PROCUREMENT", "ADMIN", "SYSTEM_ADMIN"]:
+    if current_user.role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
     res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", current_user.id, current_user.full_name, reason=rejection.reason, user_role="PROCUREMENT")
     if not res:
@@ -433,7 +447,7 @@ async def finance_approve_request(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["FINANCE", "ADMIN", "SYSTEM_ADMIN"]:
+    if current_user.role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
     try:
         from sqlalchemy import desc
@@ -448,6 +462,10 @@ async def finance_approve_request(
         await procurement_service.validate_finance_budget(db, po.id, current_user.id, "APPROVE")
         await db.commit()
         await db.refresh(db_request)
+        
+        # Notify stakeholders about budget approval
+        await send_notification(db, id, "status_change", old_status="PO_VALIDATED", new_status="FINANCE_APPROVED", reviewer_name=current_user.full_name)
+        
         return await asset_request_service._populate_requester_info(db, db_request, user_role="FINANCE")
     except HTTPException:
         raise
@@ -465,7 +483,7 @@ async def finance_reject_request(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["FINANCE", "ADMIN", "SYSTEM_ADMIN"]:
+    if current_user.role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
     from sqlalchemy import desc
     from ..models.models import PurchaseOrder
@@ -489,7 +507,7 @@ async def procurement_confirm_delivery(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    if current_user.role not in ["PROCUREMENT", "ADMIN", "SYSTEM_ADMIN"]:
+    if current_user.role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
         
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
@@ -533,7 +551,8 @@ async def procurement_confirm_delivery(
             segment="IT",
             assigned_to=requester.full_name if requester else "Employee",
             assigned_to_id=db_request.requester_id,
-            request_id=id
+            request_id=id,
+            specifications=db_request.specifications or {}
         )
         db.add(new_asset)
         db_request.asset_id = new_asset.id
@@ -554,6 +573,9 @@ async def procurement_confirm_delivery(
             raise HTTPException(status_code=400, detail=f"Serial number {delivery_info.serial_number} is already registered in the system.")
         raise HTTPException(status_code=500, detail=f"Failed to register asset: {str(e)}")
 
+    # Notify Asset Manager for QC
+    await send_notification(db, id, "status_change", old_status="FINANCE_APPROVED", new_status="QC_PENDING", reviewer_name=current_user.full_name)
+
     return await asset_request_service._populate_requester_info(db, db_request)
 
 # ---------------- QC & USER ACCEPTANCE ----------------
@@ -565,10 +587,15 @@ async def perform_qc(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    reviewer = await verify_asset_inventory_manager(current_user.id, db)
+    reviewer = await verify_ASSET_MANAGER(current_user.id, db)
     res = await asset_request_service.perform_qc_check(db, id, qc_request.qc_status, reviewer.id, reviewer.full_name, qc_request.qc_notes)
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
+        
+    # Notify results of QC
+    new_status = "USER_ACCEPTANCE_PENDING" if qc_request.qc_status == "PASSED" else "QC_FAILED"
+    await send_notification(db, id, "status_change", old_status="QC_PENDING", new_status=new_status, reviewer_name=reviewer.full_name, reason=qc_request.qc_notes)
+    
     return res
 
 @router.post("/{id}/user/accept", response_model=AssetRequestResponse)
@@ -586,6 +613,10 @@ async def user_accept_asset(
     res = await asset_request_service.update_user_acceptance(db, id, current_user.id, "ACCEPTED")
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
+        
+    # Notify manager for final confirmation/assignment
+    await send_notification(db, id, "status_change", old_status="USER_ACCEPTANCE_PENDING", new_status="MANAGER_CONFIRMED_ASSIGNMENT", reviewer_name=current_user.full_name)
+    
     return res
 
 @router.post("/{request_id}/inventory/allocate", response_model=AssetRequestResponse)
@@ -595,7 +626,7 @@ async def inventory_allocate_asset(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    await verify_asset_inventory_manager(current_user.id, db)
+    await verify_ASSET_MANAGER(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, request_id)
     if not db_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
@@ -607,9 +638,12 @@ async def inventory_allocate_asset(
         asset.assigned_to = user.full_name if user else "Employee"
         asset.assigned_to_id = db_request.requester_id
         asset.status = "Reserved"  # User acceptance pending; finalize_asset_assignment sets "In Use" on accept
-        db_request.status = "USER_ACCEPTANCE_PENDING"
         db_request.asset_id = asset_id
         await db.commit()
+        
+        # Notify user for acceptance
+        await send_notification(db, request_id, "status_change", old_status="IT_APPROVED", new_status="USER_ACCEPTANCE_PENDING", reviewer_name=current_user.full_name)
+        
     return await asset_request_service._populate_requester_info(db, db_request)
 
 
@@ -619,12 +653,16 @@ async def inventory_mark_not_available(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    await verify_asset_inventory_manager(current_user.id, db)
+    await verify_ASSET_MANAGER(current_user.id, db)
     db_request = await asset_request_service.get_asset_request_by_id_db(db, request_id)
     if not db_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
     db_request.status = "PROCUREMENT_REQUESTED"
     await db.commit()
+    
+    # Notify for procurement
+    await send_notification(db, request_id, "status_change", old_status="IT_APPROVED", new_status="PROCUREMENT_REQUESTED", reviewer_name=current_user.full_name)
+    
     return await asset_request_service._populate_requester_info(db, db_request)
 
 
@@ -773,6 +811,7 @@ async def check_byod_compliance(
                 detail=result.get("error", "BYOD compliance check failed")
             )
         
+        await send_notification(db, request_id, "status_change", old_status="BYOD_COMPLIANCE_CHECK", new_status=result["final_status"], reviewer_name=reviewer.full_name)
         return result
     except Exception as e:
         import traceback
@@ -822,7 +861,7 @@ async def apply_root_fix_endpoint(
     for all requests with an asset in USER_ACCEPTANCE_PENDING, MANAGER_CONFIRMED_ASSIGNMENT,
     FULFILLED, or IN_USE. Use after data fixes or to repair orphaned asset links.
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN", "ASSET_MANAGER"]:
+    if current_user.role not in ["ADMIN", "ASSET_MANAGER"]:
         raise HTTPException(status_code=403, detail="Only Admin or Asset Manager can run root fix")
     result = await asset_request_service.apply_root_fix(db)
     return result

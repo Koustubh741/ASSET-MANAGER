@@ -36,7 +36,7 @@ async def create_location(
     db: AsyncSession = Depends(get_db),
     admin = Depends(auth_utils.get_current_user)
 ):
-    if admin.role not in ["ADMIN", "SYSTEM_ADMIN"]:
+    if admin.role not in ["ADMIN", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     return await location_service.create_location(db, location)
 
@@ -47,7 +47,7 @@ async def update_location(
     db: AsyncSession = Depends(get_db),
     admin = Depends(auth_utils.get_current_user)
 ):
-    if admin.role not in ["ADMIN", "SYSTEM_ADMIN"]:
+    if admin.role not in ["ADMIN", "ADMIN"]:
         raise HTTPException(status_code=403, detail="Unauthorized")
     updated_location = await location_service.update_location(db, location_id, location_update)
     if not updated_location:

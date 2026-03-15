@@ -16,6 +16,7 @@ greenlet
 pysnmp
 scapy
 openai
+apscheduler
 
 # Remote Server Discovery
 paramiko

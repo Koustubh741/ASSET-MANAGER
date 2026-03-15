@@ -1,85 +1,77 @@
-"""
-Populate the asset.assets table with mock data for testing
-"""
-from app.database.database import SessionLocal
-import models
-from datetime import datetime, timedelta
+import asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select, delete
+from app.database.database import AsyncSessionLocal
+from app.models.models import User, Asset
 import random
+from datetime import datetime, timedelta
 
-def populate_mock_assets():
-    db = SessionLocal()
-    
-    # Clear existing assets first
-    try:
-        db.query(models.Asset).delete()
-        db.commit()
-        print("[OK] Cleared existing assets")
-    except Exception as e:
-        print(f"Note: {e}")
-        db.rollback()
-    
-    # Mock data templates
-    segments = ["IT", "IT", "IT", "NON-IT", "NON-IT"]
-    it_types = ["Laptop", "Desktop", "Server", "Monitor", "Printer", "Router", "Tablet"]
-    non_it_types = ["Chair", "Desk", "Cabinet", "Projector", "Whiteboard"]
-    statuses = ["Active", "Active", "Active", "In Stock", "Repair", "Retired"]
-    locations = ["Mumbai Office", "Delhi Office", "Bangalore Office", "Pune Office", "Hyderabad Office", "Warehouse"]
-    vendors = ["Dell", "HP", "Lenovo", "Apple", "Samsung", "Cisco", "Wipro Furniture", "Godrej"]
-    
-    mock_assets = []
-    
-    for i in range(1, 51):  # Create 50 assets
-        segment = random.choice(segments)
-        if segment == "IT":
-            asset_type = random.choice(it_types)
-            models_list = ["HP EliteBook", "Dell Latitude", "ThinkPad X1", "MacBook Pro", "OptiPlex", "PowerEdge"]
-        else:
-            asset_type = random.choice(non_it_types)
-            models_list = ["Executive", "Standard", "Premium", "Deluxe", "Basic"]
+async def populate_mock_assets():
+    async with AsyncSessionLocal() as db:
+        print("[INFO] Populating mock assets...")
         
-        purchase_date = datetime.now().date() - timedelta(days=random.randint(30, 730))
-        warranty_expiry = purchase_date + timedelta(days=random.randint(365, 1095))
+        # 1. Clear existing assets
+        try:
+            await db.execute(delete(Asset))
+            await db.commit()
+            print("[OK] Cleared existing assets")
+        except Exception as e:
+            print(f"Note: {e}")
+            await db.rollback()
         
-        asset = models.Asset(
-            name=f"{asset_type} {i:03d}",
-            segment=segment,
-            type=asset_type,
-            model=random.choice(models_list),
-            serial_number=f"SN{i:05d}",
-            status=random.choice(statuses),
-            purchase_date=purchase_date,
-            warranty_expiry=warranty_expiry,
-            cost=random.randint(5000, 150000),
-            vendor=random.choice(vendors),
-            location=random.choice(locations),
-            assigned_to=None  # No user assignments for now
-        )
-        mock_assets.append(asset)
-    
-    # Insert all assets
-    try:
-        db.bulk_save_objects(mock_assets)
-        db.commit()
-        print(f"\n[OK] Successfully inserted {len(mock_assets)} mock assets!")
+        # 2. Get new users
+        res = await db.execute(select(User).where(User.status == "ACTIVE"))
+        users = res.scalars().all()
         
-        # Verify
-        total = db.query(models.Asset).count()
-        print(f"[OK] Total assets in database: {total}")
+        if not users:
+            print("[WARNING] No users found, assets will be unassigned")
         
-        # Show sample
-        print("\nSample assets:")
-        sample = db.query(models.Asset).limit(5).all()
-        for asset in sample:
-            print(f"  - {asset.name} ({asset.type}) - {asset.status} - {asset.location}")
+        # 3. Create mock assets
+        segments = ["IT", "IT", "IT", "NON-IT", "NON-IT"]
+        it_types = ["Laptop", "Desktop", "Server", "Monitor", "Printer", "Router", "Tablet"]
+        non_it_types = ["Chair", "Desk", "Cabinet", "Projector", "Whiteboard"]
+        statuses = ["Active", "Active", "Active", "In Stock", "Repair", "Retired"]
+        vendors = ["Dell", "HP", "Lenovo", "Apple", "Samsung", "Cisco", "Wipro Furniture", "Godrej"]
+        locations = ["Mumbai Office", "Delhi Office", "Bangalore Office", "Pune Office", "Hyderabad Office", "Warehouse"]
         
-    except Exception as e:
-        print(f"\n[ERROR] Error inserting assets: {e}")
-        db.rollback()
-        import traceback
-        traceback.print_exc()
-    finally:
-        db.close()
+        mock_assets = []
+        for i in range(1, 101):  # Create 100 assets
+            segment = random.choice(segments)
+            if segment == "IT":
+                asset_type = random.choice(it_types)
+                models_list = ["HP EliteBook", "Dell Latitude", "ThinkPad X1", "MacBook Pro", "OptiPlex", "PowerEdge"]
+            else:
+                asset_type = random.choice(non_it_types)
+                models_list = ["Executive", "Standard", "Premium", "Deluxe", "Basic"]
+            
+            purchase_date = datetime.now().date() - timedelta(days=random.randint(30, 730))
+            warranty_expiry = purchase_date + timedelta(days=random.randint(365, 1095))
+            
+            # Chance to assign to a user
+            user = random.choice(users) if users and random.random() > 0.3 else None
+            
+            asset = Asset(
+                name=f"{asset_type} {i:03d}",
+                segment=segment,
+                type=asset_type,
+                model=random.choice(models_list),
+                serial_number=f"SN{i:05d}",
+                status="Active" if user else random.choice(statuses),
+                purchase_date=purchase_date,
+                warranty_expiry=warranty_expiry,
+                cost=random.randint(5000, 150000),
+                vendor=random.choice(vendors),
+                location=random.choice(locations),
+                assigned_to=user.full_name if user else None,
+                assigned_to_id=user.id if user else None,
+                assigned_to_name=user.full_name if user else None
+            )
+            mock_assets.append(asset)
+            
+        db.add_all(mock_assets)
+        await db.commit()
+        print(f"[SUCCESS] Successfully inserted {len(mock_assets)} mock assets!")
 
 if __name__ == "__main__":
-    print("[INFO] Populating asset database with mock data...\n")
-    populate_mock_assets()
+    asyncio.run(populate_mock_assets())

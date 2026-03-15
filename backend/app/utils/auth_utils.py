@@ -3,7 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 import os
 import uuid
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.database import AsyncSessionLocal
@@ -15,8 +15,8 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440)) # Default to 24 hours
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))  # Default to 7 days
 
-# OAuth2 scheme for token extraction
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# OAuth2 scheme for token extraction - auto_error=False to handle query params manually
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -70,19 +70,27 @@ def verify_token(token: str):
     except JWTError:
         return None
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(
+    token: Optional[str] = Depends(oauth2_scheme),
+    query_token: Optional[str] = Query(None),
+):
     """
     Dependency to get current user from JWT token (Asynchronous).
-    Raises 401 if token is invalid or user not found.
+    Supports both Authorization header and 'token' query parameter.
     """
-    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    payload = verify_token(token)
+    # Prefer header-based token, fallback to query param
+    final_token = token or query_token
+    
+    if not final_token:
+        raise credentials_exception
+        
+    payload = verify_token(final_token)
     if payload is None:
         raise credentials_exception
     
@@ -99,6 +107,4 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         user = await user_service.get_user(db, user_id)
         if user is None:
             raise credentials_exception
-        # Ensure user object remains usable after session close if needed, 
-        # but since it's a simple model without lazy relationships being accessed later, it should be fine.
         return user

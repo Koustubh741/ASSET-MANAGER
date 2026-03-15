@@ -53,17 +53,17 @@ export default function LocationsPage() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-4xl font-extrabold text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
                         Global Locations
                     </h2>
-                    <p className="text-slate-400 mt-2 text-lg">Manage and monitor assets across your global infrastructure</p>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg">Manage and monitor assets across your global infrastructure</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="px-5 py-2.5 rounded-xl bg-white/5 light:bg-slate-50 border border-white/10 text-white font-medium hover:bg-white/10 transition-all flex items-center gap-2 group">
+                    <button className="px-5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-medium hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 transition-all flex items-center gap-2 group">
                         <Globe size={18} className="text-blue-400 group-hover:rotate-12 transition-transform" />
                         <span>Map View</span>
                     </button>
-                    <button className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
+                    <button className="px-5 py-2.5 rounded-xl bg-blue-600 text-slate-900 dark:text-white font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
                         <Plus size={20} />
                         <span>Add Site</span>
                     </button>
@@ -78,15 +78,15 @@ export default function LocationsPage() {
                     { label: 'Primary Data Centers', value: locations.filter(l => l.name.toLowerCase().includes('center')).length || 2, icon: Activity, color: 'purple' },
                     { label: 'Active Users', value: '~1.4k', icon: Users, color: 'emerald' },
                 ].map((stat, i) => (
-                    <div key={i} className="p-6 rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-white/10 relative overflow-hidden group">
+                    <div key={i} className="p-6 rounded-3xl bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-white/10 relative overflow-hidden group">
                         <div className={`absolute top-0 right-0 w-24 h-24 bg-${stat.color}-500/10 blur-3xl -mr-8 -mt-8 group-hover:bg-${stat.color}-500/20 transition-colors duration-500`} />
                         <div className="flex items-center gap-4">
                             <div className={`p-3 rounded-2xl bg-${stat.color}-500/20 text-${stat.color}-400 border border-${stat.color}-500/20`}>
                                 <stat.icon size={24} />
                             </div>
                             <div>
-                                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{stat.label}</p>
-                                <h3 className="text-2xl font-black text-white mt-0.5">{stat.value}</h3>
+                                <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">{stat.label}</p>
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{stat.value}</h3>
                             </div>
                         </div>
                     </div>
@@ -94,19 +94,19 @@ export default function LocationsPage() {
             </div>
 
             {/* Controls Bar */}
-            <div className="backdrop-blur-md bg-white/5 light:bg-slate-50 border border-white/10 shadow-2xl rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="backdrop-blur-md bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-2xl rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={20} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 group-focus-within:text-blue-400 transition-colors" size={20} />
                     <input
                         type="text"
                         placeholder="Filter sites by name, region, or asset count..."
-                        className="w-full bg-slate-900/50 border border-white/5 light:border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 placeholder:text-slate-600 transition-all"
+                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 placeholder:text-slate-500 dark:text-slate-400 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center gap-3">
-                    <select className="bg-slate-900/50 border border-white/5 light:border-slate-200 rounded-xl px-4 py-3.5 text-slate-300 light:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer">
+                    <select className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5 rounded-xl px-4 py-3.5 text-slate-700 dark:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer">
                         <option>Sort by Asset Count</option>
                         <option>Sort Alphabetically</option>
                         <option>Sort by Uptime</option>
@@ -118,17 +118,17 @@ export default function LocationsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                     Array(6).fill(0).map((_, i) => (
-                        <div key={i} className="h-64 rounded-3xl bg-slate-800/20 animate-pulse border border-white/5 light:border-slate-200" />
+                        <div key={i} className="h-64 rounded-3xl bg-slate-50 dark:bg-slate-800/20 animate-pulse border border-slate-200 dark:border-white/5" />
                     ))
                 ) : (
                     filteredLocations.map((loc, i) => {
                         const stats = getLocationStats(loc.name);
                         return (
-                            <div key={i} className="group relative rounded-3xl bg-slate-900/40 backdrop-blur-xl border border-white/10 hover:border-blue-500/30 transition-all duration-500 overflow-hidden flex flex-col h-full shadow-lg hover:shadow-blue-500/5">
+                            <div key={i} className="group relative rounded-3xl bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-white/10 hover:border-blue-500/30 transition-all duration-500 overflow-hidden flex flex-col h-full shadow-lg hover:shadow-blue-500/5">
                                 {/* Card Header */}
                                 <div className="p-6 pb-4">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className={`p-3 rounded-2xl ${stats.type === 'Infrastructure' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'} border border-white/5 light:border-slate-200`}>
+                                        <div className={`p-3 rounded-2xl ${stats.type === 'Infrastructure' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'} border border-slate-200 dark:border-white/5`}>
                                             {stats.type === 'Infrastructure' ? <Server size={24} /> : <Building2 size={24} />}
                                         </div>
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 uppercase tracking-widest">
@@ -136,37 +136,37 @@ export default function LocationsPage() {
                                             Active
                                         </div>
                                     </div>
-                                    <h3 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors uppercase tracking-tight">{loc.name}</h3>
-                                    <p className="text-slate-500 text-sm mt-1">{stats.type} Portfolio • {stats.uptime} Uptime</p>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-300 transition-colors uppercase tracking-tight">{loc.name}</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{stats.type} Portfolio • {stats.uptime} Uptime</p>
                                 </div>
 
                                 {/* Card Body - Stats List */}
                                 <div className="px-6 space-y-4 flex-1">
-                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
+                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
                                         <div className="flex items-center gap-3">
-                                            <Server size={18} className="text-slate-400" />
-                                            <span className="text-sm text-slate-300 light:text-slate-700">Total Assets</span>
+                                            <Server size={18} className="text-slate-500 dark:text-slate-400" />
+                                            <span className="text-sm text-slate-700 dark:text-slate-700">Total Assets</span>
                                         </div>
-                                        <span className="text-lg font-bold text-white">{loc.count || stats.devices}</span>
+                                        <span className="text-lg font-bold text-slate-900 dark:text-white">{loc.count || stats.devices}</span>
                                     </div>
-                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-white/5 light:bg-slate-50 border border-white/5 light:border-slate-200">
+                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/5">
                                         <div className="flex items-center gap-3">
-                                            <Users size={18} className="text-slate-400" />
-                                            <span className="text-sm text-slate-300 light:text-slate-700">Personnel</span>
+                                            <Users size={18} className="text-slate-500 dark:text-slate-400" />
+                                            <span className="text-sm text-slate-700 dark:text-slate-700">Personnel</span>
                                         </div>
-                                        <span className="text-lg font-bold text-white">{stats.activeUsers}</span>
+                                        <span className="text-lg font-bold text-slate-900 dark:text-white">{stats.activeUsers}</span>
                                     </div>
                                 </div>
 
                                 {/* Card Footer */}
-                                <div className="p-6 mt-4 border-t border-white/5 light:border-slate-200 flex gap-3">
+                                <div className="p-6 mt-4 border-t border-slate-200 dark:border-white/5 flex gap-3">
                                     <button
                                         onClick={() => window.location.href = `/assets?location=${encodeURIComponent(loc.name)}`}
                                         className="flex-1 py-3 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-sm font-bold border border-blue-500/20 transition-all flex items-center justify-center gap-2 group/btn"
                                     >
                                         Inventory <ArrowUpRight size={16} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                                     </button>
-                                    <button className="p-3 rounded-xl bg-white/5 light:bg-slate-50 hover:bg-white/10 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 border border-white/5 light:border-slate-200 transition-all">
+                                    <button className="p-3 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-white/5 transition-all">
                                         <ExternalLink size={18} />
                                     </button>
                                 </div>
@@ -181,11 +181,11 @@ export default function LocationsPage() {
 
             {loading === false && filteredLocations.length === 0 && (
                 <div className="py-20 text-center">
-                    <div className="w-20 h-20 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
-                        <MapPin size={32} className="text-slate-600" />
+                    <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-white/10">
+                        <MapPin size={32} className="text-slate-500 dark:text-slate-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-white">No locations matched your search</h3>
-                    <p className="text-slate-500 mt-2">Try adjusting your filters or search keywords</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">No locations matched your search</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2">Try adjusting your filters or search keywords</p>
                 </div>
             )}
         </div>

@@ -2,10 +2,12 @@ import Link from 'next/link';
 import {
     Search, Eye, Split, Calendar, ClipboardCheck,
     Ticket, Network, Users, DollarSign, Bot, FileText,
-    ChevronDown, ChevronUp, Package, UserMinus, Smartphone
+    ChevronDown, ChevronUp, Package, UserMinus, Smartphone, Database
 } from 'lucide-react';
 import React, { useState } from 'react';
 import AIAssistantSidebar from '@/components/AIAssistantSidebar';
+import OrganizationHierarchy from '@/components/OrganizationHierarchy';
+import BulkImport from '@/components/BulkImport';
 
 const PLATFORM_WORKFLOWS = [
     {
@@ -17,14 +19,16 @@ const PLATFORM_WORKFLOWS = [
             { step: 1, role: 'Employee', action: 'Submits request with justification', state: 'SUBMITTED' },
             { step: 2, role: 'Manager', action: 'Reviews and approves or rejects', state: 'MANAGER_APPROVED' },
             { step: 3, role: 'IT', action: 'Verifies technical specs and approves', state: 'IT_APPROVED' },
-            { step: 4, role: 'Manager', action: 'Confirms IT decision', state: 'MANAGER_CONFIRMED_IT' },
-            { step: 5, role: 'Procurement/Finance', action: 'Creates PO or allocates from stock; Finance approves budget', state: 'PROCUREMENT_REQUESTED → QC_PENDING' },
-            { step: 6, role: 'Inventory Manager', action: 'Performs QC and allocates asset', state: 'QC_PENDING' },
-            { step: 7, role: 'Employee', action: 'Accepts or rejects delivery', state: 'USER_ACCEPTANCE_PENDING' },
-            { step: 8, role: 'Manager', action: 'Confirms final assignment (if needed)', state: 'MANAGER_CONFIRMED_ASSIGNMENT' },
-            { step: 9, role: 'System', action: 'Asset marked In Use; workflow closed', state: 'IN_USE → CLOSED' },
+            { step: 4, role: 'Manager', action: 'Confirms IT decision (Oversight Phase)', state: 'MANAGER_CONFIRMED_IT' },
+            { step: 5, role: 'Procurement', action: 'Creates Purchase Order (PO)', state: 'PROCUREMENT_REQUIRED / PO_CREATED' },
+            { step: 6, role: 'Finance', action: 'Validates and approves budget for PO', state: 'PO_VALIDATED → FINANCE_APPROVED' },
+            { step: 7, role: 'Procurement', action: 'Confirms delivery from vendor', state: 'DELIVERY_CONFIRMED' },
+            { step: 8, role: 'Inventory Manager', action: 'Performs Quality Control (QC) and allocates asset', state: 'QC_PENDING → ALLOCATED' },
+            { step: 9, role: 'Employee', action: 'Verifies asset condition; Accepts or Reports Issue', state: 'USER_ACCEPTANCE_PENDING' },
+            { step: 10, role: 'Manager', action: 'Confirms final assignment (Oversight Phase)', state: 'MANAGER_CONFIRMED_ASSIGNMENT' },
+            { step: 11, role: 'System', action: 'Asset marked In Use; workflow closed', state: 'IN_USE → CLOSED' },
         ],
-        note: 'BYOD requests branch to a separate compliance path after IT approval (see BYOD Compliance Path below).',
+        note: 'BYOD requests branch to compliance path after IT approval. Verification rejections or returns automatically trigger high/medium priority support tickets.',
     },
     {
         id: 'byod-compliance',
@@ -34,12 +38,12 @@ const PLATFORM_WORKFLOWS = [
         steps: [
             { step: 1, role: 'Employee', action: 'Submits BYOD request; follows approval path through Manager and IT', state: 'SUBMITTED → MANAGER_CONFIRMED_IT' },
             { step: 2, role: 'System', action: 'Routes to BYOD compliance path (no procurement)', state: 'BYOD path' },
-            { step: 3, role: 'IT', action: 'Runs BYOD compliance check (policy engine / MDM)', state: 'BYOD_COMPLIANCE_CHECK' },
+            { step: 3, role: 'IT', action: 'Runs compliance check via Policy Engine / MDM Enrollment', state: 'BYOD_COMPLIANCE_CHECK' },
             { step: '4a', role: 'System', action: 'If compliant: device registered; user accepts terms', state: 'User registration → IN_USE' },
             { step: '4b', role: 'System', action: 'If non-compliant: request rejected', state: 'BYOD_REJECTED → CLOSED' },
             { step: 5, role: 'System', action: 'Device in use or workflow closed', state: 'IN_USE → CLOSED' },
         ],
-        note: 'BYOD requests follow this separate compliance path after IT approval; company-owned assets use the standard procurement flow.',
+        note: 'BYOD devices are automatically offboarded (data wipe/unenroll) during the Employee Exit workflow.',
     },
     {
         id: 'ticketing',
@@ -47,12 +51,12 @@ const PLATFORM_WORKFLOWS = [
         icon: Ticket,
         color: 'rose',
         steps: [
-            { step: 1, role: 'User', action: 'Creates ticket with asset link and issue description', state: 'Open' },
+            { step: 1, role: 'User', action: 'Creates ticket (Manual or Auto-generated from Return/Verification Failure)', state: 'Open' },
             { step: 2, role: 'IT Technician', action: 'Picks up ticket; completes mandatory diagnostic checklist', state: 'In Progress' },
             { step: 3, role: 'IT Technician', action: 'Performs remediation (fix, replacement, or escalation)', state: 'Pending' },
             { step: 4, role: 'IT Technician', action: 'Submits resolution notes and closes ticket', state: 'Closed' },
         ],
-        note: 'Tickets are auto-linked to assets. Diagnostic checklists must be completed before resolution.',
+        note: 'Asset returns trigger Medium-priority tickets. Verification failures trigger High-priority tickets with automated diagnostic checklists.',
     },
     {
         id: 'exit',
@@ -66,7 +70,7 @@ const PLATFORM_WORKFLOWS = [
             { step: 4, role: 'IT', action: 'Wipes data and unenrolls BYOD devices', state: 'Wipe' },
             { step: 5, role: 'Admin', action: 'Finalizes exit and disables account', state: 'Closed' },
         ],
-        note: 'All asset assignments and BYOD registrations are recorded before snapshot.',
+        note: 'The system automatically snapshots the entire asset state to prevent data loss or unauthorized device retention.',
     },
 ];
 
@@ -91,61 +95,80 @@ function WorkflowFlowchart({ workflow }) {
     let height = 200;
 
     if (hasBranch) {
+        // Special Layout for BYOD with branch at step 4
+        // linear contains 1, 2, 3, 4a, 5
         const linear = steps.filter((s) => String(s.step) !== '4b');
         const idx4a = linear.findIndex((s) => String(s.step) === '4a');
         const safeIdx = idx4a >= 0 ? idx4a : linear.length;
-        const pre = linear.slice(0, safeIdx);
-        const post = linear.slice(safeIdx);
-        const step4b = steps.find((s) => String(s.step) === '4b');
-        const nPre = pre.length;
-        const nPost = post.length;
-        const canBranch = post.length >= 2 && step4b;
-        if (canBranch) {
-            const row0W = nPre * (NODE_WIDTH + GAP) - GAP + ARROW_LEN * Math.max(0, nPre - 1);
-            const branchW = NODE_WIDTH + GAP + NODE_WIDTH;
-            const row1W = (nPost.length - 1) * (NODE_WIDTH + GAP) - GAP + (nPost.length - 1) * ARROW_LEN;
-            width = Math.max(row0W, branchW + 40, row1W, 0) + 80;
-            height = NODE_HEIGHT * 3 + GAP * 2 + 40;
 
-            pre.forEach((s, i) => {
-                const x = 40 + i * (NODE_WIDTH + GAP + ARROW_LEN);
-                nodes.push({ ...s, x, y: 20, step: s.step });
-                if (i < pre.length - 1) arrows.push({ from: [x + NODE_WIDTH, 20 + NODE_HEIGHT / 2], to: [x + NODE_WIDTH + ARROW_LEN, 20 + NODE_HEIGHT / 2] });
-            });
-            const xLast = 40 + (pre.length - 1) * (NODE_WIDTH + GAP + ARROW_LEN);
-            const centerX = xLast + NODE_WIDTH / 2;
-            const row1Y = 20 + NODE_HEIGHT + GAP;
-            const x4a = centerX - NODE_WIDTH - GAP / 2;
-            const x4b = centerX + GAP / 2;
-            nodes.push({ ...post[0], x: x4a, y: row1Y, step: '4a' });
-            nodes.push({ ...step4b, x: x4b, y: row1Y, step: '4b' });
-            arrows.push({ from: [centerX, 20 + NODE_HEIGHT], to: [x4a + NODE_WIDTH / 2, row1Y], label: 'Compliant' });
-            arrows.push({ from: [centerX, 20 + NODE_HEIGHT], to: [x4b + NODE_WIDTH / 2, row1Y], label: 'Reject' });
-            const row2Y = row1Y + NODE_HEIGHT + GAP;
+        const pre = linear.slice(0, safeIdx); // Steps 1, 2, 3
+        const post = linear.slice(safeIdx); // Steps 4a, 5
+        const step4b = steps.find((s) => String(s.step) === '4b');
+
+        // Layout rows
+        // Row 0: Linear pre-branch steps
+        pre.forEach((s, i) => {
+            const x = 40 + i * (NODE_WIDTH + GAP + ARROW_LEN);
+            nodes.push({ ...s, x, y: 40 });
+            if (i < pre.length - 1) {
+                arrows.push({
+                    from: [x + NODE_WIDTH, 40 + NODE_HEIGHT / 2],
+                    to: [x + NODE_WIDTH + GAP + ARROW_LEN - 10, 40 + NODE_HEIGHT / 2]
+                });
+            }
+        });
+
+        const lastPreX = 40 + (pre.length - 1) * (NODE_WIDTH + GAP + ARROW_LEN);
+        const centerX = lastPreX + NODE_WIDTH / 2;
+
+        // Row 1: The branch (4a and 4b)
+        const row1Y = 40 + NODE_HEIGHT + GAP + 20;
+        const x4a = centerX - NODE_WIDTH - GAP;
+        const x4b = centerX + GAP;
+
+        nodes.push({ ...post[0], x: x4a, y: row1Y });
+        nodes.push({ ...step4b, x: x4b, y: row1Y });
+
+        // Arrows from Step 3 to 4a and 4b
+        arrows.push({ from: [centerX, 40 + NODE_HEIGHT], to: [x4a + NODE_WIDTH / 2, row1Y], label: 'Compliant' });
+        arrows.push({ from: [centerX, 40 + NODE_HEIGHT], to: [x4b + NODE_WIDTH / 2, row1Y], label: 'Reject' });
+
+        // Row 2: Final step 5
+        if (post[1]) {
+            const row2Y = row1Y + NODE_HEIGHT + GAP + 20;
             const x5 = centerX - NODE_WIDTH / 2;
-            nodes.push({ ...post[1], x: x5, y: row2Y, step: post[1].step });
+            nodes.push({ ...post[1], x: x5, y: row2Y });
+
             arrows.push({ from: [x4a + NODE_WIDTH / 2, row1Y + NODE_HEIGHT], to: [x5 + NODE_WIDTH / 2, row2Y] });
             arrows.push({ from: [x4b + NODE_WIDTH / 2, row1Y + NODE_HEIGHT], to: [x5 + NODE_WIDTH / 2, row2Y] });
         }
-    }
-    if (nodes.length === 0) {
+
+        // Calculate total bounds
+        const minX = Math.min(...nodes.map(n => n.x));
+        const maxX = Math.max(...nodes.map(n => n.x + NODE_WIDTH));
+        const maxY = Math.max(...nodes.map(n => n.y + NODE_HEIGHT));
+
+        width = maxX + 40;
+        height = maxY + 40;
+    } else {
+        // Standard Linear Layout
         width = steps.length * (NODE_WIDTH + GAP + ARROW_LEN) - GAP - ARROW_LEN + 80;
-        height = NODE_HEIGHT + 80;
+        height = NODE_HEIGHT + 100;
         steps.forEach((s, i) => {
             const x = 40 + i * (NODE_WIDTH + GAP + ARROW_LEN);
-            const y = 40;
+            const y = 50;
             nodes.push({ ...s, x, y });
             if (i < steps.length - 1) {
                 arrows.push({
                     from: [x + NODE_WIDTH, y + NODE_HEIGHT / 2],
-                    to: [x + NODE_WIDTH + ARROW_LEN, y + NODE_HEIGHT / 2],
+                    to: [x + NODE_WIDTH + GAP + ARROW_LEN - 10, y + NODE_HEIGHT / 2],
                 });
             }
         });
     }
 
     return (
-        <div className="overflow-x-auto overflow-y-auto rounded-lg bg-slate-900/60 border border-white/5 light:border-slate-200 p-4">
+        <div className="overflow-x-auto overflow-y-auto rounded-lg bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 p-4">
             <svg viewBox={`0 0 ${Number(width) || 400} ${Number(height) || 200}`} className="min-w-full" style={{ minHeight: 200 }}>
                 <defs>
                     <marker id={`arrow-${workflow.id}`} markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
@@ -195,6 +218,8 @@ export default function EnterpriseFeatures() {
     const [isAIStillOpen, setIsAIStillOpen] = useState(false);
     const [expandedWorkflow, setExpandedWorkflow] = useState(null);
     const [workflowView, setWorkflowView] = useState('list'); // 'list' | 'flowchart'
+    const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'hierarchy'
+    const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
 
     const features = [
         {
@@ -281,11 +306,23 @@ export default function EnterpriseFeatures() {
             border: "border-orange-400/20"
         },
         {
+            title: "Bulk Data Import",
+            description: "Import real staff and asset data from CSV or Excel files.",
+            icon: Database,
+            href: "#",
+            isAction: true,
+            actionType: 'bulk-import',
+            color: "text-blue-400",
+            bg: "bg-blue-400/10",
+            border: "border-blue-400/20"
+        },
+        {
             title: "AI Assistant",
             description: "Intelligent sidekick for asset queries.",
             icon: Bot,
             href: "#",
             isAction: true,
+            actionType: 'ai-assistant',
             color: "text-sky-400",
             bg: "bg-sky-400/10",
             border: "border-sky-400/20"
@@ -293,175 +330,206 @@ export default function EnterpriseFeatures() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 p-8 relative">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-8 relative">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-12 flex justify-between items-start">
                     <div>
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+                        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
                             Enterprise Features Portal
                         </h1>
-                        <p className="text-slate-400 text-lg">
+                        <p className="text-slate-500 dark:text-slate-400 text-lg">
                             Access the new enterprise-grade modules and tools.
-
                         </p>
                     </div>
-                    <button
-                        onClick={() => setIsAIStillOpen(true)}
-                        className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all hover:scale-105"
-                    >
-                        <Bot size={20} className="text-white" />
-                        <span>AI Assistant</span>
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-white/5">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-slate-900 dark:text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-200'}`}
+                            >
+                                Features Grid
+                            </button>
+                            <button
+                                onClick={() => setViewMode('hierarchy')}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'hierarchy' ? 'bg-purple-600 text-slate-900 dark:text-white shadow-lg shadow-purple-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-200'}`}
+                            >
+                                Org Hierarchy
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setIsAIStillOpen(true)}
+                            className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all hover:scale-105"
+                        >
+                            <Bot size={20} className="text-slate-900 dark:text-white" />
+                            <span>AI Assistant</span>
+                        </button>
+                    </div>
                 </header>
 
-                {/* Platform Overview - Workflow Understanding */}
-                <section className="mb-12">
-                    <h2 className="text-xl font-bold text-slate-200 mb-4 flex items-center gap-2">
-                        <ClipboardCheck size={22} className="text-emerald-400" />
-                        Platform Overview – Process Workflows
-                    </h2>
-                    <p className="text-slate-400 text-sm mb-4 max-w-2xl">
-                        Understand how each process flows end-to-end. View as a list or as flowcharts.
-                    </p>
-                    <div className="flex gap-2 mb-6">
-                        <button
-                            onClick={() => setWorkflowView('list')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'list' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 light:text-slate-600 border border-slate-600 hover:bg-slate-700'}`}
-                        >
-                            List view
-                        </button>
-                        <button
-                            onClick={() => setWorkflowView('flowchart')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'flowchart' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-800 text-slate-400 light:text-slate-600 border border-slate-600 hover:bg-slate-700'}`}
-                        >
-                            Flowchart view
-                        </button>
-                    </div>
-                    {workflowView === 'flowchart' ? (
-                        <div className="space-y-8">
-                            {PLATFORM_WORKFLOWS.map((wf) => {
-                                const Icon = wf.icon;
-                                const colorMap = { blue: 'border-blue-500/30', rose: 'border-rose-500/30', amber: 'border-amber-500/30', sky: 'border-sky-500/30' };
-                                const iconColorMap = { blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400', sky: 'text-sky-400' };
-                                return (
-                                    <div key={wf.id} className={`rounded-xl border ${colorMap[wf.color] || colorMap.blue} bg-slate-900/30 overflow-hidden`}>
-                                        <div className="flex items-center gap-3 p-4 border-b border-white/5 light:border-slate-200">
-                                            <div className={`p-2 rounded-lg bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
-                                                <Icon size={20} />
-                                            </div>
-                                            <span className="font-semibold text-slate-200">{wf.title}</span>
-                                        </div>
-                                        <div className="p-4">
-                                            <WorkflowFlowchart workflow={wf} />
-                                            {wf.note && <p className="text-xs text-slate-500 italic mt-3">{wf.note}</p>}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                {viewMode === 'hierarchy' ? (
+                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="mb-8">
+                            <OrganizationHierarchy />
                         </div>
-                    ) : (
-                    <div className="space-y-3">
-                        {PLATFORM_WORKFLOWS.map((wf) => {
-                            const Icon = wf.icon;
-                            const isExpanded = expandedWorkflow === wf.id;
-                            const colorMap = { blue: 'border-blue-500/30 bg-blue-500/5', rose: 'border-rose-500/30 bg-rose-500/5', amber: 'border-amber-500/30 bg-amber-500/5', sky: 'border-sky-500/30 bg-sky-500/5' };
-                            const iconColorMap = { blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400', sky: 'text-sky-400' };
-                            return (
-                                <div
-                                    key={wf.id}
-                                    className={`rounded-xl border ${colorMap[wf.color] || colorMap.blue} overflow-hidden transition-all`}
+                    </section>
+                ) : (
+                    <>
+                        {/* Platform Overview - Workflow Understanding */}
+                        <section className="mb-12">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-200 mb-4 flex items-center gap-2">
+                                <ClipboardCheck size={22} className="text-emerald-400" />
+                                Platform Overview – Process Workflows
+                            </h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 max-w-2xl">
+                                Understand how each process flows end-to-end. View as a list or as flowcharts.
+                            </p>
+                            <div className="flex gap-2 mb-6">
+                                <button
+                                    onClick={() => setWorkflowView('list')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'list' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
                                 >
-                                    <button
-                                        onClick={() => setExpandedWorkflow(isExpanded ? null : wf.id)}
-                                        className="w-full flex items-center justify-between p-4 text-left hover:bg-white/5 light:hover:bg-slate-100 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-lg bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
-                                                <Icon size={20} />
-                                            </div>
-                                            <span className="font-semibold text-slate-200">{wf.title}</span>
-                                        </div>
-                                        {isExpanded ? <ChevronUp size={20} className="text-slate-500" /> : <ChevronDown size={20} className="text-slate-500" />}
-                                    </button>
-                                    {isExpanded && (
-                                        <div className="px-4 pb-4 pt-0 space-y-3">
-                                            {wf.steps.map((s) => (
-                                                <div key={s.step} className="flex gap-4 items-start pl-2 border-l-2 border-slate-700/50 py-1">
-                                                    <span className="text-xs font-bold text-slate-500 w-6">{s.step}</span>
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-xs font-semibold text-slate-400 light:text-slate-600 uppercase">{s.role}</span>
-                                                        <p className="text-slate-300 light:text-slate-700 text-sm mt-0.5">{s.action}</p>
-                                                        <p className="text-slate-500 text-xs font-mono mt-1">{s.state}</p>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            {wf.note && (
-                                                <p className="text-xs text-slate-500 italic pl-8 pt-1">{wf.note}</p>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                    )}
-                </section>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {features.map((feature, idx) => (
-                        feature.isAction ? (
-                            <div key={idx} onClick={() => setIsAIStillOpen(true)} className={`h-full p-6 rounded-2xl border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm group`}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className={`p-3 rounded-xl bg-slate-950/50 ${feature.color}`}>
-                                        <feature.icon size={24} />
-                                    </div>
-                                </div>
-                                <h3 className="text-xl font-semibold mb-2 text-slate-100 group-hover:text-white light:hover:text-slate-900">
-                                    {feature.title}
-                                </h3>
-                                <p className="text-sm text-slate-400 light:text-slate-600 leading-relaxed">
-                                    {feature.description}
-                                </p>
+                                    List view
+                                </button>
+                                <button
+                                    onClick={() => setWorkflowView('flowchart')}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'flowchart' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
+                                >
+                                    Flowchart view
+                                </button>
                             </div>
-                        ) : (
-                            <Link key={idx} href={feature.href} className="group">
-                                <div className={`h-full p-6 rounded-2xl border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm`}>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className={`p-3 rounded-xl bg-slate-950/50 ${feature.color}`}>
-                                            <feature.icon size={24} />
-                                        </div>
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <span className="text-xs font-mono text-slate-500">OPEN</span>
-                                        </div>
-                                    </div>
-                                    <h3 className="text-xl font-semibold mb-2 text-slate-100 group-hover:text-white light:hover:text-slate-900">
-                                        {feature.title}
-                                    </h3>
-                                    <p className="text-sm text-slate-400 light:text-slate-600 leading-relaxed">
-                                        {feature.description}
-                                    </p>
+                            {workflowView === 'flowchart' ? (
+                                <div className="space-y-8">
+                                    {PLATFORM_WORKFLOWS.map((wf) => {
+                                        const Icon = wf.icon;
+                                        const colorMap = { blue: 'border-blue-500/30', rose: 'border-rose-500/30', amber: 'border-amber-500/30', sky: 'border-sky-500/30' };
+                                        const iconColorMap = { blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400', sky: 'text-sky-400' };
+                                        return (
+                                            <div key={wf.id} className={`rounded-xl border ${colorMap[wf.color] || colorMap.blue} bg-white dark:bg-slate-900/30 overflow-hidden`}>
+                                                <div className="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-white/5">
+                                                    <div className={`p-2 rounded-lg bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
+                                                        <Icon size={20} />
+                                                    </div>
+                                                    <span className="font-semibold text-slate-900 dark:text-slate-200">{wf.title}</span>
+                                                </div>
+                                                <div className="p-4">
+                                                    <WorkflowFlowchart workflow={wf} />
+                                                    {wf.note && <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-3">{wf.note}</p>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            </Link>
-                        )
-                    ))}
-                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {PLATFORM_WORKFLOWS.map((wf) => {
+                                        const Icon = wf.icon;
+                                        const isExpanded = expandedWorkflow === wf.id;
+                                        const colorMap = { blue: 'border-blue-500/30 bg-blue-500/5', rose: 'border-rose-500/30 bg-rose-500/5', amber: 'border-amber-500/30 bg-amber-500/5', sky: 'border-sky-500/30 bg-sky-500/5' };
+                                        const iconColorMap = { blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400', sky: 'text-sky-400' };
+                                        return (
+                                            <div
+                                                key={wf.id}
+                                                className={`rounded-xl border ${colorMap[wf.color] || colorMap.blue} overflow-hidden transition-all`}
+                                            >
+                                                <button
+                                                    onClick={() => setExpandedWorkflow(isExpanded ? null : wf.id)}
+                                                    className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-100 transition-colors"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`p-2 rounded-lg bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
+                                                            <Icon size={20} />
+                                                        </div>
+                                                        <span className="font-semibold text-slate-900 dark:text-slate-200">{wf.title}</span>
+                                                    </div>
+                                                    {isExpanded ? <ChevronUp size={20} className="text-slate-500 dark:text-slate-400" /> : <ChevronDown size={20} className="text-slate-500 dark:text-slate-400" />}
+                                                </button>
+                                                {isExpanded && (
+                                                    <div className="px-4 pb-4 pt-0 space-y-3">
+                                                        {wf.steps.map((s) => (
+                                                            <div key={s.step} className="flex gap-4 items-start pl-2 border-l-2 border-slate-700/50 py-1">
+                                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 w-6">{s.step}</span>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase">{s.role}</span>
+                                                                    <p className="text-slate-700 dark:text-slate-700 text-sm mt-0.5">{s.action}</p>
+                                                                    <p className="text-slate-500 dark:text-slate-400 text-xs font-mono mt-1">{s.state}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                        {wf.note && (
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 italic pl-8 pt-1">{wf.note}</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </section>
 
-                <div className="mt-12 p-6 rounded-2xl bg-slate-900/50 border border-white/5 light:border-slate-200">
-                    <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                        Implementation Status
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                        {features.map((f, i) => (
-                            <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                {f.title}
-                            </span>
-                        ))}
-                    </div>
-                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {features.map((feature, idx) => (
+                                feature.isAction ? (
+                                    <div key={idx} onClick={() => {
+                                        if (feature.actionType === 'ai-assistant') setIsAIStillOpen(true);
+                                        if (feature.actionType === 'bulk-import') setIsBulkImportOpen(true);
+                                    }} className={`h-full p-6 rounded-2xl border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm group`}>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className={`p-3 rounded-xl bg-slate-100 dark:bg-slate-950/50 ${feature.color}`}>
+                                                <feature.icon size={24} />
+                                            </div>
+                                        </div>
+                                        <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100 group-hover:text-slate-900 dark:hover:text-white">
+                                            {feature.title}
+                                        </h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed">
+                                            {feature.description}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <Link key={idx} href={feature.href} className="group">
+                                        <div className={`h-full p-6 rounded-2xl border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm`}>
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div className={`p-3 rounded-xl bg-slate-100 dark:bg-slate-950/50 ${feature.color}`}>
+                                                    <feature.icon size={24} />
+                                                </div>
+                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400">OPEN</span>
+                                                </div>
+                                            </div>
+                                            <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100 group-hover:text-slate-900 dark:hover:text-white">
+                                                {feature.title}
+                                            </h3>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed">
+                                                {feature.description}
+                                            </p>
+                                        </div>
+                                    </Link>
+                                )
+                            ))}
+                        </div>
+
+                        <div className="mt-12 p-6 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5">
+                            <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                                Implementation Status
+                            </h4>
+                            <div className="flex flex-wrap gap-2">
+                                {features.map((f, i) => (
+                                    <span key={i} className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                        {f.title}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* AI Sidebar */}
             <AIAssistantSidebar isOpen={isAIStillOpen} onClose={() => setIsAIStillOpen(false)} />
+
+            {/* Bulk Import Modal */}
+            <BulkImport isOpen={isBulkImportOpen} onClose={() => setIsBulkImportOpen(false)} />
         </div>
     );
 }

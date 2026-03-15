@@ -64,7 +64,7 @@ ROLE_REQUIRED_STATES: Dict[str, str] = {
     "PO_UPLOADED": "PROCUREMENT",  # Procurement validates PO completeness
     "PO_VALIDATED": "FINANCE",  # Finance validates budget
     "FINANCE_APPROVED": "MANAGER",  # Manager confirms budget allocation
-    "QC_PENDING": "ASSET_INVENTORY_MANAGER",  # QC performed by inventory manager
+    "QC_PENDING": "ASSET_MANAGER",  # QC performed by inventory manager
     "USER_ACCEPTANCE_PENDING": "END_USER",  # User must accept/reject
     "MANAGER_CONFIRMED_ASSIGNMENT": "MANAGER",  # Manager confirms final assignment
 }
@@ -156,7 +156,7 @@ def validate_state_transition(
     required_role = get_required_role_for_transition(current_status)
     if required_role:
         # Admin and System Admin can perform any transition
-        if user_role in ("ADMIN", "SYSTEM_ADMIN"):
+        if user_role == "ADMIN":
             pass
         # Special handling for MANAGER role (END_USER with position=MANAGER)
         elif required_role == "MANAGER":

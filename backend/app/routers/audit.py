@@ -7,7 +7,7 @@ from ..database.database import get_db
 from ..models.models import AuditLog, Asset
 from pydantic import BaseModel
 from uuid import UUID
-from ..routers.auth import check_system_admin, check_user_list_access
+from ..routers.auth import check_ADMIN, check_user_list_access
 from ..utils.auth_utils import get_current_user
 from datetime import datetime
 
@@ -24,12 +24,12 @@ async def check_audit_access(
     Dependency to check if user has access to audit logs.
     Admins see all. Managers see their department.
     """
-    if current_user.role in ["ADMIN", "SYSTEM_ADMIN"] or current_user.position == "MANAGER":
+    if current_user.role in ["ADMIN", "ADMIN"] or current_user.position == "MANAGER":
         return current_user
         
     raise HTTPException(
         status_code=403,
-        detail="Only ADMIN, SYSTEM_ADMIN, or Managers can view audit logs"
+        detail="Only ADMIN, ADMIN, or Managers can view audit logs"
     )
 
 class AuditLogResponse(BaseModel):
@@ -60,7 +60,7 @@ async def get_audit_logs(
     query = select(AuditLog)
     
     # Apply manager scoping
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+    if current_user.role not in ["ADMIN", "ADMIN"] and current_user.position == "MANAGER":
         from ..models.models import User
         manager_unit = current_user.department or current_user.domain
         
@@ -100,7 +100,7 @@ async def get_audit_stats(
     base_query = select(AuditLog)
     
     # Apply manager scoping
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+    if current_user.role not in ["ADMIN", "ADMIN"] and current_user.position == "MANAGER":
         from ..models.models import User
         manager_unit = current_user.department or current_user.domain
         base_query = base_query.join(User, AuditLog.performed_by == User.id).filter(
@@ -123,7 +123,7 @@ async def get_audit_stats(
 @router.post("/sync")
 async def sync_orphaned_logs(
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Search for DATA_COLLECT logs that don't have corresponding assets and create them (Asynchronous).

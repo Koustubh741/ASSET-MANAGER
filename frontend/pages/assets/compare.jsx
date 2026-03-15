@@ -46,31 +46,95 @@ export default function AssetComparisonPage() {
             setError(null);
 
             if (a1 && a2) {
-                // Normalize specs for comparison from backend data structure
+                // Normalize specs to extract all keys dynamically
                 const normalizeSpecs = (asset) => {
                     const s = asset.specifications || {};
                     const hw = s.hardware || {};
                     const os = s.os || {};
-                    
+
                     const isNonIT = asset.segment === 'NON-IT';
 
-                    return {
+                    // Start with base specs
+                    const baseSpecs = {
+                        vendor: asset.vendor || 'Unknown',
                         segment: asset.segment || 'IT',
                         model: asset.model || 'N/A',
-                        processor: isNonIT ? (s.material || s.dimensions || 'N/A') : (hw.processor || hw.cpu || 'N/A'),
-                        ram: isNonIT ? (s.color || s.weight || 'N/A') : (hw.ram || 'N/A'),
-                        storage: isNonIT ? (s.brand || 'N/A') : (hw.storage || 'N/A'),
-                        graphics: isNonIT ? (s.condition || 'N/A') : (hw.graphics || hw.gpu || 'N/A'),
-                        operating_system: isNonIT ? 'Non-applicable' : (os.name || os.version || 'N/A'),
                         purchase_date: asset.purchase_date || 'N/A',
                         warranty: asset.warranty_expiry || 'N/A',
                         cost: asset.cost ? `₹${asset.cost.toLocaleString()}` : 'N/A'
                     };
+
+                    // Add dynamic specs
+                    let dynamicSpecs = {};
+                    if (isNonIT) {
+                        dynamicSpecs = {
+                            material: s.material || 'N/A',
+                            dimensions: s.dimensions || 'N/A',
+                            color: s.color || 'N/A',
+                            weight: s.weight || 'N/A',
+                            brand: s.brand || 'N/A',
+                            condition: s.condition || 'N/A'
+                        };
+                    } else {
+                        // Extract everything from 'specifications' that isn't empty, 
+                        // mapping common nested things (like hw/os) if they exist, but mostly trusting flat keys if present
+                        dynamicSpecs = { ...s };
+                        delete dynamicSpecs.hardware; // Don't try to render the raw object
+                        delete dynamicSpecs.os;
+
+                        // Map flat legacy keys if present
+                        if (hw.processor) dynamicSpecs.Processor = hw.processor;
+                        if (hw.cpu) dynamicSpecs.Processor = dynamicSpecs.Processor || hw.cpu;
+                        if (s.cpu) dynamicSpecs.Processor = dynamicSpecs.Processor || s.cpu;
+
+                        if (hw.ram) dynamicSpecs.RAM = hw.ram;
+                        if (s.ram_mb) dynamicSpecs.RAM = dynamicSpecs.RAM || `${s.ram_mb} MB`;
+                        if (s.RAM) dynamicSpecs.RAM = dynamicSpecs.RAM || s.RAM;
+
+                        if (hw.storage) dynamicSpecs.Storage = hw.storage;
+                        if (s.Storage) dynamicSpecs.Storage = dynamicSpecs.Storage || s.Storage;
+
+                        if (hw.graphics) dynamicSpecs.Graphics = hw.graphics;
+                        if (hw.gpu) dynamicSpecs.Graphics = dynamicSpecs.Graphics || hw.gpu;
+
+                        if (os.name || os.version) dynamicSpecs['Operating System'] = `${os.name || ''} ${os.version || ''}`.trim();
+                        if (s.os_name) dynamicSpecs['Operating System'] = dynamicSpecs['Operating System'] || s.os_name;
+                        if (s.OS) dynamicSpecs['Operating System'] = dynamicSpecs['Operating System'] || s.OS;
+                    }
+
+                    // Clean out nulls/undefined/objects
+                    for (const key in dynamicSpecs) {
+                        if (dynamicSpecs[key] == null || typeof dynamicSpecs[key] === 'object' || dynamicSpecs[key] === '') {
+                            delete dynamicSpecs[key];
+                        }
+                    }
+
+                    return { ...baseSpecs, ...dynamicSpecs };
                 };
 
+                const specs1 = normalizeSpecs(a1);
+                const specs2 = normalizeSpecs(a2);
+
+                // Get union of all keys
+                const allKeysSet = new Set([...Object.keys(specs1), ...Object.keys(specs2)]);
+
+                // Ensure segment and model are at the top, followed by other common ones, then dynamic
+                const preferredOrder = ['vendor', 'segment', 'model', 'purchase_date', 'warranty', 'cost', 'Processor', 'RAM', 'Storage', 'Operating System'];
+                const allKeys = Array.from(allKeysSet).sort((keyA, keyB) => {
+                    const indexA = preferredOrder.indexOf(keyA);
+                    const indexB = preferredOrder.indexOf(keyB);
+                    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // Both preferred: sort by preference
+                    if (indexA !== -1) return -1; // Only A preferred: belongs at top
+                    if (indexB !== -1) return 1; // Only B preferred: belongs at top
+                    return keyA.localeCompare(keyB); // Neither preferred: alphabetical
+                });
+
                 setComparisonData({
-                    asset1: { name: a1.name, specs: normalizeSpecs(a1), condition: a1.status || 'Unknown' },
-                    asset2: { name: a2.name, specs: normalizeSpecs(a2), condition: a2.status || 'Unknown' }
+                    asset1: { name: a1.name, condition: a1.status || 'Unknown' },
+                    asset2: { name: a2.name, condition: a2.status || 'Unknown' },
+                    specs1,
+                    specs2,
+                    allKeys
                 });
             }
             setLoading(false);
@@ -78,7 +142,7 @@ export default function AssetComparisonPage() {
     };
 
     return (
-        <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             <Head>
                 <title>Compare Assets | Asset Management</title>
             </Head>
@@ -86,21 +150,21 @@ export default function AssetComparisonPage() {
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Asset Comparison Tool</h1>
-                        <p className="text-slate-400 mt-1">Side-by-side specification analysis</p>
+                        <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Asset Comparison Tool</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">Side-by-side specification analysis</p>
                     </div>
                 </div>
 
                 {/* Selection Panel */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 glass-panel rounded-2xl bg-white/5 border border-white/10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 glass-panel rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400">Asset A</label>
+                        <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Asset A</label>
                         <select
-                            className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-slate-200"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-slate-900 dark:text-slate-200"
                             value={selectedAsset1 || ''}
                             onChange={(e) => setSelectedAsset1(e.target.value)}
                         >
@@ -110,15 +174,15 @@ export default function AssetComparisonPage() {
                     </div>
 
                     <div className="hidden md:flex justify-center pb-3">
-                        <div className="p-2 bg-slate-800 rounded-full border border-white/10 text-slate-500">
+                        <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400">
                             <Split size={24} />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-400">Asset B</label>
+                        <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Asset B</label>
                         <select
-                            className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-slate-200"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-slate-900 dark:text-slate-200"
                             value={selectedAsset2 || ''}
                             onChange={(e) => setSelectedAsset2(e.target.value)}
                         >
@@ -131,14 +195,14 @@ export default function AssetComparisonPage() {
                         <button
                             onClick={handleCompare}
                             disabled={!selectedAsset1 || !selectedAsset2 || loading}
-                            className="btn btn-primary px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="btn btn-primary px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-slate-900 dark:text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {loading ? 'Analyzing...' : 'Compare Specifications'}
                         </button>
                         {comparisonData && (
                             <button
                                 onClick={() => setComparisonData(null)}
-                                className="px-8 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+                                className="px-8 py-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-all"
                             >
                                 Clear
                             </button>
@@ -156,42 +220,53 @@ export default function AssetComparisonPage() {
 
                 {/* Comparison Result */}
                 {comparisonData && (
-                    <div className="grid grid-cols-3 gap-0 border border-white/10 rounded-2xl bg-slate-900/50 overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className="grid grid-cols-3 gap-0 border border-slate-200 dark:border-white/10 rounded-2xl bg-white dark:bg-slate-900/50 overflow-hidden animate-in zoom-in-95 duration-300">
                         {/* Headers */}
-                        <div className="p-4 bg-slate-950/50 border-b border-r border-white/10 text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-center">
+                        <div className="p-4 bg-slate-100 dark:bg-slate-950/50 border-b border-r border-slate-200 dark:border-white/10 text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-center">
                             Specification
                         </div>
-                        <div className="p-4 bg-slate-900/50 border-b border-r border-white/10 text-center font-bold text-lg text-emerald-400">
+                        <div className="p-4 bg-white dark:bg-slate-900/50 border-b border-r border-slate-200 dark:border-white/10 text-center font-bold text-lg text-emerald-400">
                             {comparisonData.asset1.name}
                         </div>
-                        <div className="p-4 bg-slate-900/50 border-b border-white/10 text-center font-bold text-lg text-cyan-400">
+                        <div className="p-4 bg-white dark:bg-slate-900/50 border-b border-slate-200 dark:border-white/10 text-center font-bold text-lg text-cyan-400">
                             {comparisonData.asset2.name}
                         </div>
 
                         {/* Rows */}
-                        {['Asset Segment', 'Model', 'Processor', 'RAM', 'Storage', 'Graphics', 'Operating System', 'Purchase Date', 'Warranty', 'Cost'].map(spec => (
-                            <React.Fragment key={spec}>
-                                <div className="p-4 bg-slate-950/30 border-b border-r border-white/5 text-sm font-medium text-slate-400 flex items-center justify-center">
-                                    {spec === 'Asset Segment' ? 'Segment' : spec}
-                                </div>
-                                <div className="p-4 border-b border-r border-white/5 text-center">
-                                    <span className={`text-slate-200 ${spec === 'Asset Segment' ? 'px-2 py-0.5 rounded text-xs font-bold ' + (comparisonData.asset1.specs.segment === 'IT' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400') : ''}`}>
-                                        {comparisonData.asset1.specs[spec.toLowerCase().replace(' ', '_')]}
-                                    </span>
-                                </div>
-                                <div className="p-4 border-b border-white/5 text-center">
-                                    <span className={`text-slate-200 ${spec === 'Asset Segment' ? 'px-2 py-0.5 rounded text-xs font-bold ' + (comparisonData.asset2.specs.segment === 'IT' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400') : ''}`}>
-                                        {comparisonData.asset2.specs[spec.toLowerCase().replace(' ', '_')]}
-                                    </span>
-                                </div>
-                            </React.Fragment>
-                        ))}
+                        {comparisonData.allKeys.map(spec => {
+                            const val1 = comparisonData.specs1[spec] || 'N/A';
+                            const val2 = comparisonData.specs2[spec] || 'N/A';
+
+                            const formatKey = (k) => {
+                                if (k === 'segment') return 'Segment';
+                                if (k === 'purchase_date') return 'Purchase Date';
+                                return k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                            };
+
+                            return (
+                                <React.Fragment key={spec}>
+                                    <div className="p-4 bg-slate-100 dark:bg-slate-950/30 border-b border-r border-slate-200 dark:border-white/5 text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center justify-center text-center">
+                                        {formatKey(spec)}
+                                    </div>
+                                    <div className="p-4 border-b border-r border-slate-200 dark:border-white/5 text-center">
+                                        <span className={`text-slate-900 dark:text-slate-200 ${spec === 'segment' ? 'px-2 py-0.5 rounded text-xs font-bold ' + (val1 === 'IT' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400') : ''}`}>
+                                            {String(val1)}
+                                        </span>
+                                    </div>
+                                    <div className="p-4 border-b border-slate-200 dark:border-white/5 text-center">
+                                        <span className={`text-slate-900 dark:text-slate-200 ${spec === 'segment' ? 'px-2 py-0.5 rounded text-xs font-bold ' + (val2 === 'IT' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400') : ''}`}>
+                                            {String(val2)}
+                                        </span>
+                                    </div>
+                                </React.Fragment>
+                            );
+                        })}
 
                         {/* Summary / Score */}
-                        <div className="p-4 bg-slate-950/30 border-r border-white/5 text-sm font-bold text-white flex items-center justify-center">
+                        <div className="p-4 bg-slate-100 dark:bg-slate-950/30 border-r border-slate-200 dark:border-white/5 text-sm font-bold text-slate-900 dark:text-white flex items-center justify-center">
                             Overall Condition
                         </div>
-                        <div className="p-4 border-r border-white/5 text-center">
+                        <div className="p-4 border-r border-slate-200 dark:border-white/5 text-center">
                             <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm">
                                 {comparisonData.asset1.condition}
                             </span>

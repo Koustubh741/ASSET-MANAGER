@@ -52,11 +52,11 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
 
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-800 flex items-center gap-2">
                         <ShieldCheck className="w-5 h-5 text-emerald-600" />
                         BYOD Security Scan
                     </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close modal" title="Close">
+                    <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-500 dark:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close modal" title="Close">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -67,15 +67,15 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                             <Smartphone className="w-8 h-8 text-blue-600" />
                         </div>
                         <h4 className="font-medium text-slate-900">{request.asset_model || 'Unknown Device'}</h4>
-                        <p className="text-sm text-slate-500">{request.serial_number}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{request.serial_number}</p>
                     </div>
 
                     <div className="space-y-3">
-                        <h5 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Security Policies</h5>
+                        <h5 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Security Policies</h5>
                         {policies.map((policy, idx) => (
                             <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <div className="flex items-center gap-3">
-                                    <policy.icon className="w-4 h-4 text-slate-400" />
+                                    <policy.icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                     <span className="text-sm font-medium text-slate-700">{policy.name}</span>
                                 </div>
                                 {result ? (
@@ -106,8 +106,8 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                         onClick={handleRunCheck}
                         disabled={isChecking || (result && result.success)}
                         className={`w-full py-2.5 px-4 rounded-lg font-medium shadow-sm flex items-center justify-center gap-2 transition-all ${result && result.success
-                                ? 'bg-emerald-600 text-white cursor-default'
-                                : 'bg-slate-900 text-white hover:bg-slate-800 light:bg-slate-700 light:hover:bg-slate-600'
+                                ? 'bg-emerald-600 text-slate-900 dark:text-white cursor-default'
+                                : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-slate-200 dark:bg-slate-700 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-600'
                             }`}
                     >
                         {isChecking ? 'Running Scan...' : result && result.success ? 'Compliant' : 'Run Compliance Check'}

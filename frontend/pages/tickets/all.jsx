@@ -19,7 +19,7 @@ export default function AllTicketsPage() {
         const loadTickets = async () => {
             try {
                 const apiTickets = await apiClient.getTickets();
-                
+
                 // Map API tickets to frontend format
                 const mappedTickets = apiTickets.map(t => ({
                     id: t.id,
@@ -42,21 +42,21 @@ export default function AllTicketsPage() {
     }, []);
 
     return (
-        <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             <div className="max-w-7xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors">
+                    <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                         <ArrowLeft size={24} />
-                    </Link>
+                    </button>
 
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">
                         {filterStatus === 'All' ? 'All Tickets' : `${filterStatus} Tickets`}
                     </h1>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 light:border-slate-200">
+                <div className="glass-panel p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                     <table className="w-full text-left text-sm">
-                        <thead className="text-slate-400 uppercase font-medium text-xs border-b border-white/10 light:border-slate-200">
+                        <thead className="text-slate-500 dark:text-slate-400 uppercase font-medium text-xs border-b border-slate-200 dark:border-white/10">
                             <tr>
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Subject</th>
@@ -77,9 +77,9 @@ export default function AllTicketsPage() {
                                     return s === fs;
                                 })
                                 .map(t => (
-                                    <tr key={t.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-slate-400">{t.id}</td>
-                                        <td className="px-6 py-4 font-medium text-slate-200">{t.subject}</td>
+                                    <tr key={t.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-slate-500 dark:text-slate-400">{t.id}</td>
+                                        <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">{t.subject}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded text-xs font-semibold ${t.priority === 'High' ? 'bg-red-500/10 text-red-400' :
                                                 t.priority === 'Medium' ? 'bg-orange-500/10 text-orange-400' :
@@ -88,8 +88,8 @@ export default function AllTicketsPage() {
                                                 {t.priority}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-300 light:text-slate-700">{t.status}</td>
-                                        <td className="px-6 py-4 text-slate-400">{t.user}</td>
+                                        <td className="px-6 py-4 text-slate-700 dark:text-slate-700">{t.status}</td>
+                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{t.user}</td>
                                         <td className="px-6 py-4 text-right">
                                             <Link href={`/tickets/${t.id}`} className="text-rose-400 hover:text-rose-300 font-medium">View</Link>
                                         </td>

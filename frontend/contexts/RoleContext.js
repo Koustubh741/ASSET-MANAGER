@@ -8,6 +8,8 @@ export const ROLES = [
     { label: 'Procurement Manager', slug: 'PROCUREMENT', dept: 'Procurement' },
     { label: 'Finance', slug: 'FINANCE', dept: 'Finance' },
     { label: 'IT Management', slug: 'IT_MANAGEMENT', dept: 'IT Dept' },
+    { label: 'IT Support', slug: 'IT_SUPPORT', dept: 'IT Dept' },
+    { label: 'Manager', slug: 'MANAGER', dept: 'Management' },
     { label: 'End User', slug: 'END_USER', dept: 'Employee' },
 ];
 
@@ -15,20 +17,14 @@ export const ROLES = [
 function normalizeBackendRole(backendRole) {
     if (backendRole == null || backendRole === '') return null;
     const r = String(backendRole).trim().toUpperCase().replace(/\s+/g, '_');
-    // Finance-related: send to Finance portal
-    if (r === 'FINANCE' || r === 'FINANCE_MANAGER' || r === 'PROCUREMENT_FINANCE') return 'FINANCE';
-    // Procurement-only
-    if (r === 'PROCUREMENT') return 'PROCUREMENT';
-    // Match common backend slugs
-    if (['ADMIN', 'SYSTEM_ADMIN'].includes(r)) return 'ADMIN';
-    if (['ASSET_MANAGER', 'ASSET_INVENTORY_MANAGER', 'INVENTORY_MANAGER'].includes(r)) return 'ASSET_MANAGER';
-    if (r === 'IT_MANAGEMENT') return 'IT_MANAGEMENT';
-    if (r === 'END_USER') return 'END_USER';
-    return null;
+
+    // Direct slug matching (legacy fallbacks handled by the migration)
+    const match = ROLES.find(role => role.slug === r);
+    return match ? match.slug : r;
 }
 
 export function RoleProvider({ children }) {
-    const [currentRole, setCurrentRole] = useState(ROLES[0]);
+    const [currentRole, setCurrentRole] = useState(ROLES.find(r => r.slug === 'END_USER') || ROLES[0]);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     // USER_REQUEST: User position (MANAGER or EMPLOYEE) is determined at login
     const [user, setUser] = useState(null);
@@ -61,11 +57,12 @@ export function RoleProvider({ children }) {
                                 department: parsed.department,
                                 company: parsed.company,
                                 createdAt: parsed.createdAt,
-                                plan: parsed.plan || 'STARTER'
+                                plan: parsed.plan || 'STARTER',
+                                persona: parsed.persona
                             });
 
                             const normalizedSlug = normalizeBackendRole(parsed.role);
-                            const savedRole = ROLES.find(r => r.slug === (normalizedSlug || parsed.role) || r.label === parsed.role) || ROLES[0];
+                            const savedRole = ROLES.find(r => r.slug === normalizedSlug) || ROLES.find(r => r.slug === 'END_USER') || ROLES[0];
                             setCurrentRole(savedRole);
                             setIsAuthenticated(true);
                             console.log('RoleContext: Auth restored successfully for', parsed.userName);
@@ -99,6 +96,7 @@ export function RoleProvider({ children }) {
                 company: user.company,
                 createdAt: user.createdAt,
                 plan: user.plan || 'STARTER',
+                persona: user.persona,
                 role: currentRole.slug
             };
             localStorage.setItem('auth_session', JSON.stringify(session));
@@ -117,10 +115,11 @@ export function RoleProvider({ children }) {
             domain: userData.domain,
             department: userData.department,
             company: userData.company,
-            createdAt: userData.createdAt
+            createdAt: userData.createdAt,
+            persona: userData.persona
         });
         const normalizedSlug = normalizeBackendRole(userData.role);
-        const roleObj = ROLES.find(r => r.slug === (normalizedSlug || userData.role) || r.label === userData.role) || ROLES[0];
+        const roleObj = ROLES.find(r => r.slug === normalizedSlug) || ROLES.find(r => r.slug === 'END_USER') || ROLES[0];
         setCurrentRole(roleObj);
 
         localStorage.setItem('auth_session', JSON.stringify({
@@ -135,14 +134,15 @@ export function RoleProvider({ children }) {
             department: userData.department,
             company: userData.company,
             createdAt: userData.createdAt,
-            plan: userData.plan || 'STARTER'
+            plan: userData.plan || 'STARTER',
+            persona: userData.persona
         }));
     };
 
     const logout = () => {
         setIsAuthenticated(false);
         setUser(null);
-        setCurrentRole(ROLES[0]);
+        setCurrentRole(ROLES.find(r => r.slug === 'END_USER') || ROLES[0]);
         localStorage.removeItem('auth_session');
     };
 
@@ -154,7 +154,7 @@ export function RoleProvider({ children }) {
                 const parsed = JSON.parse(session);
                 parsed.plan = plan;
                 localStorage.setItem('auth_session', JSON.stringify(parsed));
-            } catch (e) {}
+            } catch (e) { }
         }
     };
 

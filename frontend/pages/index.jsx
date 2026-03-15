@@ -4,31 +4,32 @@ import { useRole } from '@/contexts/RoleContext'
 import SystemAdminDashboard from '@/components/dashboards/SystemAdminDashboard'
 import AssetInventoryDashboard from '@/components/dashboards/AssetInventoryDashboard'
 import ITSupportDashboard from '@/components/dashboards/ITSupportDashboard'
+import ITStaffDashboard from '@/components/dashboards/ITStaffDashboard'
 import EndUserDashboard from '@/components/dashboards/EndUserDashboard'
 
 export default function Dashboard() {
-    const { currentRole } = useRole();
+    const { currentRole, user } = useRole();
     const router = useRouter();
-
-    // Finance and Procurement have dedicated portals with their own PortalLayout.
-    // Redirect immediately so neither role ever sees the generic dashboard.
-    useEffect(() => {
-        if (currentRole?.label === 'Finance') {
-            router.replace('/finance');
-        } else if (currentRole?.label === 'Procurement Manager') {
-            router.replace('/procurement');
-        }
-    }, [currentRole, router]);
 
     if (!currentRole) return null;
 
-    if (currentRole.label === 'Finance') return null;
-    if (currentRole.label === 'Procurement Manager') return null;
+    if (currentRole.slug === 'FINANCE') return null;
+    if (currentRole.slug === 'PROCUREMENT') return null;
 
-    if (currentRole.label === 'System Admin') return <SystemAdminDashboard />
-    if (currentRole.label === 'Asset & Inventory Manager') return <AssetInventoryDashboard />
-    if (currentRole.label === 'IT Management') return <ITSupportDashboard />
-    if (currentRole.label === 'End User') return <EndUserDashboard />
+    if (currentRole.slug === 'ADMIN') return <SystemAdminDashboard />
+    if (currentRole.slug === 'ASSET_MANAGER') return <AssetInventoryDashboard />
 
-    return <SystemAdminDashboard />
+    // IT Routing: Manager vs Technician
+    if (currentRole.slug === 'IT_MANAGEMENT' || currentRole.slug === 'IT_SUPPORT') {
+        const title = String(user?.position || '').toLowerCase();
+        const isTechnician = currentRole.slug === 'IT_SUPPORT' || 
+                             title === 'team_member' || 
+                             title.includes('support') || 
+                             title.includes('specialist');
+        return isTechnician ? <ITStaffDashboard /> : <ITSupportDashboard />;
+    }
+
+    if (currentRole.slug === 'END_USER') return <EndUserDashboard />
+
+    return <EndUserDashboard />
 }

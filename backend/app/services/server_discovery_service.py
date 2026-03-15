@@ -99,10 +99,14 @@ class ServerDiscoveryService:
 
             mem_info = await self._ssh_exec(client, "cat /proc/meminfo")
             data["ram_mb"] = 0
-            for line in mem_info.split("\n"):
-                if "MemTotal:" in line:
-                    # kb to mb
-                    data["ram_mb"] = int(line.split()[1]) // 1024
+            if mem_info:
+                for line in mem_info.split("\n"):
+                    if "MemTotal:" in line:
+                        # kb to mb
+                        try:
+                            data["ram_mb"] = int(line.split()[1]) // 1024
+                        except (IndexError, ValueError):
+                            pass
 
             # 4. Serial/Model (Requires root usually, try sysfs)
             data["serial"] = (await self._ssh_exec(client, "cat /sys/class/dmi/id/product_serial")).strip() or "UNKNOWN"
@@ -112,13 +116,14 @@ class ServerDiscoveryService:
             # 5. Storage (df / lsblk)
             try:
                 df_out = await self._ssh_exec(client, "df -B1 --total | tail -n 1")
-                parts = df_out.split()
-                # Typical format: Filesystem Size Used Avail Use% Mounted_on
-                if len(parts) >= 2:
-                    size_str = parts[1]
-                    if size_str.isdigit():
-                        total_bytes = int(size_str)
-                        data["storage_gb"] = total_bytes // (1024 * 1024 * 1024)
+                if df_out:
+                    parts = df_out.split()
+                    # Typical format: Filesystem Size Used Avail Use% Mounted_on
+                    if len(parts) >= 2:
+                        size_str = parts[1]
+                        if size_str.isdigit():
+                            total_bytes = int(size_str)
+                            data["storage_gb"] = total_bytes // (1024 * 1024 * 1024)
             except Exception as e:
                 logger.warning(f"Failed to collect storage summary on {ip}: {e}")
 
@@ -239,7 +244,7 @@ class ServerDiscoveryService:
                             parts = line.split("|")
                             software.append({"name": parts[0], "version": parts[1], "vendor": parts[2]})
 
-            data["software"] = software[:200] # Limit
+            data["software"] = software[:200] if software else [] 
 
             return self._build_payload(data, ip)
 
@@ -418,7 +423,7 @@ class ServerDiscoveryService:
                 if sw_out:
                     parsed = json.loads(sw_out)
                     items = parsed if isinstance(parsed, list) else [parsed]
-                    for app in items[:500]:  # Cap to avoid massive payloads
+                    for app in (items[:500] if items else []):  # Cap to avoid massive payloads
                         name = app.get("DisplayName")
                         if not name:
                             continue
@@ -451,16 +456,23 @@ class ServerDiscoveryService:
     def _build_payload(self, data: Dict[str, Any], ip: str) -> Dict[str, Any]:
         """
         Normalize raw discovery data into the DiscoveryPayload-compatible dict.
-
-        This keeps both Linux and Windows discovery paths OS-agnostic for downstream code.
         """
+        from .discovery_enricher import discovery_enricher
+        
+        # Enrich hardware identifiers
+        vendor = discovery_enricher.normalize_vendor(data.get("vendor"))
+        if vendor == "Unknown":
+            vendor = discovery_enricher.detect_vendor(data.get("os_name", ""), data.get("serial"), data.get("model"))
+            
+        device_type = discovery_enricher.detect_type(data.get("os_name", ""), data.get("model"), default="Server")
+
         hardware: Dict[str, Any] = {
             "cpu": data.get("cpu", "Unknown"),
             "ram_mb": data.get("ram_mb", 0),
             "serial": data.get("serial", "UNKNOWN"),
             "model": data.get("model", "Unknown"),
-            "vendor": data.get("vendor", "Unknown"),
-            "type": "Server",
+            "vendor": vendor,
+            "type": device_type,
             "storage_gb": data.get("storage_gb", 0),
             "ad_user": data.get("ad_user", "Unknown"),
             "primary_user": data.get("primary_user"),

@@ -13,7 +13,7 @@ payload = {
     "hardware": {
         "cpu": "DebugCPU",
         "ram_mb": 2048,
-        "serial": "DEBUG-SN-001",
+        "serial": "DEBUG-SN-002",
         "model": "DebugModel"
     },
     "os": {

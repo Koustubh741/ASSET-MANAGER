@@ -13,7 +13,7 @@ import os
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 import asyncio
-from .scheduler import scheduler
+from .scheduler import scheduler, setup_patch_scheduler_jobs
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +22,7 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     # Startup
     scheduler.start()
+    setup_patch_scheduler_jobs()       # Phase 3 + 6: register patch sync & snapshot jobs
     print("INFO:     APScheduler started")
     _log_registered_routes()
     try:

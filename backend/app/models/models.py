@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Date, Float, DateTime, JSON, Text, ForeignKey, Boolean, Index, UUID, Integer
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 import uuid
@@ -23,9 +24,9 @@ class Asset(Base):
     # Basic Asset Information
     name = Column(String(255), nullable=False, index=True)
     type = Column(String(100), nullable=False)
-    model = Column(String(255), nullable=False)
-    vendor = Column(String(255), nullable=False)
-    serial_number = Column(String(255), nullable=False, unique=True, index=True)
+    model = Column(String(255), nullable=False, default="Unknown Model")
+    vendor = Column(String(255), nullable=False, default="Unknown Vendor")
+    serial_number = Column(String(255), nullable=True, unique=True, index=True)
     segment = Column(String(50), nullable=False, default="IT")
 
     # Dates
@@ -46,6 +47,8 @@ class Asset(Base):
     assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
     assigned_to_name = Column(String(255), nullable=True) # Denormalized for display
     assigned_by = Column(String(255), nullable=True)
+
+    assigned_user = relationship("User", foreign_keys=[assigned_to_id])
 
     # Specifications
     specifications = Column(JSONB, nullable=True, default={})
@@ -106,10 +109,12 @@ class AssetAssignment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     asset_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False, index=True)
     assigned_by = Column(String, nullable=True)
     location = Column(String(255), nullable=True)
     assigned_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
 
 class AssetInventory(Base):
     """
@@ -146,6 +151,8 @@ class User(Base):
     location = Column(String(100), nullable=True)
     phone = Column(String(20), nullable=True)
     company = Column(String(255), nullable=True) # New field
+    manager_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
+    persona = Column(String(100), nullable=True) # Functional Persona (e.g. IT_GOVERNANCE)
 
     # Subscription / Plan (AI Assistant access)
     plan = Column(String(50), nullable=False, default="STARTER")  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
@@ -180,11 +187,13 @@ class Ticket(Base):
     priority = Column(String(20), default="Medium") # Low, Medium, High
     category = Column(String(50), nullable=True) # Hardware, Software, Network
     
-    # Relations (Using string IDs to avoid complex foreign key constraints for MVP if simple)
-    # Ideally should use ForeignKey("auth.users.id") but cross-schema FKs need care.
-    requestor_id = Column(UUID(as_uuid=True), nullable=True) 
-    assigned_to_id = Column(UUID(as_uuid=True), nullable=True)
+    # Relations
+    requestor_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True) 
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
     related_asset_id = Column(UUID(as_uuid=True), nullable=True)
+
+    requestor = relationship("User", foreign_keys=[requestor_id])
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
     
     # Resolution Details
     resolution_notes = Column(Text, nullable=True)
@@ -198,6 +207,27 @@ class Ticket(Base):
     def __repr__(self):
         return f"<Ticket(id={self.id}, subject={self.subject}, status={self.status})>"
 
+class CategoryConfig(Base):
+    """
+    Dynamic configuration for ticket categories (Styling & Iconography)
+    """
+    __tablename__ = "category_configs"
+    __table_args__ = {"schema": "support"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String(100), unique=True, nullable=False, index=True) # e.g. "Software"
+    icon_name = Column(String(50), nullable=False, default="HelpCircle") # Lucide icon name
+    color = Column(String(50), nullable=False, default="#64748b") # Hex color
+    bg_color = Column(String(100), nullable=True) # Tailwind overlay class (e.g. bg-slate-500/20)
+    border_color = Column(String(100), nullable=True) # group-hover:border-slate-500/30
+    is_active = Column(Boolean, default=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<CategoryConfig(name={self.name}, icon={self.icon_name})>"
+
 class AssetRequest(Base):
     """
     Asset Request model for managing asset requests and approvals
@@ -208,7 +238,9 @@ class AssetRequest(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Requester information
-    requester_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    requester_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False, index=True)
+
+    requester = relationship("User", foreign_keys=[requester_id])
     
     # Asset details (can be linked to existing asset or new asset request)
     asset_id = Column(UUID(as_uuid=True), nullable=True)  # If requesting existing asset
@@ -224,6 +256,7 @@ class AssetRequest(Base):
     business_justification = Column(Text, nullable=True)  # Required for new requests
     reason = Column(Text, nullable=True) # Matches DB column
     priority = Column(String(20), default="Medium")
+    specifications = Column(JSONB, nullable=True, default={})
     
     # Status tracking - Unified state machine
     # Valid states: SUBMITTED | MANAGER_APPROVED | MANAGER_REJECTED | IT_APPROVED | IT_REJECTED | 
@@ -330,6 +363,9 @@ class PurchaseOrder(Base):
     quantity = Column(Float, nullable=True)
     unit_price = Column(Float, nullable=True)
     total_cost = Column(Float, nullable=True)
+    capex_opex = Column(String(10), nullable=True)
+    tax_amount = Column(Float, nullable=True, default=0.0)
+    shipping_handling = Column(Float, nullable=True, default=0.0)
     expected_delivery_date = Column(DateTime, nullable=True)
     extracted_data = Column(JSONB, nullable=True)
     status = Column(String(50), default="UPLOADED") # UPLOADED / VALIDATED / REJECTED
@@ -690,3 +726,159 @@ class DiscoveryDiff(Base):
     old_value = Column(Text, nullable=True)
     new_value = Column(Text, nullable=True)
     detected_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class GatePass(Base):
+    """
+    Gate Pass model for authorizing physical movement of assets.
+    """
+    __tablename__ = "gate_passes"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # People
+    issued_to = Column(String(255), nullable=False)         # Person taking the asset
+    issued_by = Column(String(255), nullable=False)          # Staff who created the pass
+    approved_by = Column(String(255), nullable=True)         # IT Management who approved
+
+    # Purpose
+    reason = Column(Text, nullable=False)
+    destination = Column(String(255), nullable=True)
+
+    # Validity
+    valid_until = Column(DateTime(timezone=True), nullable=True)
+
+    # Status: PENDING | APPROVED | REVOKED | EXPIRED
+    status = Column(String(50), nullable=False, default="PENDING", index=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<GatePass(id={self.id}, asset_id={self.asset_id}, status={self.status})>"
+
+class SystemPatch(Base):
+    """
+    OS and Software patches available for deployment
+    """
+    __tablename__ = "system_patches"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    patch_id = Column(String(100), unique=True, nullable=False, index=True) # e.g. KB5031354
+    title = Column(String(500), nullable=False)
+    description = Column(Text, nullable=True)
+    severity = Column(String(50), default="Moderate") # Critical, Important, Moderate, Low
+    patch_type = Column(String(50), default="Security") # Security, Critical Update, Driver, etc.
+    platform = Column(String(50), nullable=False) # Windows, Linux, macOS
+    release_date = Column(DateTime, nullable=True)
+
+    # CVE / Vulnerability tracking (Phase 8)
+    cve_ids = Column(JSONB, nullable=True, default=list)       # e.g. ["CVE-2024-21334"]
+    cvss_score = Column(Float, nullable=True)                  # 0.0 - 10.0
+    kb_article_url = Column(String(500), nullable=True)        # Microsoft KB link
+    vendor_advisory = Column(String(500), nullable=True)       # Vendor advisory URL
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+class PatchDeployment(Base):
+    """
+    Tracking status of patches on specific assets
+    """
+    __tablename__ = "patch_deployments"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    patch_id = Column(UUID(as_uuid=True), ForeignKey("asset.system_patches.id"), nullable=False, index=True)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
+    
+    # Status: MISSING | INSTALLED | FAILED | NOT_APPLICABLE
+    status = Column(String(50), default="MISSING", index=True)
+    installed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    
+    last_check_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+class RemoteSession(Base):
+    """
+    Tracking remote assistance (RDP) sessions initiated by IT Support
+    """
+    __tablename__ = "remote_sessions"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
+    initiated_by = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False)
+    
+    # Status: PENDING | ACTIVE | CLOSED | TIMEOUT
+    status = Column(String(50), default="PENDING", index=True)
+    connection_string = Column(String(500), nullable=True) # e.g. rdp://192.168.1.50
+    session_token = Column(String(255), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PATCH MANAGEMENT — Phase 2–4 Models
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AgentCommand(Base):
+    """
+    Command queue: backend enqueues commands (e.g. INSTALL_PATCH); agents poll and execute.
+    Phase 4 — Real Deployment Execution
+    """
+    __tablename__ = "agent_commands"
+    __table_args__ = {"schema": "system"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
+    # Command types: INSTALL_PATCH | ROLLBACK_PATCH | SCAN_PATCHES
+    command = Column(String(50), nullable=False, index=True)
+    payload = Column(JSONB, nullable=True)   # e.g. {"patch_id": "KB5031354", "deployment_id": "..."}
+    # Status: PENDING | SENT | DONE | FAILED
+    status = Column(String(50), default="PENDING", nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    executed_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(Text, nullable=True)
+
+
+class PatchComplianceSnapshot(Base):
+    """
+    Daily snapshot of per-asset compliance score for trend charts.
+    Phase 6 — Compliance History
+    """
+    __tablename__ = "patch_compliance_snapshots"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    snapshot_date = Column(DateTime, nullable=False, index=True)   # date of snapshot
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
+    compliance_score = Column(Float, nullable=False)
+    installed_patches = Column(Integer, nullable=False, default=0)
+    missing_patches = Column(Integer, nullable=False, default=0)
+    critical_missing = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class PatchSchedule(Base):
+    """
+    Maintenance window: schedule a patch for deferred deployment to a target group.
+    Phase 5 — Scheduling & Maintenance Windows
+    """
+    __tablename__ = "patch_schedules"
+    __table_args__ = {"schema": "asset"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    patch_id = Column(UUID(as_uuid=True), ForeignKey("asset.system_patches.id"), nullable=False, index=True)
+    # Target groups: ALL | PILOT | SERVERS | WORKSTATIONS
+    target_group = Column(String(50), default="ALL", nullable=False)
+    scheduled_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False)
+    # Status: PENDING | RUNNING | DONE | CANCELLED | FAILED
+    status = Column(String(50), default="PENDING", nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    executed_at = Column(DateTime(timezone=True), nullable=True)
+    error_message = Column(Text, nullable=True)

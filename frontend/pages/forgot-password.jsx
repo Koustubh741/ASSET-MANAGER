@@ -31,10 +31,10 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 light:bg-slate-100 flex items-center justify-center p-6 overflow-hidden relative">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-6 overflow-hidden relative">
             {/* Background Effects */}
-            <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/20 light:opacity-40 transition-colors duration-1000"></div>
-            <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/10 light:opacity-30 transition-colors duration-1000"></div>
+            <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/20 opacity-40 transition-colors duration-1000"></div>
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] bg-emerald-900/10 opacity-30 transition-colors duration-1000"></div>
 
             <div className="w-full max-w-lg z-10 transition-all duration-500">
                 <div className="glass-panel p-8 md:p-10 border border-emerald-500/20 shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)]">
@@ -42,26 +42,26 @@ export default function ForgotPassword() {
                     {!isSubmitted ? (
                         <>
                             <div className="text-center mb-8">
-                                <h1 className="text-3xl font-bold mb-2 text-emerald-400">
+                                <h1 className="text-xl font-bold mb-2 text-emerald-400">
                                     Forgot Password?
                                 </h1>
-                                <p className="text-slate-400 light:text-slate-600 text-sm">
+                                <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm">
                                     No worries! Enter your email and we'll send you a reset link.
                                 </p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase light:text-slate-600">Email Address</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Email Address</label>
                                     <div className="relative">
-                                        <Mail size={16} className="absolute left-3 top-3 text-slate-500 light:text-slate-600" />
+                                        <Mail size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
                                         <input
                                             type="email"
                                             required
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             placeholder="name@company.com"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white light:bg-white light:border-slate-300 light:text-slate-900 focus:outline-none focus:border-emerald-500 transition-colors"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500 transition-colors"
                                         />
                                     </div>
                                 </div>
@@ -73,7 +73,7 @@ export default function ForgotPassword() {
                                 <button
                                     type="submit"
                                     disabled={isLoading}
-                                    className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 bg-emerald-500 shadow-emerald-500/50 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full py-3 rounded-xl font-bold text-slate-900 dark:text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 bg-emerald-500 shadow-emerald-500/50 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isLoading ? 'Processing...' : 'Send Reset Link'} <ArrowRight size={18} />
                                 </button>
@@ -87,14 +87,14 @@ export default function ForgotPassword() {
                                 </div>
                             </div>
                             <h2 className="text-2xl font-bold text-emerald-400 mb-4">Request Sent!</h2>
-                            <p className="text-slate-400 light:text-slate-600 text-sm mb-8">
-                                If an account exists for <span className="text-white light:text-slate-900 font-medium">{email}</span>,
+                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm mb-8">
+                                If an account exists for <span className="text-slate-900 dark:text-white font-medium">{email}</span>,
                                 you will receive a password reset link shortly.
                             </p>
 
                             {debugToken && (
-                                <div className="mb-8 p-4 bg-slate-900/80 border border-white/10 light:bg-slate-50 light:border-slate-200 rounded-xl text-left">
-                                    <p className="text-[10px] text-slate-500 light:text-slate-600 uppercase font-bold mb-2">DEBUG MODE: Reset Token</p>
+                                <div className="mb-8 p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 bg-slate-50 border-slate-200 rounded-xl text-left">
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold mb-2">DEBUG MODE: Reset Token</p>
                                     <Link
                                         href={`/reset-password?token=${debugToken}`}
                                         className="text-xs text-emerald-400 hover:underline break-all"
@@ -111,8 +111,8 @@ export default function ForgotPassword() {
                     )}
 
                     {!isSubmitted && (
-                        <div className="mt-8 text-center pt-6 border-t border-white/5 light:border-slate-200">
-                            <Link href="/login" className="text-slate-500 light:text-slate-600 hover:text-white light:hover:text-slate-900 text-xs transition-colors inline-flex items-center gap-2">
+                        <div className="mt-8 text-center pt-6 border-t border-slate-200 dark:border-white/5">
+                            <Link href="/login" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs transition-colors inline-flex items-center gap-2">
                                 <ArrowLeft size={14} /> Back to Login
                             </Link>
                         </div>

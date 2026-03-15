@@ -22,11 +22,13 @@ async def list_networking_assets():
 
         print(f"[+] Found {len(assets)} assets:")
         for asset in assets:
+            ip = (asset.specifications or {}).get("IP Address") or (asset.specifications or {}).get("ip") or "N/A"
             print(f"    - Name: {asset.name}")
-            print(f"      IP: {asset.ip_address}")
+            print(f"      IP (from specs): {ip}")
             print(f"      Type: {asset.type}")
             print(f"      Status: {asset.status}")
-            print("-" * 20)
+            print(f"      Full Specs: {asset.specifications}")
+            print("-" * 40)
 
 if __name__ == "__main__":
     asyncio.run(list_networking_assets())

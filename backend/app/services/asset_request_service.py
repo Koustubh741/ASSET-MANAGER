@@ -3,7 +3,8 @@ Asset Request service layer - Database operations for asset requests (Asynchrono
 """
 import uuid
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import asyncio
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -15,19 +16,17 @@ from ..services.notification_service import NotificationService
 from ..utils.state_machine import validate_state_transition
 
 
+from sqlalchemy.orm import joinedload
+
 async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, user_role: str = None) -> AssetRequestResponse:
     """Helper to add requester name/email and procurement info (role-sensitive)"""
-    # Ensure attributes are loaded after a commit and not expired
-    await db.refresh(db_request)
-    
-    result = await db.execute(select(User).filter(User.id == db_request.requester_id))
-    user = result.scalars().first()
-    
+    # Note: requester relationship should be pre-loaded for efficiency
     res = AssetRequestResponse.model_validate(db_request)
-    if user:
-        res.requester_name = user.full_name
-        res.requester_email = user.email
-        res.requester_department = user.department
+    
+    if db_request.requester:
+        res.requester_name = db_request.requester.full_name
+        res.requester_email = db_request.requester.email
+        res.requester_department = db_request.requester.department
     
     # Step 6: Role-Based Visibility (Backend Enforced)
     if user_role in ["PROCUREMENT", "FINANCE", "ADMIN"]:
@@ -78,14 +77,42 @@ async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, u
                 "vendor_name": po.vendor_name
             }
             
+    # --- Virtual Field Enrichment for Finance Dashboard ---
+    status_map = {
+        "SUBMITTED": ("MANAGER", None),
+        "MANAGER_APPROVED": ("IT_MANAGEMENT", None),
+        "IT_APPROVED": ("MANAGER", None),
+        "MANAGER_CONFIRMED_IT": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
+        "PROCUREMENT_REQUESTED": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
+        "PO_UPLOADED": ("PROCUREMENT", "PO_UPLOADED"),
+        "PO_VALIDATED": ("FINANCE", "PO_VALIDATED"),
+        "FINANCE_APPROVED": ("MANAGER", "FINANCE_APPROVED"),
+        "MANAGER_CONFIRMED_BUDGET": ("ASSET_MANAGER", "QC_PENDING"),
+        "QC_PENDING": ("ASSET_MANAGER", "QC_PENDING"),
+        "QC_FAILED": ("PROCUREMENT", "QC_FAILED"),
+        "USER_ACCEPTANCE_PENDING": ("END_USER", "USER_ACCEPTANCE_PENDING"),
+        "USER_REJECTED": ("PROCUREMENT", "USER_REJECTED"),
+        "MANAGER_CONFIRMED_ASSIGNMENT": ("MANAGER", "ASSIGNMENT"),
+        "IN_USE": ("END_USER", "COMPLETED"),
+        "FULFILLED": ("END_USER", "COMPLETED"),
+        "MANAGER_REJECTED": ("SYSTEM", "REJECTED"),
+        "IT_REJECTED": ("SYSTEM", "REJECTED"),
+        "CLOSED": ("SYSTEM", "CLOSED")
+    }
+    owner_role, stage = status_map.get(db_request.status, (None, None))
+    res.current_owner_role = owner_role
+    res.procurement_stage = stage
+            
     return res
 
 
 async def get_asset_request_by_id(db: AsyncSession, request_id: UUID, user_role: str = None) -> Optional[AssetRequestResponse]:
     """
-    Get an asset request by ID
+    Get an asset request by ID with the requester relationship pre-loaded
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     request = result.scalars().first()
     if request:
         return await _populate_requester_info(db, request, user_role=user_role)
@@ -94,9 +121,11 @@ async def get_asset_request_by_id(db: AsyncSession, request_id: UUID, user_role:
 
 async def get_asset_request_by_id_db(db: AsyncSession, request_id: UUID) -> Optional[AssetRequest]:
     """
-    Get an asset request by ID (returns DB model, not response)
+    Get an asset request by ID (returns DB model, not response) with requester pre-loaded
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     return result.scalars().first()
 
 
@@ -114,31 +143,60 @@ async def create_asset_request(db: AsyncSession, request: AssetRequestCreate, in
     """
     return await create_asset_request_v2(db, request, requester_id=getattr(request, 'requester_id', None), initial_status=initial_status)
 
+_asset_request_creation_locks = {}
+
 async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate, requester_id: UUID, initial_status: str = "SUBMITTED") -> AssetRequestResponse:
     """
     Create a new asset request with explicit requester_id (derived from JWT).
+    Includes a duplicate check using an asyncio.Lock to prevent multiple identical requests within 60 seconds.
     """
-    db_request = AssetRequest(
-        id=uuid.uuid4(),
-        requester_id=requester_id,
-        asset_id=request.asset_id,
-        asset_name=request.asset_name,
-        asset_type=request.asset_type,
-        asset_ownership_type=request.asset_ownership_type,
-        asset_model=request.asset_model,
-        asset_vendor=request.asset_vendor,
-        serial_number=request.serial_number,
-        os_version=request.os_version,
-        cost_estimate=request.cost_estimate,
-        justification=request.justification,
-        business_justification=request.business_justification,
-        status=initial_status,
-        manager_approvals=[]
-    )
-    db.add(db_request)
-    await db.commit()
-    await db.refresh(db_request)
-    return await _populate_requester_info(db, db_request)
+    requester_id_str = str(requester_id)
+    if requester_id_str not in _asset_request_creation_locks:
+        _asset_request_creation_locks[requester_id_str] = asyncio.Lock()
+        
+    async with _asset_request_creation_locks[requester_id_str]:
+        # 1. Check for recent identical request (Duplicate Prevention)
+        since = datetime.now(timezone.utc) - timedelta(seconds=60)
+        dup_query = select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(
+            AssetRequest.requester_id == requester_id,
+            AssetRequest.asset_name == request.asset_name,
+            AssetRequest.asset_type == request.asset_type,
+            AssetRequest.justification == request.justification,
+            AssetRequest.created_at >= since
+        )
+        dup_result = await db.execute(dup_query)
+        existing_request = dup_result.scalars().first()
+
+        if existing_request:
+            print(f"[DUPLICATE_PREVENTION] Returning existing asset request {existing_request.id} for user {requester_id}")
+            return await _populate_requester_info(db, existing_request)
+
+        # 2. Create new request if no duplicate found
+        db_request = AssetRequest(
+            id=uuid.uuid4(),
+            requester_id=requester_id,
+            asset_id=request.asset_id,
+            asset_name=request.asset_name,
+            asset_type=request.asset_type,
+            asset_ownership_type=request.asset_ownership_type,
+            asset_model=request.asset_model,
+            asset_vendor=request.asset_vendor,
+            serial_number=request.serial_number,
+            os_version=request.os_version,
+            cost_estimate=request.cost_estimate,
+            justification=request.justification,
+            business_justification=request.business_justification,
+            specifications=request.specifications or {},
+            status=initial_status,
+            manager_approvals=[]
+        )
+        db.add(db_request)
+        await db.commit()
+        # Pre-fetch requester for the response
+        query = select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == db_request.id)
+        result = await db.execute(query)
+        db_request = result.scalars().first()
+        return await _populate_requester_info(db, db_request)
 
 
 async def update_asset_request_status_with_validation(
@@ -512,26 +570,39 @@ async def get_all_asset_requests(
     query = select(AssetRequest)
     if status:
         query = query.filter(AssetRequest.status == status)
+    
+    # Unified Scoping: Combine filters safely to allow "Dept OR Domain OR Mine"
+    from sqlalchemy import or_
+    filters = []
+    
     if requester_id:
-        query = query.filter(AssetRequest.requester_id == requester_id)
-    if domain:
-        query = query.join(User, AssetRequest.requester_id == User.id).filter(User.domain == domain)
+        filters.append(AssetRequest.requester_id == requester_id)
+        
     if department:
-        from sqlalchemy import or_
-        # Join with User only if not already joined via domain
-        if not domain:
-            query = query.join(User, AssetRequest.requester_id == User.id)
-        query = query.filter(
+        # Resolve users in this department or domain
+        query = query.join(User, AssetRequest.requester_id == User.id)
+        filters.append(
             or_(
                 User.department.ilike(f"%{department}%"),
                 User.domain.ilike(f"%{department}%")
             )
         )
-    # Order by newest first so pending requests (MANAGER_APPROVED, IT_APPROVED, etc.) appear at top
+    elif domain:
+        # Fallback for domain-only filtering if department not provided
+        query = query.join(User, AssetRequest.requester_id == User.id)
+        filters.append(User.domain == domain)
+        
+    if filters:
+        query = query.filter(or_(*filters))
+    
+    # Eager load requester for the entire list
+    query = query.options(joinedload(AssetRequest.requester))
+    
+    # Order by newest first so pending requests appear at top
     query = query.order_by(desc(AssetRequest.created_at))
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
-    results = result.scalars().all()
+    results = result.unique().scalars().all()
     
     response_list = []
     for req in results:
@@ -576,6 +647,11 @@ async def apply_root_fix(db: AsyncSession) -> dict:
             continue
         asset.assigned_to = user.full_name
         asset.assigned_to_id = user.id
+        
+        # Sync specifications if asset is missing them or they are empty
+        if not asset.specifications or asset.specifications == {}:
+            asset.specifications = req.specifications or {}
+            
         if req.status in ("FULFILLED", "IN_USE"):
             asset.status = "In Use"
         else:

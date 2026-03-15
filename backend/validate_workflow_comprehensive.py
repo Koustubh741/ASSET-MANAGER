@@ -9,6 +9,7 @@ from typing import Dict, Any
 # Configuration
 API_URL = "http://localhost:8000/api/v1"
 TEST_ID = datetime.now().strftime("%H%M%S")
+TEST_USER_ID = "FIXED" # Stable ID for users to prevent duplication
 PASSWORD = "password123"
 
 # Colors for output
@@ -57,11 +58,11 @@ class WorkflowValidator:
 
         # 2. Create Role-Based Users
         roles_to_create = [
-            {"email": f"requester_{TEST_ID}@auto.com", "role": "END_USER", "pos": "TEAM_MEMBER", "dept": "IT"},
-            {"email": f"manager_{TEST_ID}@auto.com", "role": "END_USER", "pos": "MANAGER", "dept": "IT"},
-            {"email": f"it_admin_{TEST_ID}@auto.com", "role": "IT_MANAGEMENT", "pos": "MANAGER", "dept": "IT"},
-            {"email": f"finance_{TEST_ID}@auto.com", "role": "FINANCE", "pos": "MANAGER", "dept": "FINANCE"},
-            {"email": f"inventory_{TEST_ID}@auto.com", "role": "ASSET_INVENTORY_MANAGER", "pos": "MANAGER", "dept": "IT"},
+            {"email": f"requester_{TEST_USER_ID}@auto.com", "role": "END_USER", "pos": "TEAM_MEMBER", "dept": "IT"},
+            {"email": f"manager_{TEST_USER_ID}@auto.com", "role": "END_USER", "pos": "MANAGER", "dept": "IT"},
+            {"email": f"it_admin_{TEST_USER_ID}@auto.com", "role": "IT_MANAGEMENT", "pos": "MANAGER", "dept": "IT"},
+            {"email": f"finance_{TEST_USER_ID}@auto.com", "role": "FINANCE", "pos": "MANAGER", "dept": "FINANCE"},
+            {"email": f"inventory_{TEST_USER_ID}@auto.com", "role": "ASSET_MANAGER", "pos": "MANAGER", "dept": "IT"},
         ]
 
         for u in roles_to_create:
@@ -79,8 +80,18 @@ class WorkflowValidator:
             try:
                 # Try create
                 resp = await self.client.post(f"{API_URL}/users", json=user_payload, headers=admin_headers)
-                if resp.status_code in [201, 400]: # 400 is ok if exists
-                     pass
+                if resp.status_code == 201:
+                    pass
+                elif resp.status_code == 400: # Exists
+                    # Ensure it is ACTIVE
+                    uid_resp = await self.client.get(f"{API_URL}/users/search?q={u['email']}", headers=admin_headers)
+                    if uid_resp.status_code == 200:
+                        users_found = uid_resp.json()
+                        if users_found:
+                            target_user = users_found[0]
+                            if target_user["status"] != "ACTIVE":
+                                await self.client.patch(f"{API_URL}/users/{target_user['id']}", json={"status": "ACTIVE"}, headers=admin_headers)
+                                await self.log(f"Activated existing user {u['email']}", "INFO")
                 else:
                     await self.log(f"Failed to create user {u['email']}: {resp.text}", "ERROR")
                 

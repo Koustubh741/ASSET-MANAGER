@@ -49,15 +49,15 @@ export default function ProcurementAnalyticsPage() {
         <div className="space-y-6">
             <header className="flex flex-wrap justify-between items-end gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white light:text-slate-800 flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <PieIcon className="text-blue-400" size={32} />
                         Procurement Analytics
                     </h1>
-                    <p className="text-slate-400 light:text-slate-600 mt-1">PO and spend trends — Procurement hub</p>
+                    <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-1">PO and spend trends — Procurement hub</p>
                 </div>
                 <button
                     onClick={exportCsv}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 light:bg-slate-50 hover:bg-white/10 border border-white/20 light:border-slate-200 text-white light:text-slate-800 text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-900 dark:text-white text-sm font-medium"
                 >
                     <Download size={18} /> Export
                 </button>
@@ -70,8 +70,8 @@ export default function ProcurementAnalyticsPage() {
                             <FileText size={24} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white light:text-slate-800">{pendingCount}</h3>
-                            <p className="text-xs text-slate-400">Pending POs (6 months)</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{pendingCount}</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Pending POs (6 months)</p>
                         </div>
                     </div>
                 </div>
@@ -81,10 +81,10 @@ export default function ProcurementAnalyticsPage() {
                             <DollarSign size={24} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white light:text-slate-800">
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {pendingValue > 0 ? `₹${(pendingValue / 100000).toFixed(1)}L` : '₹0'}
                             </h3>
-                            <p className="text-xs text-slate-400">Total PO Value</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Total PO Value</p>
                         </div>
                     </div>
                 </div>
@@ -94,17 +94,17 @@ export default function ProcurementAnalyticsPage() {
                             <PieIcon size={24} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-bold text-white light:text-slate-800">
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
                                 {summary?.monthly_po_value?.length ?? 0}
                             </h3>
-                            <p className="text-xs text-slate-400">Months of data</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Months of data</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div className="glass-panel p-6">
-                <h3 className="text-lg font-bold text-white light:text-slate-800 mb-4">PO spend trend (6 months)</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">PO spend trend (6 months)</h3>
                 {trendData.length > 0 ? (
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
@@ -123,7 +123,7 @@ export default function ProcurementAnalyticsPage() {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className="h-64 flex items-center justify-center text-slate-500 light:text-slate-600">
+                    <div className="h-64 flex items-center justify-center text-slate-500 dark:text-slate-400">
                         {summary === null ? 'Loading…' : 'No PO data for the last 6 months.'}
                     </div>
                 )}

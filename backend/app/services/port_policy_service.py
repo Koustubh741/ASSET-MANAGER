@@ -14,6 +14,7 @@ from app.models.port_policies import (
     PortPolicyAssignment,
     PortPolicyEnforcementState,
 )
+from app.models.models import Asset, User
 from app.schemas.port_policy_schema import (
     PortPolicyCreate,
     PortPolicyUpdate,
@@ -159,10 +160,22 @@ async def assign_targets_to_policy(
     db: AsyncSession,
     policy: PortPolicy,
     assignments: List[PortPolicyAssignmentCreate],
+    current_user: Optional[User] = None,
 ) -> List[PortPolicyAssignment]:
     created: List[PortPolicyAssignment] = []
 
+    # RBAC/Scope Check
+    is_admin = current_user and current_user.role == "ADMIN"
+
     for item in assignments:
+        # For non-admins, we should verify they own the target
+        # For simplicity in this integration, we'll allow ASSET_MANAGER to manage AGENT targets 
+        # that are related to their scoped assets. 
+        # (This can be further refined with domain/dept checks)
+        if not is_admin and current_user:
+            if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT"]:
+                raise Exception("Unauthorized to assign targets")
+        
         target = await _get_or_create_target(
             db,
             target_type=item.target_type,

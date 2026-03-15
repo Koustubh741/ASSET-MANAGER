@@ -36,9 +36,9 @@ import logging
 import sys
 import ipaddress
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
+from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Callable, Awaitable
 
 # ── third-party (pip install pysnmp-lextudio) ───────────────────────────────
 try:
@@ -57,6 +57,8 @@ except ImportError:
     sys.exit(1)
 
 logger = logging.getLogger(__name__)
+ 
+
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -70,44 +72,30 @@ SYSTEM_OIDS: Dict[str, str] = {
     "sysName":     "1.3.6.1.2.1.1.5.0",
     "sysLocation": "1.3.6.1.2.1.1.6.0",
 }
+
+# Host Resources MIB OIDs
+HR_OIDS = {
+    "hrMemorySize":  "1.3.6.1.2.1.25.2.2.0",    # Total RAM in KB
+    "hrProcessorTable": "1.3.6.1.2.1.25.3.3",   # Processors
+}
+
 ENTITY_SERIAL_OID      = "1.3.6.1.2.1.47.1.1.1.1.11"
-LLDP_NEIGHBOR_NAME_OID = "1.0.8802.1.1.2.1.4.1.1.9"
+LLDP_REMSYSNAME_OID    = "1.0.8802.1.1.2.1.4.1.1.9"
+LLDP_REMMANADDR_OID    = "1.0.8802.1.1.2.1.4.2.1.2"
 
-# First match wins — order from most-specific to least-specific
-_VENDOR_PATTERNS: List[Tuple[List[str], str]] = [
-    (["cisco"],                              "Cisco"),
-    (["juniper"],                            "Juniper"),
-    (["aruba"],                              "Aruba"),
-    (["hp", "hewlett-packard", "hpe"],       "HP"),
-    (["ubiquiti", "unifi", "uap"],           "Ubiquiti"),
-    (["mikrotik", "routeros"],               "MikroTik"),
-    (["palo alto", "panos"],                 "Palo Alto"),
-    (["fortinet", "fortigate"],              "Fortinet"),
-    (["checkpoint", "check point"],          "Check Point"),
-    (["sonicwall"],                          "SonicWall"),
-    (["watchguard"],                         "WatchGuard"),
-    (["sophos"],                             "Sophos"),
-    (["dell"],                               "Dell"),
-    (["brother"],                            "Brother"),
-    (["canon"],                              "Canon"),
-    (["epson"],                              "Epson"),
-    (["xerox"],                              "Xerox"),
-    (["vmware", "esxi"],                     "VMware"),
-]
-
-_TYPE_PATTERNS: List[Tuple[List[str], str]] = [
-    (["firewall", "asa", "sonicwall", "watchguard",
-      "palo alto", "security appliance", "checkpoint",
-      "fortigate"],                           "Firewall"),
-    (["printer", "laserjet", "designjet",
-      "copier", "mfp", "imagerunner"],        "Printer"),
-    (["switch", "catalyst", "edgeos",
-      "procurve", "powerconnect"],            "Switch"),
-    (["router", "gateway", "routeros"],       "Router"),
-    (["ap", "access point", "wireless",
-      "wifi", "wlan", "unifi"],               "Access Point"),
-    (["server", "esxi", "linux",
-      "windows server", "vmware"],            "Server"),
+# Vendor-specific serial number OIDs — tried in order when Entity MIB returns nothing.
+# Covers CP PLUS / Dahua OEM, Hikvision, Bosch, Axis, generic IP cameras, Cisco, Huawei.
+CCTV_SERIAL_OIDS: list[str] = [
+    "1.3.6.1.2.1.47.1.1.1.1.11.1",          # Entity MIB direct index 1
+    "1.3.6.1.4.1.507.6.52.4.1.1.4.1",       # CP PLUS / Dahua OEM
+    "1.3.6.1.4.1.39165.1.7.0",               # Dahua — device SN
+    "1.3.6.1.4.1.47605.1.1.1.0",             # CP PLUS proprietary
+    "1.3.6.1.4.1.34329.1.1.35.0",            # Hikvision — device serial
+    "1.3.6.1.4.1.3224.17.2.1.7.1.0",        # Bosch / NetVMS
+    "1.3.6.1.4.1.368.4.1.5.1.8.1.1",        # Axis Communications
+    "1.3.6.1.4.1.2949.2.2.1.0",              # Generic IP camera serial
+    "1.3.6.1.4.1.9.2.1.3.0",                 # Cisco chassis serial
+    "1.3.6.1.4.1.2011.5.25.31.1.1.1.1.37.67108867",  # Huawei board serial
 ]
 
 
@@ -125,6 +113,7 @@ class AuthProtocol(str, Enum):
 class PrivProtocol(str, Enum):
     NONE      = "NONE"
     DES       = "DES"
+    CBC_DES   = "CBC-DES"
     THREE_DES = "3DES"
     AES       = "AES"
     AES128    = "AES128"
@@ -184,9 +173,14 @@ class ScanConfig:
 class NeighborInfo:
     neighbor_name: str
     neighbor_port: Optional[str] = None
+    neighbor_ip:   Optional[str] = None
 
-    def to_dict(self) -> Dict[str, Optional[str]]:
-        return {"neighbor_name": self.neighbor_name, "neighbor_port": self.neighbor_port}
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "neighbor_name": self.neighbor_name,
+            "neighbor_port": self.neighbor_port,
+            "neighbor_ip":   self.neighbor_ip,
+        }
 
 
 @dataclass
@@ -201,10 +195,16 @@ class DeviceInfo:
     location:      str
     uptime:        str
     snmp_version:  str
+    cpu:           str = "Unknown"
+    ram_mb:        int = 0
+    storage_gb:    int = 0
     neighbors:     List[NeighborInfo] = field(default_factory=list)
-    discovered_at: datetime           = field(default_factory=datetime.utcnow)
+    discovered_at: datetime           = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_dict(self) -> Dict[str, Any]:
+        from .discovery_enricher import discovery_enricher
+        clean_description = discovery_enricher.sanitize_value(self.description)
+
         return {
             "name":          self.name,
             "type":          self.device_type,
@@ -212,10 +212,17 @@ class DeviceInfo:
             "model":         self.model,
             "serial_number": self.serial_number,
             "ip_address":    self.ip_address,
+            "cpu":           self.cpu,
+            "ram_mb":        self.ram_mb,
+            "storage_gb":    self.storage_gb,
+            "description":   clean_description,
             "specifications": {
-                "Description":    self.description,
+                "Description":    clean_description,
                 "Location":       self.location,
                 "Uptime":         self.uptime,
+                "Processor":      self.cpu,
+                "RAM":            f"{round(self.ram_mb / 1024, 1)} GB" if self.ram_mb else "N/A",
+                "Storage":        f"{self.storage_gb} GB" if self.storage_gb else "N/A",
                 "Serial Method":  "Entity MIB" if self.serial_number else "Not Available",
                 "Discovery":      f"Agentless SNMP ({self.snmp_version})",
             },
@@ -265,6 +272,7 @@ _AUTH_PROTO_MAP = {
 _PRIV_PROTO_MAP = {
     PrivProtocol.NONE:      usmNoPrivProtocol,
     PrivProtocol.DES:       usmDESPrivProtocol,
+    PrivProtocol.CBC_DES:   usmDESPrivProtocol,
     PrivProtocol.THREE_DES: usm3DESEDEPrivProtocol,
     PrivProtocol.AES:       usmAesCfb128Protocol,
     PrivProtocol.AES128:    usmAesCfb128Protocol,
@@ -290,11 +298,14 @@ class SNMPScanner:
 
     def _make_context(self) -> ContextData:
         """
-        FIX BUG 3 — ContextData needs bytes, not str.
-        Passing a plain str caused silent context mismatch on many pysnmp builds.
+        FIX BUG 3 — ContextData needs bytes, not str for contextName.
+        Passing a plain str can cause silent context mismatches or errors.
         """
         ctx = self.config.context_name
-        return ContextData(contextName=ctx.encode("utf-8")) if ctx else ContextData()
+        if ctx:
+            # Ensure it is bytes for the library
+            return ContextData(contextName=ctx.encode("utf-8") if isinstance(ctx, str) else ctx)
+        return ContextData()
 
     async def _make_transport(self, ip: str) -> UdpTransportTarget:
         """
@@ -327,22 +338,55 @@ class SNMPScanner:
             logger.debug("[%s] Transport error with community '%s': %s", ip, community, exc)
         return None
 
-    async def _resolve_security(self, ip: str) -> Optional[Any]:
-        """Return working credentials or None if all attempts fail."""
-        if self.config.v3:
-            v3 = self.config.v3
-            return UsmUserData(
-                v3.username,
-                authKey=v3.auth_key or None,
-                privKey=v3.priv_key or None,
-                authProtocol=_AUTH_PROTO_MAP[v3.auth_protocol],
-                privProtocol=_PRIV_PROTO_MAP[v3.priv_protocol],
+    async def _probe_v3(self, ip: str) -> Optional[UsmUserData]:
+        """Try v3 handshake. Returns UsmUserData on success, else None."""
+        if not self.config.v3:
+            return None
+        
+        v3 = self.config.v3
+        security = UsmUserData(
+            v3.username,
+            authKey=v3.auth_key or None,
+            privKey=v3.priv_key or None,
+            authProtocol=_AUTH_PROTO_MAP[v3.auth_protocol],
+            privProtocol=_PRIV_PROTO_MAP[v3.priv_protocol],
+        )
+        
+        try:
+            err_ind, err_status, _, _ = await get_cmd(
+                self._engine,
+                security,
+                await self._make_transport(ip),
+                self._make_context(),
+                ObjectType(ObjectIdentity(SYSTEM_OIDS["sysDescr"])),
             )
+            if not err_ind and not err_status:
+                logger.info("[%s] SNMPv3 handshake successful", ip)
+                return security
+        except Exception as exc:
+            logger.debug("[%s] SNMPv3 trial failed: %s", ip, exc)
+        return None
+
+    async def _resolve_security(self, ip: str) -> Optional[Any]:
+        """
+        Trial sequence:
+        1. Try SNMP v3 (if configured)
+        2. Try SNMP v2c communities
+        3. Return None if all fail
+        """
+        # Step 1: Trial V3
+        if self.config.v3:
+            sec = await self._probe_v3(ip)
+            if sec:
+                return sec
+
+        # Step 2: Trial V2c
         for community in self.config.communities:
             sec = await self._probe_community(ip, community)
             if sec:
                 return sec
-        logger.info("[%s] No working credentials — skipped", ip)
+
+        logger.info("[%s] No working credentials (V3 or V2c) — skipped", ip)
         return None
 
     # ── OID Queries ───────────────────────────────────────────────────────────
@@ -360,7 +404,10 @@ class SNMPScanner:
             )
             if not err_ind and not err_status and var_binds:
                 val = var_binds[0][1].prettyPrint()
-                return val if val.lower() not in ("none", "") else None
+                # Filter out SNMP protocol error strings — these are not real values
+                snmp_errors = ("no such object", "no such instance", "end of mib view", "nosuchobject", "nosuchinstance")
+                if val and val.lower() not in ("none", "") and not any(e in val.lower() for e in snmp_errors):
+                    return val
         except Exception as exc:
             logger.debug("[%s] OID %s error: %s", ip, oid, exc)
         return None
@@ -420,91 +467,130 @@ class SNMPScanner:
             if exit_walk:
                 break
 
-        return None  # nothing found
+        return None  # nothing found in Entity MIB walk
 
-    async def _get_neighbors(self, ip: str, security: Any, transport: Optional[UdpTransportTarget]) -> List[NeighborInfo]:
+    async def _fetch_serial_from_vendor_oids(
+        self, ip: str, security: Any, transport: Optional[UdpTransportTarget]
+    ) -> Optional[str]:
         """
-        Walk LLDP lldpRemSysName and return discovered neighbors.
-
-        FIX BUG 1 — Uses `await self._make_transport(ip)` which calls
-        `await UdpTransportTarget.create(...)` correctly everywhere.
+        Try vendor-specific + alternate scalar OIDs for serial numbers.
+        Used as a fallback when the standard Entity MIB walk returns nothing.
+        Covers CP PLUS, Dahua, Hikvision, Bosch, Axis, Cisco, Huawei, and generic IP cameras.
         """
-        neighbors   = []
-        prefix      = LLDP_NEIGHBOR_NAME_OID
-        current_oid = ObjectType(ObjectIdentity(prefix))
-
         if not transport:
             transport = await self._make_transport(ip)
 
+        for oid in CCTV_SERIAL_OIDS:
+            try:
+                val = await self._get_scalar(ip, security, transport, oid)
+                if val and val.lower() not in ("none", "n/a", "") and len(val) > 3:
+                    logger.info("[%s] Serial found via vendor OID %s: %s", ip, oid, val)
+                    return val
+            except Exception as exc:
+                logger.debug("[%s] Vendor OID %s error: %s", ip, oid, exc)
+
+        return None
+
+    async def _get_neighbors(self, ip: str, security: Any, transport: Optional[UdpTransportTarget]) -> List[NeighborInfo]:
+        """
+        Walk LLDP lldpRemSysName and lldpRemManAddrTable to return discovered neighbors with IPs.
+        """
+        if not transport:
+            transport = await self._make_transport(ip)
+
+        # 1. Walk Names (lldpRemSysName)
+        names = {}
+        prefix_name = LLDP_REMSYSNAME_OID
+        current_oid = ObjectType(ObjectIdentity(prefix_name))
+        
         for _ in range(_MAX_NEIGHBOR_ROWS):
             try:
                 err_ind, err_status, _, var_binds = await next_cmd(
-                    self._engine, security,
-                    transport,   # ← BUG 1 FIXED HERE
-                    self._make_context(),
-                    current_oid,
-                    lexicographicMode=False,
+                    self._engine, security, transport, self._make_context(),
+                    current_oid, lexicographicMode=False
                 )
-            except Exception as exc:
-                logger.debug("[%s] LLDP walk error: %s", ip, exc)
+            except Exception:
                 break
-
             if err_ind or err_status or not var_binds:
                 break
-
-            exit_walk = False
-            for var_bind in var_binds:
-                oid_str = str(var_bind[0])
-                name    = var_bind[1].prettyPrint()
-
-                if not oid_str.startswith(prefix):
-                    exit_walk = True
-                    break
-
-                current_oid = ObjectType(ObjectIdentity(var_bind[0]))
-                if name and name.lower() not in ("none", ""):
-                    neighbors.append(NeighborInfo(neighbor_name=name))
-
-            if exit_walk:
+            
+            var_bind = var_binds[0]
+            oid_str = str(var_bind[0])
+            if not oid_str.startswith(prefix_name):
                 break
+            
+            name = var_bind[1].prettyPrint()
+            # Extract index (e.g. 41075427.27.1)
+            index = oid_str[len(prefix_name)+1:]
+            if name and name.lower() not in ("none", ""):
+                names[index] = name
+            current_oid = ObjectType(ObjectIdentity(var_bind[0]))
 
+        # 2. Walk IPs (lldpRemManAddrIfSubtype)
+        ips = {}
+        prefix_ip = LLDP_REMMANADDR_OID
+        current_oid = ObjectType(ObjectIdentity(prefix_ip))
+        
+        for _ in range(_MAX_NEIGHBOR_ROWS * 2):
+            try:
+                err_ind, err_status, _, var_binds = await next_cmd(
+                    self._engine, security, transport, self._make_context(),
+                    current_oid, lexicographicMode=False
+                )
+            except Exception:
+                break
+            if err_ind or err_status or not var_binds:
+                break
+            
+            var_bind = var_binds[0]
+            oid_str = str(var_bind[0])
+            if not oid_str.startswith(prefix_ip):
+                break
+            
+            val = var_bind[1].prettyPrint()
+            index_full = oid_str[len(prefix_ip)+1:]
+            
+            # The value is often hex of the IP (e.g. 0xac10000a)
+            ip_found = None
+            if val.startswith("0x") and len(val) == 10:
+                try:
+                    parts = [int(val[i:i+2], 16) for i in range(2, 10, 2)]
+                    ip_found = ".".join(map(str, parts))
+                except:
+                    pass
+            elif "." in val and len(val.split(".")) == 4:
+                ip_found = val
+            
+            if ip_found:
+                # Correlate: index_full starts with the entry index from the remTable
+                for rem_idx in names.keys():
+                    if index_full.startswith(rem_idx):
+                        ips[rem_idx] = ip_found
+                        break
+                        
+            current_oid = ObjectType(ObjectIdentity(var_bind[0]))
+
+        # 3. Combine
+        neighbors = []
+        for idx, name in names.items():
+            neighbors.append(NeighborInfo(
+                neighbor_name=name,
+                neighbor_ip=ips.get(idx)
+            ))
+            
         return neighbors
 
     # ── Detection ─────────────────────────────────────────────────────────────
 
-    @staticmethod
-    def _detect_vendor(desc: str) -> str:
-        d = desc.lower()
-        for keywords, vendor in _VENDOR_PATTERNS:
-            if any(kw in d for kw in keywords):
-                return vendor
-        return "Unknown"
-
-    @staticmethod
-    def _detect_type(desc: str) -> str:
-        d = desc.lower()
-        for keywords, dtype in _TYPE_PATTERNS:
-            if any(kw in d for kw in keywords):
-                return dtype
-        return "Networking"
-
-    # ── Public API ────────────────────────────────────────────────────────────
-
     async def poll_device(self, ip: str) -> Optional[DeviceInfo]:
         """
         Fully poll one IP address. Returns DeviceInfo or None if unreachable.
-
-        Refactored:
-          1. Resolve security
-          2. Create single transport (reuse for all OIDs)
-          3. Sequential sysDescr handshake (stabilizes v3 EngineID discovery)
-          4. Parallel fetch for remaining data
         """
         security = await self._resolve_security(ip)
         if security is None:
             return None
 
-        snmp_version = "v3" if self.config.v3 else "v2c"
+        snmp_version = "v3" if isinstance(security, UsmUserData) else "v2c"
         
         try:
             transport = await self._make_transport(ip)
@@ -512,17 +598,21 @@ class SNMPScanner:
             logger.error("[%s] Transport creation failed: %s", ip, e)
             return None
 
-        # Step 3 — Sequential handshake (Crucial for v3 stability)
-        # We wait for sysDescr to finish so EngineID discovery is completed
-        # before firing parallel requests.
+        # Step 3 — Sequential handshake
+        logger.debug("[%s] Attempting initial sysDescr poll with %s...", ip, snmp_version)
         description = await self._get_scalar(ip, security, transport, SYSTEM_OIDS["sysDescr"])
         
         if not description:
-            logger.info("[%s] No sysDescr returned — skipping", ip)
+            logger.warning("[%s] No sysDescr returned (timeout/auth failure) — skipping", ip)
             return None
 
-        # Step 4 — Fetch remaining scalar OIDs + Serial + Neighbors concurrently
+        logger.info("[%s] Found device: %s", ip, description)
+
+        # Step 4 — Fetch remaining scalar OIDs + Serial + Neighbors + Hardware concurrently
         remaining_oids = {k: v for k, v in SYSTEM_OIDS.items() if k != "sysDescr"}
+        
+        # Add basic hardware scalar (Total RAM)
+        remaining_oids["ram_total"] = HR_OIDS["hrMemorySize"]
         
         scalar_tasks = {
             name: asyncio.create_task(self._get_scalar(ip, security, transport, oid))
@@ -531,27 +621,54 @@ class SNMPScanner:
         
         serial_task    = asyncio.create_task(self._walk_serial(ip, security, transport))
         neighbor_task  = asyncio.create_task(self._get_neighbors(ip, security, transport))
-
+        
         raw: Dict[str, str] = {"sysDescr": description}
         for name, task in scalar_tasks.items():
             value = await task
             if value:
                 raw[name] = value
-
+        
         serial    = await serial_task
+        # Root Fix: if Entity MIB walk found nothing, try vendor-specific/CCTV OIDs
+        if not serial:
+            serial = await self._fetch_serial_from_vendor_oids(ip, security, transport)
+            if serial:
+                logger.info("[%s] Serial resolved via vendor OID fallback: %s", ip, serial)
+            else:
+                logger.warning("[%s] No serial number found via any OID — device will be skipped on discovery", ip)
         neighbors = await neighbor_task
+        
+        # Post-process hardware specs
+        ram_kb = 0
+        try:
+            if "ram_total" in raw:
+                ram_kb = int(raw["ram_total"])
+        except (ValueError, TypeError):
+            pass
 
+        # Try to infer CPU if not directly polled via Host Resources (many routers don't expose it well)
+        cpu_model = "Embedded Processor"
+        from .discovery_enricher import discovery_enricher
+        clean_description = discovery_enricher.sanitize_value(description)
+        
+        # Detect vendor and type using central DiscoveryEnricher
+        vendor = discovery_enricher.detect_vendor(clean_description, serial)
+        device_type = discovery_enricher.detect_type(clean_description, vendor=vendor, default="Networking")
+        
         return DeviceInfo(
             ip_address    = ip,
             name          = raw.get("sysName") or ip,
-            device_type   = self._detect_type(description),
-            vendor        = self._detect_vendor(description),
-            model         = "Network Node",
+            device_type   = device_type,
+            vendor        = vendor,
+            model         = discovery_enricher.detect_model(clean_description) or "Network Node",
             serial_number = serial,
             description   = description,
-            location      = raw.get("sysLocation", ""),
+            location      = discovery_enricher.sanitize_value(raw.get("sysLocation", "")),
             uptime        = raw.get("sysUpTime", ""),
             snmp_version  = snmp_version,
+            cpu           = cpu_model,
+            ram_mb        = int(ram_kb / 1024) if ram_kb else 0,
+            storage_gb    = 0, # Storage usually requires walking hrStorageTable — skipping for now
             neighbors     = neighbors,
         )
 
@@ -602,7 +719,7 @@ async def scan_network(
 
     network    = _validate_network(cidr, config.max_hosts)
     hosts      = [str(ip) for ip in network.hosts()]
-    started_at = datetime.utcnow()
+    started_at = datetime.now(timezone.utc)
 
     logger.info("Scanning %s — %d hosts, max_concurrent=%d", network, len(hosts), config.max_concurrent)
 
@@ -619,19 +736,51 @@ async def scan_network(
                     pass # Ignore callback errors
             return result
 
-    raw_results  = await asyncio.gather(*(_bounded(ip) for ip in hosts))
-    devices      = [r for r in raw_results if r is not None]
-    completed_at = datetime.utcnow()
+    all_devices: List[DeviceInfo] = []
+    scanned_ips: set[str] = set()
+    to_scan: List[str]    = list(hosts)
+    
+    # Limit recursion to avoid scanning the entire network
+    max_discovery_depth = 2
+    current_depth = 0
+    
+    while to_scan and current_depth <= max_discovery_depth:
+        logger.info("Scan Depth %d: Polling %d targets", current_depth, len(to_scan))
+        
+        # Filter out already scanned IPs for this pass
+        targets = [ip for ip in to_scan if ip not in scanned_ips]
+        if not targets:
+            break
+            
+        scanned_ips.update(targets)
+        
+        # Perform the poll for the current batch
+        raw_results = await asyncio.gather(*(_bounded(ip) for ip in targets))
+        batch_devices = [r for r in raw_results if r is not None]
+        all_devices.extend(batch_devices)
+        
+        # Look for neighbors with management IPs that haven't been scanned yet
+        new_ips = set()
+        for dev in batch_devices:
+            for neighbor in dev.neighbors:
+                if neighbor.neighbor_ip and neighbor.neighbor_ip not in scanned_ips:
+                    # Basic sanity check: skip private/local IPs if needed? 
+                    # For now, we trust LLDP management IPs.
+                    new_ips.add(neighbor.neighbor_ip)
+        
+        to_scan = list(new_ips)
+        current_depth += 1
 
-    logger.info("Done — %d/%d responded in %.1fs",
-                len(devices), len(hosts),
+    completed_at = datetime.now(timezone.utc)
+    logger.info("Done — %d devices found (including %d recursive neighbors) in %.1fs",
+                len(all_devices), len(all_devices) - len([d for d in all_devices if d.ip_address in hosts]),
                 (completed_at - started_at).total_seconds())
 
     return ScanResult(
         cidr               = str(network),
         total_hosts        = len(hosts),
-        responsive_devices = len(devices),
-        devices            = devices,
+        responsive_devices = len(all_devices),
+        devices            = all_devices,
         started_at         = started_at,
         completed_at       = completed_at,
     )
@@ -811,8 +960,16 @@ async def scan_network_range(
             logger.error(f"Invalid v3 credentials: {e}")
             return []
 
+    # Fix: Ensure community is a string before splitting to avoid TypeError
+    comm_list = []
+    if community:
+        comm_list = [c.strip() for c in community.split(",")] if "," in community else [community]
+    elif not v3_creds:
+        # Fallback if neither v3 nor community provided
+        comm_list = ["public"]
+
     config = ScanConfig(
-        communities=[c.strip() for c in community.split(",")] if "," in community else [community],
+        communities=comm_list,
         v3=v3_creds,
         context_name=context_name,
     )

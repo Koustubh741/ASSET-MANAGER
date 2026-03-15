@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import List
 from uuid import UUID
 
+from datetime import datetime, timezone
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +25,7 @@ from app.schemas.port_policy_schema import (
     AgentPortPolicyReport,
 )
 from app.services import port_policy_service
-from app.routers.auth import check_system_admin
+from app.routers.auth import get_current_user, check_MANAGER, check_IT_MANAGEMENT
 from app.routers.collect import verify_agent_token
 
 
@@ -42,8 +44,14 @@ async def list_port_policies(
     enabled: bool | None = Query(None),
     agent_id: str | None = Query(None, description="Filter to policies assigned to this agent"),
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role not in ["ADMIN", "ASSET_MANAGER", "IT_MANAGEMENT"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized to list port policies",
+        )
     policies = await port_policy_service.list_policies(
         db, scope_type=scope_type, direction=direction, enabled=enabled, agent_id=agent_id
     )
@@ -70,11 +78,30 @@ async def list_port_policies(
 async def create_port_policy(
     payload: PortPolicyCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Requires Admin privileges",
+        )
     policy = await port_policy_service.create_policy(
         db, payload, created_by=current_user.id
     )
+    # Audit Log
+    audit = AuditLog(
+        id=uuid.uuid4(),
+        entity_type="PortPolicy",
+        entity_id=str(policy.id),
+        action="CREATE",
+        performed_by=current_user.id,
+        details=payload.model_dump(),
+        timestamp=datetime.now(timezone.utc),
+    )
+    db.add(audit)
+    await db.commit()
+
     return PortPolicyResponse.model_validate(policy)
 
 
@@ -82,8 +109,14 @@ async def create_port_policy(
 async def get_port_policy(
     policy_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role not in ["ADMIN", "ASSET_MANAGER", "IT_MANAGEMENT"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized to view port policy",
+        )
     policy = await port_policy_service.get_policy(db, policy_id)
     if not policy:
         raise HTTPException(
@@ -103,8 +136,14 @@ async def update_port_policy(
     policy_id: UUID,
     payload: PortPolicyUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role not in ["ADMIN", "ASSET_MANAGER"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized to update port policy",
+        )
     policy = await port_policy_service.get_policy(db, policy_id)
     if not policy:
         raise HTTPException(
@@ -112,6 +151,18 @@ async def update_port_policy(
         )
 
     policy = await port_policy_service.update_policy(db, policy, payload)
+    # Audit Log
+    audit = AuditLog(
+        id=uuid.uuid4(),
+        entity_type="PortPolicy",
+        entity_id=str(policy.id),
+        action="UPDATE",
+        performed_by=current_user.id,
+        details=payload.model_dump(exclude_unset=True),
+        timestamp=datetime.now(timezone.utc),
+    )
+    db.add(audit)
+    await db.commit()
     assignments = await port_policy_service.get_policy_targets(db, policy_id)
     targets = [row[1] for row in assignments]
     return PortPolicyResponse(
@@ -127,8 +178,14 @@ async def update_port_policy(
 async def delete_port_policy(
     policy_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=403,
+            detail="Requires Admin privileges",
+        )
     policy = await port_policy_service.get_policy(db, policy_id)
     if not policy:
         raise HTTPException(
@@ -136,6 +193,18 @@ async def delete_port_policy(
         )
 
     await port_policy_service.delete_policy(db, policy)
+    # Audit Log
+    audit = AuditLog(
+        id=uuid.uuid4(),
+        entity_type="PortPolicy",
+        entity_id=str(policy_id),
+        action="DELETE",
+        performed_by=current_user.id,
+        details={"name": policy.name},
+        timestamp=datetime.now(timezone.utc),
+    )
+    db.add(audit)
+    await db.commit()
     return None
 
 
@@ -147,15 +216,33 @@ async def assign_targets(
     policy_id: UUID,
     payload: List[PortPolicyAssignmentCreate],
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role not in ["ADMIN", "ASSET_MANAGER"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized to assign targets",
+        )
     policy = await port_policy_service.get_policy(db, policy_id)
     if not policy:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Port policy not found"
         )
 
-    await port_policy_service.assign_targets_to_policy(db, policy, payload)
+    await port_policy_service.assign_targets_to_policy(db, policy, payload, current_user=current_user)
+    # Audit Log
+    audit = AuditLog(
+        id=uuid.uuid4(),
+        entity_type="PortPolicy",
+        entity_id=str(policy_id),
+        action="ASSIGN_TARGETS",
+        performed_by=current_user.id,
+        details={"targets": [t.model_dump() for t in payload]},
+        timestamp=datetime.now(timezone.utc),
+    )
+    db.add(audit)
+    await db.commit()
     assignments = await port_policy_service.get_policy_targets(db, policy_id)
     targets = [row[1] for row in assignments]
 
@@ -173,8 +260,14 @@ async def assign_targets(
 async def get_policy_enforcement(
     policy_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role not in ["ADMIN", "ASSET_MANAGER", "IT_MANAGEMENT"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized to view enforcement",
+        )
     policy = await port_policy_service.get_policy(db, policy_id)
     if not policy:
         raise HTTPException(
@@ -192,8 +285,14 @@ async def get_policy_enforcement(
 async def get_agent_port_policy_state(
     agent_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(check_system_admin),
+    current_user=Depends(get_current_user),
 ):
+    # RBAC check
+    if current_user.role not in ["ADMIN", "ASSET_MANAGER", "IT_MANAGEMENT"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Unauthorized to view agent state",
+        )
     states = await port_policy_service.get_enforcement_for_agent(db, agent_id)
     return [EnforcementStateItem.model_validate(s) for s in states]
 

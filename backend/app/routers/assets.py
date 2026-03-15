@@ -6,7 +6,7 @@ from uuid import UUID
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from ..schemas.asset_schema import AssetCreate, AssetUpdate, AssetResponse, AssetAssignmentRequest, AssetStatusUpdate
+from ..schemas.asset_schema import AssetCreate, AssetUpdate, AssetResponse, AssetAssignmentRequest, AssetStatusUpdate, AssetVerificationRequest
 from ..services import asset_service
 from ..services import asset_request_service
 from ..database.database import get_db
@@ -30,7 +30,7 @@ async def get_all_assets(
     """
     # Security Root Fix: Only privileged roles see global asset list
     # Managers see assets within their department
-    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"] and current_user.position != "MANAGER":
+    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"] and current_user.position != "MANAGER":
         raise HTTPException(
             status_code=403, 
             detail="Unauthorized: You can only view your own assets via /my-assets"
@@ -38,13 +38,14 @@ async def get_all_assets(
     
     # Enforce department scoping for managers
     department = None
-    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+    assigned_to = None
+    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"] and current_user.position == "MANAGER":
         department = current_user.department or current_user.domain
+        assigned_to = current_user.full_name # Unified scoping: Dept OR Mine
         
     try:
         if department:
-            # We need to update get_all_assets or call a filtered version
-            return await asset_service.get_all_assets_scoped(db, department=department)
+            return await asset_service.get_all_assets_scoped(db, department=department, assigned_to=assigned_to)
         return await asset_service.get_all_assets(db)
     except Exception as e:
         import traceback
@@ -207,23 +208,26 @@ async def update_asset(
     """
     Update an asset (Asynchronous).
     """
-    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or SYSTEM_ADMIN can update assets
-    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"]:
+    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or ADMIN can update assets
+    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"]:
         raise HTTPException(
             status_code=403,
             detail="Unauthorized: Only Asset Managers or IT Management can update assets"
         )
     
-    updated_asset = await asset_service.update_asset(
-        db, 
-        asset_id, 
-        asset_update,
-        performed_by_id=current_user.id,
-        performed_by_name=current_user.full_name
-    )
-    if not updated_asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
-    return updated_asset
+    try:
+        updated_asset = await asset_service.update_asset(
+            db, 
+            asset_id, 
+            asset_update,
+            performed_by_id=current_user.id,
+            performed_by_name=current_user.full_name
+        )
+        if not updated_asset:
+            raise HTTPException(status_code=404, detail="Asset not found")
+        return updated_asset
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.patch("/{asset_id}/assign", response_model=AssetResponse)
@@ -277,8 +281,8 @@ async def update_asset_status(
     Update asset status (Asynchronous).
     Accepts JSON body with 'status' field.
     """
-    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or SYSTEM_ADMIN can update asset status
-    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"]:
+    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or ADMIN can update asset status
+    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"]:
         raise HTTPException(
             status_code=403,
             detail="Unauthorized: Only Asset Managers or IT Management can update asset status"
@@ -293,6 +297,37 @@ async def update_asset_status(
     )
     if not updated_asset:
         raise HTTPException(status_code=404, detail="Asset not found")
+    return updated_asset
+
+@router.patch("/{asset_id}/verification", response_model=AssetResponse)
+async def verify_asset(
+    asset_id: UUID,
+    verification_req: AssetVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    End user API to accept or reject an assigned asset (Asynchronous).
+    """
+    asset = await asset_service.get_asset_by_id(db, asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    if asset.assigned_to_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized: You can only verify assets assigned to you")
+
+    if verification_req.acceptance_status not in ["ACCEPTED", "REJECTED"]:
+        raise HTTPException(status_code=400, detail="Invalid acceptance_status. Must be ACCEPTED or REJECTED")
+
+    updated_asset = await asset_service.verify_asset_assignment(
+        db,
+        asset_id,
+        acceptance_status=verification_req.acceptance_status,
+        reason=verification_req.reason,
+        performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
+
     return updated_asset
 
 
@@ -414,6 +449,36 @@ async def delete_asset(
 
 
 # ===================== CMDB Relationship Endpoints =====================
+
+@router.get("/relationships/all")
+async def get_all_relationships(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Get all asset relationships across the entire platform (Admin/Manager only).
+    """
+    from ..models.models import AssetRelationship
+    
+    # RBAC check
+    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"]:
+        raise HTTPException(status_code=403, detail="Unauthorized to view all relationships")
+        
+    result = await db.execute(select(AssetRelationship))
+    relationships = result.scalars().all()
+    
+    return [
+        {
+            "id": str(rel.id),
+            "source_asset_id": str(rel.source_asset_id),
+            "target_asset_id": str(rel.target_asset_id),
+            "relationship_type": rel.relationship_type,
+            "criticality": rel.criticality,
+            "description": rel.description
+        }
+        for rel in relationships
+    ]
+
 
 @router.get("/{asset_id}/relationships")
 async def get_asset_relationships(
@@ -593,3 +658,30 @@ async def delete_asset_relationship(
     await db.commit()
     
     return {"status": "success", "message": f"Relationship {relationship_id} deleted"}
+@router.post("/{asset_id}/provision")
+async def provision_software(
+    asset_id: UUID,
+    software_name: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Log a software provisioning event for an asset.
+    """
+    from ..models.models import AuditLog
+    import json
+    
+    audit_entry = AuditLog(
+        entity_type="Asset",
+        entity_id=str(asset_id),
+        action="SOFTWARE_PROVISIONED",
+        performed_by=current_user.id,
+        details={
+            "software": software_name,
+            "status": "Installed",
+            "timestamp": datetime.now().isoformat()
+        }
+    )
+    db.add(audit_entry)
+    await db.commit()
+    return {"status": "success", "message": f"Provisioned {software_name}"}

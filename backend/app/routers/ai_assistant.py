@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update
+from typing import List, Optional
 
 from ..database.database import get_db
 from ..services import asset_service
@@ -136,7 +137,7 @@ async def chat(
         )
 
     # Root Fix: Asset context scoped by user role (same logic as assets router)
-    privileged_roles = ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "SYSTEM_ADMIN"]
+    privileged_roles = ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN", "ADMIN"]
     is_manager = getattr(current_user, "position", None) == "MANAGER"
 
     if current_user.role in privileged_roles:
@@ -185,4 +186,74 @@ You help users query and understand their asset inventory.
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"AI service error: {str(e)}",
+        )
+
+class TicketAnalysisRequest(BaseModel):
+    subject: str
+    description: str
+
+class TicketAnalysisResponse(BaseModel):
+    category: str
+    priority: str
+    suggested_steps: List[str]
+    confidence_score: float
+
+@router.post("/analyze-ticket", response_model=TicketAnalysisResponse)
+async def analyze_ticket(
+    body: TicketAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Analyzes a ticket and provides classification and fix steps.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        # Fallback for demo when API key is missing
+        return TicketAnalysisResponse(
+            category="General Support",
+            priority="MEDIUM",
+            suggested_steps=[
+                "Verify user identity",
+                "Review system logs",
+                "Contact user for further details"
+            ],
+            confidence_score=0.5
+        )
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+        
+        system_prompt = """You are an IT Service Desk Specialist. 
+Analyze the following ticket and return a JSON object with:
+- category (e.g., Hardware, Software, Network, Access, etc.)
+- priority (URGENT, HIGH, MEDIUM, LOW)
+- suggested_steps (a list of 3-5 troubleshooting steps)
+- confidence_score (0.0 to 1.0)
+
+Output ONLY the raw JSON."""
+
+        user_content = f"Subject: {body.subject}\nDescription: {body.description}"
+        
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content},
+            ],
+            response_format={"type": "json_object"},
+            max_tokens=300,
+        )
+        
+        import json
+        result = json.loads(completion.choices[0].message.content)
+        return TicketAnalysisResponse(**result)
+        
+    except Exception as e:
+        # Return fallback on error to keep system resilient
+        return TicketAnalysisResponse(
+            category="Unclassified",
+            priority="MEDIUM",
+            suggested_steps=["Manual triage required due to AI service timeout."],
+            confidence_score=0.0
         )

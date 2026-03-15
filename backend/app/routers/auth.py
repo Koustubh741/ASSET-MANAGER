@@ -13,6 +13,7 @@ from ..schemas.user_schema import (
 from ..schemas.exit_schema import ExitRequestResponse
 from ..services import user_service, exit_service
 from ..utils import auth_utils
+from ..utils.auth_utils import get_current_user
 from ..models.models import AssetAssignment, ByodDevice, ExitRequest, Asset, PasswordResetToken, User
 from datetime import datetime, timedelta
 import secrets
@@ -30,31 +31,57 @@ SSO_CONFIG = {
 }
 
 async def check_user_list_access(
-    current_user = Depends(auth_utils.get_current_user),
+    current_user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Verify user is authorized to view user list.
-    SYSTEM_ADMIN/ADMIN see all. MANAGER sees department.
+    ADMIN/ADMIN see all. MANAGER sees department.
     """
-    if current_user.role in ["ADMIN", "SYSTEM_ADMIN"] or current_user.position == "MANAGER":
+    if current_user.role == "ADMIN" or current_user.position == "MANAGER":
         return current_user
         
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Only ADMIN, SYSTEM_ADMIN, or Managers can view the user list"
+        detail="Only ADMIN, ADMIN, or Managers can view the user list"
     )
 
-async def check_system_admin(
-    current_user = Depends(auth_utils.get_current_user)
+async def check_ADMIN(
+    current_user = Depends(get_current_user)
 ):
     """
     Dependency to verify user is an Admin or System Admin.
     """
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"]:
+    if current_user.role != "ADMIN":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Requires Admin or System Admin privileges"
+            detail="Requires Admin privileges"
+        )
+    return current_user
+
+async def check_MANAGER(
+    current_user = Depends(get_current_user)
+):
+    """
+    Dependency to verify user is a Manager.
+    """
+    if current_user.position != "MANAGER" and current_user.role != "MANAGER":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requires Manager privileges"
+        )
+    return current_user
+
+async def check_IT_MANAGEMENT(
+    current_user = Depends(get_current_user)
+):
+    """
+    Dependency to verify user is IT Management or Admin.
+    """
+    if current_user.role not in ["IT_MANAGEMENT", "ADMIN"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Requires IT Management privileges"
         )
     return current_user
 
@@ -69,7 +96,7 @@ async def get_users(
     Managers only see their department.
     """
     department = None
-    if current_user.role not in ["ADMIN", "SYSTEM_ADMIN"] and current_user.position == "MANAGER":
+    if current_user.role != "ADMIN" and current_user.position == "MANAGER":
         department = current_user.department or current_user.domain
         
     users = await user_service.get_users(db, status=status, department=department)
@@ -80,7 +107,7 @@ async def get_users(
 async def get_user_by_id(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Get a single user by ID (Asynchronous).
@@ -109,10 +136,11 @@ async def login(
     password: str = Form(...),
     db: AsyncSession = Depends(get_db)
 ):
-    user = await user_service.authenticate_user(db, username, password)
+    normalized_username = username.strip().lower()
+    user = await user_service.authenticate_user(db, normalized_username, password)
     if not user:
         # Check if user exists but is not active
-        db_user = await user_service.get_user_by_email(db, username)
+        db_user = await user_service.get_user_by_email(db, normalized_username)
         if db_user and db_user.status != "ACTIVE":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -186,7 +214,7 @@ async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = 
 
 
 @router.post("/logout")
-async def logout(current_user = Depends(auth_utils.get_current_user)):
+async def logout(current_user = Depends(get_current_user)):
     """
     Logout endpoint. Since JWT tokens are stateless, the client should
     remove the token from storage. This endpoint confirms the logout action.
@@ -199,7 +227,7 @@ async def logout(current_user = Depends(auth_utils.get_current_user)):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user = Depends(auth_utils.get_current_user)):
+async def get_current_user_info(current_user = Depends(get_current_user)):
     """
     Get current authenticated user information.
     Returns the user object associated with the provided JWT token.
@@ -215,7 +243,7 @@ class PlanUpdate(BaseModel):
 async def update_my_plan(
     body: PlanUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(auth_utils.get_current_user),
+    current_user = Depends(get_current_user),
 ):
     """
     Update the current user's plan (for demo/testing). In production, plan would be set by billing.
@@ -244,9 +272,10 @@ async def sso_login(provider: str):
     
     # In a real app, we would return a RedirectResponse here
     # return RedirectResponse(url=f"{SSO_CONFIG[provider]['auth_url']}?client_id=...")
+    redirect_uri = f"http://localhost:3000/login?provider={provider}"
     return {
         "provider": provider,
-        "redirect_url": f"{SSO_CONFIG[provider]['auth_url']}?client_id={SSO_CONFIG[provider]['client_id']}&response_type=code&scope=openid%20profile%20email"
+        "redirect_url": f"{SSO_CONFIG[provider]['auth_url']}?client_id={SSO_CONFIG[provider]['client_id']}&response_type=code&scope=openid%20profile%20email&redirect_uri={redirect_uri}"
     }
 
 
@@ -304,7 +333,7 @@ async def sso_callback(
 async def activate_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Activate a user account.
@@ -322,7 +351,7 @@ async def activate_user(
 async def initiate_exit(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Initiate user exit / resignation workflow (Asynchronous).
@@ -411,7 +440,7 @@ async def initiate_exit(
 async def disable_user(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     """
     Final step of exit workflow (Asynchronous).
@@ -449,7 +478,7 @@ async def check_exit_access(
     """
     Allow access to System Admin, Asset Manager, and IT Management via JWT token.
     """
-    allowed_roles = ["ADMIN", "SYSTEM_ADMIN", "ASSET_INVENTORY_MANAGER", "ASSET_MANAGER", "IT_MANAGEMENT"]
+    allowed_roles = ["ADMIN", "ASSET_MANAGER", "IT_MANAGEMENT"]
     if current_user.role not in allowed_roles:
          raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -503,7 +532,7 @@ async def process_exit_assets(
     db: AsyncSession = Depends(get_db),
     manager = Depends(check_exit_access)
 ):
-    allowed_roles = ["ASSET_INVENTORY_MANAGER", "ASSET_MANAGER", "SYSTEM_ADMIN", "ADMIN"]
+    allowed_roles = ["ASSET_MANAGER", "ASSET_MANAGER", "ADMIN", "ADMIN"]
     if manager.role not in allowed_roles:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
@@ -542,7 +571,7 @@ async def process_exit_byod(
     db: AsyncSession = Depends(get_db),
     it_manager = Depends(check_exit_access)
 ):
-    if it_manager.role not in ["IT_MANAGEMENT", "SYSTEM_ADMIN", "ADMIN"]:
+    if it_manager.role not in ["IT_MANAGEMENT", "ADMIN", "ADMIN"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
     result = await db.execute(select(ExitRequest).filter(ExitRequest.id == exit_request_id))
@@ -574,7 +603,7 @@ async def process_exit_byod(
 async def complete_exit_request(
     exit_request_id: UUID,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     result = await db.execute(select(ExitRequest).filter(cast(ExitRequest.id, String) == str(exit_request_id)))
     exit_request = result.scalars().first()
@@ -614,7 +643,7 @@ async def complete_exit_request(
 async def finalize_user_exit(
     user_id: UUID,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_system_admin)
+    admin_user = Depends(check_ADMIN)
 ):
     try:
         summary = await exit_service.handle_user_exit(db, user_id, actor_id=admin_user.id)

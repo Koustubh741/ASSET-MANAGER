@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.database import get_db
 from ..schemas.user_schema import UserCreate, UserResponse, UserUpdate
 from ..services import user_service
+from typing import List, Optional
 from ..utils import auth_utils
 
 router = APIRouter(
@@ -22,11 +23,11 @@ async def check_admin_access(
     """
     Verify user has admin privileges for user management.
     """
-    allowed_roles = ["ADMIN", "SYSTEM_ADMIN"]
+    allowed_roles = ["ADMIN", "ADMIN"]
     if current_user.role not in allowed_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only ADMIN or SYSTEM_ADMIN can manage users"
+            detail="Only ADMIN or ADMIN can manage users"
         )
     return current_user
 
@@ -58,8 +59,8 @@ async def create_user(
 
 @router.get("", response_model=list[UserResponse])
 async def list_users(
-    status: str = None,
-    role: str = None,
+    status: Optional[str] = None,
+    role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     admin_user = Depends(check_admin_access)
 ):
@@ -75,9 +76,20 @@ async def list_users(
     return users
 
 
+@router.get("/hierarchy")
+async def get_hierarchy(
+    db: AsyncSession = Depends(get_db),
+    admin_user = Depends(check_admin_access)
+):
+    """
+    Get the complete organization hierarchy (Admin only).
+    """
+    return await user_service.get_user_hierarchy(db)
+
+
 @router.get("/role-counts")
 async def get_role_counts(
-    status: str = None,
+    status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     admin_user = Depends(check_admin_access)
 ):

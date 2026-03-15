@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID
@@ -22,7 +22,7 @@ class ITDiagnosisRequest(BaseModel):
     """
     Request body for IT Management diagnosis of a ticket (Reviewer inferred from JWT)
     """
-    outcome: str  # "repair" for company assets, "secure" for BYOD
+    outcome: Optional[str] = None  # "repair" for company assets, "secure" for BYOD
     notes: Optional[str] = None
 
 class ResolutionUpdate(BaseModel):
@@ -30,6 +30,21 @@ class ResolutionUpdate(BaseModel):
     checklist: List[dict]
     notes: Optional[str] = None
     percentage: float
+
+class TicketCategoryStat(BaseModel):
+    category: str
+    open: int
+    pending: int
+    resolved: int
+    total: int
+    reliability_score: float = 0.0
+    mttr_hours: float = 0.0
+    department_impact: List[dict] = []
+    estimated_cost: float = 0.0
+
+class TicketCategorySummaryResponse(BaseModel):
+    stats: List[TicketCategoryStat]
+    total_tickets: int
 
 class TicketResponse(TicketBase):
     id: UUID
@@ -39,6 +54,9 @@ class TicketResponse(TicketBase):
     requestor_department: Optional[str] = None
     requestor_email: Optional[str] = None
     assigned_to_id: Optional[UUID] = None
+    assigned_to_name: Optional[str] = None
+    assigned_to_email: Optional[str] = None
+    assigned_to_role: Optional[str] = None
     related_asset_id: Optional[UUID] = None
     
     # Resolution Details
@@ -50,5 +68,35 @@ class TicketResponse(TicketBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Automation Schemas ---
+
+class WorkflowRuleCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    priority_order: int = 0
+    is_active: bool = True
+    conditions: dict
+    actions: dict
+
+class WorkflowRuleResponse(WorkflowRuleCreate):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class SLAPolicyCreate(BaseModel):
+    name: str
+    priority: Optional[str] = None
+    category: Optional[str] = None
+    response_time_limit: Optional[int] = None
+    resolution_time_limit: int
+    is_active: bool = True
+
+class SLAPolicyResponse(SLAPolicyCreate):
+    id: UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

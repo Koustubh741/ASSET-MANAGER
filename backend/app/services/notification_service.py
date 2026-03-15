@@ -206,18 +206,74 @@ class NotificationService:
                         """
                     })
         
+        elif new_status == "MANAGER_APPROVED":
+            # Notify IT Management that a request is ready for review
+            it_emails = await self._get_users_by_role("IT_MANAGEMENT")
+            for email in it_emails:
+                notifications.append({
+                    "to": email,
+                    "subject": f"Action Required: IT Review for Request #{request_id}",
+                    "body": f"""
+                    The manager has approved an asset request. IT review is now required.
+                    
+                    Asset Type: {request.asset_type}
+                    Model: {request.asset_model or 'N/A'}
+                    Requester: {request.requester_id}
+                    
+                    Please review current inventory and technical requirements.
+                    """
+                })
+
         elif new_status == "IT_APPROVED":
-            # Notify requester and IT team
+            # Notify requester and Manager that IT has approved
             notifications.append({
                 "to": requester_email,
                 "subject": f"Asset Request #{request_id} - IT Approved",
                 "body": f"""
                 Your asset request has been approved by IT Management.
                 
-                Next Steps: {'Procurement in progress' if request.asset_ownership_type == 'COMPANY_OWNED' else 'BYOD compliance check'}
+                Next Step: Manager final confirmation of the technical decision.
                 """
             })
-        
+            # Also notify manager (who needs to confirm)
+            # Find manager emails again (already did this in notify_manager_approval_required, could refactor)
+            managers = await self.db.execute(
+                select(User).filter(User.position == "MANAGER", User.status == "ACTIVE")
+            )
+            manager_emails = [m.email for m in managers.scalars().all() if m.email]
+            for email in manager_emails:
+                notifications.append({
+                    "to": email,
+                    "subject": f"Manager Confirmation Required - Request #{request_id}",
+                    "body": f"""
+                    IT has approved asset request #{request_id}. Please provide your final confirmation to trigger fulfillment.
+                    """
+                })
+
+        elif new_status == "MANAGER_CONFIRMED_IT":
+            # Determine routing based on ownership type
+            if request.asset_ownership_type == "BYOD":
+                it_emails = await self._get_users_by_role("IT_MANAGEMENT")
+                for email in it_emails:
+                    notifications.append({
+                        "to": email,
+                        "subject": f"Action Required: BYOD Compliance Scan - Request #{request_id}",
+                        "body": f"""
+                        A BYOD request has been confirmed. Please perform the security scan.
+                        
+                        Asset: {request.asset_model}
+                        Serial: {request.serial_number}
+                        """
+                    })
+            else:
+                # If inventory not available, it would go to PROCUREMENT_REQUESTED (handled below)
+                # If inventory available, it goes to USER_ACCEPTANCE_PENDING (handled below)
+                pass
+
+        elif new_status == "BYOD_COMPLIANCE_CHECK":
+            # Already handled by MANAGER_CONFIRMED_IT for the trigger, but good to have a backup
+            pass
+
         elif new_status == "PROCUREMENT_REQUESTED":
             # Notify procurement team
             procurement_emails = await self._get_users_by_role("PROCUREMENT")
@@ -253,6 +309,75 @@ class NotificationService:
                     """
                 })
         
+        elif new_status == "PO_UPLOADED":
+            # Notify procurement team to validate
+            procurement_emails = await self._get_users_by_role("PROCUREMENT")
+            for email in procurement_emails:
+                notifications.append({
+                    "to": email,
+                    "subject": f"Action Required: PO Validation for Request #{request_id}",
+                    "body": f"""
+                    A Purchase Order has been uploaded for asset request #{request_id}.
+                    Please review and validate the PO details.
+                    """
+                })
+
+        elif new_status == "FINANCE_APPROVED":
+            # Notify manager to give final confirmation
+            managers = await self.db.execute(
+                select(User).filter(User.position == "MANAGER", User.status == "ACTIVE")
+            )
+            manager_emails = [m.email for m in managers.scalars().all() if m.email]
+            for email in manager_emails:
+                notifications.append({
+                    "to": email,
+                    "subject": f"Manager Confirmation Required: Budget Approved - Request #{request_id}",
+                    "body": f"""
+                    Finance has approved the budget for asset request #{request_id}. 
+                    Please provide your final confirmation to proceed with delivery.
+                    """
+                })
+            # Also notify requester
+            notifications.append({
+                "to": requester_email,
+                "subject": f"Budget Approved - Request #{request_id}",
+                "body": f"Your asset request budget has been approved by Finance. Awaiting final manager confirmation."
+            })
+
+        elif new_status == "QC_PENDING":
+            # Notify Asset Manager or IT Management to perform QC
+            asset_manager_emails = await self._get_users_by_role("ASSET_MANAGER")
+            it_emails = await self._get_users_by_role("IT_MANAGEMENT")
+            target_emails = list(set(asset_manager_emails + it_emails))
+            
+            for email in target_emails:
+                notifications.append({
+                    "to": email,
+                    "subject": f"Action Required: QC Check - Request #{request_id}",
+                    "body": f"""
+                    The asset for request #{request_id} has been delivered and requires a Quality check.
+                    
+                    Asset Type: {request.asset_type}
+                    Model: {request.asset_model or 'N/A'}
+                    """
+                })
+
+        elif new_status == "MANAGER_CONFIRMED_ASSIGNMENT":
+            # Notify manager to formally finalize the assignment
+            managers = await self.db.execute(
+                select(User).filter(User.position == "MANAGER", User.status == "ACTIVE")
+            )
+            manager_emails = [m.email for m in managers.scalars().all() if m.email]
+            for email in manager_emails:
+                notifications.append({
+                    "to": email,
+                    "subject": f"Action Required: Finalize Assignment - Request #{request_id}",
+                    "body": f"""
+                    The requester has accepted the asset for request #{request_id}. 
+                    Please formally fulfill the assignment in the dashboard.
+                    """
+                })
+
         elif new_status == "USER_ACCEPTANCE_PENDING":
             # Notify requester that asset is ready
             notifications.append({
@@ -287,6 +412,94 @@ class NotificationService:
         for notif in notifications:
             await self._simulate_email(**notif)
         
+        return True
+    
+    async def notify_ticket_created(self, ticket_id: UUID):
+        """Notify IT Management when a new support ticket is created"""
+        from ..models.models import Ticket
+        result = await self.db.execute(select(Ticket).filter(Ticket.id == ticket_id))
+        ticket = result.scalars().first()
+        if not ticket:
+            return False
+            
+        requester = await self.db.execute(select(User).filter(User.id == ticket.requestor_id))
+        requester_user = requester.scalars().first()
+        
+        it_emails = await self._get_users_by_role("IT_MANAGEMENT")
+        body = f"""
+        A new support ticket has been created.
+        
+        Ticket ID: {ticket_id}
+        Requester: {requester_user.full_name if requester_user else 'Unknown'}
+        Subject: {ticket.subject}
+        Priority: {ticket.priority}
+        
+        Description:
+        {ticket.description}
+        """
+        for email in it_emails:
+            await self._simulate_email(
+                to=email,
+                subject=f"New Support Ticket: {ticket.subject}",
+                body=body
+            )
+        return True
+
+    async def notify_ticket_updated(self, ticket_id: UUID, status: str, updated_by: str, comment: str = None):
+        """Notify requester when their ticket is updated (acknowledged/progress)"""
+        from ..models.models import Ticket
+        result = await self.db.execute(select(Ticket).filter(Ticket.id == ticket_id))
+        ticket = result.scalars().first()
+        if not ticket:
+            return False
+            
+        requester_email = await self._get_user_email(ticket.requestor_id)
+        if not requester_email:
+            return False
+            
+        body = f"""
+        Your support ticket has been updated.
+        
+        Ticket: {ticket.subject}
+        New Status: {status}
+        Updated By: {updated_by}
+        
+        Comment:
+        {comment or 'No additional comments provided.'}
+        """
+        await self._simulate_email(
+            to=requester_email,
+            subject=f"Update on Support Ticket: {ticket.subject}",
+            body=body
+        )
+        return True
+
+    async def notify_ticket_resolved(self, ticket_id: UUID, resolution_notes: str = None):
+        """Notify requester when their ticket is resolved"""
+        from ..models.models import Ticket
+        result = await self.db.execute(select(Ticket).filter(Ticket.id == ticket_id))
+        ticket = result.scalars().first()
+        if not ticket:
+            return False
+            
+        requester_email = await self._get_user_email(ticket.requestor_id)
+        if not requester_email:
+            return False
+            
+        body = f"""
+        Your support ticket has been formally resolved.
+        
+        Ticket: {ticket.subject}
+        Resolution Notes:
+        {resolution_notes or 'Your issue has been resolved.'}
+        
+        Thank you for your patience.
+        """
+        await self._simulate_email(
+            to=requester_email,
+            subject=f"Support Ticket Resolved: {ticket.subject}",
+            body=body
+        )
         return True
 
     async def notify_qc_failed(self, request_id: UUID) -> bool:
@@ -340,6 +553,23 @@ async def send_notification(
             new_status=kwargs.get("new_status"),
             reviewer_name=kwargs.get("reviewer_name"),
             reason=kwargs.get("reason")
+        )
+    
+    elif event_type == "ticket_created":
+        await service.notify_ticket_created(request_id)
+        
+    elif event_type == "ticket_updated":
+        await service.notify_ticket_updated(
+            ticket_id=request_id,
+            status=kwargs.get("status"),
+            updated_by=kwargs.get("updated_by"),
+            comment=kwargs.get("comment")
+        )
+        
+    elif event_type == "ticket_resolved":
+        await service.notify_ticket_resolved(
+            ticket_id=request_id,
+            resolution_notes=kwargs.get("resolution_notes")
         )
     
     return True
