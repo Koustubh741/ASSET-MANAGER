@@ -49,7 +49,7 @@ router = APIRouter(
 # HELPER DEPENDENCIES
 
 async def verify_it_management(user: UserResponse) -> UserResponse:
-    authorized_roles = ["IT_MANAGEMENT", "IT_SUPPORT", "ADMIN", "ASSET_MANAGER", "SUPPORT_SPECIALIST"]
+    authorized_roles = ["IT_MANAGEMENT", "IT_SUPPORT", "ADMIN", "ASSET_MANAGER", "SUPPORT_SPECIALIST", "MANAGER"]
     if user.role not in authorized_roles:
         raise HTTPException(
             status_code=403,
@@ -115,7 +115,8 @@ async def delete_rule(
 
 @router.get("/sla-policies", response_model=List[SLAPolicyResponse], tags=["automation"])
 async def get_all_policies(db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
-    await verify_it_allocation(current_user)
+    # ROOT FIX: All authenticated users can READ SLA policies (read-only transparency)
+    # Writes (POST/DELETE) remain restricted to IT allocation roles.
     res = await db.execute(select(SLAPolicy))
     return res.scalars().all()
 
@@ -231,17 +232,16 @@ async def get_ticket_solver_stats(range_days: Optional[int] = None, db: AsyncSes
 
 @router.post("/", response_model=TicketResponse)
 async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
-    requestor_id = current_user.id
     if ticket.related_asset_id:
         res_asset = await db.execute(select(Asset).filter(Asset.id == ticket.related_asset_id))
         if not res_asset.scalars().first():
             res_byod = await db.execute(select(ByodDevice).filter(ByodDevice.id == ticket.related_asset_id))
             if not res_byod.scalars().first(): raise HTTPException(status_code=400, detail="related_asset_id invalid")
-    res = await ticket_service.create_ticket_v2(db=db, ticket=ticket, requestor_id=requestor_id)
+    res = await ticket_service.create_ticket_v2(db=db, ticket=ticket, requestor_id=current_user.id)
     try:
         await AutomationService.apply_routing_rules(db, res.id)
-        await db.refresh(res)
         await AutomationService.initialize_ticket_sla(db, res.id)
+        res = await ticket_service.get_ticket(db, res.id)
     except Exception as e: logger.error(f"Automation error: {str(e)}")
     await send_notification(db, res.id, "ticket_created")
     return res
@@ -256,8 +256,32 @@ async def read_tickets(skip: int = 0, limit: int = 100, department: Optional[str
 @router.get("/{ticket_id}", response_model=TicketResponse)
 async def read_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
     db_ticket = await ticket_service.get_ticket(db, ticket_id=ticket_id)
-    if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
-    if current_user.role == "END_USER" and db_ticket.requestor_id != current_user.id: raise HTTPException(status_code=403, detail="Unauthorized")
+    if not db_ticket: 
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # ROOT FIX: Security & Privacy Wall
+    # 1. Admins and IT staff see everything
+    privileged_roles = ["ADMIN", "IT_MANAGEMENT", "IT_SUPPORT", "SUPPORT_SPECIALIST", "ASSET_MANAGER"]
+    if current_user.role in privileged_roles:
+        return db_ticket
+
+    # 2. Managers see their own tickets OR tickets within their department/domain
+    if current_user.position == "MANAGER":
+        is_owner = db_ticket.requestor_id == current_user.id
+        # Check if the ticket's requestor is in the manager's department
+        # We need the requestor object for this. ticket_service.get_ticket usually loads it.
+        in_dept = db_ticket.requestor and db_ticket.requestor.department == current_user.department
+        in_group_dept = db_ticket.assignment_group and db_ticket.assignment_group.department == current_user.department
+        
+        if not (is_owner or in_dept or in_group_dept):
+            logger.warning(f"Manager {current_user.email} attempted unauthorized access to ticket {ticket_id} (Dept Mismatch)")
+            raise HTTPException(status_code=403, detail="Unauthorized: Ticket belongs to a different department")
+        return db_ticket
+
+    # 3. Regular End Users ONLY see their own personal tickets
+    if db_ticket.requestor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized: You do not have permission to view this ticket")
+        
     return db_ticket
 
 @router.patch("/{ticket_id}", response_model=TicketResponse)
@@ -335,7 +359,7 @@ async def resolve_ticket(ticket_id: UUID, payload: ResolutionUpdate, db: AsyncSe
     tm.append({"action": "RESOLVED", "byRole": "IT_MANAGEMENT", "byUser": reviewer.full_name, "timestamp": datetime.utcnow().isoformat(), "comment": payload.notes or "Resolved"})
     db_ticket.timeline = tm
     await db.commit()
-    await db_refresh(db_ticket)
+    await db.refresh(db_ticket)
     await send_notification(db, db_ticket.id, "ticket_resolved", resolution_notes=payload.notes or "Resolved")
     return db_ticket
 

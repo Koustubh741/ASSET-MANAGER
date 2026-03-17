@@ -93,7 +93,7 @@ export default function EndUserDashboard() {
             'profile': '/dashboard/profile',
             'byod': '/dashboard/register-byod',
             'asset': '/dashboard/request-asset',
-            'ticket': '/dashboard/support'
+            'ticket': '/tickets'
         };
         if (routeMap[action]) {
             router.push(routeMap[action]);

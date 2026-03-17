@@ -1,22 +1,87 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional, List, Union
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
+from typing import Optional, List, Union, Any
 from datetime import datetime
 from uuid import UUID
+
+def normalize_uuid_value(v: Any) -> Any:
+    if isinstance(v, str) and not v.strip():
+        return None
+    return v
 
 class TicketBase(BaseModel):
     subject: str
     description: str
     priority: str = "Medium" # Low, Medium, High
-    category: Optional[str] = "Hardware"
+    category: Optional[str] = None
+    assignment_group_id: Optional[UUID] = None
+
+    @field_validator("assignment_group_id", mode="before")
+    @classmethod
+    def validate_assignment_group(cls, v: Any) -> Any:
+        return normalize_uuid_value(v)
 
 class TicketCreate(TicketBase):
     related_asset_id: Optional[UUID] = None
+
+    @field_validator("related_asset_id", mode="before")
+    @classmethod
+    def validate_related_asset(cls, v: Any) -> Any:
+        return normalize_uuid_value(v)
 
 class TicketUpdate(BaseModel):
     status: Optional[str] = None
     priority: Optional[str] = None
     assigned_to_id: Optional[UUID] = None
+    assignment_group_id: Optional[UUID] = None
 
+    @field_validator("assigned_to_id", "assignment_group_id", mode="before")
+    @classmethod
+    def validate_uuids(cls, v: Any) -> Any:
+        return normalize_uuid_value(v)
+
+# --- Assignment Group Schemas ---
+
+class AssignmentGroupBase(BaseModel):
+    name: str
+    department: Optional[str] = None
+    description: Optional[str] = None
+    manager_id: Optional[UUID] = None
+
+class AssignmentGroupCreate(AssignmentGroupBase):
+    pass
+
+class AssignmentGroupResponse(AssignmentGroupBase):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Task Schemas ---
+
+class TaskBase(BaseModel):
+    subject: str
+    description: Optional[str] = None
+    assigned_to_id: Optional[UUID] = None
+    group_id: Optional[UUID] = None
+    status: str = "Open"
+    priority: str = "Medium"
+    due_date: Optional[datetime] = None
+
+class TaskCreate(TaskBase):
+    ticket_id: UUID
+
+class TaskResponse(TaskBase):
+    id: UUID
+    ticket_id: UUID
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+    
+    assigned_to_name: Optional[str] = None
+    group_name: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 class ITDiagnosisRequest(BaseModel):
     """
@@ -57,12 +122,18 @@ class TicketResponse(TicketBase):
     assigned_to_name: Optional[str] = None
     assigned_to_email: Optional[str] = None
     assigned_to_role: Optional[str] = None
+    assignment_group_id: Optional[UUID] = None
+    assignment_group_name: Optional[str] = None
+    assignment_group_department: Optional[str] = None
     related_asset_id: Optional[UUID] = None
+    
+    tasks: Optional[List[TaskResponse]] = []
     
     # Resolution Details
     resolution_notes: Optional[str] = None
     resolution_checklist: Optional[List[dict]] = None
     resolution_percentage: Optional[float] = 0.0
+    sla_deadline: Optional[datetime] = None
     timeline: Optional[List[dict]] = None
 
     created_at: datetime

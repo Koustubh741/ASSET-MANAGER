@@ -39,12 +39,12 @@ class Asset(Base):
     # Status and Location
     status = Column(String(50), nullable=False, index=True)
     location = Column(String(255), nullable=True) # Flat field
-    location_id = Column(UUID(as_uuid=True), ForeignKey("asset.locations.id"), nullable=True)
+    location_id = Column(UUID(as_uuid=True), ForeignKey("asset.locations.id", ondelete="SET NULL"), nullable=True)
     location_text = Column(String(255), nullable=True) # Fallback / Legacy
 
     # Assignment
     assigned_to = Column(String(255), nullable=True) # Flat field
-    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     assigned_to_name = Column(String(255), nullable=True) # Denormalized for display
     assigned_by = Column(String(255), nullable=True)
 
@@ -109,7 +109,7 @@ class AssetAssignment(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     asset_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
     assigned_by = Column(String, nullable=True)
     location = Column(String(255), nullable=True)
     assigned_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -151,7 +151,7 @@ class User(Base):
     location = Column(String(100), nullable=True)
     phone = Column(String(20), nullable=True)
     company = Column(String(255), nullable=True) # New field
-    manager_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
+    manager_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     persona = Column(String(100), nullable=True) # Functional Persona (e.g. IT_GOVERNANCE)
 
     # Subscription / Plan (AI Assistant access)
@@ -188,12 +188,16 @@ class Ticket(Base):
     category = Column(String(50), nullable=True) # Hardware, Software, Network
     
     # Relations
-    requestor_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True) 
-    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=True)
+    requestor_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True) 
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
+    assignment_group_id = Column(UUID(as_uuid=True), ForeignKey("support.assignment_groups.id", ondelete="SET NULL"), nullable=True)
     related_asset_id = Column(UUID(as_uuid=True), nullable=True)
 
     requestor = relationship("User", foreign_keys=[requestor_id])
     assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+    assignment_group = relationship("AssignmentGroup", foreign_keys=[assignment_group_id])
+    tasks = relationship("Task", back_populates="ticket", cascade="all, delete-orphan")
+    sla = relationship("TicketSLA", back_populates="ticket", uselist=False, cascade="all, delete-orphan")
     
     # Resolution Details
     resolution_notes = Column(Text, nullable=True)
@@ -206,6 +210,79 @@ class Ticket(Base):
 
     def __repr__(self):
         return f"<Ticket(id={self.id}, subject={self.subject}, status={self.status})>"
+
+class AssignmentGroup(Base):
+    """
+    Groups/Teams for ticket routing and task allocation
+    """
+    __tablename__ = "assignment_groups"
+    __table_args__ = {"schema": "support"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    department = Column(String(100), nullable=True)
+    description = Column(Text, nullable=True)
+    manager_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
+    
+    manager = relationship("User", foreign_keys=[manager_id])
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<AssignmentGroup(name={self.name}, department={self.department})>"
+
+class AssignmentGroupMember(Base):
+    """
+    Association table for Users and AssignmentGroups
+    """
+    __tablename__ = "assignment_group_members"
+    __table_args__ = {"schema": "support"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    group_id = Column(UUID(as_uuid=True), ForeignKey("support.assignment_groups.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False)
+    
+    group = relationship("AssignmentGroup")
+    user = relationship("User")
+
+    __table_args__ = (
+        Index('ix_group_member_unique', group_id, user_id, unique=True),
+        {"schema": "support"}
+    )
+
+class Task(Base):
+    """
+    Sub-tasks within a ticket for detailed task allocation
+    """
+    __tablename__ = "tasks"
+    __table_args__ = {"schema": "support"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    ticket_id = Column(UUID(as_uuid=True), ForeignKey("support.tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    subject = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    
+    # Assignment
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
+    group_id = Column(UUID(as_uuid=True), ForeignKey("support.assignment_groups.id", ondelete="SET NULL"), nullable=True)
+    
+    # Status and Priority
+    status = Column(String(50), default="Open", index=True) # Open, In Progress, Completed, Cancelled
+    priority = Column(String(20), default="Medium")
+    
+    due_date = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+    group = relationship("AssignmentGroup", foreign_keys=[group_id])
+    ticket = relationship("Ticket", back_populates="tasks")
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    def __repr__(self):
+        return f"<Task(id={self.id}, subject={self.subject}, status={self.status})>"
 
 class CategoryConfig(Base):
     """
@@ -238,7 +315,7 @@ class AssetRequest(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Requester information
-    requester_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False, index=True)
+    requester_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
 
     requester = relationship("User", foreign_keys=[requester_id])
     

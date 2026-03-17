@@ -8,12 +8,100 @@ import {
 import { useRole } from '@/contexts/RoleContext';
 import { useAssetContext, ASSET_STATUS } from '@/contexts/AssetContext';
 import { useToast } from '@/components/common/Toast';
+import apiClient from '@/lib/apiClient';
+
+function UpdateProfileModal({ isOpen, onClose, user, onUpdate }) {
+    const [formData, setFormData] = useState({
+        full_name: user?.full_name || '',
+        phone: user?.phone || '',
+        location: user?.location || '',
+        company: user?.company || ''
+    });
+    const [loading, setLoading] = useState(false);
+    const toast = useToast();
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const updated = await apiClient.updateMe(formData);
+            onUpdate(updated);
+            toast.show('Identity parameters synchronized successfully', 'success');
+            onClose();
+        } catch (error) {
+            toast.show(error.message || 'Synchronization failed', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
+            <div className="w-full max-w-lg glass-panel p-10 border border-white/10 shadow-2xl bg-slate-900 animate-in fade-in zoom-in duration-300">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
+                        <Settings size={24} className="animate-spin-slow" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-white uppercase tracking-tighter">Parameter Configuration</h3>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-[0.3em] mt-1">Update Unified Security Identity</p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-4">
+                        {[
+                            { name: 'full_name', label: 'Display Name', icon: User, placeholder: 'Enter full name' },
+                            { name: 'phone', label: 'Primary Terminal', icon: Smartphone, placeholder: '+1 (555) 000-0000' },
+                            { name: 'location', label: 'Deployment Hub', icon: MapPin, placeholder: 'Remote / HQ / Node' },
+                            { name: 'company', label: 'Organization', icon: Building2, placeholder: 'Entity Name' }
+                        ].map((field) => (
+                            <div key={field.name} className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <field.icon size={12} /> {field.label}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={formData[field.name]}
+                                    onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                                    className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-700"
+                                    placeholder={field.placeholder}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex gap-4 pt-6">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-[11px] font-black text-slate-400 uppercase tracking-widest rounded-2xl border border-white/5 transition-all"
+                        >
+                            Abort
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex-[2] py-4 bg-indigo-600 hover:bg-indigo-500 text-[11px] font-black text-white uppercase tracking-widest rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                            {loading ? <RefreshCw className="animate-spin" size={14} /> : <ShieldCheck size={14} />}
+                            Synchronize
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
 
 export default function ProfilePage() {
     const router = useRouter();
     const toast = useToast();
-    const { user, currentRole, logout } = useRole();
+    const { user, currentRole, logout, setAuth } = useRole();
     const { assets } = useAssetContext();
+    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
     // Fallback profile if user context is thin
     const displayProfile = {
@@ -35,6 +123,10 @@ export default function ProfilePage() {
     const handleLogout = () => {
         logout();
         window.location.href = '/login';
+    };
+
+    const handleUpdateComplete = (updatedUser) => {
+        setAuth({ user: { ...user, ...updatedUser } });
     };
 
     return (
@@ -83,7 +175,10 @@ export default function ProfilePage() {
                         </div>
 
                         <div className="relative z-10 w-full mt-10 space-y-3">
-                            <button className="w-full py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-200 dark:bg-white/10 text-[11px] font-black text-slate-700 dark:text-white uppercase tracking-widest rounded-2xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-2">
+                            <button 
+                                onClick={() => setIsUpdateModalOpen(true)}
+                                className="w-full py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-200 dark:bg-white/10 text-[11px] font-black text-slate-700 dark:text-white uppercase tracking-widest rounded-2xl border border-slate-200 dark:border-white/10 transition-all flex items-center justify-center gap-2"
+                            >
                                 <Settings size={14} /> Update Parameters
                             </button>
                             <button
@@ -194,6 +289,13 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+
+            <UpdateProfileModal 
+                isOpen={isUpdateModalOpen} 
+                onClose={() => setIsUpdateModalOpen(false)} 
+                user={user}
+                onUpdate={handleUpdateComplete}
+            />
         </div>
     );
 }

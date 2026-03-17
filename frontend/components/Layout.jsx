@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
-import { LayoutDashboard, Server, Settings, User, RotateCcw, ShoppingBag, Trash2, Sparkles, Monitor, MapPin, ChevronUp, Check, Cpu, Network, DollarSign, Menu, X, Shield, Bot, Wallet, Scan, GitBranch, Ticket, BarChart2, Trophy, Zap, Clock } from 'lucide-react'
+import { LayoutDashboard, Server, Settings, User, RotateCcw, ShoppingBag, Trash2, Sparkles, Monitor, MapPin, ChevronUp, Check, Cpu, Network, DollarSign, Menu, X, Shield, Bot, Wallet, Scan, GitBranch, Ticket, BarChart2, Trophy, Zap, Clock, LifeBuoy } from 'lucide-react'
 import { useRole } from '@/contexts/RoleContext'
 import AIAssistantSidebar from '@/components/AIAssistantSidebar'
 
@@ -38,6 +38,7 @@ export default function Layout({ children }) {
 
     const allNavItems = [
         { label: 'Dashboard', href: dashboardPath, icon: LayoutDashboard },
+        { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
         { label: 'Enterprise', href: '/enterprise', icon: Sparkles },
         { label: 'Topology', href: '/network-topology', icon: Network },
         { label: 'Assets', href: '/assets', icon: Server },
@@ -57,6 +58,7 @@ export default function Layout({ children }) {
         { label: 'Renewals', href: '/renewals', icon: RotateCcw },
         { label: 'Procurement', href: '/procurement', icon: ShoppingBag },
         { label: 'Finance', href: '/finance', icon: Wallet },
+        { label: 'Budget Queue', href: '/finance/budget-queue', icon: DollarSign },
         { label: 'Disposal', href: '/disposal', icon: Trash2 },
         { label: 'Pricing', href: '/pricing', icon: DollarSign },
         { label: 'Settings', href: '/settings', icon: Settings },
@@ -65,7 +67,7 @@ export default function Layout({ children }) {
     const navItemsBase = currentRole.slug === 'ADMIN'
         ? allNavItems
         : allNavItems.filter(item => {
-            const basicItems = ['Dashboard', 'Assets', 'Software'];
+            const basicItems = ['Dashboard', 'Assets', 'Software', 'Tickets'];
             if (basicItems.includes(item.label)) return true;
 
             // Show Patch Management for IT staff

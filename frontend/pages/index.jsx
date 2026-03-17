@@ -6,6 +6,8 @@ import AssetInventoryDashboard from '@/components/dashboards/AssetInventoryDashb
 import ITSupportDashboard from '@/components/dashboards/ITSupportDashboard'
 import ITStaffDashboard from '@/components/dashboards/ITStaffDashboard'
 import EndUserDashboard from '@/components/dashboards/EndUserDashboard'
+import FinanceDashboard from '@/components/dashboards/FinanceDashboard'
+import ProcurementManagerDashboard from '@/components/dashboards/ProcurementManagerDashboard'
 
 export default function Dashboard() {
     const { currentRole, user } = useRole();
@@ -13,8 +15,8 @@ export default function Dashboard() {
 
     if (!currentRole) return null;
 
-    if (currentRole.slug === 'FINANCE') return null;
-    if (currentRole.slug === 'PROCUREMENT') return null;
+    if (currentRole.slug === 'FINANCE') return <FinanceDashboard />
+    if (currentRole.slug === 'PROCUREMENT') return <ProcurementManagerDashboard />
 
     if (currentRole.slug === 'ADMIN') return <SystemAdminDashboard />
     if (currentRole.slug === 'ASSET_MANAGER') return <AssetInventoryDashboard />

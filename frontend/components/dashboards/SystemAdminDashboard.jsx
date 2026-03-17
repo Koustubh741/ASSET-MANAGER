@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Package, CheckCircle, AlertTriangle, Clock, Activity, Download, Plus, Layers, LayoutGrid, Calendar, ArrowUpRight, DollarSign, TrendingDown, ShoppingBag, LogOut, Trash, FileText, Filter, Search, UserPlus, Users, Settings, Scan, RefreshCw, Eye, ShieldCheck, X, Terminal, AlertCircle, ChevronRight, Wallet, Monitor } from 'lucide-react'
+import { Package, CheckCircle, AlertTriangle, Clock, Activity, Download, Plus, Layers, LayoutGrid, Calendar, ArrowUpRight, DollarSign, TrendingDown, ShoppingBag, LogOut, Trash, FileText, Filter, Search, UserPlus, Users, Settings, Scan, RefreshCw, Eye, ShieldCheck, X, Terminal, AlertCircle, ChevronRight, Wallet, Monitor, Sparkles } from 'lucide-react'
 import AlertsFeed from '@/components/AlertsFeed'
 import SecurityWidget from './SecurityWidget'
 import WorkflowVisualizer from '@/components/WorkflowVisualizer'
@@ -594,6 +594,17 @@ export default function SystemAdminDashboard({ forceView }) {
                                             icon={DollarSign}
                                             colorClass="text-violet-400"
                                             gradient="bg-gradient-to-br from-violet-500 to-fuchsia-500"
+                                        />
+                                    </Link>
+                                    <Link href="/analytics/oem">
+                                        <StatCard
+                                            title="OEM Intelligence"
+                                            value="Neural Dashboard"
+                                            subtext="Cost & Reliability Matrix"
+                                            icon={Sparkles}
+                                            colorClass="text-indigo-400"
+                                            gradient="bg-gradient-to-br from-indigo-500 to-purple-600"
+                                            trend="AI Ready"
                                         />
                                     </Link>
                                 </>

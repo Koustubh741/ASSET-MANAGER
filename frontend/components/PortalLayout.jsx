@@ -8,7 +8,7 @@ const FINANCE_NAV = [
     { label: 'Dashboard', href: '/finance', icon: LayoutDashboard, exactMatch: true },
     { label: 'Budget queue', href: '/finance/budget-queue', icon: DollarSign },
     { label: 'Analytics', href: '/finance/analytics', icon: PieChart },
-    { label: 'Support', href: '/tickets', icon: LifeBuoy },
+    { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
     // Root fix: keep Finance users inside the Finance hub for settings
     { label: 'Settings', href: '/finance/settings', icon: Settings },
 ];
@@ -18,7 +18,7 @@ const PROCUREMENT_NAV = [
     { label: 'Purchase orders', href: '/procurement/purchase-orders', icon: FileText },
     { label: 'Deliveries', href: '/procurement/deliveries', icon: Truck },
     { label: 'Analytics', href: '/procurement/analytics', icon: PieChart },
-    { label: 'Support', href: '/tickets', icon: LifeBuoy },
+    { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
     // Root fix: keep Procurement users inside the Procurement hub for settings
     { label: 'Settings', href: '/procurement/settings', icon: Settings },
 ];

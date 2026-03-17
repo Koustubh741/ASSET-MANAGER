@@ -69,6 +69,36 @@ const nextConfig = {
     experimental: {
         esmExternals: 'loose'
     },
+    // ROOT FIX: Server-side redirects for all legacy and broken routes.
+    // These are resolved at the HTTP layer before React loads — zero-flicker, no JS required.
+    async redirects() {
+        return [
+            // Legacy support page → integrated ticketing system
+            {
+                source: '/dashboard/support',
+                destination: '/tickets/new',
+                permanent: true, // 308 — updates bookmarks and browser history
+            },
+            // Old /support shortcut (in case it was ever linked)
+            {
+                source: '/support',
+                destination: '/tickets',
+                permanent: true,
+            },
+            // Legacy ticket creation route (old naming convention)
+            {
+                source: '/tickets/create',
+                destination: '/tickets/new',
+                permanent: true,
+            },
+            // Bare /help → tickets dashboard
+            {
+                source: '/help',
+                destination: '/tickets',
+                permanent: true,
+            },
+        ]
+    },
     async rewrites() {
         return [
             {

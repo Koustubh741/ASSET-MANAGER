@@ -5,7 +5,7 @@ import requests
 
 url = "http://127.0.0.1:8000/api/v1/auth/login"
 data = {
-    "username": "endcloud@gmail.com",
+    "username": "employee@itsm.com",
     "password": "password123"
 }
 

@@ -178,7 +178,9 @@ export default function AssetRequestPage() {
                                 <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-4">Request Configuration</h4>
                                 <div className="p-5 rounded-2xl bg-slate-50/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 flex items-center gap-4 group/item">
                                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover/item:scale-110 transition-transform">
-                                        <selectedAsset.icon size={28} />
+                                        {selectedAsset.icon && (
+                                            <selectedAsset.icon size={28} />
+                                        )}
                                     </div>
                                     <div>
                                         <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{selectedAsset.name}</p>
@@ -189,9 +191,6 @@ export default function AssetRequestPage() {
 
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Business Goal</label>
-                                <textarea
-                                    required
-                                    value={reason}
                                 <textarea
                                     required
                                     value={reason}

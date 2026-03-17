@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react';
 import { 
-    Zap, Target, Shield, AlertTriangle, TrendingUp, 
-    BarChart3, LayoutGrid, Cpu, Activity, Info, 
-    ChevronRight, ArrowUpRight, Award, Trash2,
-    DollarSign, Search, RefreshCw
+    RefreshCw, 
+    Activity, 
+    Shield, 
+    Info, 
+    AlertTriangle, 
+    Search, 
+    ArrowRight, 
+    ChevronRight,
+    Award,
+    Zap,
+    Sparkles,
+    ShieldCheck,
+    TrendingUp,
+    BarChart3,
+    LayoutGrid,
+    Cpu,
+    ArrowUpRight,
+    Trash2,
+    DollarSign,
+    Target
 } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
 
@@ -90,19 +106,60 @@ function EvidenceDrawer({ oem, onClose }) {
                         </div>
                     </div>
 
-                    {/* Step 2: Incident Velocity */}
+                    {/* Step 2: Incident Velocity & Type Breakdown */}
                     <div className="relative p-6 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 group">
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[10px] font-black">2</div>
-                        <h4 className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-3">Incident Velocity Penalty</h4>
+                        <h4 className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-3">Incident Velocity & Type Breakdown</h4>
                         <div className="space-y-4">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500 font-medium">Tickets Triggered ($T$)</span>
                                 <span className="text-slate-900 dark:text-white font-black">{oem.ticket_count}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500 font-medium">Failure Frequency ($T/A$)</span>
-                                <span className="text-slate-900 dark:text-white font-black">{(oem.ticket_count / oem.asset_count).toFixed(2)}</span>
+                            
+                            {/* NEW: Type Breakdown Visualization */}
+                            <div className="py-4 space-y-3">
+                                {Object.entries(oem.ticket_breakdown).map(([cat, count]) => {
+                                    const percentage = ((count / oem.ticket_count) * 100).toFixed(0);
+                                    const colors = {
+                                        'Hardware': 'bg-rose-500',
+                                        'Software': 'bg-indigo-500',
+                                        'Network': 'bg-amber-500',
+                                        'Other': 'bg-slate-500',
+                                        'Smart-Attributed': 'bg-emerald-500'
+                                    };
+                                    const color = colors[cat] || 'bg-slate-400';
+                                    return (
+                                        <div key={cat} className="space-y-1.5">
+                                            <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-wider">
+                                                <div className="flex items-center gap-1.5 text-slate-400">
+                                                    {cat}
+                                                    {cat === 'Smart-Attributed' && <Sparkles size={8} className="text-emerald-500" />}
+                                                </div>
+                                                <span className="text-slate-900 dark:text-white">{count} ({percentage}%)</span>
+                                            </div>
+                                            <div className="h-1 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${percentage}%` }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
+
+                            <div className="pt-3 border-t border-slate-200 dark:border-white/5 space-y-3">
+                                <h5 className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Severity-Weighted Impact</h5>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {Object.entries(oem.severity_breakdown).map(([sev, count]) => (
+                                        <div key={sev} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 text-center">
+                                            <p className="text-[10px] font-black text-slate-900 dark:text-white">{count}</p>
+                                            <p className={`text-[8px] font-bold uppercase tracking-tighter ${
+                                                sev === 'High' ? 'text-rose-400' :
+                                                sev === 'Medium' ? 'text-amber-400' : 'text-slate-400'
+                                            }`}>{sev}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="pt-3 border-t border-slate-200 dark:border-white/5 flex justify-between items-center text-rose-400 font-black">
                                 <span className="text-[10px] uppercase tracking-wider">Applied Penalty</span>
                                 <span className="text-lg font-['Outfit']">-{oem.freq_penalty}</span>
@@ -160,8 +217,16 @@ function EvidenceDrawer({ oem, onClose }) {
                             <div className="text-4xl font-black font-['Outfit'] tracking-tighter">{oem.reliability_score}%</div>
                             <ReliabilityBadge rating={oem.investment_rating} />
                         </div>
-                        <div className="p-3 bg-white/10 border border-white/10 rounded-xl font-mono text-[9px] leading-relaxed">
-                            REL_SCORE = MAX(100 - ({oem.freq_penalty}) - ({oem.mttr_penalty}), 0)
+                        <div className="space-y-3">
+                            <div className="p-3 bg-white/10 border border-white/10 rounded-xl font-mono text-[9px] leading-relaxed">
+                                <span className="block text-indigo-200 mb-1">// Phase 3: Severity-Weighted & Time-Normalized</span>
+                                REL_SCORE = MAX(100 - (W_Penalty / (AssetDays/30) * 5) - (MTTR * 0.5), 0)
+                            </div>
+                            <div className="flex items-center gap-4 text-[9px] font-bold text-indigo-200 uppercase tracking-widest pl-1">
+                                <span>Asset Days: {oem.asset_days}</span>
+                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-300/30" />
+                                <span>Weighted Penalty: {Object.values(oem.severity_breakdown).reduce((a,b)=>a+b,0)} pts</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -205,6 +270,38 @@ export default function OEMAnalytics() {
 
     return (
         <div className="min-h-screen p-6 lg:p-10 space-y-10">
+            {/* ── Data Quality Layer (Phase 4) ────────────────────────────── */}
+            {data && data.data_quality_score < 100 && (
+                <div className={`relative overflow-hidden p-6 rounded-3xl border animate-in fade-in slide-in-from-top-4 duration-700 ${
+                    data.data_quality_score < 70 
+                    ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400' 
+                    : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
+                }`}>
+                    <div className="flex items-start gap-5">
+                        <div className={`p-3 rounded-2xl ${
+                            data.data_quality_score < 70 ? 'bg-rose-500' : 'bg-amber-500'
+                        } text-white shadow-lg`}>
+                            <AlertTriangle size={24} />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-sm font-black uppercase tracking-widest mb-1">Intelligence Visibility Alert</h3>
+                            <p className="text-xs font-medium opacity-90 max-w-2xl leading-relaxed">
+                                {data.unlinked_technical_count} technical tickets are currently "orphaned" (unlinked to assets). 
+                                Your Intelligence Matrix accuracy is at <span className="font-black">{data.data_quality_score}%</span>. 
+                                Reliability scores may be artificially inflated for specific vendors.
+                            </p>
+                            <div className="mt-4 flex items-center gap-4">
+                                <div className="px-3 py-1 rounded-full bg-white/20 dark:bg-black/20 text-[10px] font-black uppercase tracking-tighter flex items-center gap-2">
+                                    <Zap size={10} /> Smart Attribution: {data.smart_attributed_count} Linked
+                                </div>
+                                <button className="text-[10px] font-black uppercase tracking-widest underline decoration-2 underline-offset-4 hover:opacity-70 transition-opacity">
+                                    Launch Data Audit Tool
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* ── Header Layer ─────────────────────────────────────────────── */}
             <header className="relative glass-panel p-8 overflow-hidden group border border-slate-300 dark:border-white/10">
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-transparent to-rose-500/5 pointer-events-none" />
@@ -308,6 +405,7 @@ export default function OEMAnalytics() {
                                     <th className="text-left pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">OEM / Vendor</th>
                                     <th className="text-right pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Reliability</th>
                                     <th className="text-right pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">TCO</th>
+                                    <th className="text-right pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Primary Issue</th>
                                     <th className="text-right pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">MTTR (Hrs)</th>
                                     <th className="text-center pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest px-4">Investment</th>
                                 </tr>
@@ -344,6 +442,16 @@ export default function OEMAnalytics() {
                                         <td className="py-4 text-right">
                                             <span className="text-xs font-black text-slate-900 dark:text-white">${m.total_cost.toLocaleString()}</span>
                                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${Math.round(m.maintenance_cost).toLocaleString()} maint.</p>
+                                        </td>
+                                        <td className="py-4 text-right">
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${
+                                                    m.primary_impact === 'Hardware' ? 'bg-rose-500' :
+                                                    m.primary_impact === 'Software' ? 'bg-indigo-500' :
+                                                    m.primary_impact === 'Network' ? 'bg-amber-500' : 'bg-slate-400'
+                                                }`} />
+                                                <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-wider">{m.primary_impact}</span>
+                                            </div>
                                         </td>
                                         <td className="py-4 text-right">
                                             <span className="text-xs font-black text-slate-900 dark:text-white">{m.avg_mttr_hours}h</span>

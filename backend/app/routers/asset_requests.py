@@ -102,10 +102,24 @@ async def get_asset_request_by_id(
     if not asset_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
         
-    # Security Root Fix: Authorization check
-    if current_user.role == "END_USER" and current_user.position != "MANAGER":
-        if asset_request.requester_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Unauthorized to view this request")
+    # ROOT FIX: Security & Privacy Wall
+    # 1. Staff roles / Admins see everything
+    if current_user.role in STAFF_ROLES or current_user.role == "ADMIN":
+        return asset_request
+
+    # 2. Managers see their own requests OR requests within their department
+    if current_user.position == "MANAGER":
+        is_owner = asset_request.requester_id == current_user.id
+        # Note: asset_request_service.get_asset_request_by_id usually populates requester info
+        in_dept = asset_request.requester and asset_request.requester.get('department') == current_user.department
+        
+        if not (is_owner or in_dept):
+            raise HTTPException(status_code=403, detail="Unauthorized: Request belongs to a different department")
+        return asset_request
+
+    # 3. Regular End Users ONLY see their own personal requests
+    if asset_request.requester_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized to view this request")
             
     return asset_request
 

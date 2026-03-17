@@ -1,4 +1,4 @@
-import { DollarSign, TrendingDown, PieChart, Download, CheckCircle, XCircle, User, Calendar, Hash, Package, ShieldCheck, Activity, Eye, LifeBuoy } from 'lucide-react';
+import { DollarSign, TrendingDown, PieChart, Download, CheckCircle, XCircle, User, Calendar, Hash, Package, ShieldCheck, Activity, Eye, LifeBuoy, LayoutDashboard } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAssetContext } from '@/contexts/AssetContext';
 import { useToast } from '@/components/common/Toast';
@@ -94,9 +94,11 @@ const RenderStructuredData = ({ data, onValueChange, editing = false }) => {
 const DEFAULT_CHART_DATA = [];
 
 /** @param {{ activeView?: 'dashboard' | 'budget-queue' }} props */
-export default function FinanceDashboard({ activeView = 'dashboard' }) {
+export default function FinanceDashboard({ activeView: initialView = 'dashboard' }) {
     const toast = useToast();
     const { requests, financeApprove, financeReject } = useAssetContext();
+
+    const [activeView, setActiveView] = useState(initialView);
 
     // Items arrive at Finance when Procurement has validated the PO (procurementStage === 'PO_VALIDATED')
     const budgetApprovals = requests.filter(r => r.currentOwnerRole === 'FINANCE' && r.procurementStage === 'PO_VALIDATED');
@@ -267,19 +269,33 @@ export default function FinanceDashboard({ activeView = 'dashboard' }) {
                             Review & Fund Release Authorization
                         </p>
                     </div>
-                    <button
-                        onClick={exportFinanceIntel}
-                        className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-200 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
-                    >
-                        <Download size={18} className="text-emerald-500" /> Export Archive
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setActiveView('dashboard')}
+                            className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-200 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                        >
+                            <LayoutDashboard size={18} className="text-indigo-500" /> Governance Overview
+                        </button>
+                        <button
+                            onClick={exportFinanceIntel}
+                            className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-slate-200 dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                        >
+                            <Download size={18} className="text-emerald-500" /> Export Archive
+                        </button>
+                    </div>
                 </header>
             )}
 
             <ActionsNeededBanner
                 title="Actions needed"
                 items={[
-                    ...(budgetApprovals.length > 0 ? [{ label: 'Budget approvals', count: budgetApprovals.length, icon: DollarSign, variant: 'primary' }] : []),
+                    ...(budgetApprovals.length > 0 ? [{ 
+                        label: 'Budget approvals', 
+                        count: budgetApprovals.length, 
+                        icon: DollarSign, 
+                        variant: 'primary',
+                        onClick: () => setActiveView('budget-queue')
+                    }] : []),
                 ]}
             />
 
@@ -339,11 +355,11 @@ export default function FinanceDashboard({ activeView = 'dashboard' }) {
                         <p className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">{budgetApprovals.length}<span className="text-xl text-slate-500 dark:text-slate-400 ml-1 font-bold">Files</span></p>
 
                         <button
-                            onClick={() => setShowPoTable(v => !v)}
+                            onClick={() => setActiveView('budget-queue')}
                             className="mt-6 w-full text-[10px] font-black uppercase tracking-widest px-6 py-4 rounded-2xl bg-white dark:bg-slate-900 dark:bg-white text-slate-900 dark:text-white dark:text-slate-900 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/10"
                         >
-                            {showPoTable ? <CheckCircle size={18} className="text-emerald-400" /> : <Activity size={18} className="text-indigo-400" />}
-                            {showPoTable ? 'Close Extraction Audit' : 'Open System Audit'}
+                            <Activity size={18} className="text-indigo-400" />
+                            Open Budget Registry
                         </button>
                     </div>
                 </div>

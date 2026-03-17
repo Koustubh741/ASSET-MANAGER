@@ -157,7 +157,19 @@ export default function TicketsDashboard() {
                             <Link href="/tickets/all" className="text-sm text-blue-400 hover:text-blue-300">View All Tickets</Link>
                         </div>
                         <div className="divide-y divide-white/5">
-                            {recentTickets.map(ticket => (
+                            {statsLoading ? (
+                                <div className="p-4 space-y-4">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="animate-pulse flex justify-between items-start">
+                                            <div className="space-y-2 flex-1">
+                                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                                                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-1/2"></div>
+                                            </div>
+                                            <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-16 ml-4"></div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : recentTickets.length > 0 ? recentTickets.map(ticket => (
                                 <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block p-4 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-50 transition-colors group">
                                     <div className="flex justify-between items-start">
                                         <div>
@@ -178,7 +190,18 @@ export default function TicketsDashboard() {
                                         </div>
                                     </div>
                                 </Link>
-                            ))}
+                            )) : (
+                                <div className="p-12 text-center">
+                                    <div className="w-16 h-16 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
+                                        <Ticket size={32} />
+                                    </div>
+                                    <h4 className="text-slate-900 dark:text-white font-bold uppercase tracking-tight">Queues are clear</h4>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">No recent ticket activity found for your profile.</p>
+                                    <Link href="/tickets/new" className="inline-flex items-center gap-2 mt-6 text-xs font-black text-rose-500 uppercase tracking-widest hover:text-rose-400 transition-colors">
+                                        <Plus size={14} /> Open First Ticket
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     </div>
 

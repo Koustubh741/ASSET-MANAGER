@@ -82,9 +82,9 @@ async def verify_architectural_root_fix():
         # Should see both requests
         req_ids = [r.id for r in requests]
         if dept_req.id in req_ids and manager_req.id in req_ids:
-            print("✅ Unified Scoping (Requests) SUCCESS: Manager sees Dept + Personal requests.")
+            print("[OK] Unified Scoping (Requests) SUCCESS: Manager sees Dept + Personal requests.")
         else:
-            print(f"❌ Unified Scoping (Requests) FAILED: Got {len(requests)} requests, missing some.")
+            print(f"[FAILED] Unified Scoping (Requests) FAILED: Got {len(requests)} requests, missing some.")
             
         # 6. Setup Asset for Atomic Assignment Verification
         asset_id = uuid.uuid4()
@@ -116,9 +116,9 @@ async def verify_architectural_root_fix():
         updated_asset = updated_asset_res.scalars().first()
         
         if updated_asset.assigned_to == "Architectural User" and updated_asset.assigned_to_id == user_id:
-            print("✅ Atomic Assignment SUCCESS: Both Name and UUID set correctly.")
+            print("[OK] Atomic Assignment SUCCESS: Both Name and UUID set correctly.")
         else:
-            print(f"❌ Atomic Assignment FAILED: name='{updated_asset.assigned_to}', id='{updated_asset.assigned_to_id}'")
+            print(f"[FAILED] Atomic Assignment FAILED: name='{updated_asset.assigned_to}', id='{updated_asset.assigned_to_id}'")
 
         # 7. Cleanup
         print("\nCleaning up test data...")

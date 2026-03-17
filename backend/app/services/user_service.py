@@ -1,3 +1,4 @@
+from typing import Optional, List, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
@@ -204,6 +205,26 @@ async def update_user_password(db: AsyncSession, user_id: UUID, new_password: st
     if not user:
         return None
     user.password_hash = get_password_hash(new_password)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+async def update_user(db: AsyncSession, user_id: UUID, user_update: UserUpdate) -> Optional[User]:
+    """
+    Update user data dynamically.
+    """
+    user = await get_user(db, user_id)
+    if not user:
+        return None
+    
+    update_data = user_update.model_dump(exclude_unset=True)
+    
+    if "password" in update_data:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+        
+    for field, value in update_data.items():
+        setattr(user, field, value)
+        
     await db.commit()
     await db.refresh(user)
     return user

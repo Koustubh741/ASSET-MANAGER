@@ -21,6 +21,12 @@ class AutomationService:
         if not ticket:
             return
 
+        # ROOT FIX: If an assignment group is already set (manual/initial assignment), 
+        # do not apply keyword-aware routing rules to avoid "hijacking".
+        if ticket.assignment_group_id:
+            logger.info(f"Ticket {ticket_id} already has assignment group {ticket.assignment_group_id}. Skipping auto-routing.")
+            return
+
         # Fetch active rules ordered by priority
         rules_result = await db.execute(
             select(WorkflowRule).where(WorkflowRule.is_active == True).order_by(WorkflowRule.priority_order.asc())
@@ -89,19 +95,23 @@ class AutomationService:
         best_policy = None
         best_score = -1
 
+        print(f"DEBUG: Initializing SLA for ticket {ticket_id} (Priority: {ticket.priority}, Category: {ticket.category})")
         for p in policies:
             score = 0
-            if p.priority == ticket.priority: score += 10
+            if p.priority and ticket.priority and p.priority.lower() == ticket.priority.lower(): score += 10
             elif p.priority is not None: continue # Mismatching priority
 
-            if p.category == ticket.category: score += 5
+            if p.category and ticket.category and p.category.lower() == ticket.category.lower(): score += 5
             elif p.category is not None: continue # Mismatching category
+            
+            print(f"DEBUG: Policy {p.name} matches with score {score}")
 
             if score > best_score:
                 best_score = score
                 best_policy = p
 
         if best_policy is not None:
+            print(f"DEBUG: Selected Policy: {best_policy.name}")
             logger.info(f"Ticket {ticket_id} assigned SLA Policy: {best_policy.name}")
             
             now = datetime.utcnow()
@@ -111,13 +121,26 @@ class AutomationService:
             res_deadline = now + timedelta(minutes=response_time) if response_time else None
             rem_deadline = now + timedelta(minutes=resolution_time)
 
-            new_sla = TicketSLA(
-                ticket_id=ticket.id,
-                sla_policy_id=best_policy.id,
-                response_deadline=res_deadline,
-                resolution_deadline=rem_deadline
-            )
-            db.add(new_sla)
+            # Check for existing SLA to update
+            sla_query = select(TicketSLA).where(TicketSLA.ticket_id == ticket.id)
+            existing_sla_res = await db.execute(sla_query)
+            existing_sla = existing_sla_res.scalars().first()
+
+            if existing_sla:
+                existing_sla.sla_policy_id = best_policy.id
+                existing_sla.response_deadline = res_deadline
+                existing_sla.resolution_deadline = rem_deadline
+                existing_sla.response_status = "IN_PROGRESS"
+                existing_sla.resolution_status = "IN_PROGRESS"
+            else:
+                new_sla = TicketSLA(
+                    ticket_id=ticket.id,
+                    sla_policy_id=best_policy.id,
+                    response_deadline=res_deadline,
+                    resolution_deadline=rem_deadline
+                )
+                db.add(new_sla)
+            
             await db.commit()
 
     @staticmethod

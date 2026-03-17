@@ -129,18 +129,29 @@ export function AssetProvider({ children }) {
                         apiTickets = await apiClient.getTickets();
                     } else {
                         console.log(`[AssetContext] Fetching for manager: Dept=${user.department}, Domain=${user.domain}`);
-
-                        // Fetch scoped data for both Dept and Domain to be safe
-                        const deptReqs = user.department ? await apiClient.getAssetRequests({ department: user.department }) : [];
-                        const domainReqs = user.domain ? await apiClient.getAssetRequests({ domain: user.domain }) : [];
-                        const myReqs = await apiClient.getAssetRequests({ mine: true });
-
-                        const deptAssets = user.department ? await apiClient.getAssets({ department: user.department }) : [];
-                        const domainAssets = user.domain ? await apiClient.getAssets({ domain: user.domain }) : [];
-                        const myAssetsList = await apiClient.getMyAssets();
-
-                        const deptTickets = user.department ? await apiClient.getTickets(0, 100, user.department) : [];
-                        const domainTickets = user.domain ? await apiClient.getTickets(0, 100, user.domain) : [];
+                        
+                        const shouldFetchDomain = user.domain && user.domain !== user.department;
+                        
+                        // Execute all fetches in parallel for better performance
+                        const [
+                            deptReqs, 
+                            domainReqs, 
+                            myReqs,
+                            deptAssets,
+                            domainAssets,
+                            myAssetsList,
+                            deptTickets,
+                            domainTickets
+                        ] = await Promise.all([
+                            user.department ? apiClient.getAssetRequests({ department: user.department }) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getAssetRequests({ domain: user.domain }) : Promise.resolve([]),
+                            apiClient.getAssetRequests({ mine: true }),
+                            user.department ? apiClient.getAssets({ department: user.department }) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getAssets({ domain: user.domain }) : Promise.resolve([]),
+                            apiClient.getMyAssets(),
+                            user.department ? apiClient.getTickets(0, 100, user.department) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getTickets(0, 100, user.domain) : Promise.resolve([])
+                        ]);
 
                         console.log(`[AssetContext] Dept fetches: reqs=${deptReqs.length}, assets=${deptAssets.length}, tickets=${deptTickets.length}`);
                         console.log(`[AssetContext] Domain fetches: reqs=${domainReqs.length}, assets=${domainAssets.length}, tickets=${domainTickets.length}`);
@@ -242,7 +253,9 @@ export function AssetProvider({ children }) {
                             name: t.requestor_name || t.requestor_id || 'Employee',
                             email: ''
                         },
-                        currentOwnerRole: OWNER_ROLE.IT_MANAGEMENT,
+                        currentOwnerRole: t.assignment_group_department 
+                            ? (t.assignment_group_department.toUpperCase() === 'IT' ? OWNER_ROLE.IT_MANAGEMENT : t.assignment_group_department.toUpperCase()) 
+                            : OWNER_ROLE.IT_MANAGEMENT,
                         createdAt: t.created_at
                     };
                 });

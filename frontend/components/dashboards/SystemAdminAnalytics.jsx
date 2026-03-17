@@ -219,6 +219,11 @@ export default function SystemAdminAnalytics() {
                                     <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-wider">Discovered via agent</p>
                                     <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{saasStats.discovered_count}</p>
                                 </Link>
+                                <Link href="/analytics/oem" className="rounded-xl p-4 bg-indigo-500/10 border border-indigo-500/20 hover:bg-indigo-500/20 transition-colors">
+                                    <p className="text-xs text-indigo-500 dark:text-indigo-400 uppercase tracking-wider">OEM Intelligence</p>
+                                    <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">AI Metrics</p>
+                                    <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-0.5">Neural Insights</p>
+                                </Link>
                             </div>
                         </div>
                     </>

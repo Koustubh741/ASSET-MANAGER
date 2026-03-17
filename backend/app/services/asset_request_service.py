@@ -212,7 +212,9 @@ async def update_asset_request_status_with_validation(
     """
     Update asset request status with state machine validation
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
@@ -273,7 +275,9 @@ async def update_it_review_status(
     - If not available: Routes to PROCUREMENT_REQUESTED
     """
     print(f"[DEBUG] update_it_review_status: Looking for request_id={request_id}, new_status={new_status}")
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         print(f"[DEBUG] update_it_review_status: Request {request_id} not found in database")
@@ -328,7 +332,9 @@ async def update_procurement_finance_status(
     Procurement-only: validate PO (set PO_VALIDATED) or reject (set PROCUREMENT_REJECTED).
     Finance approve/reject is handled by procurement_service.validate_finance_budget.
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
@@ -399,7 +405,9 @@ async def perform_qc_check(
     """
     Perform quality check on received asset
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
@@ -447,7 +455,9 @@ async def update_user_acceptance(
     """
     Update user acceptance status
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
@@ -512,7 +522,9 @@ async def register_byod_device_service(
     """
     Service to register a BYOD device and update request status.
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     # Accept both IT_APPROVED (quick path) and BYOD_COMPLIANCE_CHECK (full compliance flow)
     if not db_request or db_request.status not in ("IT_APPROVED", "BYOD_COMPLIANCE_CHECK"):

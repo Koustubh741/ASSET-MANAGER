@@ -25,6 +25,8 @@ from app.routers import (
     remote_assistance,
     categories,
     analytics_oem,
+    groups,
+    tasks,
 )
 
 api_router = APIRouter()
@@ -55,3 +57,5 @@ api_router.include_router(patch_management.router)
 api_router.include_router(remote_assistance.router)
 api_router.include_router(categories.router)
 api_router.include_router(analytics_oem.router)
+api_router.include_router(groups.router)
+api_router.include_router(tasks.router)

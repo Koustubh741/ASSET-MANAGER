@@ -74,7 +74,7 @@ class TicketSLA(Base):
     responded_at = Column(DateTime(timezone=True), nullable=True)
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
-    ticket = relationship("Ticket", backref="sla")
+    ticket = relationship("Ticket", back_populates="sla")
     policy = relationship("SLAPolicy")
 
 class ChangeApproval(Base):

@@ -94,6 +94,7 @@ async def run_complete_seeding():
                 # Update existing user to ensure consistency
                 user.full_name = user_data["full_name"]
                 user.role = user_data["role"]
+                user.password_hash = password_hash
                 user.position = user_data["position"]
                 user.department = user_data["department"]
                 user.domain = user_data["domain"]

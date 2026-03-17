@@ -4,7 +4,8 @@ Handles email and system notifications for asset request workflow state changes.
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from ..models.models import User, AssetRequest
+from sqlalchemy.orm import joinedload
+from ..models.models import User, AssetRequest, Ticket, AssignmentGroup, AssignmentGroupMember
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 from datetime import datetime
@@ -415,29 +416,58 @@ class NotificationService:
         return True
     
     async def notify_ticket_created(self, ticket_id: UUID):
-        """Notify IT Management when a new support ticket is created"""
-        from ..models.models import Ticket
-        result = await self.db.execute(select(Ticket).filter(Ticket.id == ticket_id))
+        """Notify assigned group members when a new support ticket is created"""
+        result = await self.db.execute(
+            select(Ticket)
+            .options(joinedload(Ticket.assignment_group))
+            .filter(Ticket.id == ticket_id)
+        )
         ticket = result.scalars().first()
         if not ticket:
             return False
             
-        requester = await self.db.execute(select(User).filter(User.id == ticket.requestor_id))
-        requester_user = requester.scalars().first()
+        requester_res = await self.db.execute(select(User).filter(User.id == ticket.requestor_id))
+        requester_user = requester_res.scalars().first()
         
-        it_emails = await self._get_users_by_role("IT_MANAGEMENT")
+        # Recipients list
+        recipients = []
+        
+        # 1. If assigned to a group, notify group members
+        if ticket.assignment_group_id:
+            group_members_res = await self.db.execute(
+                select(User.email)
+                .join(AssignmentGroupMember, AssignmentGroupMember.user_id == User.id)
+                .filter(AssignmentGroupMember.group_id == ticket.assignment_group_id, User.status == "ACTIVE")
+            )
+            recipients.extend([email for email in group_members_res.scalars().all() if email])
+            
+            # Also notify group manager if exists
+            group_res = await self.db.execute(select(AssignmentGroup).filter(AssignmentGroup.id == ticket.assignment_group_id))
+            group = group_res.scalars().first()
+            if group and group.manager_id:
+                manager_email = await self._get_user_email(group.manager_id)
+                if manager_email and manager_email not in recipients:
+                    recipients.append(manager_email)
+
+        # 2. Fallback: If no recipients or no group, notify IT Management
+        if not recipients:
+            recipients = await self._get_users_by_role("IT_MANAGEMENT")
+
         body = f"""
-        A new support ticket has been created.
+        A new support ticket has been created and assigned to your team.
         
         Ticket ID: {ticket_id}
         Requester: {requester_user.full_name if requester_user else 'Unknown'}
+        Department: {requester_user.department if requester_user else 'N/A'}
         Subject: {ticket.subject}
         Priority: {ticket.priority}
+        Group: {ticket.assignment_group.name if ticket.assignment_group else 'Unassigned'}
         
         Description:
         {ticket.description}
         """
-        for email in it_emails:
+        
+        for email in recipients:
             await self._simulate_email(
                 to=email,
                 subject=f"New Support Ticket: {ticket.subject}",

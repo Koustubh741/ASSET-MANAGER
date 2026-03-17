@@ -1,20 +1,20 @@
 {
+    "include": [
+        "backend"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__"
+    ],
     "executionEnvironments": [
         {
             "root": "backend",
-            "pythonVersion": "3.10",
             "extraPaths": [
-                "backend"
+                "D:/ASSET-MANAGER/backend",
+                "C:/Users/Admin/AppData/Local/Programs/Python/Python311/Lib/site-packages"
             ]
         }
     ],
-    "typeCheckingMode": "basic",
-    "diagnosticSeverityOverrides": {
-        "reportMissingImports": "none",
-        "reportOptionalMemberAccess": "warning",
-        "reportGeneralTypeIssues": "warning"
-    },
-    "exclude": [
-        "**/__pycache__"
-    ]
+    "useLibraryCodeForTypes": true,
+    "typeCheckingMode": "basic"
 }

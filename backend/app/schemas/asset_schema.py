@@ -55,6 +55,7 @@ class AssetUpdate(BaseModel):
     segment: Optional[str] = None
     renewal_status: Optional[str] = None
     renewal_cost: Optional[float] = None
+    request_id: Optional[UUID] = None
 
 from uuid import UUID
 from typing import Union
@@ -69,6 +70,7 @@ class AssetResponse(AssetBase):
     location_id: Optional[UUID] = None
     assigned_to_id: Optional[UUID] = None
     assigned_to_name: Optional[str] = None
+    request_id: Optional[UUID] = None
 
     class Config:
         json_encoders = {

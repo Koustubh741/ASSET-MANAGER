@@ -250,6 +250,10 @@ class ApiClient {
         });
     }
 
+    async updateMe(userData) {
+        return this.patch('/auth/me', userData);
+    }
+
     async logout() {
         await this.request('/auth/logout', { method: 'POST' });
         this.clearToken();
@@ -1051,6 +1055,44 @@ class ApiClient {
         return this.request(`/tickets/sla-policies/${policyId}`, {
             method: 'DELETE',
         });
+    }
+
+    // Assignment Groups
+    async getAssignmentGroups() {
+        return this.request('/groups/');
+    }
+
+    async createAssignmentGroup(groupData) {
+        return this.post('/groups/', groupData);
+    }
+
+    async deleteAssignmentGroup(id) {
+        return this.delete(`/groups/${id}`);
+    }
+
+    async addGroupMember(groupId, userId) {
+        return this.post(`/groups/${groupId}/members/${userId}`);
+    }
+
+    async removeGroupMember(groupId, userId) {
+        return this.delete(`/groups/${groupId}/members/${userId}`);
+    }
+
+    // Tasks
+    async getTicketTasks(ticketId) {
+        return this.request(`/tasks/ticket/${ticketId}`);
+    }
+
+    async createTask(taskData) {
+        return this.post('/tasks/', taskData);
+    }
+
+    async updateTask(taskId, taskData) {
+        return this.patch(`/tasks/${taskId}`, taskData);
+    }
+
+    async deleteTask(taskId) {
+        return this.delete(`/tasks/${taskId}`);
     }
 }
 

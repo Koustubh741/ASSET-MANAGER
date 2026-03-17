@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
     PieChart, Activity, TrendingUp, TrendingDown,
     BarChart2, Target, Zap, Clock, CheckCircle2,
@@ -145,10 +146,12 @@ export default function AnalyticsPage() {
                         </div>
 
                         <div className="flex gap-4">
-                            <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white dark:bg-slate-900 dark:bg-white text-slate-900 dark:text-white dark:text-slate-950 text-sm font-black transition-all hover:scale-105 active:scale-95 group">
-                                <Zap size={14} className="group-hover:text-indigo-400" />
-                                Manage Intelligence
-                            </button>
+                            <Link href="/analytics/oem">
+                                <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white dark:bg-slate-900 dark:bg-white text-slate-900 dark:text-white dark:text-slate-950 text-sm font-black transition-all hover:scale-105 active:scale-95 group">
+                                    <Zap size={14} className="group-hover:text-indigo-400" />
+                                    Manage Intelligence
+                                </button>
+                            </Link>
                             <button
                                 onClick={fetchAll}
                                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-sm font-black transition-all hover:bg-slate-200 dark:hover:bg-slate-200 dark:bg-white/10 active:scale-95"

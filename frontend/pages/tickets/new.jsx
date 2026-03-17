@@ -9,23 +9,29 @@ export default function NewTicketPage() {
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [assets, setAssets] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [formData, setFormData] = useState({
         subject: '',
         priority: 'Medium',
         related_asset_id: '',
-        description: ''
+        description: '',
+        assignment_group_id: ''
     });
 
     useEffect(() => {
-        const fetchAssets = async () => {
+        const fetchData = async () => {
             try {
-                const apiAssets = await apiClient.getAssets();
+                const [apiAssets, apiGroups] = await Promise.all([
+                    apiClient.getAssets(),
+                    apiClient.getAssignmentGroups()
+                ]);
                 setAssets(apiAssets);
+                setGroups(apiGroups);
             } catch (error) {
-                console.error('Failed to load assets:', error);
+                console.error('Failed to load assets or groups:', error);
             }
         };
-        fetchAssets();
+        fetchData();
     }, []);
 
     const handleSubmit = async (e) => {
@@ -34,11 +40,17 @@ export default function NewTicketPage() {
 
         setLoading(true);
         try {
-            const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Guest' };
-            await apiClient.createTicket({
-                ...formData,
-                requestor_id: user.id || user.full_name // Backend expects a string ID or name
-            });
+            // ROOT FIX: Do NOT send requestor_id — backend derives it from JWT.
+            // Also convert empty strings to null for optional UUID fields to prevent 422 errors.
+            const ticketData = {
+                subject: formData.subject,
+                description: formData.description,
+                priority: formData.priority,
+                related_asset_id: formData.related_asset_id || null,
+                assignment_group_id: formData.assignment_group_id || null,
+            };
+
+            await apiClient.createTicket(ticketData);
             setSubmitted(true);
         } catch (error) {
             alert('Failed to create ticket: ' + error.message);
@@ -108,6 +120,28 @@ export default function NewTicketPage() {
                                     <option key={a.id} value={a.id}>{a.name} ({a.model})</option>
                                 ))}
                             </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Assignment Group</label>
+                            <select
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-slate-900 dark:text-white"
+                                value={formData.assignment_group_id}
+                                onChange={(e) => setFormData({ ...formData, assignment_group_id: e.target.value })}
+                            >
+                                <option value="">Auto-route (Default)</option>
+                                {groups.map(g => (
+                                    <option key={g.id} value={g.id}>
+                                        {g.name} {g.department ? `[${g.department}]` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-[10px] text-slate-400 mt-1 italic">Leave empty for automatic routing based on category.</p>
+                        </div>
+                        <div>
+                            {/* Empty slot for layout alignment or category selection if needed */}
                         </div>
                     </div>
 

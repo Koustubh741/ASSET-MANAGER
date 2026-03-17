@@ -7,7 +7,7 @@ from sqlalchemy.future import select
 from sqlalchemy import cast, String
 from ..database.database import get_db
 from ..schemas.user_schema import (
-    UserCreate, UserResponse, LoginRequest, LoginResponse, 
+    UserCreate, UserUpdate, UserResponse, LoginRequest, LoginResponse, 
     RefreshTokenRequest, ForgotPasswordRequest, ResetPasswordRequest
 )
 from ..schemas.exit_schema import ExitRequestResponse
@@ -239,6 +239,21 @@ class PlanUpdate(BaseModel):
     plan: str  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
 
 
+@router.patch("/me", response_model=UserResponse)
+async def update_current_user(
+    user_update: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Update the current authenticated user's profile information.
+    """
+    updated_user = await user_service.update_user(db, current_user.id, user_update)
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return updated_user
+
+
 @router.patch("/me/plan", response_model=UserResponse)
 async def update_my_plan(
     body: PlanUpdate,
@@ -252,14 +267,10 @@ async def update_my_plan(
     valid_plans = ["STARTER", "PROFESSIONAL", "BUSINESS", "ENTERPRISE"]
     if body.plan not in valid_plans:
         raise HTTPException(status_code=400, detail=f"Invalid plan. Must be one of: {valid_plans}")
-    user = await user_service.get_user(db, current_user.id)
-    if not user:
+    updated_user = await user_service.update_user(db, current_user.id, UserUpdate(plan=body.plan))
+    if not updated_user:
         raise HTTPException(status_code=404, detail="User not found")
-    if hasattr(user, "plan"):
-        user.plan = body.plan
-    await db.commit()
-    await db.refresh(user)
-    return user
+    return updated_user
 
 
 @router.get("/sso/login/{provider}")
