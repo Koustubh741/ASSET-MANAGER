@@ -6,9 +6,18 @@ sqlalchemy
 pandas
 openpyxl
 python-dotenv
+PyYAML
 psycopg2-binary
 passlib[bcrypt]
 python-jose[cryptography]
 pypdf
 asyncpg
 greenlet
+pysnmp
+scapy
+openai
+apscheduler
+
+# Remote Server Discovery
+paramiko
+pywinrm

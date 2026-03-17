@@ -1,4 +1,4 @@
-from database import engine, test_connection
+from app.database.database import engine, test_connection
 from sqlalchemy import text
 import time
 

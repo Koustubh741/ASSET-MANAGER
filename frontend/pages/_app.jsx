@@ -1,72 +1,66 @@
 import '@/styles/globals.css'
 import Layout from '@/components/Layout'
+import PortalLayout from '@/components/PortalLayout'
 import { RoleProvider } from '@/contexts/RoleContext'
 import { AssetProvider } from '@/contexts/AssetContext'
+import { ToastProvider } from '@/components/common/Toast'
 import AuthGuard from '@/components/AuthGuard'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
+function getPortalVariant(pathname) {
+    if (pathname.startsWith('/finance')) return 'finance';
+    if (pathname.startsWith('/procurement')) return 'procurement';
+    return null;
+}
+
 export default function App({ Component, pageProps }) {
     const router = useRouter();
     const isLoginPage = router.pathname === '/login';
-
-    // Route Persistence: Save current route and restore on fresh load if needed
+    const isSetupPage = router.pathname === '/setup';
+    const portalVariant = getPortalVariant(router.pathname);
 
     useEffect(() => {
-        // Save current route on change
         const handleRouteChange = (url) => {
-            if (url !== '/login' && url !== '/') {
+            if (url !== '/login' && url !== '/setup' && url !== '/') {
                 localStorage.setItem('lastRoute', url);
             }
         };
 
         router.events.on('routeChangeComplete', handleRouteChange);
 
-        // Initial check: if we are at root /, try to go to last known route
-        if (router.pathname !== '/login') {
-            const lastRoute = localStorage.getItem('lastRoute');
-            // Only redirect if we are strictly at root or explicit startup, 
-            // BUT browser reload usually keeps the path.
-            // If user opens generic url, send them to last place.
-            if (router.pathname === '/' && lastRoute) {
-                router.replace(lastRoute);
-            }
-        }
+        // Root fix: do NOT redirect from / to lastRoute. Let AuthGuard send user to
+        // their role-specific dashboard (/finance for Finance, /procurement for Procurement).
+        // Otherwise Finance users could land on Procurement hub when lastRoute was /procurement.
 
         return () => {
             router.events.off('routeChangeComplete', handleRouteChange);
         };
     }, [router]);
 
-    // Theme Persistence
-    useEffect(() => {
-        const savedSettings = localStorage.getItem('appSettings');
-        if (savedSettings) {
-            try {
-                const { theme } = JSON.parse(savedSettings);
-                const root = document.body;
-                if (theme === 'light') root.classList.add('light-mode');
-                else if (theme === 'system' && !window.matchMedia('(prefers-color-scheme: dark)').matches) root.classList.add('light-mode');
-                else root.classList.remove('light-mode');
-            } catch (e) {
-                console.error("Theme load failed", e);
-            }
-        }
-    }, []);
+    const Wrapper = portalVariant ? (
+        <PortalLayout variant={portalVariant}>
+            <Component {...pageProps} />
+        </PortalLayout>
+    ) : (
+        <Layout>
+            <Component {...pageProps} />
+        </Layout>
+    );
 
     return (
+        <ToastProvider>
         <RoleProvider>
             <AssetProvider>
                 <AuthGuard>
-                    {isLoginPage ? (
+                    {(isLoginPage || isSetupPage) ? (
                         <Component {...pageProps} />
                     ) : (
-                        <Layout>
-                            <Component {...pageProps} />
-                        </Layout>
+                        Wrapper
                     )}
                 </AuthGuard>
             </AssetProvider>
         </RoleProvider>
+        </ToastProvider>
     )
 }

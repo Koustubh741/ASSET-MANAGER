@@ -3,32 +3,33 @@ Asset Request service layer - Database operations for asset requests (Asynchrono
 """
 import uuid
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import asyncio
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
-from ..models.models import AssetRequest, User, PurchaseOrder, PurchaseInvoice, ProcurementLog
+from ..models.models import AssetRequest, User, Asset, PurchaseOrder, PurchaseInvoice, ProcurementLog
 from ..schemas.asset_request_schema import AssetRequestCreate, AssetRequestUpdate, AssetRequestResponse
 from ..services import procurement_service
+from ..services.notification_service import NotificationService
 from ..utils.state_machine import validate_state_transition
 
 
+from sqlalchemy.orm import joinedload
+
 async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, user_role: str = None) -> AssetRequestResponse:
     """Helper to add requester name/email and procurement info (role-sensitive)"""
-    # Ensure attributes are loaded after a commit and not expired
-    await db.refresh(db_request)
-    
-    result = await db.execute(select(User).filter(User.id == db_request.requester_id))
-    user = result.scalars().first()
-    
+    # Note: requester relationship should be pre-loaded for efficiency
     res = AssetRequestResponse.model_validate(db_request)
-    if user:
-        res.requester_name = user.full_name
-        res.requester_email = user.email
+    
+    if db_request.requester:
+        res.requester_name = db_request.requester.full_name
+        res.requester_email = db_request.requester.email
+        res.requester_department = db_request.requester.department
     
     # Step 6: Role-Based Visibility (Backend Enforced)
-    if user_role in ["PROCUREMENT_FINANCE", "FINANCE", "ADMIN"]:
+    if user_role in ["PROCUREMENT", "FINANCE", "ADMIN"]:
         # Fetch current PO
         po_query = select(PurchaseOrder).filter(PurchaseOrder.asset_request_id == db_request.id).order_by(desc(PurchaseOrder.created_at))
         po_result = await db.execute(po_query)
@@ -76,14 +77,42 @@ async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, u
                 "vendor_name": po.vendor_name
             }
             
+    # --- Virtual Field Enrichment for Finance Dashboard ---
+    status_map = {
+        "SUBMITTED": ("MANAGER", None),
+        "MANAGER_APPROVED": ("IT_MANAGEMENT", None),
+        "IT_APPROVED": ("MANAGER", None),
+        "MANAGER_CONFIRMED_IT": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
+        "PROCUREMENT_REQUESTED": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
+        "PO_UPLOADED": ("PROCUREMENT", "PO_UPLOADED"),
+        "PO_VALIDATED": ("FINANCE", "PO_VALIDATED"),
+        "FINANCE_APPROVED": ("MANAGER", "FINANCE_APPROVED"),
+        "MANAGER_CONFIRMED_BUDGET": ("ASSET_MANAGER", "QC_PENDING"),
+        "QC_PENDING": ("ASSET_MANAGER", "QC_PENDING"),
+        "QC_FAILED": ("PROCUREMENT", "QC_FAILED"),
+        "USER_ACCEPTANCE_PENDING": ("END_USER", "USER_ACCEPTANCE_PENDING"),
+        "USER_REJECTED": ("PROCUREMENT", "USER_REJECTED"),
+        "MANAGER_CONFIRMED_ASSIGNMENT": ("MANAGER", "ASSIGNMENT"),
+        "IN_USE": ("END_USER", "COMPLETED"),
+        "FULFILLED": ("END_USER", "COMPLETED"),
+        "MANAGER_REJECTED": ("SYSTEM", "REJECTED"),
+        "IT_REJECTED": ("SYSTEM", "REJECTED"),
+        "CLOSED": ("SYSTEM", "CLOSED")
+    }
+    owner_role, stage = status_map.get(db_request.status, (None, None))
+    res.current_owner_role = owner_role
+    res.procurement_stage = stage
+            
     return res
 
 
 async def get_asset_request_by_id(db: AsyncSession, request_id: UUID, user_role: str = None) -> Optional[AssetRequestResponse]:
     """
-    Get an asset request by ID
+    Get an asset request by ID with the requester relationship pre-loaded
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     request = result.scalars().first()
     if request:
         return await _populate_requester_info(db, request, user_role=user_role)
@@ -92,9 +121,11 @@ async def get_asset_request_by_id(db: AsyncSession, request_id: UUID, user_role:
 
 async def get_asset_request_by_id_db(db: AsyncSession, request_id: UUID) -> Optional[AssetRequest]:
     """
-    Get an asset request by ID (returns DB model, not response)
+    Get an asset request by ID (returns DB model, not response) with requester pre-loaded
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     return result.scalars().first()
 
 
@@ -108,29 +139,64 @@ async def get_user_by_id_db(db: AsyncSession, user_id: UUID) -> Optional[User]:
 
 async def create_asset_request(db: AsyncSession, request: AssetRequestCreate, initial_status: str = "SUBMITTED") -> AssetRequestResponse:
     """
-    Create a new asset request
+    [DEPRECATED] Use create_asset_request_v2 which derives identity from JWT.
     """
-    db_request = AssetRequest(
-        id=uuid.uuid4(),
-        requester_id=request.requester_id,
-        asset_id=request.asset_id,
-        asset_name=request.asset_name,
-        asset_type=request.asset_type,
-        asset_ownership_type=request.asset_ownership_type,
-        asset_model=request.asset_model,
-        asset_vendor=request.asset_vendor,
-        serial_number=request.serial_number,
-        os_version=request.os_version,
-        cost_estimate=request.cost_estimate,
-        justification=request.justification,
-        business_justification=request.business_justification,
-        status=initial_status,
-        manager_approvals=[]
-    )
-    db.add(db_request)
-    await db.commit()
-    await db.refresh(db_request)
-    return await _populate_requester_info(db, db_request)
+    return await create_asset_request_v2(db, request, requester_id=getattr(request, 'requester_id', None), initial_status=initial_status)
+
+_asset_request_creation_locks = {}
+
+async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate, requester_id: UUID, initial_status: str = "SUBMITTED") -> AssetRequestResponse:
+    """
+    Create a new asset request with explicit requester_id (derived from JWT).
+    Includes a duplicate check using an asyncio.Lock to prevent multiple identical requests within 60 seconds.
+    """
+    requester_id_str = str(requester_id)
+    if requester_id_str not in _asset_request_creation_locks:
+        _asset_request_creation_locks[requester_id_str] = asyncio.Lock()
+        
+    async with _asset_request_creation_locks[requester_id_str]:
+        # 1. Check for recent identical request (Duplicate Prevention)
+        since = datetime.now(timezone.utc) - timedelta(seconds=60)
+        dup_query = select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(
+            AssetRequest.requester_id == requester_id,
+            AssetRequest.asset_name == request.asset_name,
+            AssetRequest.asset_type == request.asset_type,
+            AssetRequest.justification == request.justification,
+            AssetRequest.created_at >= since
+        )
+        dup_result = await db.execute(dup_query)
+        existing_request = dup_result.scalars().first()
+
+        if existing_request:
+            print(f"[DUPLICATE_PREVENTION] Returning existing asset request {existing_request.id} for user {requester_id}")
+            return await _populate_requester_info(db, existing_request)
+
+        # 2. Create new request if no duplicate found
+        db_request = AssetRequest(
+            id=uuid.uuid4(),
+            requester_id=requester_id,
+            asset_id=request.asset_id,
+            asset_name=request.asset_name,
+            asset_type=request.asset_type,
+            asset_ownership_type=request.asset_ownership_type,
+            asset_model=request.asset_model,
+            asset_vendor=request.asset_vendor,
+            serial_number=request.serial_number,
+            os_version=request.os_version,
+            cost_estimate=request.cost_estimate,
+            justification=request.justification,
+            business_justification=request.business_justification,
+            specifications=request.specifications or {},
+            status=initial_status,
+            manager_approvals=[]
+        )
+        db.add(db_request)
+        await db.commit()
+        # Pre-fetch requester for the response
+        query = select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == db_request.id)
+        result = await db.execute(query)
+        db_request = result.scalars().first()
+        return await _populate_requester_info(db, db_request)
 
 
 async def update_asset_request_status_with_validation(
@@ -146,10 +212,17 @@ async def update_asset_request_status_with_validation(
     """
     Update asset request status with state machine validation
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
+    
+    
+    # MANDATORY: Enforce rejection reason for all REJECTED states
+    if new_status.endswith("_REJECTED") and not reason:
+        raise ValueError(f"Rejection reason is mandatory when transitioning to {new_status}")
     
     # Validate state transition
     is_valid, error_msg = validate_state_transition(
@@ -194,15 +267,26 @@ async def update_it_review_status(
     reason: Optional[str] = None
 ) -> Optional[AssetRequestResponse]:
     """
-    Update IT review status
+    Update IT review status with automated inventory routing.
+    
+    When IT approves a Company-Owned request:
+    - Checks inventory for matching assets
+    - If available: Reserves asset and routes to USER_ACCEPTANCE_PENDING
+    - If not available: Routes to PROCUREMENT_REQUESTED
     """
     print(f"[DEBUG] update_it_review_status: Looking for request_id={request_id}, new_status={new_status}")
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         print(f"[DEBUG] update_it_review_status: Request {request_id} not found in database")
         return None
     print(f"[DEBUG] update_it_review_status: Found request {request_id} with status={db_request.status}")
+
+    # Note: Auto-routing logic has been moved to manager_confirm_stage()
+    # IT approval now simply sets status to IT_APPROVED
+    # Manager must confirm before auto-routing occurs
 
     is_valid, error_msg = validate_state_transition(
         current_status=db_request.status,
@@ -220,6 +304,7 @@ async def update_it_review_status(
 
     if db_request.manager_approvals is None:
         db_request.manager_approvals = []
+    
     db_request.manager_approvals.append({
         "reviewer_id": str(reviewer_id),
         "reviewer_name": reviewer_name,
@@ -240,23 +325,27 @@ async def update_procurement_finance_status(
     new_status: str,
     reviewer_id: UUID,
     reviewer_name: str,
-    reason: Optional[str] = None
+    reason: Optional[str] = None,
+    user_role: str = "PROCUREMENT"
 ) -> Optional[AssetRequestResponse]:
     """
-    Update procurement & finance approval status.
+    Procurement-only: validate PO (set PO_VALIDATED) or reject (set PROCUREMENT_REJECTED).
+    Finance approve/reject is handled by procurement_service.validate_finance_budget.
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
     
-    if db_request.status == "PROCUREMENT_APPROVED" and new_status != "PROCUREMENT_REJECTED":
-        return await _populate_requester_info(db, db_request, user_role="PROCUREMENT_FINANCE")
+    if db_request.status == "PO_VALIDATED" and new_status == "PROCUREMENT_APPROVED":
+        return await _populate_requester_info(db, db_request, user_role=user_role)
 
     is_valid, error_msg = validate_state_transition(
         current_status=db_request.status,
         new_status=new_status,
-        user_role="PROCUREMENT_FINANCE",
+        user_role=user_role,
         asset_ownership_type=db_request.asset_ownership_type
     )
     
@@ -267,29 +356,13 @@ async def update_procurement_finance_status(
     po_result = await db.execute(po_query)
     po = po_result.scalars().first()
 
+    # Procurement validated PO -> hand off to Finance (PO_VALIDATED). Do not call validate_finance_budget here.
     if new_status == "PROCUREMENT_APPROVED":
-        if po:
-            await procurement_service.validate_finance_budget(
-                db=db, 
-                po_id=po.id, 
-                reviewer_id=reviewer_id, 
-                role="FINANCE", 
-                action="APPROVE",
-                reason=reason
-            )
+        db_request.status = "PO_VALIDATED"
+        db_request.procurement_finance_status = "PO_VALIDATED"
     elif new_status == "PROCUREMENT_REJECTED":
-        if po:
-            await procurement_service.validate_finance_budget(
-                db=db, 
-                po_id=po.id, 
-                reviewer_id=reviewer_id, 
-                role="FINANCE", 
-                action="REJECT",
-                reason=reason
-            )
-
-    db_request.status = new_status
-    db_request.procurement_finance_status = "APPROVED" if new_status == "PROCUREMENT_APPROVED" else "REJECTED"
+        db_request.status = "PROCUREMENT_REJECTED"
+        db_request.procurement_finance_status = "REJECTED"
     db_request.procurement_finance_reviewed_by = reviewer_id
     db_request.procurement_finance_reviewed_at = datetime.now()
     if reason:
@@ -303,22 +376,22 @@ async def update_procurement_finance_status(
         "decision": new_status,
         "reason": reason,
         "timestamp": datetime.now().isoformat(),
-        "type": "PROCUREMENT_FINANCE_REVIEW"
+        "type": "PROCUREMENT_REVIEW"
     })
     
     log = ProcurementLog(
         id=uuid.uuid4(),
         reference_id=request_id,
-        action="PO_APPROVED" if new_status == "PROCUREMENT_APPROVED" else "PO_REJECTED",
-        performed_by=reviewer_id,
-        role="PROCUREMENT_FINANCE",
+        action="PO_VALIDATED" if new_status == "PROCUREMENT_APPROVED" else "PO_REJECTED",
+        performed_by=str(reviewer_id), # Cast to string for String column
+        role=user_role,
         metadata_={"reviewer_name": reviewer_name, "decision": new_status, "reason": reason}
     )
     db.add(log)
     
     await db.commit()
     await db.refresh(db_request)
-    return await _populate_requester_info(db, db_request, user_role="PROCUREMENT_FINANCE")
+    return await _populate_requester_info(db, db_request, user_role=user_role)
 
 
 async def perform_qc_check(
@@ -332,7 +405,9 @@ async def perform_qc_check(
     """
     Perform quality check on received asset
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
@@ -366,6 +441,8 @@ async def perform_qc_check(
     
     await db.commit()
     await db.refresh(db_request)
+    if qc_status == "FAILED":
+        await NotificationService(db).notify_qc_failed(request_id)
     return await _populate_requester_info(db, db_request)
 
 
@@ -378,7 +455,9 @@ async def update_user_acceptance(
     """
     Update user acceptance status
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     if not db_request:
         return None
@@ -396,7 +475,22 @@ async def update_user_acceptance(
     db_request.user_accepted_at = datetime.now()
     
     if acceptance_status == "ACCEPTED":
-        db_request.status = "IN_USE"
+        # Root Fix: If this is an inventory-allocated asset (Asset ID present), 
+        # auto-fulfill it to IN_USE to avoid redundant manager approval.
+        if db_request.asset_id:
+            db_request.status = "IN_USE"
+            from .asset_service import finalize_asset_assignment
+            await finalize_asset_assignment(
+                db=db,
+                asset_id=db_request.asset_id,
+                requester_id=user_id,
+                manager_id=user_id, # User self-confirms receipt
+                manager_name="System/End-User (Auto-Fulfill)"
+            )
+            print(f"[AUTO-FULFILL] Request {request_id} fulfilled directly upon user acceptance")
+        else:
+            # New procurement/BYOD path follows official confirmation
+            db_request.status = "MANAGER_CONFIRMED_ASSIGNMENT"
     else:
         db_request.status = "USER_REJECTED"
     
@@ -407,7 +501,8 @@ async def update_user_acceptance(
         "reviewer_name": "END_USER",
         "decision": acceptance_status,
         "timestamp": datetime.now().isoformat(),
-        "type": "USER_ACCEPTANCE"
+        "type": "USER_ACCEPTANCE",
+        "auto_fulfilled": True if (acceptance_status == "ACCEPTED" and db_request.asset_id) else False
     })
     
     await db.commit()
@@ -427,9 +522,12 @@ async def register_byod_device_service(
     """
     Service to register a BYOD device and update request status.
     """
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
-    if not db_request or db_request.status != "IT_APPROVED":
+    # Accept both IT_APPROVED (quick path) and BYOD_COMPLIANCE_CHECK (full compliance flow)
+    if not db_request or db_request.status not in ("IT_APPROVED", "BYOD_COMPLIANCE_CHECK"):
         return None
 
     # 1. Create BYOD entry
@@ -445,8 +543,9 @@ async def register_byod_device_service(
     )
     db.add(byod)
     
-    # 2. Update status
-    db_request.status = "IN_USE"
+    # 2. Update status: IT_APPROVED → IN_USE (quick path); BYOD_COMPLIANCE_CHECK → keep for compliance check
+    if db_request.status == "IT_APPROVED":
+        db_request.status = "IN_USE"
     db_request.updated_at = datetime.now()
     
     # 3. Add to approvals log
@@ -472,24 +571,50 @@ async def get_all_asset_requests(
     status: Optional[str] = None,
     requester_id: Optional[UUID] = None,
     domain: Optional[str] = None,
+    department: Optional[str] = None,
     user_role: Optional[str] = None
 ) -> List[AssetRequestResponse]:
     """
     Get all asset requests with optional filtering
     """
-    print(f"DEBUG: Filtering requests - status={status}, requester_id={requester_id}, domain={domain}")
+    print(f"DEBUG: Filtering requests - status={status}, requester_id={requester_id}, domain={domain}, department={department}")
     
     query = select(AssetRequest)
     if status:
         query = query.filter(AssetRequest.status == status)
+    
+    # Unified Scoping: Combine filters safely to allow "Dept OR Domain OR Mine"
+    from sqlalchemy import or_
+    filters = []
+    
     if requester_id:
-        query = query.filter(AssetRequest.requester_id == requester_id)
-    if domain:
-        query = query.join(User, AssetRequest.requester_id == User.id).filter(User.domain == domain)
+        filters.append(AssetRequest.requester_id == requester_id)
         
+    if department:
+        # Resolve users in this department or domain
+        query = query.join(User, AssetRequest.requester_id == User.id)
+        filters.append(
+            or_(
+                User.department.ilike(f"%{department}%"),
+                User.domain.ilike(f"%{department}%")
+            )
+        )
+    elif domain:
+        # Fallback for domain-only filtering if department not provided
+        query = query.join(User, AssetRequest.requester_id == User.id)
+        filters.append(User.domain == domain)
+        
+    if filters:
+        query = query.filter(or_(*filters))
+    
+    # Eager load requester for the entire list
+    query = query.options(joinedload(AssetRequest.requester))
+    
+    # Order by newest first so pending requests appear at top
+    query = query.order_by(desc(AssetRequest.created_at))
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
-    results = result.scalars().all()
+    results = result.unique().scalars().all()
     
     response_list = []
     for req in results:
@@ -497,3 +622,53 @@ async def get_all_asset_requests(
         response_list.append(res)
         
     return response_list
+
+
+async def apply_root_fix(db: AsyncSession) -> dict:
+    """
+    Sync Asset.assigned_to / assigned_to_id from AssetRequest requester for all
+    requests with an asset that are in USER_ACCEPTANCE_PENDING, MANAGER_CONFIRMED_ASSIGNMENT,
+    FULFILLED, or IN_USE. Fixes orphaned or misaligned asset-request links so
+    frontend "My Assets" shows correctly.
+    Returns {"updated": count, "errors": list}.
+    """
+    updated = 0
+    errors = []
+    q = select(AssetRequest).filter(
+        AssetRequest.asset_id.isnot(None),
+        AssetRequest.status.in_([
+            "USER_ACCEPTANCE_PENDING",
+            "MANAGER_CONFIRMED_ASSIGNMENT",
+            "FULFILLED",
+            "IN_USE",
+        ]),
+    )
+    result = await db.execute(q)
+    requests = result.scalars().all()
+
+    for req in requests:
+        u_result = await db.execute(select(User).filter(User.id == req.requester_id))
+        user = u_result.scalars().first()
+        if not user:
+            errors.append(f"User {req.requester_id} not found for request {req.id}")
+            continue
+        a_result = await db.execute(select(Asset).filter(Asset.id == req.asset_id))
+        asset = a_result.scalars().first()
+        if not asset:
+            errors.append(f"Asset {req.asset_id} not found for request {req.id}")
+            continue
+        asset.assigned_to = user.full_name
+        asset.assigned_to_id = user.id
+        
+        # Sync specifications if asset is missing them or they are empty
+        if not asset.specifications or asset.specifications == {}:
+            asset.specifications = req.specifications or {}
+            
+        if req.status in ("FULFILLED", "IN_USE"):
+            asset.status = "In Use"
+        else:
+            asset.status = "Reserved"
+        updated += 1
+
+    await db.commit()
+    return {"updated": updated, "errors": errors}

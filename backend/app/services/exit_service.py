@@ -22,7 +22,7 @@ async def handle_user_exit(db: AsyncSession, user_id: UUID, actor_id: Optional[U
         raise Exception(f"User {user_id} not found")
 
     # 2. Fetch all currently assigned assets
-    asset_result = await db.execute(select(Asset).filter(Asset.assigned_to == user.full_name))
+    asset_result = await db.execute(select(Asset).filter(Asset.assigned_to_id == user_id))
     assets = asset_result.scalars().all()
     
     byod_result = await db.execute(select(ByodDevice).filter(ByodDevice.owner_id == user_id))

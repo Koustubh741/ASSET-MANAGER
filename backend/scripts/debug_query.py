@@ -1,6 +1,6 @@
 
-from database import SessionLocal
-from models import AssetRequest
+from app.database.database import SessionLocal
+from app.models.models import AssetRequest
 
 def check_by_requester():
     db = SessionLocal()

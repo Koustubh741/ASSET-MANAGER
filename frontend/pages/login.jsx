@@ -1,21 +1,89 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useRole } from '@/contexts/RoleContext';
+import { useToast } from '@/components/common/Toast';
 import apiClient from '@/lib/apiClient';
-import { User, Mail, Lock, Briefcase, MapPin, Phone, ArrowRight, Check, Building2 } from 'lucide-react';
+import { User, Mail, Lock, Briefcase, MapPin, Phone, ArrowRight, Check, Building2, Disc, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Login() {
     const router = useRouter();
     const { login, ROLES } = useRole();
+    const toast = useToast();
     const [isLoginMode, setIsLoginMode] = useState(true);
     const [isAnimating, setIsAnimating] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-    const DOMAINS = [
-        { label: 'Data/AI', value: 'data/ai' },
-        { label: 'Cloud', value: 'cloud' },
-        { label: 'Cyber', value: 'cyber' },
-        { label: 'Development', value: 'development' }
-    ];
+    // SSO Callback Effect
+    useEffect(() => {
+        const { provider, code } = router.query;
+        if (code && provider) {
+            handleSSOCallback(provider, code);
+        }
+    }, [router.query]);
+
+    const handleSSOCallback = async (provider, code) => {
+        setIsLoading(true);
+        setError('');
+        try {
+            const authResponse = await apiClient.ssoCallback(provider, code);
+            const userData = {
+                id: authResponse.user.id,
+                userName: authResponse.user.full_name || authResponse.user.email.split('@')[0],
+                role: authResponse.user.role,
+                location: authResponse.user.location,
+                email: authResponse.user.email,
+                position: authResponse.user.position,
+                domain: authResponse.user.domain,
+                department: authResponse.user.department,
+                company: authResponse.user.company,
+                createdAt: authResponse.user.created_at,
+                plan: authResponse.user.plan || 'STARTER'
+            };
+            login(userData);
+            router.push('/');
+        } catch (err) {
+            const msg = 'SSO Authentication failed: ' + (err.message || 'Unknown error');
+            setError(msg);
+            toast.error(msg);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSSOLogin = (provider) => {
+        apiClient.ssoLogin(provider);
+    };
+
+    // Departments aligned with roles: IT (System Admin, IT Management), Finance, Procurement, Asset Management (Asset & Inventory Manager), rest for End Users
+    const DEPT_DOMAIN_MAP = {
+        'IT': ['Infrastructure', 'Security', 'Network', 'Support', 'Admin'],
+        'Finance': ['Accounting', 'Audit', 'Budget', 'Treasury'],
+        'Procurement': ['Sourcing', 'Vendor Management', 'Purchasing'],
+        'Asset Management': ['Inventory', 'Lifecycle', 'Facilities', 'Stock'],
+        'Engineering': ['Development', 'DATA_AI', 'Cloud', 'Cyber', 'DevOps', 'QA'],
+        'Operations': ['Logistics', 'Supply Chain', 'Facilities'],
+        'HR': ['Recruitment', 'Payroll', 'Benefits'],
+        'Sales': ['Inside Sales', 'Field Sales', 'Customer Success'],
+        'Marketing': ['Content', 'Growth', 'Brand'],
+        'Legal': ['Compliance', 'Contracts', 'IP'],
+        'Product': ['Management', 'Design', 'Research'],
+        'Cloud': ['Cloud Infrastructure', 'Managed Services']
+    };
+
+    const DEPARTMENTS = Object.keys(DEPT_DOMAIN_MAP);
+
+    // Role Slider Mapping → default department
+    const ROLE_DEFAULT_DEPARTMENT = {
+        'ADMIN': 'IT',
+        'IT_MANAGEMENT': 'IT',
+        'FINANCE': 'Finance',
+        'PROCUREMENT': 'Procurement',
+        'ASSET_MANAGER': 'Asset Management',
+        'END_USER': 'Engineering'
+    };
 
     // Form States
     const [formData, setFormData] = useState({
@@ -25,7 +93,8 @@ export default function Login() {
         password: '',
         confirmPassword: '',
         role: 'End User',
-        domain: 'development', // NEW: Domain selection
+        domain: 'Development', // First domain of default department
+        department: 'Engineering', // Default; use IT/Finance/Procurement/Asset Management for corresponding roles
         location: 'New York HQ',
         phone: '',
         isManager: false // NEW: Manager toggle
@@ -45,7 +114,21 @@ export default function Login() {
     };
 
     const handleInputChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        const next = { ...formData, [name]: value };
+        if (name === 'role') {
+            const roleSlug = ROLES.find(r => r.label === value)?.slug;
+            if (roleSlug && ROLE_DEFAULT_DEPARTMENT[roleSlug]) {
+                next.department = ROLE_DEFAULT_DEPARTMENT[roleSlug];
+                const domains = DEPT_DOMAIN_MAP[next.department];
+                next.domain = domains && domains[0] ? domains[0] : next.domain;
+            }
+        }
+        if (name === 'department') {
+            const domains = DEPT_DOMAIN_MAP[value];
+            next.domain = domains && domains[0] ? domains[0] : formData.domain;
+        }
+        setFormData(next);
         setError('');
     };
 
@@ -60,7 +143,9 @@ export default function Login() {
 
         if (!isLoginMode) {
             if (formData.password !== formData.confirmPassword) {
-                setError('Passwords do not match.');
+                const msg = 'Passwords do not match.';
+                setError(msg);
+                toast.error(msg);
                 return;
             }
             if (!formData.name) {
@@ -79,20 +164,25 @@ export default function Login() {
                     phone: formData.phone,
                     company: formData.company,
                     role: ROLES.find(r => r.label === formData.role)?.slug || 'END_USER',
-                    domain: formData.role === 'End User' ? formData.domain : null,
+                    domain: formData.domain || null,
+                    department: formData.department,
                     location: formData.location,
                     position: formData.isManager ? 'MANAGER' : 'TEAM_MEMBER'
                 };
-                
+
                 try {
                     await apiClient.register(registerData);
                     console.log("Registration successful!");
-                    setSuccessMsg('Registration successful! Your account is pending administrator approval. You will be able to log in once activated.');
+                    const msg = 'Registration successful! Your account is pending administrator approval. You will be able to log in once activated.';
+                    setSuccessMsg(msg);
+                    toast.success(msg);
                     setIsLoginMode(true);
                     return; // Stop here, don't try to log in since status is PENDING
                 } catch (regErr) {
                     console.error("Registration failed:", regErr);
-                    setError(regErr.message || 'Registration failed. Please try again.');
+                    const msg = regErr.message || 'Registration failed. Please try again.';
+                    setError(msg);
+                    toast.error(msg);
                     return;
                 }
             }
@@ -102,6 +192,7 @@ export default function Login() {
             console.log("Real backend login successful!");
 
             // Map backend response to what RoleContext expects
+            // Root Fix: Include plan for AI Assistant subscription enforcement
             const userData = {
                 id: authResponse.user.id,
                 userName: authResponse.user.full_name || authResponse.user.email.split('@')[0],
@@ -110,16 +201,41 @@ export default function Login() {
                 email: authResponse.user.email,
                 position: authResponse.user.position,
                 domain: authResponse.user.domain,
+                department: authResponse.user.department,
                 company: authResponse.user.company,
-                createdAt: authResponse.user.created_at
+                createdAt: authResponse.user.created_at,
+                plan: authResponse.user.plan || 'STARTER'
             };
+
+            // Root fix: do not log in if backend ever returns a non-ACTIVE user (e.g. PENDING)
+            const userStatus = authResponse.user?.status;
+            if (userStatus && userStatus !== 'ACTIVE') {
+                setError('');
+                const pendingMsg = 'Your account is pending administrator approval. You will be able to log in once activated.';
+                setSuccessMsg(pendingMsg);
+                toast.info?.(pendingMsg) ?? toast.success(pendingMsg);
+                return;
+            }
 
             login(userData);
             router.push('/');
         } catch (e) {
             console.warn("Real backend auth failed:", e);
-            setError(e.message || 'Authentication failed. Please check your credentials.');
-            
+            // Root fix: show clear message for PENDING / not active (backend returns 401 with activation message)
+            const rawMsg = e.message || '';
+            const isPendingOrInactive = /not active|activation|pending/i.test(rawMsg) || (e.response?.data?.detail && /not active|activation|pending/i.test(String(e.response.data.detail)));
+            const msg = isPendingOrInactive
+                ? 'Your account is pending administrator approval. You will be able to log in once activated.'
+                : (rawMsg || 'Authentication failed. Please check your credentials.');
+            if (isPendingOrInactive) {
+                setError('');
+                setSuccessMsg(msg);
+                toast.success(msg);
+            } else {
+                setError(msg);
+                toast.error(msg);
+            }
+
             // Optional: Keep mock fallback for demonstration if desired, but user specifically asked for DB reflection
             /*
             const mockUserData = {
@@ -141,11 +257,11 @@ export default function Login() {
     const glowShadow = isLoginMode ? 'shadow-emerald-500/50' : 'shadow-purple-500/50';
 
     return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 overflow-hidden relative">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-6 overflow-hidden relative">
 
             {/* Background Effects */}
-            <div className={`absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 ${isLoginMode ? 'bg-emerald-900/20' : 'bg-purple-900/20'}`}></div>
-            <div className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 ${isLoginMode ? 'bg-emerald-900/10' : 'bg-purple-900/10'}`}></div>
+            <div className={`absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 opacity-40 ${isLoginMode ? 'bg-emerald-900/20' : 'bg-purple-900/20'}`}></div>
+            <div className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 opacity-30 ${isLoginMode ? 'bg-emerald-900/10' : 'bg-purple-900/10'}`}></div>
 
             <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center z-10">
 
@@ -197,10 +313,10 @@ export default function Login() {
 
                         {/* Header */}
                         <div className="text-center mb-8">
-                            <h1 className={`text-3xl font-bold mb-2 transition-colors duration-500 ${glowColor}`}>
+                            <h1 className={`text-xl font-bold mb-2 transition-colors duration-500 ${glowColor}`}>
                                 {isLoginMode ? 'Welcome Back' : 'Create Account'}
                             </h1>
-                            <p className="text-slate-400 text-sm">
+                            <p className="text-slate-500 dark:text-slate-400 text-slate-500 dark:text-slate-400 dark:text-sm">
                                 {isLoginMode ? 'Enter your details to access your workspace' : 'Join the team and start managing assets'}
                             </p>
                         </div>
@@ -210,79 +326,93 @@ export default function Login() {
 
                             {/* Register Only Fields */}
                             {!isLoginMode && (
-                                <>
-                                    <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-left-4 fade-in duration-300">
+                                <div className="space-y-6 animate-in slide-in-from-left-4 fade-in duration-500">
+                                    {/* Section: Personal Identity */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
+                                            <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-slate-500 dark:text-slate-400">Personal Identity</h3>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Full Name</label>
+                                                <div className="relative group">
+                                                    <User size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+                                                    <input
+                                                        type="text"
+                                                        name="name"
+                                                        value={formData.name}
+                                                        onChange={handleInputChange}
+                                                        placeholder="John Doe"
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Phone</label>
+                                                <div className="relative group">
+                                                    <Phone size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+                                                    <input
+                                                        type="tel"
+                                                        name="phone"
+                                                        value={formData.phone}
+                                                        onChange={handleInputChange}
+                                                        placeholder="+1 555-0000"
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Section: Organizational Context */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
+                                            <h3 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest text-slate-500 dark:text-slate-400">Professional Scoping</h3>
+                                        </div>
+
                                         <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-500 uppercase">Full Name</label>
-                                            <div className="relative">
-                                                <User size={16} className="absolute left-3 top-3 text-slate-500" />
+                                            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Company</label>
+                                            <div className="relative group">
+                                                <Building2 size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                 <input
                                                     type="text"
-                                                    name="name"
-                                                    value={formData.name}
+                                                    name="company"
+                                                    value={formData.company}
                                                     onChange={handleInputChange}
-                                                    placeholder="John Doe"
-                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                                    placeholder="Organization Name"
+                                                    className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-semibold text-slate-500 uppercase">Phone</label>
-                                            <div className="relative">
-                                                <Phone size={16} className="absolute left-3 top-3 text-slate-500" />
-                                                <input
-                                                    type="tel"
-                                                    name="phone"
-                                                    value={formData.phone}
-                                                    onChange={handleInputChange}
-                                                    placeholder="+1 (555) 000-0000"
-                                                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
-                                                />
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">System Access Level</label>
+                                                <div className="relative group">
+                                                    <Briefcase size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+                                                    <select
+                                                        name="role"
+                                                        value={formData.role}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        {ROLES.map(role => (
+                                                            <option key={role.slug} value={role.label} className="bg-white dark:bg-slate-900 text-slate-900">{role.label}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 dark:text-slate-400">▼</div>
+                                                </div>
+                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 italic pl-1 text-slate-500 dark:text-slate-400">Determines system permissions</p>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1 animate-in slide-in-from-left-4 fade-in duration-300">
-                                        <label className="text-xs font-semibold text-slate-500 uppercase">Company</label>
-                                        <div className="relative">
-                                            <Building2 size={16} className="absolute left-3 top-3 text-slate-500" />
-                                            <input
-                                                type="text"
-                                                name="company"
-                                                value={formData.company}
-                                                onChange={handleInputChange}
-                                                placeholder="Company Name"
-                                                className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="space-y-1 animate-in slide-in-from-left-4 fade-in duration-300">
-                                        <label className="text-xs font-semibold text-slate-500 uppercase">Role</label>
-                                        <div className="relative">
-                                            <Briefcase size={16} className="absolute left-3 top-3 text-slate-500" />
-                                            <select
-                                                name="role"
-                                                value={formData.role}
-                                                onChange={handleInputChange}
-                                                className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors appearance-none cursor-pointer hover:bg-white/5 focus:border-purple-500`}
-                                            >
-                                                {ROLES.map(role => (
-                                                    <option key={role.label} value={role.label} className="bg-slate-900">{role.label}</option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute right-4 top-3 pointer-events-none text-slate-500">▼</div>
-                                        </div>
-                                    </div>
-
-                                    {/* Manager/Employee Toggle - ONLY for End User role */}
-                                    {formData.role === 'End User' && (
-                                        <div className="space-y-4 animate-in slide-in-from-top-4 fade-in duration-300">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-semibold text-slate-500 uppercase">Are you a Manager?</label>
-                                                <div className="flex gap-4">
-                                                    <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${!formData.isManager
-                                                        ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
-                                                        : 'border-white/10 bg-slate-900/50 text-slate-400 hover:bg-white/5'
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Position / Hierarchy</label>
+                                                <div className="flex gap-2">
+                                                    <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${!formData.isManager
+                                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                                                        : 'border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200'
                                                         }`}>
                                                         <input
                                                             type="radio"
@@ -291,11 +421,11 @@ export default function Login() {
                                                             onChange={() => setFormData({ ...formData, isManager: false })}
                                                             className="sr-only"
                                                         />
-                                                        <span className="font-medium text-sm">👤 Employee</span>
+                                                        <span className="font-bold text-[10px]">STAFF</span>
                                                     </label>
-                                                    <label className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${formData.isManager
-                                                        ? 'border-purple-500/50 bg-purple-500/10 text-purple-400'
-                                                        : 'border-white/10 bg-slate-900/50 text-slate-400 hover:bg-white/5'
+                                                    <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${formData.isManager
+                                                        ? 'border-purple-500/40 bg-purple-500/15 text-purple-400'
+                                                        : 'border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-slate-100 text-slate-500 dark:text-slate-400 hover:bg-slate-200'
                                                         }`}>
                                                         <input
                                                             type="radio"
@@ -304,94 +434,125 @@ export default function Login() {
                                                             onChange={() => setFormData({ ...formData, isManager: true })}
                                                             className="sr-only"
                                                         />
-                                                        <span className="font-medium text-sm">👔 Manager</span>
+                                                        <span className="font-bold text-[10px]">MGR</span>
                                                     </label>
                                                 </div>
+                                                <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 italic pl-1 text-slate-500 dark:text-slate-400">Determines data scoping</p>
                                             </div>
+                                        </div>
 
-                                            {/* Domain Selection */}
+                                        <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-xs font-semibold text-slate-500 uppercase">Choose Domain</label>
-                                                <div className="relative">
-                                                    <Briefcase size={16} className="absolute left-3 top-3 text-slate-500" />
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Department</label>
+                                                <div className="relative group">
+                                                    <Building2 size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+                                                    <select
+                                                        name="department"
+                                                        value={formData.department}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        {DEPARTMENTS.map(dept => (
+                                                            <option key={dept} value={dept} className="bg-white dark:bg-slate-900 text-slate-900">{dept}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 dark:text-slate-400">▼</div>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Domain / Team</label>
+                                                <div className="relative group">
+                                                    <Disc size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
                                                     <select
                                                         name="domain"
                                                         value={formData.domain}
                                                         onChange={handleInputChange}
-                                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors appearance-none cursor-pointer hover:bg-white/5 focus:border-purple-500`}
+                                                        className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
                                                     >
-                                                        {DOMAINS.map(domain => (
-                                                            <option key={domain.value} value={domain.value} className="bg-slate-900">{domain.label}</option>
+                                                        {(DEPT_DOMAIN_MAP[formData.department] || []).map(domain => (
+                                                            <option key={domain} value={domain} className="bg-white dark:bg-slate-900 text-slate-900">{domain}</option>
                                                         ))}
                                                     </select>
-                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500">▼</div>
+                                                    <div className="absolute right-4 top-3 pointer-events-none text-slate-500 dark:text-slate-400">▼</div>
                                                 </div>
                                             </div>
                                         </div>
-                                    )}
-                                </>
+
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase ml-1 text-slate-500 dark:text-slate-400">Physical Location</label>
+                                            <div className="relative group">
+                                                <MapPin size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400 group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+                                                <input
+                                                    type="text"
+                                                    name="location"
+                                                    value={formData.location}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Office/Site Location"
+                                                    className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
 
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 uppercase">Email Address</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Email Address</label>
                                 <div className="relative">
-                                    <Mail size={16} className="absolute left-3 top-3 text-slate-500" />
+                                    <Mail size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
                                     <input
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         placeholder="name@company.com"
-                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
+                                        className={`w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
                                     />
                                 </div>
                             </div>
 
-                            {!isLoginMode && ( // Location for Register
-                                <div className="space-y-1 animate-in slide-in-from-right-4 fade-in duration-300">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase">Location</label>
-                                    <div className="relative">
-                                        <MapPin size={16} className="absolute left-3 top-3 text-slate-500" />
-                                        <input
-                                            type="text"
-                                            name="location"
-                                            value={formData.location}
-                                            onChange={handleInputChange}
-                                            placeholder="Office Location"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-slate-500 uppercase">Password</label>
+                                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Password</label>
                                 <div className="relative">
-                                    <Lock size={16} className="absolute left-3 top-3 text-slate-500" />
+                                    <Lock size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
                                     <input
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         name="password"
                                         value={formData.password}
                                         onChange={handleInputChange}
                                         placeholder="••••••••"
-                                        className={`w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
+                                        className={`w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
                                 </div>
                             </div>
 
                             {!isLoginMode && ( // Confirm Password
                                 <div className="space-y-1 animate-in slide-in-from-left-4 fade-in duration-300">
-                                    <label className="text-xs font-semibold text-slate-500 uppercase">Confirm Password</label>
+                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Confirm Password</label>
                                     <div className="relative">
-                                        <Check size={16} className="absolute left-3 top-3 text-slate-500" />
+                                        <Check size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
                                         <input
-                                            type="password"
+                                            type={showConfirmPassword ? "text" : "password"}
                                             name="confirmPassword"
                                             value={formData.confirmPassword}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
-                                            className="w-full bg-slate-900/50 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            className="absolute right-3 top-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                        >
+                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -404,25 +565,57 @@ export default function Login() {
                                 <p className="text-emerald-400 text-xs mt-2 text-center animate-bounce">{successMsg}</p>
                             )}
 
-                            <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 ${glowBg} ${glowShadow}`}
-                                >
-                                    {isLoginMode ? 'Login' : 'create Account'} <ArrowRight size={18} />
-                                </button>
-                            </div>
-
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className={`w-full py-3 rounded-xl font-bold text-slate-900 dark:text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 ${glowBg} ${glowShadow} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isLoading ? 'Processing...' : (isLoginMode ? 'Login' : 'Create Account')} <ArrowRight size={18} />
+                            </button>
                         </form>
 
+                        {/* SSO Section */}
                         {isLoginMode && (
-                            <div className="mt-4 text-center">
-                                <button className="text-xs text-slate-500 hover:text-white transition-colors">Forgot Password?</button>
+                            <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                                <div className="relative flex items-center">
+                                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
+                                    <span className="flex-shrink mx-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Or continue with SSO</span>
+                                    <div className="flex-grow border-t border-slate-200 dark:border-white/10"></div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <button
+                                        onClick={() => handleSSOLogin('google')}
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-white hover:bg-slate-100 transition-all group"
+                                    >
+                                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Google" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleSSOLogin('azure')}
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-white hover:bg-slate-100 transition-all group"
+                                    >
+                                        <img src="https://authjs.dev/img/providers/azure.svg" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Azure" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleSSOLogin('okta')}
+                                        className="flex items-center justify-center p-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 border-slate-200 bg-white hover:bg-slate-100 transition-all group"
+                                    >
+                                        <img src="https://authjs.dev/img/providers/okta.svg" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Okta" />
+                                    </button>
+
+                                </div>
                             </div>
                         )}
 
-                        <div className="mt-6 pt-6 border-t border-white/5 text-center md:hidden">
-                            <p className="text-sm text-slate-400 mb-2">
+                        {isLoginMode && (
+                            <div className="mt-4 text-center">
+                                <Link href="/forgot-password" title="Recover your password">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">Forgot Password?</span>
+                                </Link>
+                            </div>
+                        )}
+
+                        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-white/5 text-center md:hidden">
+                            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">
                                 {isLoginMode ? "Don't have an account?" : "Already have an account?"}
                             </p>
                             <button
@@ -437,7 +630,7 @@ export default function Login() {
                     {/* Instructional Arrow purely visual */}
                     <div className="absolute -left-32 top-1/2 hidden md:block opacity-60 pointer-events-none">
                         <div className="flex flex-col items-center gap-2">
-                            <span className="text-slate-500 text-xs font-handwriting rotate-[-12deg]">Pull to switch!</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-xs font-handwriting rotate-[-12deg]">Pull to switch!</span>
                             <svg width="60" height="40" viewBox="0 0 60 40">
                                 <path d="M10 10 Q 30 5 50 20" stroke="#64748b" strokeWidth="2" fill="none" markerEnd="url(#arrowhead)" strokeDasharray="4 2" />
                                 <defs>
@@ -449,7 +642,7 @@ export default function Login() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <style jsx>{`
                 @keyframes cord-sway {
@@ -468,7 +661,7 @@ export default function Login() {
                     animation: cord-pull 0.3s ease-in-out;
                 }
             `}</style>
-        </div>
+        </div >
     );
 }
 

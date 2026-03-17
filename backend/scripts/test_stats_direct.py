@@ -1,7 +1,7 @@
 """
 Direct test of the stats query to see where it's hanging
 """
-from database import SessionLocal
+from app.database.database import SessionLocal
 from sqlalchemy import func, text
 import models
 import time

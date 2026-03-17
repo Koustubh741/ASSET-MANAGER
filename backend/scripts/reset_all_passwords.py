@@ -4,7 +4,7 @@ import os
 # Adjust path to import from parent directory
 sys.path.append(os.getcwd())
 
-from database import SessionLocal
+from app.database.database import SessionLocal
 import models
 from services.user_service import get_password_hash
 

@@ -1,148 +1,273 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
-from uuid import UUID
+"""
+Workflows Engine Backend — handles renewal, procurement, and disposal workflows.
+"""
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from ..services import asset_service
-from ..schemas.asset_schema import AssetUpdate
+from sqlalchemy import or_, and_, func
+from typing import Optional, List
+from pydantic import BaseModel
+from datetime import date, timedelta
+from uuid import UUID
+
 from ..database.database import get_db
-from ..models.models import AssetRequest, PurchaseRequest, Asset
-from ..services import asset_request_service
-from datetime import date
+from ..models.models import Asset, PurchaseOrder, User, AssetRequest
+from ..utils.auth_utils import get_current_user
 
 router = APIRouter(
     prefix="/workflows",
     tags=["workflows"]
 )
 
-@router.post("/review/{asset_id}")
-async def review_renewal(
-    asset_id: UUID, 
-    action: str, 
+STAFF_ROLES = {"ADMIN", "IT_MANAGEMENT", "ASSET_MANAGER", "PROCUREMENT", "FINANCE"}
+
+
+class WorkflowAssetResponse(BaseModel):
+    id: str
+    name: str
+    type: str
+    status: str
+    serial_number: Optional[str] = None
+    warranty_expiry: Optional[str] = None
+    cost: Optional[float] = None
+    renewal_cost: Optional[float] = None
+    renewal_urgency: Optional[str] = None
+
+
+class WorkflowAction(BaseModel):
+    asset_id: UUID
+    action: str  # APPROVE | REJECT | DEFER
+    notes: Optional[str] = None
+
+
+@router.get("/renewals", response_model=List[WorkflowAssetResponse])
+async def get_renewal_workflow(
     db: AsyncSession = Depends(get_db),
-    comments: Optional[str] = None
+    current_user = Depends(get_current_user)
 ):
     """
-    Review asset renewal (Asynchronous).
+    Get assets due for renewal (warranty expiring in 90 days).
+    Scoped to user domain/department.
     """
-    asset = await asset_service.get_asset_by_id(db, asset_id)
-    if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
-    
-    current_status = asset.renewal_status
-    new_status = current_status
-    
-    if action == "reject":
-        new_status = "Rejected"
-    elif action == "approve":
-        if current_status == "Requested":
-            new_status = "IT_Approved"
-        elif current_status == "IT_Approved":
-            new_status = "Finance_Approved"
-        elif current_status == "Finance_Approved":
-            new_status = "Commercial_Approved" 
-            
-    if new_status != current_status:
-        await asset_service.update_asset(db, asset_id, AssetUpdate(renewal_status=new_status))
-        return {"status": "success", "new_status": new_status}
-    
-    return {"status": "no_change", "current_status": current_status}
+    user_role = (current_user.role or "").strip().upper()
+    if user_role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
-@router.post("/procurement/{asset_id}")
-async def manage_procurement(
-    asset_id: UUID, 
-    action: str,
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Manage asset procurement workflow (Asynchronous).
-    """
-    asset = await asset_service.get_asset_by_id(db, asset_id)
-    if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
-    
-    # Check if there's a linked asset request
-    res_req = await db.execute(select(AssetRequest).filter(AssetRequest.asset_id == asset_id))
-    asset_request = res_req.scalars().first()
-    
-    if asset_request and asset_request.status != "IT_APPROVED":
-        raise HTTPException(
-            status_code=403,
-            detail="Procurement not allowed before IT approval"
-        )
-    
-    current = asset.procurement_status
-    new_status = current
-    
-    if action == "approve":
-        if current == "Requested": new_status = "Approved"
-        elif current == "Approved": new_status = "Ordered"
-        elif current == "Ordered": new_status = "Received"
-    
-    if new_status == "Received":
-        # Asset becomes active inventory
-        await asset_service.update_asset(db, asset_id, AssetUpdate(procurement_status=None, status="In Stock"))
+    user_domain = current_user.domain or ""
+    user_dept = current_user.department or ""
 
-        # Re-fetch request just in case
-        if asset_request:
-            if asset_request.status == "PROCUREMENT_APPROVED":
-                asset_request.status = "QC_PENDING"
-                await db.commit()
-                return {"status": "success", "message": "Asset Received, moved to In Stock, status set to QC_PENDING"}
-            elif asset_request.status in ["PROCUREMENT_REQUESTED", "IT_APPROVED"]:
-                # Legacy support: direct assignment
-                requester = await asset_request_service.get_user_by_id_db(db, asset_request.requester_id)
-                requester_name = requester.full_name if requester else asset_request.requester_id
+    today = date.today()
+    ninety_days = today + timedelta(days=90)
 
-                assigned = await asset_service.assign_asset(
-                    db,
-                    asset_id=asset_id,
-                    user=requester_name,
-                    location=asset.location or (requester.location if requester else None) or "Unknown",
-                    assign_date=date.today(),
+    if user_role == "ADMIN":
+        query = select(Asset).where(and_(Asset.warranty_expiry <= ninety_days, Asset.warranty_expiry >= today))
+    else:
+        # Join with User for scoping, but allow unassigned assets
+        # For staff roles, we show their domain/dept assigned assets OR any unassigned assets
+        query = (
+            select(Asset)
+            .outerjoin(User, Asset.assigned_to_id == User.id)
+            .where(
+                and_(
+                    Asset.warranty_expiry <= ninety_days,
+                    Asset.warranty_expiry >= today,
+                    or_(
+                        Asset.assigned_to_id == None,
+                        or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+                    )
                 )
-                if assigned:
-                    asset_request.status = "IN_USE"
-                    await db.commit()
-                    return {"status": "success", "message": "Asset Received and assigned"}
+            )
+        )
 
-        return {"status": "success", "message": "Asset Received, moved to In Stock"}
-
-    if new_status != current:
-        await asset_service.update_asset(db, asset_id, AssetUpdate(procurement_status=new_status))
-        return {"status": "success", "new_status": new_status}
+    result = await db.execute(query)
+    assets = result.scalars().all()
+    today = date.today()
+    renewal_list = []
+    for a in assets:
+        urgency = "Low"
+        if a.warranty_expiry:
+            days_left = (a.warranty_expiry - today).days
+            if days_left <= 7: urgency = "Immediate"
+            elif days_left <= 30: urgency = "High"
+            elif days_left <= 60: urgency = "Medium"
         
-    return {"status": "no_change"}
+        renewal_list.append(
+            WorkflowAssetResponse(
+                id=str(a.id),
+                name=a.name,
+                type=a.type or "Unknown",
+                status=a.status,
+                serial_number=a.serial_number,
+                warranty_expiry=a.warranty_expiry.isoformat() if a.warranty_expiry else None,
+                cost=a.cost,
+                renewal_cost=a.cost, # Estimation for renewal
+                renewal_urgency=urgency
+            )
+        )
+    return renewal_list
 
-@router.post("/disposal/{asset_id}")
-async def manage_disposal(
-    asset_id: UUID, 
-    action: str,
-    db: AsyncSession = Depends(get_db)
+
+@router.get("/procurement", response_model=List[WorkflowAssetResponse])
+async def get_procurement_workflow(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
-    Manage asset disposal workflow (Asynchronous).
+    Get pending procurement orders (Purchase Orders).
+    Scoped to user domain/department.
     """
-    asset = await asset_service.get_asset_by_id(db, asset_id)
-    if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
-        
-    current = asset.disposal_status
-    new_status = current
-    
-    if action == "validate":
-        new_status = "Ready_For_Wipe"
-    elif action == "wipe":
-        new_status = "Wiped"
-    elif action == "dispose":
-        new_status = "Disposed"
-        
-    if new_status != current:
-        if new_status == "Disposed":
-             await asset_service.update_asset(db, asset_id, AssetUpdate(disposal_status=new_status, status="Retired"))
-        else:
-             await asset_service.update_asset(db, asset_id, AssetUpdate(disposal_status=new_status))
-             
-        return {"status": "success", "new_status": new_status}
+    user_role = (current_user.role or "").strip().upper()
+    if user_role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized")
 
-    return {"status": "no_change"}
+    user_domain = current_user.domain or ""
+    user_dept = current_user.department or ""
+
+    if user_role == "ADMIN":
+        query = select(PurchaseOrder).where(PurchaseOrder.status.in_(["UPLOADED", "PENDING"]))
+    else:
+        # Join via AssetRequest -> User
+        query = (
+            select(PurchaseOrder)
+            .join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id)
+            .join(User, AssetRequest.requester_id == User.id)
+            .where(
+                and_(
+                    PurchaseOrder.status.in_(["UPLOADED", "PENDING"]),
+                    or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+                )
+            )
+        )
+
+    result = await db.execute(query)
+    pos = result.scalars().all()
+    return [
+        WorkflowAssetResponse(
+            id=str(po.id),
+            name=f"PO: {po.vendor_name or 'Unspecified Vendor'}",
+            type="Procurement",
+            status=po.status,
+            serial_number=None,
+            warranty_expiry=None,
+            cost=po.total_cost,
+            renewal_cost=po.total_cost,
+            renewal_urgency="N/A"
+        )
+        for po in pos
+    ]
+
+
+@router.get("/disposal", response_model=List[WorkflowAssetResponse])
+async def get_disposal_workflow(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Get assets pending disposal or retired.
+    Scoped to user domain/department.
+    """
+    user_role = (current_user.role or "").strip().upper()
+    if user_role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    user_domain = current_user.domain or ""
+    user_dept = current_user.department or ""
+
+    if user_role == "ADMIN":
+        query = select(Asset).where(Asset.status.in_(["Retired", "Disposed"]))
+    else:
+        # Join with User for scoping, but allow unassigned assets
+        query = (
+            select(Asset)
+            .outerjoin(User, Asset.assigned_to_id == User.id)
+            .where(
+                and_(
+                    Asset.status.in_(["Retired", "Disposed"]),
+                    or_(
+                        Asset.assigned_to_id == None,
+                        or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+                    )
+                )
+            )
+        )
+
+    result = await db.execute(query)
+    assets = result.scalars().all()
+    return [
+        WorkflowAssetResponse(
+            id=str(a.id),
+            name=a.name,
+            type=a.type or "Unknown",
+            status=a.status,
+            serial_number=a.serial_number,
+            warranty_expiry=None,
+            cost=a.cost,
+            renewal_cost=0,
+            renewal_urgency="Disposed"
+        )
+        for a in assets
+    ]
+
+
+@router.post("/action")
+async def process_workflow_action(
+    action: WorkflowAction,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Process a workflow action (Approve/Reject/Defer).
+    Verifies authority and scope.
+    """
+    user_role = (current_user.role or "").strip().upper()
+    if user_role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    user_domain = current_user.domain or ""
+    user_dept = current_user.department or ""
+
+    # Check if asset/PO exists and is in scope
+    # First check Asset table
+    result = await db.execute(select(Asset).where(Asset.id == action.asset_id))
+    asset = result.scalars().first()
+    
+    if asset:
+        # Verify scope if not admin
+        if user_role != "ADMIN":
+             # Use a subquery or join-based check for the single asset
+             scope_check = await db.execute(
+                 select(User).where(and_(User.id == asset.assigned_to_id, or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))))
+             )
+             if not scope_check.scalars().first():
+                 raise HTTPException(status_code=404, detail="Asset not found or unauthorized")
+
+        if action.action == "APPROVE":
+            asset.status = "Active"
+        elif action.action == "REJECT":
+            asset.status = "Disposed"
+        
+        await db.commit()
+        return {"status": "success", "message": f"Asset {action.asset_id} updated to {asset.status}"}
+
+    # If not in Asset, check PurchaseOrder
+    result = await db.execute(select(PurchaseOrder).where(PurchaseOrder.id == action.asset_id))
+    po = result.scalars().first()
+    if po:
+        # Verify PO scope
+        if user_role != "ADMIN":
+            scope_check = await db.execute(
+                select(User).join(AssetRequest, AssetRequest.requester_id == User.id)
+                .where(and_(AssetRequest.id == po.asset_request_id, or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))))
+            )
+            if not scope_check.scalars().first():
+                 raise HTTPException(status_code=404, detail="PO not found or unauthorized")
+
+        if action.action == "APPROVE":
+            po.status = "VALIDATED"
+        elif action.action == "REJECT":
+            po.status = "REJECTED"
+        
+        await db.commit()
+        return {"status": "success", "message": f"PO {action.asset_id} updated to {po.status}"}
+
+    raise HTTPException(status_code=404, detail="Resource not found")

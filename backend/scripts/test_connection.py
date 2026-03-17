@@ -1,7 +1,7 @@
 """
 Quick database connection test
 """
-from database import test_connection, get_connection_info, engine, SessionLocal
+from app.database.database import test_connection, get_connection_info, engine, SessionLocal
 from sqlalchemy import text
 
 def main():

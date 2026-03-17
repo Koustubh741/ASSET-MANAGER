@@ -1,7 +1,15 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import Optional, List, Union
 from datetime import datetime
 from uuid import UUID
+
+def normalize_field_value(v: Optional[str]) -> Optional[str]:
+    if not v:
+        return v
+    # Standardize common acronyms
+    if v.upper() in ["IT", "HR"]:
+        return v.upper()
+    return v.strip().title()
 
 # USER SCHEMAS
 class UserBase(BaseModel):
@@ -15,6 +23,14 @@ class UserBase(BaseModel):
     location: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    manager_id: Optional[UUID] = None
+    persona: Optional[str] = None
+    plan: str = "STARTER"  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
+
+    @field_validator("department", "domain", mode="before")
+    @classmethod
+    def validate_normalization(cls, v: Optional[str]) -> Optional[str]:
+        return normalize_field_value(v)
 
 class UserCreate(UserBase):
     password: str
@@ -28,6 +44,9 @@ class UserUpdate(BaseModel):
     department: Optional[str] = None
     location: Optional[str] = None
     company: Optional[str] = None
+    manager_id: Optional[UUID] = None
+    persona: Optional[str] = None
+    plan: Optional[str] = None
     password: Optional[str] = None # In real app, handle password change securely
 
 class UserResponse(UserBase):
@@ -53,6 +72,9 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
-class RefreshTokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str

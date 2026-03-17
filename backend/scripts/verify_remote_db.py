@@ -1,5 +1,5 @@
 
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def check_remote():

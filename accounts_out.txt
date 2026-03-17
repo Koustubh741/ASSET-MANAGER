@@ -1,0 +1,35 @@
+ADMIN|ceo@enterprise.com|Alexander Pierce|CEO|Executive
+ADMIN|admin@itsm.com|System Administrator|MANAGER|IT
+ADMIN|koustubh@gmail.com|Koustubh|MANAGER|None
+ASSET_MANAGER|asset@test.com|Asset Manager|TEAM_MEMBER|IT
+ASSET_MANAGER|inventory_FIXED@auto.com|Test ASSET_INVENTORY_MANAGER 120149|TEAM_MEMBER|IT
+END_USER|user_test_134801@company.com|Test User 134801|TEAM_MEMBER|IT
+END_USER|manager_FIXED@auto.com|Test END_USER 115934|TEAM_MEMBER|IT
+END_USER|requester_FIXED@auto.com|Test END_USER 115636|TEAM_MEMBER|IT
+END_USER|paras@cachedigitech.com|Paras Saini|TEAM_MEMBER|IT
+END_USER|employee@itsm.com|Rachel Zane|Senior Developer|Technology
+END_USER|dev1@enterprise.com|Rachel Zane|Senior Developer|Technology
+END_USER|dev2@enterprise.com|Harold Gunderson|Frontend Developer|Technology
+END_USER|it1@enterprise.com|Katrina Bennett|IT Specialist|Technology
+END_USER|it2@enterprise.com|Gretchen Bodinski|Support Engineer|Technology
+END_USER|endcloud@gmail.com|Test END_USER Cloud|TEAM_MEMBER|Technology
+FINANCE|finance_FIXED@auto.com|Test FINANCE 120042|TEAM_MEMBER|FINANCE
+FINANCE|finance@test.com|firskey|TEAM_MEMBER|Operations
+FINANCE|pro@test.com|Finance Officer|TEAM_MEMBER|Operations
+IT_MANAGEMENT|it_admin_FIXED@auto.com|Test IT_MANAGEMENT 120009|TEAM_MEMBER|IT
+IT_MANAGEMENT|it_manager@itsm.com|IT Manager|MANAGER|IT
+IT_MANAGEMENT|it@test.com|IT Staff|TEAM_MEMBER|IT
+IT_MANAGEMENT|admin_test_134801@company.com|Test IT Admin 134801|MANAGER|IT
+IT_MANAGEMENT|richardroper@gmail.com|Richard Roper|MANAGER|IT
+IT_SUPPORT|kuldeep.kumar@cachedigitech.com|Kuldeep Kumar |MANAGER|IT
+IT_SUPPORT|it_staff@itsm.com|Gretchen Bodinski|Support Engineer|Technology
+IT_SUPPORT|katrina.b@itsm.com|Katrina Bennett|IT Specialist|Technology
+MANAGER|manager_test_134801@company.com|Test Manager 134801|MANAGER|IT
+MANAGER|finance_mgr@enterprise.com|Louis Litt|Finance Manager|Operations
+MANAGER|coo@enterprise.com|Jessica Pearson|COO|Operations
+MANAGER|JohnathanPine@gmail.com|Johnathan Pine|MANAGER|Technology
+MANAGER|cto@enterprise.com|Sarah Chen|CTO|Technology
+MANAGER|devops@enterprise.com|Harvey Specter|DevOps Lead|Technology
+MANAGER|eng_mgr@enterprise.com|Mike Ross|Engineering Manager|Technology
+MANAGER|it_mgr@enterprise.com|Donna Paulsen|IT Manager|Technology
+PROCUREMENT|procure@test.com|Mathew Crawley|TEAM_MEMBER|Finance

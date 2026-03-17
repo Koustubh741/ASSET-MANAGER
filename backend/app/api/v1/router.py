@@ -1,5 +1,33 @@
 from fastapi import APIRouter
-from app.routers import upload, workflows, disposal, audit, auth, tickets, asset_requests, assets, users, reference, financials
+from app.routers import (
+    upload,
+    workflows,
+    disposal,
+    audit,
+    auth,
+    tickets,
+    asset_requests,
+    assets,
+    users,
+    reference,
+    financials,
+    locations,
+    software,
+    maintenance,
+    collect,
+    agents,
+    alerts,
+    port_policies,
+    setup,
+    ai_assistant,
+    gate_pass,
+    patch_management,
+    remote_assistance,
+    categories,
+    analytics_oem,
+    groups,
+    tasks,
+)
 
 api_router = APIRouter()
 
@@ -15,3 +43,19 @@ api_router.include_router(assets.router)
 api_router.include_router(users.router)
 api_router.include_router(reference.router)
 api_router.include_router(financials.router)
+api_router.include_router(locations.router)
+api_router.include_router(software.router)
+api_router.include_router(maintenance.router)
+api_router.include_router(collect.router)
+api_router.include_router(agents.router)
+api_router.include_router(alerts.router)
+api_router.include_router(port_policies.router)
+api_router.include_router(setup.router)
+api_router.include_router(ai_assistant.router)
+api_router.include_router(gate_pass.router)
+api_router.include_router(patch_management.router)
+api_router.include_router(remote_assistance.router)
+api_router.include_router(categories.router)
+api_router.include_router(analytics_oem.router)
+api_router.include_router(groups.router)
+api_router.include_router(tasks.router)

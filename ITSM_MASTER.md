@@ -53,13 +53,19 @@ A standardized state machine manages transitions:
 
 ### Asset Request & Procurement
 
-1. **Employee** submits request.
-2. **Manager** approves.
-3. **IT** verifies technical specs.
-4. **Finance** reviews budget and approves PO (if out of stock).
-5. **Procurement** confirms delivery.
-6. **Inventory Manager** performs QC and allocates asset.
-7. **Employee** accepts/rejects delivery.
+1. **Employee** submits request (`SUBMITTED`).
+2. **First-line Manager** approves justification (`MANAGER_APPROVED`).
+3. **IT Management** performs technical spec verification (`IT_APPROVED`).
+4. **Manager** confirms IT decision to finalize technical scope (`MANAGER_CONFIRMED_IT`).
+5. **Inventory Manager** performs manual stock check:
+   - **Found in Inventory**: Reserves asset and routes directly to User Acceptance.
+   - **Needs Purchase**: Marks as "Not Available" to route to Procurement.
+6. **Procurement Manager** creates/uploads Purchase Order (`PO_UPLOADED`).
+7. **Finance** reviews budget and validates order (`PO_VALIDATED`).
+8. **Finance/Procurement** finalizes approval/payment (`PROCUREMENT_APPROVED`).
+9. **Procurement** confirms physical delivery from vendor (`DELIVERED`).
+10. **Inventory Manager** performs Quality Control (`QC_PENDING`) and final allocation.
+11. **Employee** accepts/rejects receipt of asset (`IN_USE`).
 
 ### IT Support (Ticketing)
 

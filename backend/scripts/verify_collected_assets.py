@@ -1,5 +1,5 @@
-from database import SessionLocal
-from models import Asset
+from app.database.database import SessionLocal
+from app.models.models import Asset
 from sqlalchemy import text
 
 def verify_assets_from_collect():

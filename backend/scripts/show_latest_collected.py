@@ -1,5 +1,5 @@
-from database import SessionLocal
-from models import AuditLog
+from app.database.database import SessionLocal
+from app.models.models import AuditLog
 from sqlalchemy import text
 
 def show_latest_collected_data():

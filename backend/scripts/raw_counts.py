@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from database import SessionLocal
+from app.database.database import SessionLocal
 
 def run_counts():
     db = SessionLocal()

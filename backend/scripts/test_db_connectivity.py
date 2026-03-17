@@ -1,7 +1,7 @@
 """
 Database Connectivity Test Script
 """
-from database import engine, SessionLocal
+from app.database.database import engine, SessionLocal
 from sqlalchemy import text, inspect
 import sys
 
@@ -143,7 +143,7 @@ def test_model_queries():
         db = SessionLocal()
         
         # Try to query User model
-        from models import User
+from app.models.models import User
         try:
             user_count = db.query(User).count()
             print(f"✓ Users table accessible: {user_count} records")

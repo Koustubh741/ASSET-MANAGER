@@ -1,0 +1,39 @@
+# BYOD Security Policies Configuration
+# Used by policy_engine.py for compliance evaluation
+
+default_policies:
+  encryption_required: true
+  password_complexity: "HIGH"
+  biometric_auth: false
+  remote_wipe_enabled: true
+  app_whitelist_enforced: false
+  os_version_minimum: "12.0"
+  auto_update_enabled: true
+
+# Checks and whether they are required for COMPLIANT
+compliance_checks:
+  encryption:
+    required: true
+    remediation: "Enable full-disk encryption (BitLocker / FileVault)"
+  password_policy:
+    required: true
+    remediation: "Set screen lock with 8+ chars, mixed case, symbol"
+  os_version:
+    required: true
+    remediation: "Upgrade to minimum supported OS version"
+  security_patch_level:
+    required: true
+    remediation: "Install OS updates (patches within 90 days)"
+  remote_wipe:
+    required: true
+    remediation: "Accept MDM profile to enable remote wipe capability"
+  unauthorized_apps:
+    required: false
+    remediation: "Remove flagged applications"
+
+# Minimum OS versions by platform
+os_minimums:
+  windows: "10.0.19045"  # Win 10 22H2
+  macos: "13.0"          # Ventura
+  ios: "16.0"
+  android: "12"

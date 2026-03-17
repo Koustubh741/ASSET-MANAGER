@@ -1,28 +1,37 @@
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
 import { useRole } from '@/contexts/RoleContext'
 import SystemAdminDashboard from '@/components/dashboards/SystemAdminDashboard'
 import AssetInventoryDashboard from '@/components/dashboards/AssetInventoryDashboard'
-import FinanceAuditDashboard from '@/components/dashboards/FinanceAuditDashboard'
 import ITSupportDashboard from '@/components/dashboards/ITSupportDashboard'
+import ITStaffDashboard from '@/components/dashboards/ITStaffDashboard'
 import EndUserDashboard from '@/components/dashboards/EndUserDashboard'
+import FinanceDashboard from '@/components/dashboards/FinanceDashboard'
+import ProcurementManagerDashboard from '@/components/dashboards/ProcurementManagerDashboard'
 
 export default function Dashboard() {
-    const { currentRole } = useRole();
+    const { currentRole, user } = useRole();
+    const router = useRouter();
 
-    // 1. System Admin
-    if (currentRole.label === 'System Admin') return <SystemAdminDashboard />
+    if (!currentRole) return null;
 
-    // 2. Asset & Inventory Manager (Combined)
-    if (currentRole.label === 'Asset & Inventory Manager') return <AssetInventoryDashboard />
+    if (currentRole.slug === 'FINANCE') return <FinanceDashboard />
+    if (currentRole.slug === 'PROCUREMENT') return <ProcurementManagerDashboard />
 
-    // 3. Procurement & Finance (Combined)
-    if (currentRole.label === 'Procurement & Finance') return <FinanceAuditDashboard />
+    if (currentRole.slug === 'ADMIN') return <SystemAdminDashboard />
+    if (currentRole.slug === 'ASSET_MANAGER') return <AssetInventoryDashboard />
 
-    // 4. IT Management
-    if (currentRole.label === 'IT Management') return <ITSupportDashboard />
+    // IT Routing: Manager vs Technician
+    if (currentRole.slug === 'IT_MANAGEMENT' || currentRole.slug === 'IT_SUPPORT') {
+        const title = String(user?.position || '').toLowerCase();
+        const isTechnician = currentRole.slug === 'IT_SUPPORT' || 
+                             title === 'team_member' || 
+                             title.includes('support') || 
+                             title.includes('specialist');
+        return isTechnician ? <ITStaffDashboard /> : <ITSupportDashboard />;
+    }
 
-    // 5. End User
-    if (currentRole.label === 'End User') return <EndUserDashboard />
+    if (currentRole.slug === 'END_USER') return <EndUserDashboard />
 
-    // Fallback
-    return <SystemAdminDashboard />
+    return <EndUserDashboard />
 }

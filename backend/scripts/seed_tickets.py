@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 # Add parent directory to path to import models and database
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
 
-from database import SessionLocal
-from models import Ticket, Asset, User
+from app.database.database import SessionLocal
+from app.models.models import Ticket, Asset, User
 
 def seed_tickets():
     db = SessionLocal()
@@ -37,7 +37,7 @@ def seed_tickets():
                 description=scenario["desc"],
                 priority=scenario["priority"],
                 status="OPEN",
-                requestor_id=target_user.full_name,
+                requestor_id=target_user.id,
                 related_asset_id=target_asset.id,
                 created_at=datetime.utcnow() - timedelta(days=i),
                 timeline=[

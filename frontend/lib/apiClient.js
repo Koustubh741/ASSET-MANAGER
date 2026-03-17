@@ -36,6 +36,7 @@ class ApiClient {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
             localStorage.removeItem('user');
+            localStorage.removeItem('auth_session');
         }
     }
 
@@ -101,12 +102,12 @@ class ApiClient {
         }
 
         if (config.body instanceof FormData) {
-             delete headers['Content-Type'];
+            delete headers['Content-Type'];
         }
 
         try {
             const response = await fetch(url, config);
-            
+
             // Handle 401 Unauthorized - attempt token refresh
             if (response.status === 401 && retryOnUnauthorized && this.refreshToken) {
                 if (!this.isRefreshing) {
@@ -119,7 +120,7 @@ class ApiClient {
                         return this.request(endpoint, options, false);
                     } catch (refreshError) {
                         this.isRefreshing = false;
-                        // Redirect to login on refresh failure
+                        this.clearToken();
                         if (typeof window !== 'undefined') {
                             window.location.href = '/login';
                         }
@@ -139,7 +140,7 @@ class ApiClient {
                     });
                 }
             }
-            
+
             // Handle empty responses
             const contentType = response.headers.get('content-type');
             let data;
@@ -151,14 +152,38 @@ class ApiClient {
             }
 
             if (!response.ok) {
-                throw new Error(data.detail || data.message || `API request failed: ${response.status}`);
+                const err = new Error(data.detail || data.message || `API request failed: ${response.status}`);
+                err.status = response.status;
+                throw err;
             }
 
             return data;
         } catch (error) {
-            console.error('API Error:', error);
+            const suppressLog = options.suppressLogForStatuses && error.status != null && options.suppressLogForStatuses.includes(error.status);
+            if (!suppressLog) console.error('API Error:', error);
             throw error;
         }
+    }
+
+    // Shorthand HTTP methods
+    get(endpoint, options = {}) {
+        return this.request(endpoint, { ...options, method: 'GET' });
+    }
+
+    post(endpoint, body, options = {}) {
+        return this.request(endpoint, { ...options, method: 'POST', body });
+    }
+
+    put(endpoint, body, options = {}) {
+        return this.request(endpoint, { ...options, method: 'PUT', body });
+    }
+
+    patch(endpoint, body, options = {}) {
+        return this.request(endpoint, { ...options, method: 'PATCH', body });
+    }
+
+    delete(endpoint, options = {}) {
+        return this.request(endpoint, { ...options, method: 'DELETE' });
     }
 
     // Authentication
@@ -192,6 +217,27 @@ class ApiClient {
         return data;
     }
 
+    async ssoLogin(provider) {
+        const data = await this.request(`/auth/sso/login/${provider}`);
+        if (data.redirect_url) {
+            window.location.href = data.redirect_url;
+        }
+    }
+
+    async ssoCallback(provider, code) {
+        const data = await this.request(`/auth/sso/callback/${provider}?code=${code}`);
+
+        this.setToken(data.access_token);
+        if (data.refresh_token) {
+            this.setRefreshToken(data.refresh_token);
+        }
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('user', JSON.stringify(data.user));
+        }
+
+        return data;
+    }
+
     // Refresh token manually
     async refreshAccessToken() {
         return this.attemptTokenRefresh();
@@ -204,6 +250,10 @@ class ApiClient {
         });
     }
 
+    async updateMe(userData) {
+        return this.patch('/auth/me', userData);
+    }
+
     async logout() {
         await this.request('/auth/logout', { method: 'POST' });
         this.clearToken();
@@ -213,10 +263,41 @@ class ApiClient {
         return this.request('/auth/me');
     }
 
+    // Setup wizard (optional: 404 if backend has no setup route — treat as completed, don't log)
+    async getSetupStatus() {
+        try {
+            return await this.request('/setup/status', { suppressLogForStatuses: [404] });
+        } catch (err) {
+            if (err?.status === 404) return { setup_completed: true };
+            throw err;
+        }
+    }
+
+    async completeSetup(payload) {
+        return this.request('/setup/complete', {
+            method: 'POST',
+            body: payload,
+        });
+    }
+
+    async updateMyPlan(plan) {
+        return this.patch('/auth/me/plan', { plan });
+    }
+
+    // AI Assistant
+    async getAIUsage() {
+        return this.request('/ai/usage');
+    }
+
+    async postAIChat(message) {
+        return this.post('/ai/chat', { message });
+    }
+
     // Assets
     async getAssets(params = {}) {
         const queryString = new URLSearchParams(params).toString();
-        return this.request(`/assets/?${queryString}`);
+        const url = queryString ? `/assets/?${queryString}` : '/assets';
+        return this.request(url);
     }
 
     async getAsset(id) {
@@ -251,8 +332,8 @@ class ApiClient {
         });
     }
 
-    async getMyAssets(user) {
-        return this.request(`/assets/my-assets?user=${encodeURIComponent(user)}`);
+    async getMyAssets() {
+        return this.request('/assets/my-assets');
     }
 
     async getAssetEvents(id) {
@@ -269,10 +350,25 @@ class ApiClient {
         return this.request('/assets/stats');
     }
 
+    async provisionSoftware(assetId, softwareName) {
+        return this.request(`/assets/${assetId}/provision?software_name=${encodeURIComponent(softwareName)}`, {
+            method: 'POST'
+        });
+    }
+
+    async getAlerts(params = {}) {
+        const q = new URLSearchParams(params);
+        const query = q.toString();
+        const url = query ? `/alerts?${query}` : '/alerts';
+        return this.request(url);
+    }
+
     // Asset Requests
     async getAssetRequests(params = {}) {
-        const queryString = new URLSearchParams(params).toString();
-        return this.request(`/asset-requests?${queryString}`);
+        const queryParams = new URLSearchParams(params);
+        const queryString = queryParams.toString();
+        const url = queryString ? `/asset-requests?${queryString}` : '/asset-requests';
+        return this.request(url);
     }
 
     async getAssetRequest(id) {
@@ -286,10 +382,10 @@ class ApiClient {
         });
     }
 
-    async managerApproveRequest(id, approvalData) {
+    async managerApproveRequest(id) {
         return this.request(`/asset-requests/${id}/manager/approve`, {
             method: 'POST',
-            body: JSON.stringify(approvalData || {}),
+            body: JSON.stringify({}),
         });
     }
 
@@ -300,72 +396,172 @@ class ApiClient {
         });
     }
 
+    // New Manager Confirmation Methods (Phase 5)
+    async managerConfirmIT(id, confirmationData) {
+        return this.request(`/asset-requests/${id}/manager/confirm-it`, {
+            method: 'POST',
+            body: JSON.stringify({
+                decision: confirmationData.decision,
+                reason: confirmationData.reason
+            }),
+        });
+    }
+
+    async managerConfirmBudget(id, confirmationData) {
+        return this.request(`/asset-requests/${id}/manager/confirm-budget`, {
+            method: 'POST',
+            body: JSON.stringify({
+                decision: confirmationData.decision,
+                reason: confirmationData.reason
+            }),
+        });
+    }
+
+    async managerConfirmAssignment(id, confirmationData) {
+        return this.request(`/asset-requests/${id}/manager/confirm-assignment`, {
+            method: 'POST',
+            body: JSON.stringify({
+                decision: confirmationData.decision,
+                reason: confirmationData.reason
+            }),
+        });
+    }
+
     async itApproveRequest(id, approvalData) {
         return this.request(`/asset-requests/${id}/it/approve`, {
             method: 'POST',
-            body: JSON.stringify(approvalData || {}),
+            body: JSON.stringify({
+                approval_comment: approvalData?.approval_comment
+            }),
         });
     }
 
     async itRejectRequest(id, rejectionData) {
         return this.request(`/asset-requests/${id}/it/reject`, {
             method: 'POST',
-            body: JSON.stringify(rejectionData),
+            body: JSON.stringify({
+                reason: rejectionData.reason
+            }),
         });
     }
 
-    async byodRegister(requestId, payload, reviewerId) {
-        return this.request(`/asset-requests/${requestId}/byod/register?reviewer_id=${reviewerId}`, {
+    async byodRegister(requestId, payload) {
+        return this.request(`/asset-requests/${requestId}/byod/register`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
     }
 
-    async procurementApproveRequest(id, approvalData) {
+    // New BYOD Compliance Methods (Phase 7)
+    async byodComplianceCheck(requestId) {
+        return this.request(`/asset-requests/${requestId}/byod-compliance-check`, {
+            method: 'POST',
+            body: JSON.stringify({})
+        });
+    }
+
+    async mdmEnrollDevice(deviceId, policies) {
+        return this.request(`/asset-requests/byod-devices/${deviceId}/mdm-enroll`, {
+            method: 'POST',
+            body: JSON.stringify({
+                device_id: deviceId,
+                security_policies: policies
+            })
+        });
+    }
+
+    async procurementApproveRequest(id) {
         return this.request(`/asset-requests/${id}/procurement/approve`, {
             method: 'POST',
-            body: JSON.stringify(approvalData || {}),
+            body: JSON.stringify({}),
         });
     }
 
     async procurementRejectRequest(id, rejectionData) {
         return this.request(`/asset-requests/${id}/procurement/reject`, {
             method: 'POST',
-            body: JSON.stringify(rejectionData),
+            body: JSON.stringify({
+                reason: rejectionData.reason
+            }),
         });
     }
 
-    async procurementConfirmDelivery(id, reviewerId) {
-        return this.request(`/asset-requests/${id}/procurement/confirm-delivery?reviewer_id=${reviewerId}`, {
+    async financeApproveRequest(id) {
+        return this.request(`/asset-requests/${id}/finance/approve`, {
+            method: 'POST',
+            body: JSON.stringify({}),
+        });
+    }
+
+    async financeRejectRequest(id, rejectionData) {
+        return this.request(`/asset-requests/${id}/finance/reject`, {
+            method: 'POST',
+            body: JSON.stringify({
+                reason: rejectionData.reason
+            }),
+        });
+    }
+
+    async procurementConfirmDelivery(id, payload) {
+        return this.request(`/asset-requests/${id}/procurement/confirm-delivery`, {
+            method: 'POST',
+            body: payload
+        });
+    }
+
+    async performQC(requestId, qcData) {
+        return this.request(`/asset-requests/${requestId}/qc/perform`, {
+            method: 'POST',
+            body: JSON.stringify({
+                qc_status: qcData.qc_status,
+                qc_notes: qcData.qc_notes
+            })
+        });
+    }
+
+    async userAcceptAsset(requestId) {
+        return this.request(`/asset-requests/${requestId}/user/accept`, {
+            method: 'POST',
+            body: JSON.stringify({})
+        });
+    }
+
+    async inventoryAllocateAsset(requestId, assetId) {
+        return this.request(`/asset-requests/${requestId}/inventory/allocate?asset_id=${assetId}`, {
             method: 'POST',
         });
     }
 
-    async inventoryAllocateAsset(requestId, assetId, inventoryManagerId) {
-        return this.request(`/asset-requests/${requestId}/inventory/allocate?asset_id=${assetId}&inventory_manager_id=${inventoryManagerId}`, {
+    async inventoryMarkNotAvailable(requestId) {
+        return this.request(`/asset-requests/${requestId}/inventory/not-available`, {
             method: 'POST',
         });
     }
 
-    async inventoryMarkNotAvailable(requestId, inventoryManagerId) {
-        return this.request(`/asset-requests/${requestId}/inventory/not-available?inventory_manager_id=${inventoryManagerId}`, {
-            method: 'POST',
-        });
-    }
-
-    async uploadPO(requestId, uploaderId, file) {
+    async uploadPO(requestId, file) {
         const formData = new FormData();
         formData.append('file', file);
-        // uploader_id is passed as query param in the backend endpoint signature?
-        // Checking backend: @router.post("/po/{request_id}") async def upload_po(request_id: str, uploader_id: str, file: UploadFile = File(...))
-        // FastApi expects query params for simple types unless Form(...) is used.
-        // Let's assume uploader_id is a query param based on typical FastAPI behavior when mixed with File upload.
-        
-        return this.request(`/upload/po/${requestId}?uploader_id=${uploaderId}`, {
+
+        return this.request(`/upload/po/${requestId}`, {
             method: 'POST',
             body: formData,
-            // Header content-type will be automatically set by fetch for FormData (multipart/form-data) with boundary
-            // We need to make sure the request helper doesn't override it with application/json
+        });
+    }
+
+    async uploadInvoice(poId, file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        return this.request(`/upload/invoice/${poId}`, {
+            method: 'POST',
+            body: formData,
+        });
+    }
+
+    async updatePODetails(poId, data) {
+        return this.request(`/upload/po/${poId}`, {
+            method: 'PATCH',
+            body: data
         });
     }
 
@@ -391,9 +587,12 @@ class ApiClient {
     }
 
     // Tickets
-    async getTickets(params = {}) {
-        const queryString = new URLSearchParams(params).toString();
-        return this.request(`/tickets?${queryString}`);
+    async getTickets(skip = 0, limit = 100, department = null, search = null) {
+        const queryParams = { skip, limit };
+        if (department) queryParams.department = department;
+        if (search) queryParams.search = search;
+        const params = new URLSearchParams(queryParams);
+        return this.request(`/tickets/?${params.toString()}`);
     }
 
     async getTicket(id) {
@@ -414,29 +613,29 @@ class ApiClient {
         });
     }
 
-    async diagnoseTicket(id, diagnosisData) {
-        return this.request(`/tickets/${id}/it/diagnose`, {
+    async itDiagnoseTicket(ticketId, diagnosisData) {
+        return this.request(`/tickets/${ticketId}/it/diagnose`, {
             method: 'POST',
-            body: JSON.stringify(diagnosisData),
+            body: JSON.stringify({
+                outcome: diagnosisData.outcome,
+                notes: diagnosisData.notes
+            }),
         });
     }
 
-    async acknowledgeTicket(id, reviewerId) {
+    async acknowledgeTicket(id) {
         return this.request(`/tickets/${id}/acknowledge`, {
             method: 'POST',
             body: JSON.stringify({
-                reviewer_id: reviewerId,
-                outcome: 'acknowledge',
                 notes: 'Ticket acknowledged by IT'
             }),
         });
     }
 
-    async resolveTicket(id, reviewerId, notes, checklist = [], percentage = 100.0) {
+    async resolveTicket(id, notes, checklist = [], percentage = 100.0) {
         return this.request(`/tickets/${id}/resolve`, {
             method: 'POST',
             body: JSON.stringify({
-                reviewer_id: reviewerId,
                 notes: notes,
                 checklist: checklist,
                 percentage: percentage
@@ -444,16 +643,45 @@ class ApiClient {
         });
     }
 
-    async updateTicketProgress(id, reviewerId, notes, checklist, percentage) {
+    async updateTicketProgress(id, notes, checklist, percentage) {
         return this.request(`/tickets/${id}/progress`, {
             method: 'POST',
             body: JSON.stringify({
-                reviewer_id: reviewerId,
                 notes: notes,
                 checklist: checklist,
                 percentage: percentage
             }),
         });
+    }
+
+    async getTicketStatsByCategory(days = 30) {
+        return this.request(`/tickets/stats/category?range_days=${days}`);
+    }
+
+    async getOEMMetrics() {
+        return this.request('/analytics/oem/metrics');
+    }
+
+    async getTicketSolverStats(days = null) {
+        const query = days ? `?range_days=${days}` : '';
+        return this.request(`/tickets/stats/solvers${query}`);
+    }
+
+    async getSolverPortfolio(userId) {
+        return this.request(`/tickets/solvers/${userId}/portfolio`);
+    }
+
+    // Categories (Dynamic Styling)
+    async getCategoryConfigs() {
+        return this.request('/categories/configs');
+    }
+
+    async updateCategoryConfig(config) {
+        return this.post('/categories/configs', config);
+    }
+
+    async suggestIcon(categoryName) {
+        return this.request(`/categories/suggest-icon/${encodeURIComponent(categoryName)}`);
     }
 
     // Users
@@ -485,10 +713,43 @@ class ApiClient {
         });
     }
 
+    /**
+     * Get user counts by role (Admin only).
+     * @param {Object} params - Optional { status: 'ACTIVE' } to count only active users.
+     * @returns {Promise<Record<string, number>>} e.g. { FINANCE: 2, PROCUREMENT: 3, END_USER: 50 }
+     */
+    async getRoleCounts(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.request(`/users/role-counts${queryString ? `?${queryString}` : ''}`);
+    }
+
     // Exits
     async getExitRequests(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         return this.request(`/auth/exit-requests?${queryString}`);
+    }
+
+    // Software
+    async getLicenses() {
+        return this.request('/software');
+    }
+
+    async getDiscoveredSoftware() {
+        return this.request('/software/discovered');
+    }
+
+    async getSoftwareReconciliation() {
+        return this.request('/software/reconciliation');
+    }
+
+    async matchSoftware(discoveredName, licenseId) {
+        return this.request('/software/match', {
+            method: 'POST',
+            body: JSON.stringify({
+                discovered_name: discoveredName,
+                license_id: licenseId
+            })
+        });
     }
 
     async initiateExit(userId) {
@@ -588,6 +849,10 @@ class ApiClient {
         return this.request(`/financials/depreciation?method=${method}&useful_life_years=${usefulLifeYears}`);
     }
 
+    async getProcurementSummary(months = 6) {
+        return this.request(`/financials/procurement-summary?months=${months}`, { suppressLogForStatuses: [404] });
+    }
+
     // Renewals
     async getAssetRenewals(daysAhead = 90, expiryType = null) {
         let url = `/assets/renewals?days_ahead=${daysAhead}`;
@@ -609,8 +874,7 @@ class ApiClient {
                 target_asset_id: targetAssetId,
                 relationship_type: relationshipType,
                 description: options.description || null,
-                criticality: options.criticality || 3.0,
-                created_by: options.createdBy || null
+                criticality: options.criticality || 3.0
             }
         });
     }
@@ -644,6 +908,191 @@ class ApiClient {
 
     async syncAuditLogs() {
         return this.request('/audit/sync', { method: 'POST' });
+    }
+
+    // Network Discovery
+    async triggerNetworkScan(cidr = '192.168.1.0/24', community = 'public') {
+        return this.request('/collect/scan', {
+            method: 'POST',
+            body: { cidr, community }
+        });
+    }
+
+    async getDiscoveredSoftware() {
+        return this.request('/software/discovered');
+    }
+
+    async getSoftwareLicenses() {
+        return this.request('/software');
+    }
+
+    async collectBarcodeScan(serial_number, scan_type = 'VERIFY', location = null) {
+        return this.request('/collect/barcode', {
+            method: 'POST',
+            body: { serial_number, scan_type, location }
+        });
+    }
+
+    async triggerAdSync() {
+        return this.request('/collect/users/trigger', {
+            method: 'POST'
+        });
+    }
+
+    async forgotPassword(email) {
+        return this.request('/auth/forgot-password', {
+            method: 'POST',
+            body: { email }
+        });
+    }
+
+    async resetPassword(token, newPassword) {
+        return this.request('/auth/reset-password', {
+            method: 'POST',
+            body: { token, new_password: newPassword }
+        });
+    }
+
+    // Discovery Scan History & Diff Tracking
+    async getDiscoveryScans(limit = 50, agentId = null) {
+        const params = new URLSearchParams({ limit: limit.toString() });
+        if (agentId) params.append('agent_id', agentId);
+        return this.request(`/agents/scans?${params.toString()}`);
+    }
+
+    async getScanDiffs(scanId) {
+        return this.request(`/agents/scans/${scanId}/diffs`);
+    }
+
+    async getAssetChangeHistory(assetId, limit = 100) {
+        return this.request(`/agents/assets/${assetId}/history?limit=${limit}`);
+    }
+
+    // Audit Logging (Phase 10)
+    async getAuditLogs(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(`/audit/logs${query ? `?${query}` : ''}`);
+    }
+
+    async getAuditStats() {
+        return this.request('/audit/stats');
+    }
+
+    // Port Policies
+    async getPortPolicies(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        const url = query ? `/port-policies?${query}` : '/port-policies';
+        return this.request(url);
+    }
+
+    async getPortPolicy(id) {
+        return this.request(`/port-policies/${id}`);
+    }
+
+    async createPortPolicy(data) {
+        return this.request('/port-policies', {
+            method: 'POST',
+            body: data,
+        });
+    }
+
+    async updatePortPolicy(id, data) {
+        return this.request(`/port-policies/${id}`, {
+            method: 'PUT',
+            body: data,
+        });
+    }
+
+    async deletePortPolicy(id) {
+        return this.request(`/port-policies/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async assignPortPolicyTargets(policyId, targets) {
+        return this.request(`/port-policies/${policyId}/targets`, {
+            method: 'POST',
+            body: targets,
+        });
+    }
+
+    async getPortPolicyEnforcement(policyId) {
+        return this.request(`/port-policies/${policyId}/enforcement`);
+    }
+
+    // Automation Rules
+    async getAutomationRules() {
+        return this.request('/tickets/automation/rules');
+    }
+
+    async createAutomationRule(ruleData) {
+        return this.request('/tickets/automation/rules', {
+            method: 'POST',
+            body: ruleData,
+        });
+    }
+
+    async deleteAutomationRule(ruleId) {
+        return this.request(`/tickets/automation/rules/${ruleId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // SLA Policies
+    async getSLAPolicies() {
+        return this.request('/tickets/sla-policies');
+    }
+
+    async createSLAPolicy(policyData) {
+        const { name, priority, res_min, rem_min } = policyData;
+        const params = new URLSearchParams({ name, priority, res_min, rem_min });
+        return this.request(`/tickets/sla-policies?${params.toString()}`, {
+            method: 'POST',
+        });
+    }
+
+    async deleteSLAPolicy(policyId) {
+        return this.request(`/tickets/sla-policies/${policyId}`, {
+            method: 'DELETE',
+        });
+    }
+
+    // Assignment Groups
+    async getAssignmentGroups() {
+        return this.request('/groups/');
+    }
+
+    async createAssignmentGroup(groupData) {
+        return this.post('/groups/', groupData);
+    }
+
+    async deleteAssignmentGroup(id) {
+        return this.delete(`/groups/${id}`);
+    }
+
+    async addGroupMember(groupId, userId) {
+        return this.post(`/groups/${groupId}/members/${userId}`);
+    }
+
+    async removeGroupMember(groupId, userId) {
+        return this.delete(`/groups/${groupId}/members/${userId}`);
+    }
+
+    // Tasks
+    async getTicketTasks(ticketId) {
+        return this.request(`/tasks/ticket/${ticketId}`);
+    }
+
+    async createTask(taskData) {
+        return this.post('/tasks/', taskData);
+    }
+
+    async updateTask(taskId, taskData) {
+        return this.patch(`/tasks/${taskId}`, taskData);
+    }
+
+    async deleteTask(taskId) {
+        return this.delete(`/tasks/${taskId}`);
     }
 }
 

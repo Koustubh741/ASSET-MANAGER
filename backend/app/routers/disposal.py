@@ -19,7 +19,7 @@ async def check_disposal_access(
     """
     Verify user has permission to manage asset disposal (Asynchronous).
     """
-    allowed_roles = ["ADMIN", "SYSTEM_ADMIN", "ASSET_MANAGER", "ASSET_INVENTORY_MANAGER", "IT_MANAGEMENT", "IT_SUPPORT"]
+    allowed_roles = ["ADMIN", "ASSET_MANAGER", "IT_MANAGEMENT", "IT_SUPPORT", "FINANCE", "PROCUREMENT"]
     if current_user.role not in allowed_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

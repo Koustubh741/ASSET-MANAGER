@@ -120,7 +120,7 @@ def test_models():
     print_section("3. DATABASE MODELS")
     
     try:
-        from models import (
+from app.models.models import (
             AssetRequest, User, Asset, ByodDevice, ExitRequest,
             AssetAssignment, PurchaseRequest
         )
@@ -159,7 +159,7 @@ def test_services():
     print_section("4. SERVICE FUNCTIONS")
     
     try:
-        from services import asset_request_service
+from app.services import asset_request_service
         
         # Check for new service functions
         service_functions = [
@@ -192,7 +192,7 @@ def test_schemas():
     print_section("5. SCHEMAS")
     
     try:
-        from schemas.asset_request_schema import (
+from app.schemas.asset_request_schema import (
             ProcurementApprovalRequest,
             ProcurementRejectionRequest,
             QCPerformRequest,
@@ -233,7 +233,7 @@ def test_routers():
     print_section("6. ROUTER ENDPOINTS")
     
     try:
-        from routers import asset_requests, auth
+from app.routers import asset_requests, auth
         
         # Count routes
         ar_routes = len(asset_requests.router.routes)
@@ -288,7 +288,7 @@ def test_database_connectivity():
     print_section("7. DATABASE CONNECTIVITY")
     
     try:
-        from database import SessionLocal, engine
+from app.database.database import SessionLocal, engine
         from sqlalchemy import text
         
         # Test connection
@@ -299,7 +299,7 @@ def test_database_connectivity():
         
         # Test models
         db = SessionLocal()
-        from models import User, AssetRequest, Asset
+from app.models.models import User, AssetRequest, Asset
         
         try:
             user_count = db.query(User).count()

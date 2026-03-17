@@ -10,8 +10,8 @@ from datetime import datetime
 # Add backend directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import SessionLocal
-from models import User, Asset, AssetAssignment, ExitRequest
+from app.database.database import SessionLocal
+from app.models.models import User, Asset, AssetAssignment, ExitRequest
 
 def fix_data():
     session = SessionLocal()

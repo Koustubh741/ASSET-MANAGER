@@ -1,40 +1,56 @@
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import apiClient from '@/lib/apiClient';
 
 export default function NewTicketPage() {
+    const router = useRouter();
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [assets, setAssets] = useState([]);
+    const [groups, setGroups] = useState([]);
     const [formData, setFormData] = useState({
         subject: '',
         priority: 'Medium',
         related_asset_id: '',
-        description: ''
+        description: '',
+        assignment_group_id: ''
     });
 
     useEffect(() => {
-        const fetchAssets = async () => {
+        const fetchData = async () => {
             try {
-                const apiAssets = await apiClient.getAssets();
+                const [apiAssets, apiGroups] = await Promise.all([
+                    apiClient.getAssets(),
+                    apiClient.getAssignmentGroups()
+                ]);
                 setAssets(apiAssets);
+                setGroups(apiGroups);
             } catch (error) {
-                console.error('Failed to load assets:', error);
+                console.error('Failed to load assets or groups:', error);
             }
         };
-        fetchAssets();
+        fetchData();
     }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (loading) return;
+
         setLoading(true);
         try {
-            const user = JSON.parse(localStorage.getItem('user')) || { full_name: 'Guest' };
-            await apiClient.createTicket({
-                ...formData,
-                requestor_id: user.id || user.full_name // Backend expects a string ID or name
-            });
+            // ROOT FIX: Do NOT send requestor_id — backend derives it from JWT.
+            // Also convert empty strings to null for optional UUID fields to prevent 422 errors.
+            const ticketData = {
+                subject: formData.subject,
+                description: formData.description,
+                priority: formData.priority,
+                related_asset_id: formData.related_asset_id || null,
+                assignment_group_id: formData.assignment_group_id || null,
+            };
+
+            await apiClient.createTicket(ticketData);
             setSubmitted(true);
         } catch (error) {
             alert('Failed to create ticket: ' + error.message);
@@ -45,33 +61,33 @@ export default function NewTicketPage() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen p-8 bg-slate-950 text-slate-100 flex items-center justify-center">
+            <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex items-center justify-center">
                 <div className="text-center space-y-4">
-                    <h1 className="text-3xl font-bold text-emerald-400">Ticket Created!</h1>
-                    <p className="text-slate-400">Your request has been submitted to the IT team.</p>
-                    <Link href="/tickets" className="inline-block px-6 py-2 bg-slate-800 rounded-xl hover:bg-slate-700 transition font-medium">Back to Dashboard</Link>
+                    <h1 className="text-xl font-bold text-emerald-400">Ticket Created!</h1>
+                    <p className="text-slate-500 dark:text-slate-400">Your request has been submitted to the IT team.</p>
+                    <Link href="/tickets" className="inline-block px-6 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:bg-slate-700 transition font-medium">Back to Dashboard</Link>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             <div className="max-w-3xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                         <ArrowLeft size={24} />
-                    </Link>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">New Ticket</h1>
+                    </button>
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">New Ticket</h1>
                 </div>
 
-                <form onSubmit={handleSubmit} className="glass-panel p-8 rounded-2xl bg-slate-900 border border-white/10 space-y-6">
+                <form onSubmit={handleSubmit} className="glass-panel p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Subject</label>
+                        <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">Subject</label>
                         <input
                             type="text"
                             required
-                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-slate-900 dark:text-white"
                             placeholder="Brief summary of the issue"
                             value={formData.subject}
                             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
@@ -80,9 +96,9 @@ export default function NewTicketPage() {
 
                     <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Priority</label>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">Priority</label>
                             <select
-                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-slate-900 dark:text-white"
                                 value={formData.priority}
                                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                             >
@@ -93,9 +109,9 @@ export default function NewTicketPage() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-400 mb-2">Related Asset</label>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">Related Asset</label>
                             <select
-                                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-slate-900 dark:text-white"
                                 value={formData.related_asset_id}
                                 onChange={(e) => setFormData({ ...formData, related_asset_id: e.target.value })}
                             >
@@ -107,12 +123,34 @@ export default function NewTicketPage() {
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Assignment Group</label>
+                            <select
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-slate-900 dark:text-white"
+                                value={formData.assignment_group_id}
+                                onChange={(e) => setFormData({ ...formData, assignment_group_id: e.target.value })}
+                            >
+                                <option value="">Auto-route (Default)</option>
+                                {groups.map(g => (
+                                    <option key={g.id} value={g.id}>
+                                        {g.name} {g.department ? `[${g.department}]` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-[10px] text-slate-400 mt-1 italic">Leave empty for automatic routing based on category.</p>
+                        </div>
+                        <div>
+                            {/* Empty slot for layout alignment or category selection if needed */}
+                        </div>
+                    </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-2">Description</label>
+                        <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-2">Description</label>
                         <textarea
                             rows={5}
                             required
-                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-white"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-rose-500/50 outline-none text-slate-900 dark:text-white"
                             placeholder="Detailed description..."
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -123,7 +161,7 @@ export default function NewTicketPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="btn btn-primary bg-rose-600 hover:bg-rose-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-rose-500/20 flex items-center gap-2 disabled:opacity-50"
+                            className="btn btn-primary bg-rose-600 hover:bg-rose-500 text-slate-900 dark:text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-rose-500/20 flex items-center gap-2 disabled:opacity-50"
                         >
                             <Save size={20} /> {loading ? 'Submitting...' : 'Submit Ticket'}
                         </button>

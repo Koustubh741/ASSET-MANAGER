@@ -1,7 +1,7 @@
 """
 Migration script to initialize Exit Workflow tables
 """
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def migrate_exit_workflow():

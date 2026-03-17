@@ -1,6 +1,17 @@
 /**
  * Cleans corrupted asset data (removes extra quotes, parses costs, etc.)
  */
+
+export const getHash = (s) => {
+    if (!s) return 0;
+    let hash = 0;
+    for (let i = 0; i < s.length; i++) {
+        hash = ((hash << 5) - hash) + s.charCodeAt(i);
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+};
+
 export function sanitizeAsset(a) {
     const cleanStr = (s) => s ? String(s).replace(/^["']|["']$/g, '').trim() : s;
     const parseVal = (v) => {
@@ -13,6 +24,7 @@ export function sanitizeAsset(a) {
     // Clean status string first
     let st = cleanStr(a.status);
     if (st && (st.match(/active/i) || st.match(/in use/i))) st = 'In Use';
+    if (st && st.match(/discovered/i)) st = 'Discovered';
 
     // COST PATCHING: If cost is 0, assign realistic mock value based on type
     let finalCost = parseVal(a.cost);
@@ -80,6 +92,7 @@ export function calculateDashboardStats(allAssets) {
         maintenance: 0,
         retired: 0,
         in_stock: 0,
+        discovered: 0,
         it: 0,
         non_it: 0,
         total: allAssets.length,
@@ -105,6 +118,7 @@ export function calculateDashboardStats(allAssets) {
         else if (statusLower.includes('maintenance')) totals.maintenance++;
         else if (statusLower.includes('retired')) totals.retired++;
         else if (statusLower.includes('stock')) totals.in_stock++;
+        else if (statusLower.includes('discovered')) totals.discovered++;
 
         const segmentLower = (asset.segment || '').toLowerCase();
         if (segmentLower === 'it') totals.it++;
@@ -120,7 +134,9 @@ export function calculateDashboardStats(allAssets) {
             if (!isNaN(date)) {
                 const month = date.getMonth();
                 monthlyTrends[month].renewed += 1;
-                if (asset.id % 3 === 0) {
+                // Use hash-based modulo for stability with UUIDs
+                const assetHash = getHash(String(asset.id));
+                if (assetHash % 3 === 0) {
                     const repairMonth = (month + 2) % 12;
                     monthlyTrends[repairMonth].repaired += 1;
                 }
@@ -135,7 +151,8 @@ export function calculateDashboardStats(allAssets) {
         { name: 'In Use', value: totals.active },
         { name: 'Repair', value: totals.repair },
         { name: 'Retired', value: totals.retired },
-        { name: 'In Stock', value: totals.in_stock }
+        { name: 'In Stock', value: totals.in_stock },
+        { name: 'Discovered', value: totals.discovered }
     ];
 
     const quarterlyTrends = [
@@ -156,14 +173,37 @@ export function calculateDashboardStats(allAssets) {
     warningDate.setDate(today.getDate() + 30);
 
     let warrantyRiskCount = 0;
+    const warrantyByMonth = Array(12).fill(0).map((_, i) => ({
+        name: new Date(0, i).toLocaleString('default', { month: 'short' }),
+        value: 0
+    }));
     allAssets.forEach(asset => {
         if (asset.warranty_expiry) {
             const expiry = new Date(asset.warranty_expiry);
+            if (!isNaN(expiry)) {
+                const month = expiry.getMonth();
+                warrantyByMonth[month].value += 1;
+            }
             if (expiry >= today && expiry <= warningDate) {
                 warrantyRiskCount++;
             }
         }
     });
+
+    const ageBuckets = { '0-1 yr': 0, '1-3 yr': 0, '3-5 yr': 0, '5+ yr': 0 };
+    const todayTime = today.getTime();
+    const oneYr = 365.25 * 24 * 60 * 60 * 1000;
+    allAssets.forEach(asset => {
+        if (!asset.purchase_date) return;
+        const purchase = new Date(asset.purchase_date);
+        if (isNaN(purchase.getTime())) return;
+        const ageYr = (todayTime - purchase.getTime()) / oneYr;
+        if (ageYr < 1) ageBuckets['0-1 yr']++;
+        else if (ageYr < 3) ageBuckets['1-3 yr']++;
+        else if (ageYr < 5) ageBuckets['3-5 yr']++;
+        else ageBuckets['5+ yr']++;
+    });
+    const age_distribution = Object.entries(ageBuckets).map(([name, value]) => ({ name, value }));
 
     return {
         total: totals.total,
@@ -179,6 +219,8 @@ export function calculateDashboardStats(allAssets) {
         by_segment,
         by_type,
         by_location,
+        warranty_by_month: warrantyByMonth,
+        age_distribution,
         trends: {
             monthly: monthlyTrends,
             quarterly: quarterlyTrends

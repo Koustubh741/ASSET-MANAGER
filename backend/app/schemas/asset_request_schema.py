@@ -12,7 +12,6 @@ class ManagerApproval(BaseModel):
     timestamp: datetime
 
 class AssetRequestBase(BaseModel):
-    requester_id: UUID
     asset_id: Optional[UUID] = None
     asset_name: str
     asset_type: str  # Laptop, Server, etc. (asset category)
@@ -24,6 +23,8 @@ class AssetRequestBase(BaseModel):
     cost_estimate: Optional[float] = None
     justification: Optional[str] = None
     business_justification: Optional[str] = None
+    reason: Optional[str] = None
+    specifications: Optional[Dict[str, Any]] = {}
 
 class AssetRequestCreate(AssetRequestBase):
     asset_ownership_type: str  # COMPANY_OWNED | BYOD (required for new requests)
@@ -36,13 +37,15 @@ class AssetRequestUpdate(BaseModel):
 class AssetRequestResponse(AssetRequestBase):
     id: UUID
     status: str
+    requester_id: UUID
     requester_name: Optional[str] = None
     requester_email: Optional[str] = None
+    requester_department: Optional[str] = None
     manager_approvals: Optional[List[Dict[str, Any]]] = None
     # IT review tracking (for audit)
     it_reviewed_by: Optional[UUID] = None
     it_reviewed_at: Optional[datetime] = None
-    # Procurement & Finance tracking
+    # Procurement/Finance segment tracking (separate PROCUREMENT, FINANCE roles)
     procurement_finance_status: Optional[str] = None
     procurement_finance_reviewed_by: Optional[UUID] = None
     procurement_finance_reviewed_at: Optional[datetime] = None
@@ -59,6 +62,11 @@ class AssetRequestResponse(AssetRequestBase):
     purchase_order: Optional[Dict[str, Any]] = None
     purchase_invoice: Optional[Dict[str, Any]] = None
     procurement_logs: Optional[List[Dict[str, Any]]] = None
+    
+    # Virtual fields for frontend compatibility
+    current_owner_role: Optional[str] = None
+    procurement_stage: Optional[str] = None
+    
     created_at: datetime
     updated_at: datetime
     
@@ -73,10 +81,10 @@ class AssetRequestResponse(AssetRequestBase):
         from_attributes = True
 
 class ManagerApprovalRequest(BaseModel):
-    """Request body for manager approval"""
-    manager_id: UUID  # ID of the manager approving/rejecting
+    """Request body for manager approval (ID derived from JWT)"""
+    pass
 
-class ManagerRejectionRequest(ManagerApprovalRequest):
+class ManagerRejectionRequest(BaseModel):
     """Request body for manager rejection - requires reason"""
     reason: str
 
@@ -89,39 +97,60 @@ class ByodRegisterRequest(BaseModel):
 
 
 class ProcurementApprovalRequest(BaseModel):
-    """Request body for procurement & finance approval"""
-    reviewer_id: UUID  # ID of PROCUREMENT_FINANCE user
+    """Request body for Procurement approval (PO validation; ID derived from JWT)"""
+    pass
 
 
 class ProcurementRejectionRequest(ProcurementApprovalRequest):
-    """Request body for procurement & finance rejection - requires reason"""
+    """Request body for Procurement or Finance rejection - requires reason"""
     reason: str
 
 
 class QCPerformRequest(BaseModel):
-    """Request body for QC performance"""
-    qc_performer_id: UUID  # ID of ASSET_INVENTORY_MANAGER
+    """Request body for QC performance (Performer derived from JWT)"""
     qc_status: str  # PASSED | FAILED
     qc_notes: Optional[str] = None
 
 
 class UserAcceptanceRequest(BaseModel):
-    """Request body for user acceptance"""
-    user_id: UUID  # ID of END_USER (must match requester_id)
+    """Request body for user acceptance (User derived from JWT)"""
+    pass
 
 
 class ITApprovalRequest(BaseModel):
-    """Request body for IT approval"""
-    reviewer_id: UUID
+    """Request body for IT approval (ID derived from JWT)"""
     approval_comment: Optional[str] = None
 
 
-class ITRejectionRequest(ITApprovalRequest):
+class ITRejectionRequest(BaseModel):
     """Request body for IT rejection"""
     reason: str
 
 
 class ITDiagnosisRequest(BaseModel):
-    """Request body for IT diagnosis"""
-    reviewer_id: UUID
-    outcome: str  # "repair" | "secure"
+    """Request body for IT diagnosis (ID derived from JWT)"""
+    outcome: Optional[str] = None  # "repair" | "secure"
+    notes: Optional[str] = None
+
+
+class ManagerConfirmationRequest(BaseModel):
+    """Request body for manager confirmation at critical workflow stages (ID/Name derived from JWT)"""
+    decision: str  # "CONFIRM" | "REJECT"
+    reason: Optional[str] = None
+
+
+class ByodComplianceCheckRequest(BaseModel):
+    """Request body for BYOD compliance validation (Reviewer derived from JWT)"""
+    dry_run: bool = False  # When True, return mock success without executing logic
+
+
+class MdmEnrollmentRequest(BaseModel):
+    """Request body for MDM device enrollment"""
+    device_id: UUID
+    security_policies: Optional[Dict[str, Any]] = None
+
+class DeliveryConfirmationRequest(BaseModel):
+    """Request body for procurement delivery confirmation"""
+    serial_number: str
+    asset_name: str
+    asset_model: Optional[str] = None

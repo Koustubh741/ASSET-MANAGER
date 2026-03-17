@@ -74,25 +74,25 @@ export default function NotificationsPage() {
     ]);
 
     return (
-        <div className="flex flex-col h-full bg-[#0B1120] text-slate-300 min-h-screen">
+        <div className="flex flex-col h-full bg-[#0B1120] text-slate-700 dark:text-slate-700 min-h-screen">
             {/* Header */}
-            <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-[#0B1120]/80 backdrop-blur-xl sticky top-0 z-10">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-200 dark:border-white/5 bg-[#0B1120]/80 backdrop-blur-xl sticky top-0 z-10">
                 <div className="flex items-center gap-4">
                     <Link href="/dashboard/system-admin">
-                        <button className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 hover:text-white">
+                        <button className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 rounded-lg transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
                             <ChevronLeft size={20} />
                         </button>
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
                             <Bell className="text-blue-500" />
                             Notifications
                         </h1>
-                        <p className="text-sm text-slate-400">System alerts and activity logs</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">System alerts and activity logs</p>
                     </div>
                 </div>
                 <div className="flex gap-3">
-                    <button className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors border border-white/10">
+                    <button className="px-4 py-2 bg-slate-50 dark:bg-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white rounded-lg text-sm font-medium transition-colors border border-slate-200 dark:border-white/10">
                         Mark all as read
                     </button>
                 </div>
@@ -109,12 +109,12 @@ export default function NotificationsPage() {
                             <div className="flex-1">
                                 <div className="flex justify-between items-start">
                                     <h3 className={`font-semibold ${notification.color}`}>{notification.title}</h3>
-                                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                         <Clock size={12} />
                                         {notification.time}
                                     </span>
                                 </div>
-                                <p className="text-sm text-slate-300 mt-1">{notification.message}</p>
+                                <p className="text-sm text-slate-700 dark:text-slate-700 mt-1">{notification.message}</p>
                             </div>
                         </div>
                     ))}

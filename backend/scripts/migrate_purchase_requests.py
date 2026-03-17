@@ -1,6 +1,6 @@
 
 from sqlalchemy import text
-from database import SessionLocal
+from app.database.database import SessionLocal
 
 def migrate():
     db = SessionLocal()

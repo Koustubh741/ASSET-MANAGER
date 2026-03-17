@@ -1,5 +1,5 @@
 from sqlalchemy import text
-from database import engine
+from app.database.database import engine
 
 def apply_migration():
     """

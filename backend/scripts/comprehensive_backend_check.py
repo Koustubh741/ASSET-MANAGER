@@ -2,10 +2,25 @@
 Comprehensive Backend Health Check
 Tests all components: database, models, endpoints, and workflows
 """
+import sys
+import io
+
+# Force UTF-8 for Windows console
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 import requests
 import json
 import sys
+import os
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Add parent directory to path to allow importing app
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Load environment variables
+load_dotenv()
 
 BASE_URL = "http://127.0.0.1:8000"
 
@@ -22,10 +37,10 @@ def print_section(title):
     print(f"{Colors.BLUE}{'='*70}{Colors.END}\n")
 
 def print_success(msg):
-    print(f"{Colors.GREEN}✓ {msg}{Colors.END}")
+    print(f"{Colors.GREEN}[OK] {msg}{Colors.END}")
 
 def print_error(msg):
-    print(f"{Colors.RED}✗ {msg}{Colors.END}")
+    print(f"{Colors.RED}[FAIL] {msg}{Colors.END}")
 
 def print_warning(msg):
     print(f"{Colors.YELLOW}⚠ {msg}{Colors.END}")
@@ -57,7 +72,10 @@ def test_database_connectivity():
     print_section("2. DATABASE CONNECTIVITY")
     
     try:
-        from database import engine, SessionLocal
+        try:
+            from app.database.database import engine, SessionLocal
+        except ImportError:
+            from backend.app.database.database import engine, SessionLocal
         from sqlalchemy import text
         
         # Test connection
@@ -70,7 +88,10 @@ def test_database_connectivity():
         
         # Test models
         db = SessionLocal()
-        from models import User, Asset, AssetRequest, Ticket, ByodDevice, ExitRequest
+        try:
+            from app.models.models import User, Asset, AssetRequest, Ticket, ByodDevice, ExitRequest
+        except ImportError:
+            from backend.app.models.models import User, Asset, AssetRequest, Ticket, ByodDevice, ExitRequest
         
         models_to_test = [
             ("Users", User),
@@ -108,9 +129,9 @@ def test_api_endpoints():
         ("GET", "/", "Root endpoint"),
         ("GET", "/health", "Health check"),
         ("GET", "/openapi.json", "OpenAPI schema"),
-        ("GET", "/assets", "List assets"),
-        ("GET", "/tickets", "List tickets"),
-        ("POST", "/auth/register", "User registration"),
+        ("GET", "/api/v1/assets", "List assets"),
+        ("GET", "/api/v1/tickets", "List tickets"),
+        ("POST", "/api/v1/auth/register", "User registration"),
     ]
     
     results = {"passed": 0, "failed": 0, "warnings": 0}
@@ -120,7 +141,7 @@ def test_api_endpoints():
             if method == "GET":
                 response = requests.get(f"{BASE_URL}{path}", timeout=5)
             elif method == "POST":
-                if path == "/auth/register":
+                if path == "/api/v1/auth/register":
                     import time
                     test_data = {
                         "email": f"test_{int(time.time())}@test.com",
@@ -176,11 +197,11 @@ def test_api_schema():
         
         # Check for key endpoint groups
         endpoint_groups = {
-            "auth": ["/auth/register", "/auth/login"],
-            "assets": ["/assets"],
-            "asset-requests": ["/asset-requests"],
-            "tickets": ["/tickets"],
-            "workflows": ["/workflows"],
+            "auth": ["/api/v1/auth/register", "/api/v1/auth/login"],
+            "assets": ["/api/v1/assets"],
+            "asset-requests": ["/api/v1/asset-requests"],
+            "tickets": ["/api/v1/tickets"],
+            "workflows": ["/api/v1/workflows"],
         }
         
         print("\n   Endpoint groups:")
@@ -202,19 +223,14 @@ def test_code_imports():
     print_section("5. CODE INTEGRITY")
     
     modules_to_test = [
-        ("main", "main"),
-        ("database", "database"),
-        ("models", "models"),
-        ("routers.auth", "auth router"),
-        ("routers.assets", "assets router"),
-        ("routers.asset_requests", "asset_requests router"),
-        ("routers.tickets", "tickets router"),
-        ("routers.workflows", "workflows router"),
-        ("routers.upload", "upload router"),
-        ("services.user_service", "user_service"),
-        ("services.asset_service", "asset_service"),
-        ("services.asset_request_service", "asset_request_service"),
-        ("services.ticket_service", "ticket_service"),
+        ("app.main", "main"),
+        ("app.database.database", "database"),
+        ("app.models.models", "models"),
+        ("app.routers.auth", "auth router"),
+        ("app.routers.assets", "assets router"),
+        ("app.routers.software", "software router"),
+        ("app.routers.tickets", "tickets router"),
+        ("app.routers.workflows", "workflows router"),
     ]
     
     all_ok = True
@@ -233,7 +249,10 @@ def test_router_registration():
     print_section("6. ROUTER REGISTRATION")
     
     try:
-        from main import app
+        try:
+            from main import app
+        except ImportError:
+            from app.main import app
         
         routes = []
         for route in app.routes:
@@ -246,12 +265,12 @@ def test_router_registration():
         
         # Check for key routers
         router_prefixes = {
-            "/auth": "Auth router",
-            "/assets": "Assets router",
-            "/asset-requests": "Asset requests router",
-            "/tickets": "Tickets router",
-            "/workflows": "Workflows router",
-            "/upload": "Upload router",
+            "/api/v1/auth": "Auth router",
+            "/api/v1/assets": "Assets router",
+            "/api/v1/asset-requests": "Asset requests router",
+            "/api/v1/tickets": "Tickets router",
+            "/api/v1/workflows": "Workflows router",
+            "/api/v1/upload": "Upload router",
         }
         
         print("\n   Router prefixes:")
@@ -290,10 +309,10 @@ def generate_summary(results):
     print(f"{Colors.BLUE}{'='*70}{Colors.END}\n")
     
     if failed_tests == 0:
-        print(f"{Colors.GREEN}✓ All tests passed! Backend is working properly.{Colors.END}\n")
+        print(f"{Colors.GREEN}[OK] All tests passed! Backend is working properly.{Colors.END}\n")
         return True
     else:
-        print(f"{Colors.RED}✗ Some tests failed. Please review the errors above.{Colors.END}\n")
+        print(f"{Colors.RED}[FAIL] Some tests failed. Please review the errors above.{Colors.END}\n")
         return False
 
 if __name__ == "__main__":

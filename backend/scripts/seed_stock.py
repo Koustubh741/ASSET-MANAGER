@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, date
-from database import SessionLocal
-from models import Asset, AssetInventory
+from app.database.database import SessionLocal
+from app.models.models import Asset, AssetInventory
 
 def add_dummy_stock():
     db = SessionLocal()

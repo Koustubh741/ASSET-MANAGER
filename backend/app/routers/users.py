@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.database import get_db
 from ..schemas.user_schema import UserCreate, UserResponse, UserUpdate
 from ..services import user_service
+from typing import List, Optional
 from ..utils import auth_utils
 
 router = APIRouter(
@@ -22,11 +23,11 @@ async def check_admin_access(
     """
     Verify user has admin privileges for user management.
     """
-    allowed_roles = ["ADMIN", "SYSTEM_ADMIN"]
+    allowed_roles = ["ADMIN", "ADMIN"]
     if current_user.role not in allowed_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only ADMIN or SYSTEM_ADMIN can manage users"
+            detail="Only ADMIN or ADMIN can manage users"
         )
     return current_user
 
@@ -58,8 +59,8 @@ async def create_user(
 
 @router.get("", response_model=list[UserResponse])
 async def list_users(
-    status: str = None,
-    role: str = None,
+    status: Optional[str] = None,
+    role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     admin_user = Depends(check_admin_access)
 ):
@@ -73,6 +74,32 @@ async def list_users(
         users = [u for u in users if u.role == role]
     
     return users
+
+
+@router.get("/hierarchy")
+async def get_hierarchy(
+    db: AsyncSession = Depends(get_db),
+    admin_user = Depends(check_admin_access)
+):
+    """
+    Get the complete organization hierarchy (Admin only).
+    """
+    return await user_service.get_user_hierarchy(db)
+
+
+@router.get("/role-counts")
+async def get_role_counts(
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    admin_user = Depends(check_admin_access)
+):
+    """
+    Get count of users per role (Admin only).
+    Optional query: status=ACTIVE to count only active users.
+    Returns e.g. {"FINANCE": 2, "PROCUREMENT": 3, "END_USER": 50, ...}.
+    """
+    counts = await user_service.get_role_counts(db, status=status)
+    return counts
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -112,6 +139,9 @@ async def update_user(
     
     # Update user fields
     update_data = user_update.model_dump(exclude_unset=True)
+    # Root fix: no combined PROCUREMENT_FINANCE role; normalize to FINANCE
+    if update_data.get("role") and str(update_data.get("role")).strip().upper() == "PROCUREMENT_FINANCE":
+        update_data["role"] = "FINANCE"
     for field, value in update_data.items():
         if field == "password" and value:
             # Hash the password if being updated

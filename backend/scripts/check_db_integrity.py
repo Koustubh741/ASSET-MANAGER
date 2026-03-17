@@ -4,8 +4,8 @@ import os
 # Add the backend directory to sys.path
 sys.path.append(os.path.join(os.getcwd(), 'backend'))
 
-from database import SessionLocal
-from models import Asset
+from app.database.database import SessionLocal
+from app.models.models import Asset
 import traceback
 
 db = SessionLocal()

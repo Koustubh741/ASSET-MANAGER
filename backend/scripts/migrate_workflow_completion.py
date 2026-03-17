@@ -2,7 +2,7 @@
 Migration script to add workflow completion fields to asset_requests table
 Run this after updating models.py
 """
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def migrate_workflow_completion():
@@ -14,7 +14,7 @@ def migrate_workflow_completion():
             # Remove deprecated it_review_status column (keep it_reviewed_by and it_reviewed_at for audit)
             # Note: We keep it_reviewed_by and it_reviewed_at for audit trail
             
-            # Add Procurement & Finance fields
+            # Add Procurement/Finance segment fields
             columns_to_add = [
                 ("procurement_finance_status", "VARCHAR(50)"),
                 ("procurement_finance_reviewed_by", "VARCHAR"),

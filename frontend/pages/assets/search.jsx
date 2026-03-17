@@ -119,21 +119,21 @@ export default function SmartSearchPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-white tracking-tight">Smart Asset Search</h1>
-                        <p className="text-slate-400 mt-1">Advanced filtering and reporting capabilities</p>
+                        <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Smart Asset Search</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">Advanced filtering and reporting capabilities</p>
                     </div>
                 </div>
-                <div className="text-sm text-slate-500 font-mono">
+                <div className="text-sm text-slate-500 dark:text-slate-400 font-mono">
                     {filteredAssets.length} Results Found
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10 shadow-xl backdrop-blur-md">
+            <div className="glass-panel p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xl backdrop-blur-md">
                 <SmartFiltersBar
                     onFilterChange={handleFilterChange}
                     onSaveView={handleSaveView}

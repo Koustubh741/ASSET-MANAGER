@@ -1,27 +1,37 @@
+from typing import Optional, List, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from ..models.models import User
 from ..schemas.user_schema import UserCreate, UserUpdate
 import uuid
 from uuid import UUID
 
 from passlib.context import CryptContext
+import bcrypt
 
 # Password hashing configuration
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain_password, hashed_password):
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        # Check if hashed_password is a bcrypt hash (starts with $2b$, $2a$, etc)
+        # Note: bcrypt.checkpw requires bytes
+        if hashed_password.startswith("$2"):
+            return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        else:
+             # Fallback to plain text comparison for dev seeds if they are not hashed
+             return plain_password == hashed_password
     except Exception:
-        # Fallback to plain text comparison for dev seeds if they are not hashed
+        # Fallback to plain text comparison
         return plain_password == hashed_password
 
 async def get_user_by_email(db: AsyncSession, email: str):
-    result = await db.execute(select(User).filter(User.email == email))
+    normalized_email = email.strip().lower()
+    result = await db.execute(select(User).filter(User.email == normalized_email))
     return result.scalars().first()
 
 async def get_user(db: AsyncSession, user_id: UUID):
@@ -30,24 +40,66 @@ async def get_user(db: AsyncSession, user_id: UUID):
 
 async def create_user(db: AsyncSession, user: UserCreate):
     hashed_password = get_password_hash(user.password)
+    # Check if this is the first user
+    result = await db.execute(select(func.count(User.id)))
+    count = result.scalar()
+    
+    is_first_user = count == 0
+    # Root fix: Unified slugs. First user is always ADMIN.
+    normalized_email = user.email.strip().lower()
+    raw_role = (user.role or "END_USER").strip().upper()
+    role_value = "ADMIN" if is_first_user else raw_role
+
     db_user = User(
         id=uuid.uuid4(),
-        email=user.email,
+        email=normalized_email,
         full_name=user.full_name,
         password_hash=hashed_password,
-        role=user.role or "END_USER",
-        status=user.status if user.status else "PENDING",
+        role=role_value,
+        status="ACTIVE" if is_first_user and role_value == "ADMIN" else "PENDING",
         position=user.position,
         domain=user.domain,
         department=user.department,
         location=user.location,
         phone=user.phone,
-        company=user.company
+        company=user.company,
+        manager_id=user.manager_id,
+        persona=user.persona
     )
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
     return db_user
+
+async def get_user_hierarchy(db: AsyncSession):
+    """
+    Build and return the complete organization hierarchy.
+    """
+    # Fetch all active users
+    result = await db.execute(select(User).filter(User.status == "ACTIVE"))
+    users = result.scalars().all()
+    
+    # Map users by ID for quick lookup
+    user_map = {str(u.id): {
+        "id": str(u.id),
+        "name": u.full_name,
+        "role": u.role,
+        "position": u.position,
+        "department": u.department,
+        "manager_id": str(u.manager_id) if u.manager_id else None,
+        "children": []
+    } for u in users}
+    
+    roots = []
+    for user_id, user_data in user_map.items():
+        manager_id = user_data["manager_id"]
+        if manager_id and manager_id in user_map:
+            user_map[manager_id]["children"].append(user_data)
+        else:
+            # If no manager or manager not found/not active, it's a root
+            roots.append(user_data)
+            
+    return roots
 
 async def authenticate_user(db: AsyncSession, email: str, password: str):
     user = await get_user_by_email(db, email)
@@ -63,19 +115,116 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
 async def activate_user(db: AsyncSession, user_id: UUID) -> User:
     """
     Activate a user by setting their status to ACTIVE.
-    Returns the updated user or None if not found.
+    Only PENDING accounts can be activated. Returns the updated user or None if not found.
     """
     user = await get_user(db, user_id)
     if not user:
+        return None
+    if user.status != "PENDING":
         return None
     user.status = "ACTIVE"
     await db.commit()
     await db.refresh(user)
     return user
 
-async def get_users(db: AsyncSession, status: str = None):
+async def get_users(db: AsyncSession, status: str = None, department: str = None):
     query = select(User)
+    
+    if status is not None:
+        query = query.filter(User.status == status)
+        
+    if department is not None:
+        from sqlalchemy import or_
+        query = query.filter(
+            or_(
+                User.department.ilike(f"%{department}%"),
+                User.domain.ilike(f"%{department}%")
+            )
+        )
+        
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+async def get_role_counts(db: AsyncSession, status: str = None):
+    """
+    Return counts of users by role, optionally filtered by status (e.g. ACTIVE).
+    Returns dict like {"FINANCE": 2, "PROCUREMENT": 3, "END_USER": 50, ...}.
+    """
+    query = select(User.role, func.count(User.id)).group_by(User.role)
     if status:
         query = query.filter(User.status == status)
     result = await db.execute(query)
-    return result.scalars().all()
+    return {row[0]: row[1] for row in result.all()}
+
+async def sync_sso_user(db: AsyncSession, sso_provider: str, sso_id: str, email: str, full_name: str):
+    """
+    Sync a user from an SSO provider.
+    1. Check if user exists with sso_id.
+    2. Check if user exists with email.
+    3. Update or create user.
+    """
+    # 1. Try to find by SSO ID
+    normalized_email = email.strip().lower()
+    result = await db.execute(select(User).filter(User.sso_provider == sso_provider, User.sso_id == sso_id))
+    user = result.scalars().first()
+    
+    if not user:
+        # 2. Try to find by email
+        result = await db.execute(select(User).filter(User.email == normalized_email))
+        user = result.scalars().first()
+        
+        if user:
+            # Link existing user to SSO
+            user.sso_provider = sso_provider
+            user.sso_id = sso_id
+        else:
+            # 3. Create new user
+            user = User(
+                id=uuid.uuid4(),
+                email=normalized_email,
+                full_name=full_name,
+                password_hash="SSO_MANAGED_" + str(uuid.uuid4()), # Placeholder
+                sso_provider=sso_provider,
+                sso_id=sso_id,
+                status="ACTIVE", # SSO users are usually pre-authenticated
+                role="END_USER",
+                persona="STANDARD_USER" # Default persona for SSO newcomers
+            )
+            db.add(user)
+    
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+async def update_user_password(db: AsyncSession, user_id: UUID, new_password: str):
+    """
+    Update a user's password with hashing (Asynchronous).
+    """
+    user = await get_user(db, user_id)
+    if not user:
+        return None
+    user.password_hash = get_password_hash(new_password)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+async def update_user(db: AsyncSession, user_id: UUID, user_update: UserUpdate) -> Optional[User]:
+    """
+    Update user data dynamically.
+    """
+    user = await get_user(db, user_id)
+    if not user:
+        return None
+    
+    update_data = user_update.model_dump(exclude_unset=True)
+    
+    if "password" in update_data:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+        
+    for field, value in update_data.items():
+        setattr(user, field, value)
+        
+    await db.commit()
+    await db.refresh(user)
+    return user

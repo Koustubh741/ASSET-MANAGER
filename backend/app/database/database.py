@@ -6,6 +6,7 @@ load_dotenv()
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy import create_engine
 from typing import AsyncGenerator
+from contextlib import asynccontextmanager
 
 # DATABASE_URL configuration
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/itsm")
@@ -58,3 +59,15 @@ def get_connection_info():
         "database": url.database,
         "user": url.username
     }
+
+@asynccontextmanager
+async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Async context manager for database sessions.
+    Used for background tasks or manual session management.
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()

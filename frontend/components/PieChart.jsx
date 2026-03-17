@@ -5,10 +5,10 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                <p className="text-slate-200 font-medium mb-1">{payload[0].name}</p>
-                <p className="text-white font-bold text-lg">
-                    {payload[0].value} <span className="text-slate-400 text-xs font-normal">assets</span>
+            <div className="bg-white dark:bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
+                <p className="text-slate-900 dark:text-slate-200 font-medium mb-1">{payload[0].name}</p>
+                <p className="text-slate-900 dark:text-white font-bold text-lg">
+                    {payload[0].value} <span className="text-slate-500 dark:text-slate-400 text-xs font-normal">assets</span>
                 </p>
             </div>
         )
@@ -16,9 +16,9 @@ const CustomTooltip = ({ active, payload }) => {
     return null
 }
 
-export default function CustomPieChart({ data, onPieClick }) {
+export default function CustomPieChart({ data, onPieClick, minAngle }) {
     if (!data || data.length === 0) return (
-        <div className="flex items-center justify-center h-full text-slate-500">
+        <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">
             No data available
         </div>
     )
@@ -35,6 +35,7 @@ export default function CustomPieChart({ data, onPieClick }) {
                     fill="#8884d8"
                     paddingAngle={5}
                     dataKey="value"
+                    minAngle={minAngle != null ? minAngle : 0}
                     onClick={data => data && onPieClick && onPieClick(data)}
                 >
                     {data.map((entry, index) => (
@@ -46,7 +47,7 @@ export default function CustomPieChart({ data, onPieClick }) {
                     verticalAlign="bottom"
                     height={36}
                     iconType="circle"
-                    formatter={(value) => <span className="text-slate-300 ml-1">{value}</span>}
+                    formatter={(value) => <span className="text-slate-700 dark:text-slate-300 ml-1">{value}</span>}
                 />
             </PieChart>
         </ResponsiveContainer>

@@ -8,19 +8,70 @@ from .database.database import get_db, test_connection, get_connection_info
 from .models.models import AuditLog, Asset
 import traceback
 from datetime import datetime
-import os
 from .routers import upload, workflows, disposal, audit, assets, auth, tickets, asset_requests, users, reference, financials
+import os
+from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+import asyncio
+from .scheduler import scheduler, setup_patch_scheduler_jobs
+
+# Load environment variables from .env file
+load_dotenv()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    scheduler.start()
+    setup_patch_scheduler_jobs()       # Phase 3 + 6: register patch sync & snapshot jobs
+    print("INFO:     APScheduler started")
+    _log_registered_routes()
+    try:
+        yield
+    except asyncio.CancelledError:
+        pass  # Graceful shutdown on Ctrl+C; avoid traceback from our code
+    finally:
+        try:
+            scheduler.shutdown()
+            print("INFO:     APScheduler shut down")
+        except Exception:
+            pass
 
 # Create FastAPI app instance
 app = FastAPI(
     title="ITSM Asset Management API",
     description="Asset Management API for ITSM Platform (Asynchronous)",
-    version="1.1.0"
+    version="1.1.0",
+    lifespan=lifespan
 )
 
 # Enterprise API Router
 from .api.v1.router import api_router
+from .routers import financials as financials_router
 app.include_router(api_router, prefix="/api/v1")
+# Ensure procurement-summary is always registered (avoids 404 if router load order varies)
+app.include_router(financials_router.router, prefix="/api/v1")
+
+# Explicit route so GET /api/v1/financials/procurement-summary always exists (workaround for 404)
+app.add_api_route(
+    "/api/v1/financials/procurement-summary",
+    financials_router.get_procurement_summary,
+    methods=["GET"],
+    response_model=financials_router.ProcurementSummaryResponse,
+    name="get_procurement_summary_explicit",
+)
+
+
+def _log_registered_routes():
+    """Log key routes at startup so we can verify procurement-summary etc. are registered."""
+    try:
+        from fastapi.routing import APIRoute
+        financial_routes = [r.path for r in app.routes if isinstance(r, APIRoute) and "financial" in r.path]
+        if "/api/v1/financials/procurement-summary" in financial_routes:
+            print("INFO:     GET /api/v1/financials/procurement-summary is registered")
+        else:
+            print("WARNING:  GET /api/v1/financials/procurement-summary NOT in registered routes:", financial_routes)
+    except Exception as e:
+        print("INFO:     Route check skipped:", e)
 
 # Suppress favicon 404s
 @app.get("/favicon.ico", include_in_schema=False)
@@ -69,10 +120,23 @@ async def debug_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content=content,
-        headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
+        headers={"Access-Control-Allow-Origin": "*"}
+    )
+
+from fastapi.exceptions import ResponseValidationError
+
+@app.exception_handler(ResponseValidationError)
+async def validation_exception_handler(request: Request, exc: ResponseValidationError):
+    print(f"Response Validation Error: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Response Serialization Error", "errors": str(exc)},
+        headers={"Access-Control-Allow-Origin": "*"}
     )
 
 # All routers are now registered through the versioned api_router above
+
 
 # Root endpoint
 @app.get("/")
@@ -89,112 +153,9 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
-@app.api_route("/api/v1/collect", methods=["GET", "POST"])
-async def collect_data(
-    request: Request, 
-    db: AsyncSession = Depends(get_db),
-    x_api_token: str = Header(None, alias="X-API-Token")
-):
-    """
-    Collect data from external sources (Asynchronous).
-    """
-    if request.method == "POST":
-        try:
-            data = await request.json()
-        except:
-            data = {"error": "Invalid JSON or body"}
-    else:
-        data = dict(request.query_params)
-    
-    from .utils.api_token_utils import validate_api_token
-    is_valid = await validate_api_token(x_api_token) if x_api_token else False
-    
-    # Audit log
-    try:
-        audit_log = AuditLog(
-            entity_type="API",
-            entity_id="collect_endpoint",
-            action="DATA_COLLECT",
-            performed_by=f"SRC:{request.client.host} (Token:{'Valid' if is_valid else 'Invalid/Missing'})",
-            details={
-                "method": request.method,
-                "headers": {k: v for k, v in request.headers.items() if k.lower() != "x-api-token"},
-                "payload_summary": list(data.keys()) if isinstance(data, dict) else str(data)[:100],
-                "auth_success": is_valid,
-                "remote_ip": request.client.host
-            }
-        )
-        db.add(audit_log)
-        await db.commit()
-    except Exception as e:
-        print(f"Error saving audit log: {e}")
-        await db.rollback()
-
-    if not is_valid:
-        raise HTTPException(status_code=401, detail="Invalid API token")
-    
-    if "serial_number" in data and isinstance(data, dict):
-        try:
-            serial_number = str(data.get("serial_number")).strip()
-            hostname = data.get("hostname") or data.get("name", "Unknown")
-            
-            # Map fields
-            asset_metadata = data.get("asset_metadata", {})
-            hardware = data.get("hardware", {})
-            asset_type = data.get("type") or asset_metadata.get("type", "Unknown")
-            asset_model = data.get("model") or hardware.get("model") or "Unknown"
-            asset_vendor = data.get("vendor") or data.get("manufacturer") or hardware.get("manufacturer") or "Unknown"
-            asset_segment = data.get("segment") or asset_metadata.get("segment", "IT")
-            asset_location = data.get("location") or asset_metadata.get("location")
-            asset_status = data.get("status", "Active")
-            asset_assigned_to = data.get("assigned_to")
-            
-            specifications = {
-                "hardware": hardware,
-                "os": data.get("os", {}),
-                "network": data.get("network", {})
-            }
-            
-            res_asset = await db.execute(select(Asset).filter(Asset.serial_number == serial_number))
-            existing_asset = res_asset.scalars().first()
-            
-            if existing_asset:
-                existing_asset.name = hostname
-                existing_asset.type = asset_type
-                existing_asset.model = asset_model
-                existing_asset.vendor = asset_vendor
-                existing_asset.segment = asset_segment
-                existing_asset.location = asset_location or existing_asset.location
-                existing_asset.status = asset_status
-                if asset_assigned_to:
-                    existing_asset.assigned_to = asset_assigned_to
-                existing_asset.specifications = specifications
-                existing_asset.updated_at = datetime.now()
-                await db.commit()
-                return {"status": "success", "action": "updated", "asset_id": existing_asset.id}
-            else:
-                new_asset = Asset(
-                    name=hostname,
-                    type=asset_type,
-                    model=asset_model,
-                    vendor=asset_vendor,
-                    serial_number=serial_number,
-                    segment=asset_segment,
-                    status=asset_status,
-                    location=asset_location,
-                    assigned_to=asset_assigned_to,
-                    specifications=specifications,
-                    cost=data.get("cost", 0.0)
-                )
-                db.add(new_asset)
-                await db.commit()
-                return {"status": "success", "action": "created", "asset_id": new_asset.id}
-                
-        except Exception as e:
-            await db.rollback()
-            return {"status": "error", "message": str(e)}
-    
-    return {"status": "success", "logged": True}
+@app.get("/api/v1/collect-status")
+async def collect_status():
+    return {"status": "modular_router_active"}
 
 @app.get("/health/db")
 async def db_health_check(db: AsyncSession = Depends(get_db)):

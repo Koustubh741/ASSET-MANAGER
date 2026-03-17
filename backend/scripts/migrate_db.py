@@ -1,6 +1,6 @@
 
 from sqlalchemy import text
-from database import engine
+from app.database.database import engine
 
 def migrate_id_type():
     with engine.connect() as conn:

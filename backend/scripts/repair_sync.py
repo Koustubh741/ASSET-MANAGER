@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import AuditLog, Asset
+from app.database.database import SessionLocal
+from app.models.models import AuditLog, Asset
 from datetime import datetime
 import json
 

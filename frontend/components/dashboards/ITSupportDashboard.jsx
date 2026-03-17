@@ -1,31 +1,56 @@
-import { useState, useEffect } from 'react';
-import { Wrench, ShieldCheck, Terminal, AlertCircle, X, CheckCircle, Play, Server, Lock, Activity, ArrowRight, Trash2, Clock, MapPin, User, FileText, Check, MoreHorizontal, Printer, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import {
+    Wrench, ShieldCheck, Terminal, AlertCircle, X, CheckCircle, Play, Server, Lock,
+    Activity, ArrowRight, Trash2, Clock, MapPin, User, FileText, Check, MoreHorizontal,
+    Printer, ChevronDown, ChevronRight, Eye, Ticket, Search, Info, RefreshCw, TrendingUp, Zap, Monitor,
+} from 'lucide-react';
+import {
+    Layout, Card, Typography, Table, Tag, Button, Progress, Timeline,
+    Input, Space, Badge, Avatar, Divider, ConfigProvider, theme
+} from 'antd';
 import apiClient from '@/lib/apiClient';
+import { formatId, copyToClipboard } from '@/lib/idHelper';
+import SmartIdGuideModal from '@/components/SmartIdGuideModal';
+import { useToast } from '@/components/common/Toast';
+import ComplianceCheckModal from '@/components/ComplianceCheckModal';
 import { useAssetContext, ASSET_STATUS } from '@/contexts/AssetContext';
 import { useRole } from '@/contexts/RoleContext';
+import ActionsNeededBanner from '@/components/common/ActionsNeededBanner';
+// SecurityWidget is now replaced by modern cards
+
+const { Header, Content } = Layout;
+const { Title, Text } = Typography;
 
 // Helper Component for Manual Install Items (Step 2 of Config)
-const SoftwareInstallItem = ({ app }) => {
+const SoftwareInstallItem = ({ app, assetId }) => {
     const [status, setStatus] = useState('pending'); // pending | installing | installed
 
-    const handleInstall = () => {
+    const handleInstall = async () => {
         setStatus('installing');
-        setTimeout(() => setStatus('installed'), 1500);
+        try {
+            await apiClient.provisionSoftware(assetId, app);
+            setStatus('installed');
+        } catch (e) {
+            console.error("Manual provision failed:", e);
+            setStatus('pending');
+        }
     };
 
     return (
-        <div className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-white/5">
+        <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-white/5">
             <div className="flex items-center gap-3">
-                <div className="p-1.5 bg-slate-700 rounded text-slate-300">
+                <div className="p-1.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-500 dark:text-slate-400">
                     <Server size={14} />
                 </div>
-                <span className="text-sm text-slate-200 font-medium">{app}</span>
+                <span className="text-sm text-slate-900 dark:text-slate-200 font-medium">{app}</span>
             </div>
 
             {status === 'pending' && (
                 <button
                     onClick={handleInstall}
-                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition-colors"
+                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white px-3 py-1.5 rounded transition-colors"
                 >
                     Install
                 </button>
@@ -48,21 +73,14 @@ const SoftwareInstallItem = ({ app }) => {
 };
 
 export default function ITSupportDashboard() {
-    // STATE: Data Queues
-
+    const router = useRouter();
+    const toast = useToast();
     const { user } = useRole();
-    const { assets, updateAssetStatus, requests: allRequests } = useAssetContext();
-    // Actually I will cleaner refactor below
+    const { assets, updateAssetStatus, requests, tickets, itApproveRequest, itRejectRequest, registerByod, exitRequests, processExitByod, refreshData } = useAssetContext();
 
-    // Derived state for queues instead of static state
-    const pendingQueue = assets.filter(a => a.status === ASSET_STATUS.ALLOCATED || a.status === ASSET_STATUS.CONFIGURING);
-
-    // For other queues we might still check if we want to migrate them fully or keep as local state for now if they are complex (like tickets, disposal).
-    // The plan said "Replace hardcoded pendingQueue". Ticket integration is next.
-    // For now we keep ticket state local if not fully ready or use context if available (Context has tickets).
-    // Let's use context tickets!
-    // Unified Requests Context - ENTERPRISE WORKFLOW
-    const { requests, itApproveRequest, itRejectRequest, registerByod, exitRequests, processExitByod } = useAssetContext();
+    // Derived state for queues instead of static state (guard assets in case context not ready)
+    const safeAssets = Array.isArray(assets) ? assets : [];
+    const pendingQueue = safeAssets.filter(a => (a?.status === ASSET_STATUS.ALLOCATED || a?.status === ASSET_STATUS.CONFIGURING));
 
     // 1. Incoming Asset Requests (Awaiting IT Management Action)
     // NOTE: `AssetContext` merges Tickets into `requests` for some dashboards.
@@ -70,55 +88,131 @@ export default function ITSupportDashboard() {
     const incomingRequests = requests.filter(r =>
         r.assetType !== 'Ticket' &&
         r.currentOwnerRole === 'IT_MANAGEMENT' &&
-        (r.status === 'MANAGER_APPROVED' || r.status === 'IT_APPROVED' || r.status === 'REQUESTED')
+        (r.status === 'MANAGER_APPROVED' || r.status === 'IT_APPROVED' || r.status === 'REQUESTED' || r.status === 'BYOD_COMPLIANCE_CHECK')
     );
 
-    // 2. Support Tickets State (fetched from /tickets API)
-    const [tickets, setTickets] = useState([]);
-    const [ticketsLoading, setTicketsLoading] = useState(true);
-
-    // Fetch tickets from backend
-    useEffect(() => {
-        const fetchTickets = async () => {
-            try {
-                setTicketsLoading(true);
-                const fetchedTickets = await apiClient.getTickets();
-                setTickets(fetchedTickets);
-                console.log('[IT Support] Fetched tickets:', fetchedTickets);
-            } catch (error) {
-                console.error('[IT Support] Failed to fetch tickets:', error);
-                setTickets([]);
-            } finally {
-                setTicketsLoading(false);
-            }
-        };
-
-        fetchTickets();
-    }, []);
+    // Global tickets state is now provided by AssetContext
 
     // Active Support Tickets (OPEN status)
     const activeTickets = tickets.filter(t => t.status?.toUpperCase() === 'OPEN' || t.status?.toUpperCase() === 'IN_PROGRESS');
+    const closedTickets = tickets.filter(t => t.status?.toUpperCase() === 'RESOLVED' || t.status?.toUpperCase() === 'CLOSED');
 
     // Deployment Queue: Assets ready for deployment
-    const deployedArgs = assets.filter(a => a.status === ASSET_STATUS.READY_FOR_DEPLOYMENT);
+    const deployedArgs = safeAssets.filter(a => (a?.status === ASSET_STATUS.READY_FOR_DEPLOYMENT));
 
     // Disposal Queue: Assets marked for scrap
-    const disposalItems = assets.filter(a => a.status === ASSET_STATUS.SCRAP_CANDIDATE);
+    const disposalQueue = safeAssets.filter(a => (a?.status === ASSET_STATUS.SCRAP_CANDIDATE));
+
+    // Discovery Queue: Assets found by agent (match API "Discovered" or context enum)
+    const discoveredAssets = safeAssets.filter(a => {
+        const s = (a?.status || '').toString().trim();
+        return s === ASSET_STATUS.DISCOVERED || s.toLowerCase() === 'discovered';
+    });
 
     // Legacy fallback states (if we need to write to anything local, but ideally we write to context)
     // We don't need setPendingQueue anymore as it drives from Context.
 
     // STATE: Modals & Workflows
-    const [activeModal, setActiveModal] = useState(null); // 'PENDING', 'TICKETS', 'DEPLOY', 'DISPOSAL', 'CONFIG', 'RESOLVE_TICKET'
+    const [activeModal, setActiveModal] = useState(null); // 'PENDING', 'TICKETS', 'DEPLOY', 'DISPOSAL', 'CONFIG', 'TICKET_VIEW', 'RESOLVE_TICKET', 'RESOLVED_TICKET_VIEW'
     const [selectedItem, setSelectedItem] = useState(null);
+    const [isGuideOpen, setIsGuideOpen] = useState(false);
 
     // STATE: Config Wizard
     const [configStep, setConfigStep] = useState(1);
+    const [technicians, setTechnicians] = useState([]);
+    const [isAssigning, setIsAssigning] = useState(false);
+
+    // STATE: Search Query & Results
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState(null);
+    const [isSearching, setIsSearching] = useState(false);
+
+    // Ticket Category Stats
+    const [assetStats, setAssetStats] = useState({});
+    const [statsLoading, setStatsLoading] = useState(true);
+
+    useEffect(() => {
+        const loadStats = async () => {
+            try {
+                const globalStats = await apiClient.getAssetStats();
+                setAssetStats(globalStats || {});
+            } catch (e) {
+                console.error("Failed to load dashboard statistics:", e);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        loadStats();
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+
+        // Immediate feedback: Clear old results and set searching state if there's a query
+        if (searchQuery && (activeModal === 'TICKETS' || activeModal === 'CLOSED_TICKETS')) {
+            setIsSearching(true);
+            setSearchResults(null); // Clear stale results
+        } else {
+            setSearchResults(null);
+            setIsSearching(false);
+            return;
+        }
+
+        const fetchResults = async () => {
+            try {
+                let departmentScope = null;
+                if (user?.position === 'MANAGER' && user?.role !== 'ADMIN' && user?.role !== 'IT_MANAGEMENT') {
+                    departmentScope = user.department || user.domain;
+                }
+                const results = await apiClient.getTickets(0, 500, departmentScope, searchQuery);
+
+                // MAP raw API results to the standard format the UI expects (matching AssetContext)
+                const mappedResults = results.map(t => ({
+                    ...t,
+                    status: (t.status || '').toUpperCase(),
+                    assetType: 'Ticket',
+                    requestedBy: {
+                        name: t.requestor_name || t.requestor_id || 'Employee',
+                        email: t.requestor_email || ''
+                    },
+                    assignedTo: t.assigned_to_name || t.assigned_to_id || 'Unassigned',
+                    createdAt: t.created_at
+                }));
+
+                if (active) {
+                    setSearchResults(mappedResults);
+                    setIsSearching(false);
+                }
+            } catch (e) {
+                console.error("Search failed:", e);
+                if (active) setIsSearching(false);
+            }
+        };
+
+        const debounceTimer = setTimeout(fetchResults, 400); // Slightly longer debounce for smoother feel
+        return () => {
+            active = false;
+            clearTimeout(debounceTimer);
+        };
+    }, [searchQuery, activeModal, user]);
+
+    // Derive displayed tickets
+    const displayActiveTickets = searchResults
+        ? searchResults.filter(t => t.status === 'OPEN' || t.status === 'IN_PROGRESS')
+        : activeTickets;
+
+    const displayClosedTickets = searchResults
+        ? searchResults.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED')
+        : closedTickets;
 
     // STATE: Ticket Resolution
     const [resolutionNotes, setResolutionNotes] = useState('');
     const [resolutionType, setResolutionType] = useState('Fixed');
+    const [resolutionStep, setResolutionStep] = useState(1);
     const [activeChecklist, setActiveChecklist] = useState([]);
+
+    // STATE: BYOD Compliance Modal
+    const [complianceModalOpen, setComplianceModalOpen] = useState(false);
 
     // --- WORKFLOW ACTIONS ---
 
@@ -128,6 +222,21 @@ export default function ITSupportDashboard() {
         setConfigStep(1);
         setActiveModal('CONFIG');
     };
+
+    useEffect(() => {
+        const fetchTechnicians = async () => {
+            try {
+                // Only include specialized solvers (NOT management/admin)
+                const itRoles = ['IT_SUPPORT', 'SUPPORT_SPECIALIST'];
+                const allUsers = await apiClient.getUsers({ status: 'ACTIVE' });
+                const filtered = allUsers.filter(u => itRoles.includes(u.role));
+                setTechnicians(filtered);
+            } catch (err) {
+                console.error("Failed to fetch technicians:", err);
+            }
+        };
+        fetchTechnicians();
+    }, []);
 
     const handleConfigStepComplete = () => {
         if (configStep < 5) {
@@ -146,7 +255,7 @@ export default function ITSupportDashboard() {
     // 2. DISPOSAL WORKFLOW
     const handleStartWipe = (id) => {
         // Mock wipe start
-        alert(`Secure Wipe started for Asset ID ${id}. This will take approx 45 mins.`);
+        toast.info(`Secure Wipe started for Asset ID ${id}. This will take approx 45 mins.`);
     };
 
     const handleMarkDisposed = (id) => {
@@ -157,12 +266,12 @@ export default function ITSupportDashboard() {
 
     // 3. DEPLOYMENT WORKFLOW
     const handleHandover = (item) => {
-        alert(`Handover protocol initiated for ${item.assignedUser}. Email notification sent.`);
+        toast.success(`Handover protocol initiated for ${item.assignedUser}. Email notification sent.`);
         updateAssetStatus(item.id, ASSET_STATUS.IN_USE);
     };
 
     const handleGenerateAck = (item) => {
-        alert(`Generating PDF Acknowledgement for ${item.name} (${item.id})...`);
+        toast.info(`Generating PDF Acknowledgement for ${item.name} (${item.id})...`);
     };
 
     // 4. TICKET RESOLUTION WORKFLOW
@@ -171,35 +280,50 @@ export default function ITSupportDashboard() {
         setResolutionNotes(ticket.resolution_notes || '');
         setResolutionType('Fixed');
         // Reset Wizard but keep existing checklist
-        setConfigStep(1); 
+        setResolutionStep(1);
         setActiveChecklist(ticket.resolution_checklist || []);
         setActiveModal('RESOLVE_TICKET');
     };
 
-    const submitResolution = () => {
+    const submitResolution = async () => {
         if (!resolutionNotes) {
-            alert("Please enter troubleshooting notes.");
+            toast.error("Please enter troubleshooting notes.");
             return;
         }
-        
-        // Calculate Percentage
         const total = activeChecklist.length;
         const checked = activeChecklist.filter(i => i.checked).length;
-        const percentage = total > 0 ? (checked / total) * 100 : 0;
+        const percentage = total > 0 ? (checked / total) * 100 : 100.0;
 
-        // Resolve logic
-        resolveTicket(selectedItem.id, resolutionNotes, activeChecklist, percentage);
+        try {
+            await apiClient.resolveTicket(selectedItem.id, resolutionNotes, activeChecklist, percentage);
+            await refreshData();
+            toast.success("Incident resolved!");
+            setActiveModal(null);
+        } catch (e) {
+            toast.error("Resolution failed: " + e.message);
+        }
+    };
 
-        setActiveModal(null);
-        setSelectedItem(null);
+    const handleAssignTicket = async (techId) => {
+        setIsAssigning(true);
+        try {
+            await apiClient.updateTicket(selectedItem.id, { assigned_to_id: techId });
+            await refreshData();
+            toast.success("Ticket assigned successfully!");
+            setActiveModal(null);
+        } catch (err) {
+            toast.error("Assignment failed: " + (err.response?.data?.detail || err.message));
+        } finally {
+            setIsAssigning(false);
+        }
     };
 
     const submitProgress = () => {
         if (!resolutionNotes && activeChecklist.length === 0) {
-            alert("Please add notes or checklist items to update progress.");
+            toast.error("Please add notes or checklist items to update progress.");
             return;
         }
-        
+
         // Calculate Percentage
         const total = activeChecklist.length;
         const checked = activeChecklist.filter(i => i.checked).length;
@@ -208,49 +332,45 @@ export default function ITSupportDashboard() {
         // Update Progress
         updateProgress(selectedItem.id, resolutionNotes, activeChecklist, percentage);
     };
-    
+
     // Ticket Actions
     const acknowledgeTicket = async (ticketId) => {
         try {
-            await apiClient.acknowledgeTicket(ticketId, user.id);
-            // Refresh tickets
-            const fetchedTickets = await apiClient.getTickets();
-            setTickets(fetchedTickets);
-            alert("Ticket acknowledged!");
+            await apiClient.acknowledgeTicket(ticketId);
+            await refreshData();
+            toast.success("Ticket acknowledged!");
         } catch (error) {
             console.error("Failed to acknowledge ticket:", error);
-            alert("Failed to acknowledge ticket: " + error.message);
+            toast.error("Failed to acknowledge ticket: " + error.message);
         }
     };
-    
+
     const resolveTicket = async (ticketId, notes, checklist, percentage) => {
         try {
-            await apiClient.resolveTicket(ticketId, user.id, notes, checklist, percentage);
-            // Refresh tickets
-            const fetchedTickets = await apiClient.getTickets();
-            setTickets(fetchedTickets);
-            alert("Ticket resolved successfully!");
+            await apiClient.resolveTicket(ticketId, notes, checklist, percentage);
+            await refreshData();
+            toast.success("Ticket resolved successfully!");
         } catch (error) {
             console.error("Failed to resolve ticket:", error);
-            alert("Failed to resolve ticket: " + error.message);
+            toast.error("Failed to resolve ticket: " + error.message);
         }
     };
 
     const updateProgress = async (ticketId, notes, checklist, percentage, silent = false) => {
         try {
-            await apiClient.updateTicketProgress(ticketId, user.id, notes, checklist, percentage);
-             // Refresh tickets
-             const fetchedTickets = await apiClient.getTickets();
-             setTickets(fetchedTickets);
-             if (!silent) alert("Progress updated and user notified!");
+            await apiClient.updateTicketProgress(ticketId, notes, checklist, percentage);
+            await refreshData();
+            if (!silent) toast.success("Progress updated and user notified!");
         } catch (error) {
             console.error("Failed to update progress:", error);
-            if (!silent) alert("Failed to update progress: " + error.message);
+            if (!silent) toast.error("Failed to update progress: " + error.message);
         }
     }
 
     const saveDraft = () => {
         if (!selectedItem) return;
+        // Guard: do not fire API call if there is nothing to save yet
+        if (!resolutionNotes && activeChecklist.length === 0) return;
         const total = activeChecklist.length;
         const checked = activeChecklist.filter(i => i.checked).length;
         // If we have notes but nothing checked, we are at least at 10%
@@ -259,758 +379,1587 @@ export default function ITSupportDashboard() {
     };
 
 
+
     // --- HELPERS ---
     const ConfigStep = ({ step, current }) => {
         const isCompleted = current > step;
         const isCurrent = current === step;
         return (
-            <div className={`flex items-center gap-2 ${isCurrent ? 'text-indigo-400 font-bold' : isCompleted ? 'text-emerald-400' : 'text-slate-600'}`}>
+            <div className={`flex items-center gap-2 ${isCurrent ? 'text-indigo-400 font-bold' : isCompleted ? 'text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                    ${isCurrent ? 'border-indigo-400 bg-indigo-500/20' : isCompleted ? 'border-emerald-500 bg-emerald-500/20' : 'border-slate-700 bg-slate-800'}`}>
+                    ${isCurrent ? 'border-indigo-400 bg-indigo-500/20' : isCompleted ? 'border-emerald-500 bg-emerald-500/20' : 'border-slate-700 bg-slate-50 dark:bg-slate-800'}`}>
                     {isCompleted ? <Check size={16} /> : <span>{step}</span>}
                 </div>
-                {step < 5 && <div className={`flex-1 h-0.5 w-8 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-700'}`}></div>}
+                {step < 5 && <div className={`flex-1 h-0.5 w-8 ${isCompleted ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>}
             </div>
         );
     };
 
     return (
-        <div className="space-y-6 relative h-full">
-            <header>
-                <h1 className="text-3xl font-bold text-white">Technician Workbench</h1>
-                <p className="text-slate-400">IT Support Operations & Device Lifecycle Management</p>
-            </header>
+        <ConfigProvider
+            theme={{
+                algorithm: theme.defaultAlgorithm,
+                token: {
+                    colorPrimary: '#4f46e5',
+                    borderRadius: 12,
+                    fontFamily: 'Inter, sans-serif',
+                },
+            }}
+        >
+            <Layout className="min-h-screen bg-[#F8F9FA] dark:bg-slate-950">
 
-            {/* --- METRIC CARDS --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Content className="max-w-[1600px] mx-auto w-full px-10 py-12">
+                    {/* --- HEADER --- */}
+                    <header className="flex flex-col lg:flex-row lg:items-center justify-between mb-12 gap-8 relative">
+                        <div className="relative z-10 flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center shadow-[0_20px_40px_rgba(79,70,229,0.4)] border border-slate-300 dark:border-white/20 transform hover:rotate-6 transition-all duration-500 group">
+                                <Terminal className="text-slate-900 dark:text-white w-8 h-8 group-hover:scale-110 transition-transform" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white tracking-tighter m-0 uppercase leading-none">
+                                    IT Control <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">Center</span>
+                                </h1>
+                                <div className="flex items-center gap-4 mt-3">
+                                    <div className="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2 shadow-lg">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
+                                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{user?.persona?.replace(/_/g, ' ') || 'SYSTEM OPERATOR'}</span>
+                                    </div>
+                                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] opacity-60">ID: {user?.full_name?.split(' ')[0].toUpperCase()} // VERIFIED</span>
+                                </div>
+                            </div>
+                        </div>
 
-                {/* 1. PENDING SETUP */}
-                <div
-                    onClick={() => setActiveModal('PENDING')}
-                    className="glass-card p-5 bg-gradient-to-br from-indigo-500/10 to-indigo-600/5 border-indigo-500/20 cursor-pointer hover:border-indigo-400/50 transition-all hover:scale-[1.02]"
-                >
-                    <p className="text-indigo-300 text-xs font-bold uppercase flex justify-between">
-                        Pending Approval <ChevronRight size={14} className="opacity-50" />
-                    </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{incomingRequests.length}</h3>
-                    <div className="mt-2 text-xs text-indigo-200/70 flex items-center gap-1">
-                        <Terminal size={12} /> {incomingRequests.filter(i => i.urgency === 'High').length} high priority
+                        <div className="relative w-full lg:w-[500px] group">
+                            <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none z-10">
+                                <Search size={20} className="text-slate-500 dark:text-slate-400 group-hover:text-indigo-400 transition-colors" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Neural Registry Search: Devices, Identities, Incidents..."
+                                className="w-full h-16 bg-slate-50 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-[2rem] pl-14 pr-8 text-slate-900 dark:text-white text-sm font-bold placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 backdrop-blur-2xl transition-all shadow-[inset_0_4px_12px_rgba(0,0,0,0.5)]"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {/* Hotkey Decorator */}
+                            <div className="absolute right-5 inset-y-0 flex items-center pointer-events-none opacity-40">
+                                <span className="px-2 py-1 rounded-md border border-slate-300 dark:border-white/20 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">CMD + K</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <ActionsNeededBanner
+                        title="Actions needed"
+                        items={[
+                            ...(incomingRequests.length > 0 ? [{ label: 'Pending approval', count: incomingRequests.length, onClick: () => setActiveModal('PENDING'), icon: Terminal, variant: 'primary' }] : []),
+                            ...(activeTickets.length > 0 ? [{ label: 'Open tickets', count: activeTickets.length, onClick: () => router.push('/tickets/advanced'), icon: Ticket, variant: 'warning' }] : []),
+                            ...(deployedArgs.length > 0 && !(user?.persona === 'IT_GOVERNANCE' || user?.persona === 'EXECUTIVE_STRATEGY') ? [{ label: 'Ready for handover', count: deployedArgs.length, onClick: () => setActiveModal('DEPLOY'), icon: CheckCircle, variant: 'success' }] : []),
+                        ]}
+                    />
+
+                    <Divider className="my-8" />
+
+
+
+                    <Divider className="my-8" />
+
+                    {/* --- METRIC CARDS --- */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12">
+                        {[
+                            { label: 'Pending Approval', value: incomingRequests.length, trend: assetStats?.request_trend || "Stable", color: 'indigo', action: () => setActiveModal('PENDING'), icon: Terminal },
+                            { label: 'Open Tickets', value: activeTickets.length, trend: assetStats?.ticket_trend || "0%", color: 'rose', action: () => router.push('/tickets/advanced'), icon: Ticket, isTrendUp: true },
+                            { label: 'Deployment Ops', value: deployedArgs.length, trend: assetStats?.ready_trend || "Stable", color: 'emerald', action: () => setActiveModal('DEPLOY'), icon: CheckCircle },
+                            { label: 'Scrap Queue', value: disposalQueue.length, trend: "-12%", color: 'slate', action: () => setActiveModal('DISPOSAL'), icon: Trash2 },
+                            { label: 'Asset Discovery', value: discoveredAssets.length > 1000 ? `${(discoveredAssets.length / 1000).toFixed(1)}k` : discoveredAssets.length, trend: `+${discoveredAssets.length > 1000 ? '157' : '0'}`, color: 'sky', icon: Activity },
+                            { label: 'Incidents Closed', value: closedTickets.length, trend: assetStats?.resolution_rate || "100%", color: 'blue', action: () => setActiveModal('CLOSED_TICKETS'), icon: ShieldCheck }
+                        ].map((stat, i) => (
+                            <div
+                                key={i}
+                                onClick={stat.action}
+                                className={`glass-card p-6 cursor-pointer border-t-2 transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden
+                                    ${stat.color === 'indigo' ? 'border-indigo-500' :
+                                        stat.color === 'rose' ? 'border-rose-500' :
+                                            stat.color === 'emerald' ? 'border-emerald-500' :
+                                                stat.color === 'slate' ? 'border-slate-500' :
+                                                    stat.color === 'sky' ? 'border-sky-500' : 'border-blue-500'}`}
+                            >
+                                <div className={`absolute -right-8 -top-8 w-24 h-24 bg-${stat.color}-500 opacity-0 blur-[40px] group-hover:opacity-20 transition-opacity`}></div>
+
+                                <div className="flex justify-between items-start mb-4 relative z-10 transition-transform group-hover:translate-x-1">
+                                    <Text className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">{stat.label}</Text>
+                                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border
+                                        ${stat.color === 'indigo' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                                            stat.color === 'rose' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                                stat.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                    stat.color === 'slate' ? 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-white/10' :
+                                                        stat.color === 'sky' ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                        {stat.isTrendUp && <TrendingUp size={10} className="animate-pulse" />}
+                                        {stat.trend}
+                                    </div>
+                                </div>
+                                <div className="flex items-end justify-between relative z-10">
+                                    <Title level={2} className={`!m-0 !text-2xl font-['Outfit'] font-black text-slate-900 dark:text-white group-hover:text-${stat.color}-400 transition-colors drop-shadow-sm`}>
+                                        {stat.value || 0}
+                                    </Title>
+                                    <stat.icon size={20} className="text-slate-800 group-hover:text-slate-900 dark:text-white/20 transition-all transform group-hover:rotate-12" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                </div>
 
-                {/* 2. OPEN TICKETS */}
-                <div
-                    onClick={() => setActiveModal('TICKETS')}
-                    className="glass-card p-5 bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20 cursor-pointer hover:border-amber-400/50 transition-all hover:scale-[1.02]"
-                >
-                    <p className="text-amber-300 text-xs font-bold uppercase flex justify-between">
-                        Open Tickets <ChevronRight size={14} className="opacity-50" />
-                    </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{activeTickets.length}</h3>
-                    <div className="mt-2 text-xs text-amber-200/70 flex items-center gap-1">
-                        <Activity size={12} /> {activeTickets.filter(t => t.priority?.toUpperCase() === 'HIGH').length} critical issues
-                    </div>
-                </div>
+                    {/* --- DASHBOARD WIDGETS --- */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
+                        {/* --- DASHBOARD WIDGETS --- */}
+                        {/* Security Health Widget */}
+                        <div className="lg:col-span-5 glass-panel p-8 relative overflow-hidden group">
+                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/5 blur-[100px] rounded-full group-hover:bg-indigo-500/10 transition-all duration-700"></div>
 
-                {/* 3. READY TO DEPLOY */}
-                <div
-                    onClick={() => setActiveModal('DEPLOY')}
-                    className="glass-card p-5 cursor-pointer hover:bg-white/5 transition-all hover:scale-[1.02]"
-                >
-                    <p className="text-emerald-300 text-xs font-bold uppercase flex justify-between">
-                        Ready for User <ChevronRight size={14} className="opacity-50" />
-                    </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{deployedArgs.length}</h3>
-                    <div className="mt-2 text-xs text-slate-400 flex items-center gap-1">
-                        <User size={12} /> Configure & Verified
-                    </div>
-                </div>
-
-                {/* 4. DISPOSAL */}
-                <div
-                    onClick={() => setActiveModal('DISPOSAL')}
-                    className="glass-card p-5 cursor-pointer hover:bg-white/5 transition-all hover:scale-[1.02]"
-                >
-                    <p className="text-slate-400 text-xs font-bold uppercase flex justify-between">
-                        Disposal Queue <ChevronRight size={14} className="opacity-50" />
-                    </p>
-                    <h3 className="text-3xl font-bold text-white mt-1">{disposalItems.length}</h3>
-                    <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
-                        <Trash2 size={12} /> Pending Data Wipe
-                    </div>
-                </div>
-            </div>
-
-            {/* --- DASHBOARD WIDGETS --- */}
-            <div className="grid grid-cols-1 gap-6">
-
-                {/* JUST THE PENDING SETUP WIDGET (Removed Compliance as requested) */}
-                <div className="glass-panel p-0 overflow-hidden flex flex-col">
-                    <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                        <h3 className="font-bold text-white flex items-center gap-2">
-                            <Clock size={16} className="text-indigo-400" />
-                            Upcoming Validations & Setups
-                        </h3>
-                        <button onClick={() => setActiveModal('PENDING')} className="text-xs text-indigo-400 hover:text-indigo-300">View Full Queue</button>
-                    </div>
-                    <div className="p-4 space-y-3 flex-1">
-                        {pendingQueue.slice(0, 5).map((item) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-white/5 hover:border-white/10 transition-colors">
+                            <div className="flex items-center justify-between mb-10 relative z-10">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-lg bg-slate-700/50 flex items-center justify-center text-slate-400 border border-white/5">
-                                        <Wrench size={18} />
+                                    <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                                        <ShieldCheck size={24} />
                                     </div>
                                     <div>
-                                        <div className="text-sm text-slate-200 font-medium">{item.name}</div>
-                                        <div className="text-xs text-slate-500 flex items-center gap-2">
-                                            <span>{item.user} ({item.requestedFor})</span>
-                                            <span className="w-1 h-1 rounded-full bg-slate-600"></span>
-                                            <span className="text-amber-500">Due in {item.slaCountdown}</span>
+                                        <h3 className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white tracking-tight uppercase">Security Health</h3>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                                            Global Protection Matrix
+                                        </p>
+                                    </div>
+                                </div>
+                                <Button type="text" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white" icon={<MoreHorizontal size={20} />} />
+                            </div>
+
+                            <div className="flex items-center gap-10 mb-10 relative z-10">
+                                <div className="relative w-40 h-40 shrink-0">
+                                    <div className="absolute inset-0 rounded-full border-4 border-slate-200 dark:border-white/5 shadow-[inset_0_4px_12px_rgba(0,0,0,0.5)]"></div>
+                                    <div className="w-full h-full rounded-full flex flex-col items-center justify-center bg-slate-50 dark:bg-white/[0.02] backdrop-blur-2xl border border-slate-300 dark:border-white/10 shadow-2xl animate-float">
+                                        <Text className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{assetStats?.health_score || 0}%</Text>
+                                        <Text className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase mt-2 tracking-[0.2em]">Safety Index</Text>
+                                    </div>
+                                    {/* Pulse Ring */}
+                                    <div className="absolute -inset-2 rounded-full border border-indigo-500/20 animate-pulse duration-[3000ms]"></div>
+                                </div>
+
+                                <div className="flex-1 space-y-6">
+                                    {[
+                                        { label: 'Network Policy', value: assetStats?.policy_compliance || 0, color: 'indigo' },
+                                        { label: 'Active Monitoring', value: assetStats?.active_monitoring || 0, color: 'emerald' }
+                                    ].map((metric, i) => (
+                                        <div key={i}>
+                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-wider mb-2">
+                                                <Text className="text-slate-500 dark:text-slate-400">{metric.label}</Text>
+                                                <Text className={`text-${metric.color}-400`}>{metric.value}%</Text>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden border border-slate-200 dark:border-white/5">
+                                                <div
+                                                    className={`h-full bg-gradient-to-r from-${metric.color}-600 to-${metric.color}-400 shadow-[0_0_10px_rgba(var(--${metric.color === 'indigo' ? '99,102,241' : '16,185,129'}),0.4)] transition-all duration-1000`}
+                                                    style={{ width: `${metric.value}%` }}
+                                                ></div>
+                                            </div>
                                         </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 relative z-10">
+                                {[
+                                    { label: 'BitLocker', status: 'Enforced', color: 'emerald' },
+                                    { label: 'EDR Active', status: 'Protected', color: 'emerald' }
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3.5 bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl group/item hover:bg-slate-100 dark:bg-white/5 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-1.5 h-1.5 rounded-full bg-${item.color}-500 shadow-[0_0_8px_rgba(var(--${item.color === 'emerald' ? '16,185,129' : '99,102,241'}),0.6)] animate-pulse`}></div>
+                                            <Text className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{item.label}</Text>
+                                        </div>
+                                        <span className={`px-2 py-0.5 rounded-lg bg-${item.color}-500/10 text-${item.color}-400 text-[8px] font-black uppercase tracking-widest border border-${item.color}-500/20`}>
+                                            {item.status}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Fleet Lifecycle Widget */}
+                        <div className="lg:col-span-7 glass-panel p-8 border border-slate-300 dark:border-white/10 relative overflow-hidden group">
+                            <div className="absolute bottom-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full"></div>
+
+                            <div className="flex items-center justify-between mb-10 relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                        <Activity size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white tracking-tight uppercase">Fleet Lifecycle</h3>
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-1 italic">Tactical Aging & Readiness Stats</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300 border border-white/5">{item.id}</span>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); startConfig(item); }}
-                                        className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded transition-colors shadow-lg shadow-indigo-500/20"
-                                    >
-                                        Start Config
-                                    </button>
+                                    <span className="px-5 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] text-slate-500 dark:text-slate-400 text-[10px] font-black border border-slate-300 dark:border-white/10 uppercase tracking-widest shadow-lg">Global Feed</span>
                                 </div>
                             </div>
-                        ))}
-                        {pendingQueue.length === 0 && (
-                            <div className="text-center py-12 text-slate-500 text-sm">All setups complete for today.</div>
-                        )}
-                    </div>
-                </div>
 
-            </div>
+                            <div className="grid grid-cols-3 gap-6 mb-10 relative z-10">
+                                {[
+                                    { label: 'New (0-1y)', value: '42%', color: 'emerald', icon: Check, glow: 'rgba(16,185,129,0.3)' },
+                                    { label: 'Mid (1-3y)', value: '38%', color: 'indigo', icon: Activity, glow: 'rgba(99,102,241,0.3)' },
+                                    { label: 'EoL (3y+)', value: '20%', color: 'rose', icon: AlertCircle, glow: 'rgba(244,63,94,0.3)' }
+                                ].map((item, i) => (
+                                    <div key={i} className="p-6 rounded-[2rem] bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 text-center group/aging hover:bg-slate-200/50 dark:hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/20 transition-all duration-500 shadow-xl">
+                                        <div className={`w-12 h-12 rounded-2xl bg-${item.color}-500/10 flex items-center justify-center mx-auto mb-4 border border-${item.color}-500/20 shadow-[0_0_15px_${item.glow}] group-hover/aging:scale-110 group-hover/aging:rotate-3 transition-all duration-500`}>
+                                            <item.icon size={20} className={`text-${item.color}-400`} />
+                                        </div>
+                                        <div className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white mb-1 drop-shadow-sm">{item.value}</div>
+                                        <div className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em]">{item.label}</div>
+                                    </div>
+                                ))}
+                            </div>
 
-
-            {/* ===================================================================================== */}
-            {/* MODALS */}
-            {/* ===================================================================================== */}
-
-            {activeModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-
-                    {/* ---- CONFIG WIZARD MODAL (5 STEPS) ---- */}
-                    {activeModal === 'CONFIG' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
-                            <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 p-6 border-b border-white/10 flex justify-between items-center shrink-0">
+                            <div className="space-y-8 pt-8 border-t border-slate-200 dark:border-white/5 relative z-10">
                                 <div>
-                                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                        <Terminal size={20} className="text-indigo-400" />
-                                        Workstation Configuration
-                                    </h2>
-                                    <p className="text-sm text-indigo-300/60 mt-1">Ticket: {selectedItem.id}</p>
-                                </div>
-                                <div className="text-right">
-                                    <span className="text-xs font-mono text-slate-500 block uppercase tracking-wider">Target User</span>
-                                    <span className="text-sm font-bold text-white">{selectedItem.user}</span>
-                                </div>
-                            </div>
-
-                            <div className="p-8 overflow-y-auto custom-scrollbar">
-                                {/* Steps Indicator */}
-                                <div className="flex justify-between mb-8 px-4">
-                                    {[1, 2, 3, 4, 5].map(s => <ConfigStep key={s} step={s} current={configStep} />)}
-                                </div>
-
-                                {/* Step Content */}
-                                <div className="bg-slate-800/30 rounded-xl p-6 border border-white/5 min-h-[300px]">
-
-                                    {/* STEP 1: ASSET OVERVIEW */}
-                                    {configStep === 1 && (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 1: Asset Overview</h3>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5">
-                                                    <span className="text-xs text-slate-500 uppercase">Model</span>
-                                                    <div className="text-white font-medium">{selectedItem.model || 'Standard Workstation'}</div>
+                                    <div className="flex justify-between items-center mb-5">
+                                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                                            Live Capacity Allocation
+                                        </span>
+                                        <span className="text-[10px] text-indigo-400 font-black uppercase tracking-widest bg-indigo-500/10 px-4 py-1.5 rounded-xl border border-indigo-500/10 shadow-lg">85% Optimization</span>
+                                    </div>
+                                    <div className="flex gap-1.5 h-4 w-full rounded-2xl overflow-hidden bg-slate-200 dark:bg-black/40 p-1 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-inner">
+                                        <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 w-[60%] rounded-l-xl shadow-[0_0_15px_rgba(16,185,129,0.3)]"></div>
+                                        <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 w-[25%] shadow-[0_0_15px_rgba(99,102,241,0.3)]"></div>
+                                        <div className="h-full bg-gradient-to-r from-rose-600 to-rose-400 w-[15%] rounded-r-xl shadow-[0_0_15px_rgba(244,63,94,0.3)]"></div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-6 mt-8">
+                                        {[
+                                            { label: 'Active', value: '142 Units', color: 'emerald' },
+                                            { label: 'Spare', value: '58 Units', color: 'indigo' },
+                                            { label: 'Repair', value: '24 Units', color: 'rose' }
+                                        ].map((slot, i) => (
+                                            <div key={i} className={`flex flex-col gap-1.5 ${i === 1 ? 'border-x border-slate-200 dark:border-white/5 px-6' : ''}`}>
+                                                <div className={`flex items-center gap-2 ${i === 2 ? 'justify-end' : i === 1 ? 'justify-center' : ''}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full bg-${slot.color}-500 shadow-[0_0_8px_rgba(var(--${slot.color === 'emerald' ? '16,185,129' : slot.color === 'indigo' ? '99,102,241' : '244,63,94'}),0.5)]`}></div>
+                                                    <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">{slot.label}</span>
                                                 </div>
-                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5">
-                                                    <span className="text-xs text-slate-500 uppercase">Serial Number</span>
-                                                    <div className="text-white font-medium">{selectedItem.serial || 'Unknown'}</div>
-                                                </div>
-                                                <div className="p-4 bg-slate-800 rounded-lg border border-white/5 col-span-2">
-                                                    <span className="text-xs text-slate-500 uppercase">Specs</span>
-                                                    <div className="text-white font-medium">{selectedItem.details || 'Standard Configuration'}</div>
-                                                </div>
+                                                <div className={`text-sm font-black text-slate-900 dark:text-white ${i === 2 ? 'text-right' : i === 1 ? 'text-center' : ''}`}>{slot.value}</div>
                                             </div>
-                                            <div className="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded text-indigo-200 text-sm flex gap-2">
-                                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                                                Please physically verify the serial number matches the asset tag before proceeding.
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* STEP 2: OS SELECTION (NOW SOFTWARE PROVISIONING) */}
-                                    {configStep === 2 && (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 2: OS & Image Selection</h3>
-                                            <div className="grid grid-cols-1 gap-3">
-                                                <label className="flex items-center gap-4 p-4 bg-slate-800 border-2 border-indigo-500 rounded-lg cursor-pointer">
-                                                    <input type="radio" name="os" defaultChecked className="w-5 h-5 text-indigo-600" />
-                                                    <div>
-                                                        <div className="font-bold text-white">Windows 11 Enterprise 23H2 (Stable)</div>
-                                                        <div className="text-xs text-slate-400">Standard Corporate Image v4.2</div>
-                                                    </div>
-                                                </label>
-                                                <label className="flex items-center gap-4 p-4 bg-slate-800 border border-white/10 rounded-lg cursor-pointer opacity-60">
-                                                    <input type="radio" name="os" className="w-5 h-5 text-indigo-600" />
-                                                    <div>
-                                                        <div className="font-bold text-white">Windows 10 Enterprise LTSC</div>
-                                                        <div className="text-xs text-slate-400">Legacy Systems Only</div>
-                                                    </div>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* STEP 3: SECURITY TOOLS */}
-                                    {configStep === 3 && (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 3: Security Tools Setup</h3>
-                                            <p className="text-sm text-slate-400 mb-4">Manually verify installation or push via MDM.</p>
-                                            <div className="space-y-2">
-                                                <SoftwareInstallItem app="CrowdStrike Falcon Sensor" />
-                                                <SoftwareInstallItem app="Zscaler Client Connector" />
-                                                <SoftwareInstallItem app="Tanium Client" />
-                                                <SoftwareInstallItem app="Local Admin Password Solution (LAPS)" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* STEP 4: NETWORK */}
-                                    {configStep === 4 && (
-                                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 4: Network Configuration</h3>
-
-                                            <div className="space-y-4">
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-xs text-slate-400 uppercase font-bold">Domain Join</label>
-                                                    <select className="bg-slate-900 border border-white/10 text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                                                        <option>CORP.GLOBAL (Default)</option>
-                                                        <option>DMZ.LOCAL</option>
-                                                        <option>WORKGROUP</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="flex flex-col gap-1">
-                                                    <label className="text-xs text-slate-400 uppercase font-bold">VLAN Assignment</label>
-                                                    <select className="bg-slate-900 border border-white/10 text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                                                        <option>VLAN 100 - Employee Workstations</option>
-                                                        <option>VLAN 200 - Developers</option>
-                                                        <option>VLAN 900 - Guest</option>
-                                                    </select>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 p-3 rounded border border-emerald-500/20">
-                                                    <CheckCircle size={16} />
-                                                    <span>DHCP Reservation Found: 10.20.4.112</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* STEP 5: FINAL VALIDATION */}
-                                    {configStep === 5 && (
-                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                            <h3 className="text-lg font-bold text-white mb-4">Step 5: Final Validation</h3>
-                                            <div className="space-y-3">
-                                                {[
-                                                    "BIOS Password Set",
-                                                    "Physical Damage Check",
-                                                    "BitLocker Encryption Active",
-                                                    "Windows Activated",
-                                                    "Latest Windows Updates Applied"
-                                                ].map((check, i) => (
-                                                    <label key={i} className="flex items-center gap-3 p-3 bg-slate-800 rounded border border-white/5 cursor-pointer hover:bg-slate-700 transition-colors">
-                                                        <input type="checkbox" defaultChecked={i < 3} className="w-5 h-5 rounded text-indigo-600 bg-slate-700 border-slate-600 focus:ring-indigo-500" />
-                                                        <span className="text-slate-200">{check}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="mt-6 flex justify-end gap-3">
-                                    {configStep < 5 ? (
-                                        <>
-                                            <button
-                                                onClick={() => setActiveModal(null)}
-                                                className="px-4 py-2 text-slate-400 hover:text-white transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                onClick={handleConfigStepComplete}
-                                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-500/20 flex items-center gap-2"
-                                            >
-                                                {configStep === 4 ? 'Validate & Finish' : 'Next Step'} <ArrowRight size={16} />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button
-                                            onClick={handleConfigStepComplete}
-                                            className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 animate-pulse"
-                                        >
-                                            <CheckCircle size={20} /> Complete Configuration
-                                        </button>
-                                    )}
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
 
+                    {/* SLA & Oversight Widget */}
+                    {(user?.persona === 'IT_GOVERNANCE' || user?.persona === 'IT_OPERATIONS' || user?.persona === 'EXECUTIVE_STRATEGY') && (
+                        <div className="glass-panel p-10 border border-slate-300 dark:border-white/10 shadow-[0_40px_80px_rgba(0,0,0,0.5)] relative overflow-hidden group mb-12 animate-in slide-in-from-bottom-6 duration-700">
+                            <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/5 blur-[120px] rounded-full"></div>
 
-
-                    {/* ---- QUEUE MODALS ---- */}
-
-                    {['PENDING', 'TICKETS', 'DEPLOY', 'DISPOSAL'].includes(activeModal) && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-4 duration-300">
-                            <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center shrink-0">
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    {activeModal === 'PENDING' && 'Pending Setup Assets'}
-                                    {activeModal === 'TICKETS' && 'Active IT Support Tickets'}
-                                    {activeModal === 'DEPLOY' && 'Ready for Deployment'}
-                                    {activeModal === 'DISPOSAL' && 'Disposal & Secure Wipe Queue'}
-                                </h2>
-                                <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-white p-2">
-                                    <X size={20} />
-                                </button>
+                            <div className="flex items-center justify-between mb-12 relative z-10">
+                                <div>
+                                    <h3 className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white tracking-tighter flex items-center gap-5 uppercase">
+                                        <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-lg">
+                                            <Activity size={32} />
+                                        </div>
+                                        SLA & Operational Oversight
+                                    </h3>
+                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.6)]"></span>
+                                        Governance Command Registry
+                                    </p>
+                                </div>
+                                <span className="px-6 py-2.5 bg-rose-500/10 text-rose-400 text-[10px] font-black uppercase tracking-[0.2em] border border-rose-500/20 rounded-[2rem] shadow-xl shadow-rose-500/5 flex items-center gap-3">
+                                    <AlertCircle size={14} /> Critical Sync Active
+                                </span>
                             </div>
 
-                            <div className="p-0 overflow-auto flex-1 custom-scrollbar">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="bg-slate-800/80 sticky top-0 z-10 backdrop-blur-sm shadow-sm">
-                                        <tr>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Asset / ID</th>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Context</th>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                                            <th className="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/5">
-                                        {activeModal === 'PENDING' && (incomingRequests.length === 0 ? (
-                                            <tr><td colSpan="4" className="p-4 text-slate-400 text-center">No incoming requests.</td></tr>
-                                        ) : incomingRequests.map(req => (
-                                            <tr key={req.id} className="hover:bg-white/5 transition-colors group">
-                                                <td className="p-4">
-                                                    <div className="font-bold text-white text-base flex items-center gap-2">
-                                                        {req.assetType || req.title}
-                                                        {req.assetType === 'BYOD' && <span className="text-[10px] bg-sky-500/20 text-sky-300 px-1.5 rounded border border-sky-500/30">BYOD</span>}
-                                                    </div>
-                                                    <div className="text-xs text-indigo-400 font-mono mt-1">{req.id}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-sm text-slate-300 font-medium">{req.requestedBy.name}</div>
-                                                    <div className="text-xs text-slate-500">{req.requestedBy.role} • {req.assetType}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <span className={`px-2 py-1 rounded text-xs font-bold ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-slate-700 text-slate-300'}`}>
-                                                        {req.urgency ? req.urgency.toUpperCase() : 'STANDARD'}
-                                                    </span>
-                                                    <div className="text-xs text-slate-500 mt-1">{req.status}</div>
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => {
-                                                                const reason = prompt("Enter rejection reason:");
-                                                                if (reason) itRejectRequest(req.id, reason, user.id, user.name);
-                                                            }}
-                                                            className="text-xs text-rose-400 hover:text-white border border-rose-500/30 px-3 py-1.5 rounded flex items-center gap-1"
-                                                        >
-                                                            Reject
-                                                        </button>
-                                                        {req.status === 'IT_APPROVED' && req.assetType === 'BYOD' ? (
-                                                            <button
-                                                                onClick={() => registerByod(req.id, user.id, user.name)}
-                                                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-1"
-                                                            >
-                                                                <ShieldCheck size={14} /> Validate & Register BYOD
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => itApproveRequest(req.id, user.id, user.name)}
-                                                                className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded font-medium shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/30 transition-all"
-                                                            >
-                                                                {req.assetType === 'BYOD' ? 'Verify & Review BYOD' : 'Approve & Forward to Inventory'}
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )))}
-
-                                        {activeModal === 'TICKETS' && (activeTickets.length === 0 ? (
-                                            <tr><td colSpan="4" className="p-4 text-slate-400 text-center">No active tickets.</td></tr>
-                                        ) : activeTickets.map(item => (
-                                            <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                                                <td className="p-4">
-                                                    <div className="font-bold text-white">{item.subject}</div>
-                                                    <div className="text-xs text-slate-500 font-mono mt-0.5">{item.id}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-sm text-slate-300">{item.requestor_id || 'Unknown'}</div>
-                                                    <div className="text-xs text-slate-500">User</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`w-2 h-2 rounded-full ${item.priority?.toUpperCase() === 'HIGH' ? 'bg-rose-500' : 'bg-amber-500'}`}></span>
-                                                        <span className="text-sm text-slate-300">{item.status}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        {(item.status?.toUpperCase() === 'OPEN') && (
-                                                            <button
-                                                                onClick={() => acknowledgeTicket(item.id)}
-                                                                className="text-xs border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 px-3 py-1.5 rounded flex items-center gap-1 transition-colors"
-                                                            >
-                                                                <CheckCircle size={14} /> Acknowledge
-                                                            </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => openResolveModal(item)}
-                                                            className="text-xs border border-white/10 hover:bg-white/10 text-slate-300 px-4 py-2 rounded flex items-center gap-2 transition-colors ml-auto"
-                                                        >
-                                                            <CheckCircle size={14} /> Resolve Ticket
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )))}
-
-                                        {activeModal === 'DEPLOY' && deployedArgs.map(item => (
-                                            <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                                                <td className="p-4">
-                                                    <div className="font-medium text-white">{item.name}</div>
-                                                    <div className="text-xs text-slate-500">{item.id}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-sm text-slate-300">{item.assignedUser}</div>
-                                                    <div className="text-xs text-slate-500">{item.location}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20">Configured</div>
-                                                        <div className="text-xs text-emerald-500">Secure</div>
-                                                    </div>
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button onClick={() => handleGenerateAck(item)} className="text-xs text-slate-400 hover:text-white border border-white/10 px-3 py-1.5 rounded flex items-center gap-1">
-                                                            <Printer size={12} /> Ack Form
-                                                        </button>
-                                                        <button onClick={() => handleHandover(item)} className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded">
-                                                            Hand Over
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-
-                                        {activeModal === 'DISPOSAL' && disposalItems.map(item => (
-                                            <tr key={item.id} className="hover:bg-white/5 transition-colors">
-                                                <td className="p-4">
-                                                    <div className="font-medium text-white">{item.name}</div>
-                                                    <div className="text-xs text-slate-500">{item.serial}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-sm text-slate-300">{item.reason}</div>
-                                                    <div className="text-xs text-slate-500">Age: {item.age}</div>
-                                                </td>
-                                                <td className="p-4">
-                                                    <div className="text-xs text-amber-500 font-bold">{item.method}</div>
-                                                    <div className="text-[10px] text-slate-500">Pending Cert</div>
-                                                </td>
-                                                <td className="p-4 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button onClick={() => handleStartWipe(item.id)} className="text-xs border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 px-3 py-1.5 rounded flex items-center gap-1">
-                                                            <Activity size={12} /> Wipe
-                                                        </button>
-                                                        <button onClick={() => handleMarkDisposed(item.id)} className="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1.5 rounded">
-                                                            Mark Disposed
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* ---- TICKET RESOLUTION WIZARD (3 STEPS) ---- */}
-                    {activeModal === 'RESOLVE_TICKET' && selectedItem && (
-                        <div className="bg-slate-900 border border-white/10 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-                            <div className="p-6 border-b border-white/10 bg-slate-800/50">
-                                <h3 className="text-lg font-bold text-white flex items-center justify-between">
-                                    <span>Resolve Incident: {selectedItem.id}</span>
-                                    <span className="text-xs font-mono text-slate-500 bg-slate-800 px-2 py-1 rounded">Step {configStep} of 3</span>
-                                </h3>
-                                <p className="text-slate-400 text-sm mt-1">{selectedItem.subject}</p>
-                            </div>
-
-                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
-                                
-                                {/* STEP 1: DIAGNOSIS */}
-                                {configStep === 1 && (
-                                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                        <h4 className="text-md font-bold text-white mb-2">1. Issue Diagnosis</h4>
-                                        <div className="space-y-2">
-                                            <label className="text-sm text-slate-300">Problem Description & Root Cause</label>
-                                            <textarea
-                                                className="w-full bg-slate-950 border border-white/10 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none min-h-[120px]"
-                                                placeholder="Describe the technical issue and identified root cause..."
-                                                value={resolutionNotes}
-                                                onChange={(e) => setResolutionNotes(e.target.value)}
-                                            ></textarea>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 relative z-10">
+                                {[
+                                    { label: 'Avg Resolution Time', value: '4.2h', trend: '12% Velocity Gain', color: 'indigo', icon: Clock },
+                                    { label: 'Overdue Incidents', value: activeTickets.filter(t => t.urgency === 'High').length, trend: 'Tactical Action Reg.', color: 'rose', icon: AlertCircle, isRose: true, action: () => router.push('/tickets/advanced?filter=OVERDUE') },
+                                    { label: 'Deployment Velocity', value: '94%', trend: 'Target Synchronized', color: 'sky', icon: Zap }
+                                ].map((stat, i) => (
+                                    <div key={i} className="bg-slate-100 dark:bg-black/20 p-8 rounded-[2.5rem] border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-inner group/stat hover:bg-slate-200 dark:hover:bg-white/[0.04] hover:border-indigo-500/20 transition-all duration-500">
+                                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-4">{stat.label}</label>
+                                        <div className={`text-xl font-['Outfit'] font-black ${stat.isRose ? 'text-rose-600 dark:text-rose-500' : 'text-slate-900 dark:text-white'} drop-shadow-sm group-hover/stat:scale-105 transition-transform origin-left duration-500`}>
+                                            {stat.value}
+                                        </div>
+                                        <div className={`text-[9px] text-${stat.color}-400 font-black uppercase tracking-widest mt-6 flex items-center gap-2 bg-${stat.color}-500/10 w-fit px-4 py-1.5 rounded-xl border border-${stat.color}-500/20 shadow-lg shadow-${stat.color}-500/5 uppercase`}>
+                                            <stat.icon size={12} /> {stat.trend}
                                         </div>
                                     </div>
-                                )}
+                                ))}
+                            </div>
 
-                                {/* STEP 2: RESOLUTION CHECKLIST */}
-                                {configStep === 2 && (
-                                    <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                                        <div className="flex justify-between items-center mb-2">
-                                            <h4 className="text-md font-bold text-white">2. Create Resolution Checklist</h4>
-                                            <span className="text-xs text-indigo-400 font-bold">{activeChecklist.length > 0 ? Math.round((activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100) : 0}% Complete</span>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
+                                {[
+                                    { label: 'First Response SLA', value: '98.4%', color: 'emerald' },
+                                    { label: 'Tactical Resolution SLA', value: '92.1%', color: 'indigo' }
+                                ].map((sla, i) => (
+                                    <div key={i} className="p-8 rounded-[2rem] bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-inner group-hover:bg-slate-200 dark:group-hover:bg-slate-50 dark:bg-white/[0.02] transition-colors duration-500">
+                                        <div className="flex justify-between items-center mb-5">
+                                            <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] font-['Outfit']">{sla.label}</span>
+                                            <span className={`text-sm font-black text-${sla.color}-400 tracking-widest drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]`}>{sla.value}</span>
                                         </div>
-                                        
-                                        {/* Add Item Input */}
-                                        <div className="flex gap-2 mb-4">
-                                            <input 
-                                                type="text" 
-                                                placeholder="Add verification step..."
-                                                className="flex-1 bg-slate-950 border border-white/10 rounded-lg p-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter' && e.target.value.trim()) {
-                                                        setActiveChecklist([...activeChecklist, { text: e.target.value.trim(), checked: false }]);
-                                                        e.target.value = '';
-                                                    }
-                                                }}
-                                                id="checklist-input"
-                                            />
-                                            <button 
-                                                onClick={() => {
-                                                    const input = document.getElementById('checklist-input');
-                                                    if (input && input.value.trim()) {
-                                                        setActiveChecklist([...activeChecklist, { text: input.value.trim(), checked: false }]);
-                                                        input.value = '';
-                                                    }
-                                                }}
-                                                className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm"
-                                            >
-                                                Add
-                                            </button>
-                                        </div>
-
-                                        {/* Progress Bar */}
-                                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-4">
-                                            <div 
-                                                className="h-full bg-indigo-500 transition-all duration-500"
-                                                style={{ width: `${activeChecklist.length > 0 ? (activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100 : 0}%` }}
+                                        <div className="h-2.5 w-full bg-slate-200 dark:bg-black/40 rounded-full overflow-hidden border border-slate-200 dark:border-white/5 p-0.5">
+                                            <div
+                                                className={`h-full bg-gradient-to-r from-${sla.color}-600 to-${sla.color}-400 shadow-[0_0_15px_rgba(var(--${sla.color === 'emerald' ? '16,185,129' : '99,102,241'}),0.4)] rounded-full transition-all duration-1000`}
+                                                style={{ width: sla.value }}
                                             ></div>
                                         </div>
-
-                                        {activeChecklist.length === 0 && (
-                                            <div className="text-center py-6 text-slate-500 text-sm border border-dashed border-white/10 rounded-lg">
-                                                No checklist items added. Add steps to verify resolution.
-                                            </div>
-                                        )}
-
-                                        <div className="space-y-2">
-                                            {activeChecklist.map((item, idx) => (
-                                                <div key={idx} className={`flex items-start gap-3 p-3 rounded border transition-colors group ${item.checked ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-slate-800 border-white/5 hover:border-white/10'}`}>
-                                                    <label className="flex items-start gap-3 flex-1 cursor-pointer">
-                                                        <input 
-                                                            type="checkbox" 
-                                                            checked={item.checked} 
-                                                            onChange={() => {
-                                                                const newChecklist = [...activeChecklist];
-                                                                newChecklist[idx].checked = !newChecklist[idx].checked;
-                                                                setActiveChecklist(newChecklist);
-                                                            }}
-                                                            className="mt-1 w-4 h-4 rounded text-indigo-600 bg-slate-700 border-slate-600 focus:ring-indigo-500" 
-                                                        />
-                                                        <div>
-                                                            <div className={`text-sm font-medium ${item.checked ? 'text-white' : 'text-slate-300'}`}>{item.text}</div>
-                                                        </div>
-                                                    </label>
-                                                    <button 
-                                                        onClick={() => {
-                                                            const newChecklist = [...activeChecklist];
-                                                            newChecklist.splice(idx, 1);
-                                                            setActiveChecklist(newChecklist);
-                                                        }}
-                                                        className="text-slate-500 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
                                     </div>
-                                )}
-
-                                {/* STEP 3: FINAL REVIEW */}
-                                {configStep === 3 && (
-                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                                        <div className="text-center py-4">
-                                            <div className="w-20 h-20 rounded-full bg-emerald-500/10 text-emerald-400 border-2 border-emerald-500/20 flex items-center justify-center mx-auto mb-4">
-                                                <CheckCircle size={40} />
-                                            </div>
-                                            <h3 className="text-xl font-bold text-white">Ready to Resolve</h3>
-                                            <p className="text-slate-400 text-sm mt-1">Completion Score: <span className={`font-bold ${activeChecklist.every(i => i.checked) ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                                {activeChecklist.length > 0 ? Math.round((activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100) : 0}%
-                                            </span></p>
-                                        </div>
-
-                                        <div className="bg-slate-800/50 rounded-lg p-4 border border-white/5 space-y-3">
-                                            <div>
-                                                <span className="text-xs text-slate-500 uppercase">Diagnosis</span>
-                                                <p className="text-sm text-slate-300 mt-1">{resolutionNotes}</p>
-                                            </div>
-                                            <div>
-                                                <span className="text-xs text-slate-500 uppercase">Resolution Steps</span>
-                                                <p className="text-sm text-slate-300 mt-1">
-                                                    {activeChecklist.filter(i => i.checked).length} of {activeChecklist.length} checks completed.
-                                                </p>
-                                            </div>
-                                            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded text-indigo-200 text-xs flex gap-2">
-                                                <Activity size={14} className="shrink-0 mt-0.5" />
-                                                Upon confirmation, the user will be notified via email with this resolution summary.
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                            </div>
-
-                            <div className="p-6 border-t border-white/10 flex justify-between items-center bg-white/5 shrink-0">
-                                <div className="flex gap-2">
-                                    <button onClick={() => setActiveModal(null)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Cancel</button>
-                                    <button 
-                                        onClick={saveDraft}
-                                        className="px-4 py-2 text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-2 border border-indigo-500/20 rounded-lg hover:bg-indigo-500/5"
-                                    >
-                                        <ShieldCheck size={14} /> Save Draft
-                                    </button>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    {configStep === 1 && (
-                                        <button 
-                                            onClick={() => {
-                                                if (!resolutionNotes) return alert("Please enter a diagnosis.");
-                                                // Save progress silently when moving to next step
-                                                const percentage = activeChecklist.length > 0 ? (activeChecklist.filter(i => i.checked).length / activeChecklist.length) * 100 : 10;
-                                                updateProgress(selectedItem.id, resolutionNotes, activeChecklist, percentage, true);
-                                                setConfigStep(2);
-                                            }}
-                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-500/20"
-                                        >
-                                            Next: Checklist
-                                        </button>
-                                    )}
-                                    {configStep === 2 && (
-                                        <>
-                                            <button onClick={() => setConfigStep(1)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Back</button>
-                                            <button 
-                                                onClick={() => {
-                                                    const total = activeChecklist.length;
-                                                    const checked = activeChecklist.filter(i => i.checked).length;
-                                                    const percentage = total > 0 ? Math.max(10, (checked / total) * 100) : 10;
-                                                    updateProgress(selectedItem.id, resolutionNotes, activeChecklist, percentage, true);
-                                                    
-                                                    if (activeChecklist.some(i => !i.checked)) {
-                                                        if (!confirm("Checklist is incomplete. Do you want to proceed to final verification?")) return;
-                                                    }
-                                                    setConfigStep(3);
-                                                }}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-500/20"
-                                            >
-                                                Next: Verify
-                                            </button>
-                                        </>
-                                    )}
-                                    {configStep === 3 && (
-                                        <>
-                                            <button onClick={() => setConfigStep(2)} className="px-4 py-2 text-slate-400 hover:text-white transition-colors">Back</button>
-                                            <button 
-                                                onClick={submitProgress}
-                                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold shadow-lg shadow-indigo-500/20"
-                                            >
-                                                Update Progress & Notify
-                                            </button>
-                                            <button 
-                                                onClick={submitResolution}
-                                                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold shadow-lg shadow-emerald-500/20 flex items-center gap-2"
-                                            >
-                                                Resolve & Close <ArrowRight size={16} />
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
+                                ))}
                             </div>
                         </div>
                     )}
 
-                </div>
-            )}
+                    {pendingQueue.length > 0 && (
+                        <div className="glass-panel p-1 border border-slate-300 dark:border-white/10 rounded-2xl mb-12 overflow-hidden bg-white dark:bg-white/[0.01]">
+                            {/* ... existing table if needed or just a placeholder ... */}
+                        </div>
+                    )}
 
-            {/* EXIT WORKFLOW: BYOD De-registration (NEW) */}
-            {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'ASSETS_PROCESSED').length > 0 && (
-                <div className="glass-panel p-6 animate-in slide-in-from-right-4 duration-500">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                            <ShieldCheck className="text-blue-400" />
-                            BYOD Exit Compliance
-                            <span className="bg-blue-500/10 text-blue-400 text-xs px-2 py-1 rounded-full border border-blue-500/20">
-                                {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'ASSETS_PROCESSED').length} Pending
-                            </span>
-                        </h3>
-                    </div>
 
-                    <div className="space-y-4">
-                        {exitRequests.filter(r => r.status === 'OPEN' || r.status === 'ASSETS_PROCESSED').map(req => (
-                            <div key={req.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center group hover:border-blue-500/30 transition-all">
-                                <div>
-                                    <div className="text-white font-bold">{req.user_id}</div>
-                                    <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                                        <Clock size={12} /> Exit Request: {req.id}
+                    {/* ===================================================================================== */}
+                    {/* MODALS */}
+                    {/* ===================================================================================== */}
+
+                    {
+                        activeModal && (
+                            <>
+                                {activeModal === 'REQUEST_DETAILS' && selectedItem && (
+                                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-300">
+                                        <div className="glass-panel w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 dark:border-white/10 shadow-2xl">
+                                            <div className="p-8 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0">
+                                                <div>
+                                                    <h3 className="text-2xl font-['Outfit'] font-bold text-slate-900 dark:text-white tracking-tight">Request Specification</h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <p
+                                                            className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono uppercase tracking-widest opacity-60 cursor-help hover:underline decoration-indigo-400/30 line-clamp-1"
+                                                            onClick={() => copyToClipboard(selectedItem.id, 'Request ID')}
+                                                            title={`Full ID: ${selectedItem.id} - Click to copy`}
+                                                        >
+                                                            {formatId(selectedItem.id, selectedItem.assetType === 'Ticket' ? 'ticket' : 'asset', selectedItem)}
+                                                        </p>
+                                                        <button
+                                                            onClick={() => setIsGuideOpen(true)}
+                                                            className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+                                                            title="View ID Format Guide"
+                                                        >
+                                                            <Info size={12} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => setActiveModal('PENDING')} className="p-3 bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-white/5 transition-all">
+                                                    <X size={20} />
+                                                </button>
+                                            </div>
+
+                                            <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
+                                                <div>
+                                                    <label className="text-xs text-slate-500 dark:text-slate-400 uppercase block mb-2">Business Justification</label>
+                                                    <div className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap leading-relaxed bg-slate-50 dark:bg-white/[0.03] p-6 rounded-3xl border border-slate-200 dark:border-white/5">
+                                                        {selectedItem.justification || 'No justification telemetry recorded.'}
+                                                    </div>
+                                                </div>
+
+                                                {selectedItem.business_justification && selectedItem.business_justification !== selectedItem.justification && (
+                                                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-white/5">
+                                                        <label className="text-xs text-slate-500 dark:text-slate-400 uppercase block mb-2">Detailed Business Justification</label>
+                                                        <div className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                                                            {selectedItem.business_justification}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {selectedItem.manager_approvals && selectedItem.manager_approvals.length > 0 && (
+                                                    <div>
+                                                        <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase mb-3 border-b border-slate-200 dark:border-white/5 pb-2">Approval History</h3>
+                                                        <div className="space-y-2">
+                                                            {selectedItem.manager_approvals.map((approval, idx) => (
+                                                                <div key={idx} className="flex justify-between items-start text-xs bg-slate-50 dark:bg-white/[0.03] p-2 rounded-xl border border-slate-200 dark:border-white/5">
+                                                                    <div>
+                                                                        <span className="font-bold text-slate-200">{approval.reviewer_name}</span>
+                                                                        <span className="text-slate-500 dark:text-slate-400 mx-1">({approval.type || 'Review'})</span>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <div className={`font-bold ${approval.decision?.includes('REJECT') ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                                                            {approval.decision}
+                                                                        </div>
+                                                                        <div className="text-slate-500 dark:text-slate-400">{new Date(approval.timestamp).toLocaleString()}</div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.02] border-t border-slate-300 dark:border-white/10 flex justify-end gap-3 shrink-0">
+                                                <button
+                                                    onClick={() => {
+                                                        const reason = prompt("Enter rejection reason:");
+                                                        if (reason) {
+                                                            itRejectRequest(selectedItem.id, reason);
+                                                            setActiveModal('PENDING');
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 text-rose-400 border border-rose-500/30 hover:bg-rose-500/10 rounded-xl transition-colors text-xs font-bold uppercase tracking-widest"
+                                                >
+                                                    Reject Request
+                                                </button>
+                                                {selectedItem.status === 'IT_APPROVED' && selectedItem.assetType === 'BYOD' ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            registerByod(selectedItem.id);
+                                                            setActiveModal('PENDING');
+                                                        }}
+                                                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                    >
+                                                        <ShieldCheck size={18} /> Validate & Register BYOD
+                                                    </button>
+                                                ) : selectedItem.status === 'BYOD_COMPLIANCE_CHECK' && selectedItem.assetType === 'BYOD' ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => {
+                                                                registerByod(selectedItem.id);
+                                                                setActiveModal(null);
+                                                            }}
+                                                            className="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-sky-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                        >
+                                                            <ShieldCheck size={18} /> Validate & Register BYOD
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setComplianceModalOpen(true)}
+                                                            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                        >
+                                                            <CheckCircle size={18} /> Run Compliance Check
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => {
+                                                            itApproveRequest(selectedItem.id);
+                                                            setActiveModal('PENDING');
+                                                        }}
+                                                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                    >
+                                                        <CheckCircle size={18} /> Approve & Forward
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="mt-3 flex gap-2">
-                                        {req.byod_snapshot?.map((d, i) => (
-                                            <span key={i} className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded border border-white/5">
-                                                {d.device_model} ({d.serial_number})
-                                            </span>
-                                        ))}
+                                )}
+                                {
+                                    activeModal === 'TICKET_VIEW' && selectedItem && (
+                                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-300">
+                                            <div className="glass-panel overflow-hidden border border-slate-300 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-2xl max-h-[90vh] flex flex-col">
+                                                <div className="p-8 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0">
+                                                    <div>
+                                                        <div className="flex items-center gap-3 mb-1">
+                                                            <h3 className="text-2xl font-['Outfit'] font-bold text-slate-900 dark:text-white tracking-tight">Incident Detail</h3>
+                                                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${selectedItem.priority?.toUpperCase() === 'HIGH' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                                }`}>
+                                                                {selectedItem.priority || 'MEDIUM'} PRIORITY
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <p
+                                                                className="text-[10px] text-indigo-400 font-mono uppercase tracking-widest opacity-60 cursor-help hover:underline decoration-indigo-400/30"
+                                                                onClick={() => copyToClipboard(selectedItem.id, 'Ticket ID')}
+                                                                title={`Full ID: ${selectedItem.id} - Click to copy`}
+                                                            >
+                                                                {formatId(selectedItem.id, 'ticket', selectedItem)}
+                                                            </p>
+                                                            <button
+                                                                onClick={() => setIsGuideOpen(true)}
+                                                                className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+                                                                title="View ID Format Guide"
+                                                            >
+                                                                <Info size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => setActiveModal(['RESOLVED', 'CLOSED'].includes(selectedItem?.status?.toUpperCase()) ? 'CLOSED_TICKETS' : 'TICKETS')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-white/5 transition-all">
+                                                        <X size={20} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="p-8 overflow-y-auto custom-scrollbar space-y-8 flex-1">
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Description & Context</label>
+                                                        <h4 className="text-xl font-bold text-slate-200 leading-tight mb-4">{selectedItem.subject}</h4>
+                                                        <div className="p-6 bg-slate-50 dark:bg-white/[0.03] rounded-3xl border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 text-sm leading-relaxed whitespace-pre-wrap">
+                                                            {selectedItem.description || 'No additional telemetry provided for this incident.'}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-slate-200 dark:border-white/5">
+                                                        <div>
+                                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Status</label>
+                                                            <div className="text-sm font-bold text-indigo-400 uppercase tracking-widest">{selectedItem.status}</div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Stakeholder</label>
+                                                            <div
+                                                                className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-help hover:text-indigo-400"
+                                                                onClick={() => copyToClipboard(selectedItem.requestor_id, 'Requester ID')}
+                                                                title={`UUID: ${selectedItem.requestor_id || 'N/A'} - Click to copy`}
+                                                            >
+                                                                {selectedItem.requestor_name || 'System Auto-Gen'}
+                                                                <span className="ml-2 text-[10px] opacity-60 font-mono italic">
+                                                                    ({formatId(selectedItem.requestor_id || selectedItem.requestor_name, 'user')})
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* ALLOCATION SECTION (FOR MANAGERS) */}
+                                                    <div className="pt-6 border-t border-slate-200 dark:border-white/5">
+                                                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-4">Tactical Allocation</label>
+                                                        <div className="flex gap-3">
+                                                            <div className="flex-1 relative group">
+                                                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                                    <User size={16} className="text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-400 transition-colors" />
+                                                                </div>
+                                                                <select
+                                                                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-2xl pl-12 pr-4 py-3.5 text-sm text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-indigo-500/50 outline-none appearance-none transition-all cursor-pointer"
+                                                                    value={selectedItem.assigned_to_id || ''}
+                                                                    onChange={(e) => handleAssignTicket(e.target.value)}
+                                                                    disabled={isAssigning}
+                                                                >
+                                                                    <option value="">Unassigned Operational Queue</option>
+                                                                    {technicians.map(tech => (
+                                                                        <option key={tech.id} value={tech.id} className="bg-white dark:bg-slate-900 border-none">
+                                                                            {tech.full_name} — {tech.persona?.replace('_', ' ') || tech.role}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                                                    {isAssigning ? <RefreshCw size={16} className="animate-spin text-indigo-500" /> : <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {
+                                                    (!['RESOLVED', 'CLOSED'].includes(selectedItem?.status?.toUpperCase())) && (
+                                                        <div className="p-8 border-top border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] shrink-0 flex justify-end">
+                                                            <button
+                                                                onClick={() => { setActiveModal('TICKETS'); openResolveModal(selectedItem); }}
+                                                                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-slate-900 dark:text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-sm uppercase tracking-widest flex items-center gap-3"
+                                                            >
+                                                                START RESOLUTION WIZARD <ArrowRight size={18} />
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                }
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                                {/* ---- RESOLVED TICKET DETAILS MODAL ---- */}
+                                {
+                                    activeModal === 'RESOLVED_TICKET_VIEW' && selectedItem && (
+                                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-300">
+                                            <div className="glass-panel overflow-hidden border border-slate-300 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-2xl max-h-[90vh] flex flex-col">
+                                                <div className="p-8 border-b border-slate-200 dark:border-white/5 bg-emerald-500/[0.03] flex justify-between items-center shrink-0">
+                                                    <div>
+                                                        <h3 className="text-2xl font-['Outfit'] font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                                                            <ShieldCheck size={24} className="text-emerald-400" />
+                                                            Post-Incident Report
+                                                        </h3>
+                                                        <p className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.2em] mt-1">Operational Audit Sync</p>
+                                                    </div>
+                                                    <button onClick={() => setActiveModal('CLOSED_TICKETS')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-white/5 transition-all">
+                                                        <X size={20} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="p-8 overflow-y-auto custom-scrollbar space-y-8 flex-1">
+                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-slate-200 dark:border-white/5">
+                                                        <div className="col-span-2">
+                                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Incident Subject</label>
+                                                            <div className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{selectedItem.subject}</div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Impact Agent</label>
+                                                            <div className="flex items-center gap-2 mt-1">
+                                                                <div
+                                                                    className="text-sm font-bold text-indigo-400 font-mono opacity-80 cursor-help hover:underline"
+                                                                    onClick={() => copyToClipboard(selectedItem.id, 'Incident ID')}
+                                                                    title={`UUID: ${selectedItem.id} - Click to copy`}
+                                                                >
+                                                                    {formatId(selectedItem.id, 'ticket', selectedItem)}
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => setIsGuideOpen(true)}
+                                                                    className="p-1 text-slate-500 dark:text-slate-400 hover:text-indigo-500 transition-colors"
+                                                                    title="View ID Format Guide"
+                                                                >
+                                                                    <Info size={12} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Requestor</label>
+                                                            <div
+                                                                className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-help hover:text-indigo-400"
+                                                                onClick={() => copyToClipboard(selectedItem.requestor_id, 'Requester ID')}
+                                                                title={`UUID: ${selectedItem.requestor_id || 'N/A'} - Click to copy`}
+                                                            >
+                                                                {formatId(selectedItem.requestor_id, 'user')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <div className="flex items-center gap-4 mb-6">
+                                                            <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Resolution Telemetry</h4>
+                                                            <div className="h-px w-full bg-slate-100 dark:bg-white/5"></div>
+                                                        </div>
+
+                                                        <div className="space-y-6">
+                                                            <div className="p-6 bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-3xl shadow-sm dark:shadow-inner">
+                                                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-3">Diagnostic Summary</label>
+                                                                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                                                    {selectedItem.resolution_notes || 'No tactical notes recorded.'}
+                                                                </p>
+                                                            </div>
+
+                                                            <div>
+                                                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-4">Verification Trail</label>
+                                                                <div className="space-y-2">
+                                                                    {selectedItem.resolution_checklist && selectedItem.resolution_checklist.length > 0 ? (
+                                                                        selectedItem.resolution_checklist.map((check, idx) => (
+                                                                            <div key={idx} className="flex items-center gap-4 p-4 bg-white dark:bg-white/[0.01] border border-slate-200 dark:border-white/5 rounded-2xl group hover:bg-slate-50 dark:bg-white/[0.03] transition-all">
+                                                                                <div className="w-6 h-6 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
+                                                                                    <CheckCircle size={14} className="text-emerald-400" />
+                                                                                </div>
+                                                                                <span className="text-sm text-slate-500 dark:text-slate-400 group-hover:text-slate-200 transition-colors">{check.text}</span>
+                                                                            </div>
+                                                                        ))
+                                                                    ) : (
+                                                                        <div className="text-center py-8 border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl">
+                                                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">No checklist data found</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-8 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] shrink-0 flex justify-end">
+                                                    <button
+                                                        onClick={() => setActiveModal('CLOSED_TICKETS')}
+                                                        className="px-8 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white rounded-2xl font-bold border border-slate-300 dark:border-white/10 transition-all text-sm uppercase tracking-widest"
+                                                    >
+                                                        CLOSE ARCHIVE
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+
+                                {/* ---- ITEM VIEW (Deploy / Disposal) MODAL ---- */}
+                                {
+                                    activeModal === 'ITEM_VIEW' && selectedItem && (
+                                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-300">
+                                            <div className="glass-panel overflow-hidden border border-slate-300 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-lg flex flex-col">
+                                                <div className={`p-8 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0`}>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${selectedItem._viewType === 'deploy'
+                                                            ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                                                            : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+                                                            }`}>
+                                                            {selectedItem._viewType === 'deploy' ? <Package size={24} /> : <Trash2 size={24} />}
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="text-xl font-['Outfit'] font-bold text-slate-900 dark:text-white tracking-tight">
+                                                                {selectedItem._viewType === 'deploy' ? 'Deployment Spec' : 'Disposal Audit'}
+                                                            </h3>
+                                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest mt-1">Asset Traceability</p>
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-white/5 transition-all">
+                                                        <X size={20} />
+                                                    </button>
+                                                </div>
+
+                                                <div className="p-8 space-y-8 overflow-y-auto custom-scrollbar flex-1">
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Asset Identity</label>
+                                                        <div className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{selectedItem.name}</div>
+                                                        <div className="text-[10px] text-indigo-400 font-mono mt-1 uppercase tracking-widest opacity-60">{selectedItem.id}</div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-slate-200 dark:border-white/5">
+                                                        {selectedItem._viewType === 'deploy' ? (
+                                                            <>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Target User</label>
+                                                                    <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{selectedItem.assignedUser || 'Unassigned'}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Stock Location</label>
+                                                                    <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{selectedItem.location || 'Central Lab'}</div>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Serial Hash</label>
+                                                                    <div className="text-xs font-mono text-slate-700 dark:text-slate-300">{selectedItem.serial || 'NOT_LOGGED'}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Decom Reason</label>
+                                                                    <div className="text-sm font-bold text-rose-400 uppercase tracking-widest">{selectedItem.reason || 'EOL'}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Purge Method</label>
+                                                                    <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{selectedItem.method || 'Secure Wipe'}</div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1">Asset Age</label>
+                                                                    <div className="text-sm font-bold text-slate-700 dark:text-slate-300">{selectedItem.age || 'Unknown'}</div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-8 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] shrink-0 flex justify-end">
+                                                    <button
+                                                        onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')}
+                                                        className="px-8 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white rounded-2xl font-bold border border-slate-300 dark:border-white/10 transition-all text-sm uppercase tracking-widest"
+                                                    >
+                                                        CLOSE INSPECTION
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                                {/* ---- BYOD COMPLIANCE CHECK MODAL ---- */}
+                                <ComplianceCheckModal
+                                    isOpen={complianceModalOpen}
+                                    onClose={() => setComplianceModalOpen(false)}
+                                    request={selectedItem}
+                                    onUpdate={() => refreshData()}
+                                />
+
+                                {/* ---- CONFIG WIZARD MODAL (5 STEPS) ---- */}
+                                {
+                                    activeModal === 'CONFIG' && selectedItem && (
+                                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                                            <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 p-6 border-b border-slate-200 dark:border-white/10 flex justify-between items-center shrink-0">
+                                                <div>
+                                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                        <Terminal size={20} className="text-indigo-400" />
+                                                        Workstation Configuration
+                                                    </h2>
+                                                    <p className="text-sm text-indigo-300/60 mt-1">Ticket: {selectedItem.id}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400 block uppercase tracking-wider">Target User</span>
+                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">{selectedItem.user}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-8 overflow-y-auto custom-scrollbar">
+                                                {/* Steps Indicator */}
+                                                <div className="flex justify-between mb-8 px-4">
+                                                    {[1, 2, 3, 4, 5].map(s => <ConfigStep key={s} step={s} current={configStep} />)}
+                                                </div>
+
+                                                {/* Step Content */}
+                                                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-6 border border-slate-200 dark:border-white/5 min-h-[300px]">
+
+                                                    {/* STEP 1: ASSET OVERVIEW */}
+                                                    {configStep === 1 && (
+                                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Step 1: Asset Overview</h3>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-white/5">
+                                                                    <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">Model</span>
+                                                                    <div className="text-slate-900 dark:text-white font-medium">{selectedItem.model || 'Standard Workstation'}</div>
+                                                                </div>
+                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-white/5">
+                                                                    <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">Serial Number</span>
+                                                                    <div className="text-slate-900 dark:text-white font-medium">{selectedItem.serial || 'Unknown'}</div>
+                                                                </div>
+                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-white/5 col-span-2">
+                                                                    <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">Specs</span>
+                                                                    <div className="text-slate-900 dark:text-white font-medium">{selectedItem.details || 'Standard Configuration'}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded text-indigo-200 text-sm flex gap-2">
+                                                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                                                Please physically verify the serial number matches the asset tag before proceeding.
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* STEP 2: OS SELECTION (NOW SOFTWARE PROVISIONING) */}
+                                                    {configStep === 2 && (
+                                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Step 2: OS & Image Selection</h3>
+                                                            <div className="grid grid-cols-1 gap-3">
+                                                                <label className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-500 rounded-lg cursor-pointer">
+                                                                    <input type="radio" name="os" defaultChecked className="w-5 h-5 text-indigo-600" />
+                                                                    <div>
+                                                                        <div className="font-bold text-slate-900 dark:text-white">Windows 11 Enterprise 23H2 (Stable)</div>
+                                                                        <div className="text-xs text-slate-500 dark:text-slate-400">Standard Corporate Image v4.2</div>
+                                                                    </div>
+                                                                </label>
+                                                                <label className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg cursor-pointer opacity-60">
+                                                                    <input type="radio" name="os" className="w-5 h-5 text-indigo-600" />
+                                                                    <div>
+                                                                        <div className="font-bold text-slate-900 dark:text-white">Windows 10 Enterprise LTSC</div>
+                                                                        <div className="text-xs text-slate-500 dark:text-slate-400">Legacy Systems Only</div>
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* STEP 3: SECURITY TOOLS */}
+                                                    {configStep === 3 && (
+                                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Step 3: Security Tools Setup</h3>
+                                                            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-4">Manually verify installation or push via MDM.</p>
+                                                            <div className="space-y-2">
+                                                                <SoftwareInstallItem app="CrowdStrike Falcon Sensor" assetId={selectedItem.id} />
+                                                                <SoftwareInstallItem app="Zscaler Client Connector" assetId={selectedItem.id} />
+                                                                <SoftwareInstallItem app="Tanium Client" assetId={selectedItem.id} />
+                                                                <SoftwareInstallItem app="Local Admin Password Solution (LAPS)" assetId={selectedItem.id} />
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* STEP 4: NETWORK */}
+                                                    {configStep === 4 && (
+                                                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Step 4: Network Configuration</h3>
+
+                                                            <div className="space-y-4">
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase font-bold">Domain Join</label>
+                                                                    <select className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                                        <option>CORP.GLOBAL (Default)</option>
+                                                                        <option>DMZ.LOCAL</option>
+                                                                        <option>WORKGROUP</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                <div className="flex flex-col gap-1">
+                                                                    <label className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase font-bold">VLAN Assignment</label>
+                                                                    <select className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                                        <option>VLAN 100 - Employee Workstations</option>
+                                                                        <option>VLAN 200 - Developers</option>
+                                                                        <option>VLAN 900 - Guest</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 p-3 rounded border border-emerald-500/20">
+                                                                    <CheckCircle size={16} />
+                                                                    <span>DHCP Reservation Found: 10.20.4.112</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* STEP 5: FINAL VALIDATION */}
+                                                    {configStep === 5 && (
+                                                        <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Step 5: Final Validation</h3>
+                                                            <div className="space-y-3">
+                                                                {[
+                                                                    "BIOS Password Set",
+                                                                    "Physical Damage Check",
+                                                                    "BitLocker Encryption Active",
+                                                                    "Windows Activated",
+                                                                    "Latest Windows Updates Applied"
+                                                                ].map((check, i) => (
+                                                                    <label key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded border border-slate-200 dark:border-white/5 cursor-pointer hover:bg-slate-200 dark:bg-slate-700 transition-colors">
+                                                                        <input type="checkbox" defaultChecked={i < 3} className="w-5 h-5 rounded text-indigo-600 bg-slate-200 dark:bg-slate-700 border-slate-600 focus:ring-indigo-500" />
+                                                                        <span className="text-slate-900 dark:text-slate-200">{check}</span>
+                                                                    </label>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-6 flex justify-end gap-3">
+                                                    {configStep < 5 ? (
+                                                        <>
+                                                            <button
+                                                                onClick={() => setActiveModal(null)}
+                                                                className="px-4 py-2 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                            <button
+                                                                onClick={handleConfigStepComplete}
+                                                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white rounded-lg font-semibold shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+                                                            >
+                                                                {configStep === 4 ? 'Validate & Finish' : 'Next Step'} <ArrowRight size={16} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <button
+                                                            onClick={handleConfigStepComplete}
+                                                            className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white rounded-lg font-semibold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 animate-pulse"
+                                                        >
+                                                            <CheckCircle size={20} /> Complete Configuration
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                {
+                                    ['PENDING', 'TICKETS', 'CLOSED_TICKETS', 'DEPLOY', 'DISPOSAL'].includes(activeModal) && (
+                                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white dark:bg-slate-900/40 backdrop-blur-xl animate-in fade-in duration-300">
+                                            <div className="glass-panel overflow-hidden border border-slate-200 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-6xl max-h-[85vh] flex flex-col">
+                                                <div className="p-8 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0">
+                                                    <div>
+                                                        <h3 className="text-2xl font-['Outfit'] font-bold text-slate-900 dark:text-white tracking-tight">
+                                                            {activeModal === 'PENDING' ? 'Registration & Provisioning' :
+                                                                activeModal === 'TICKETS' ? 'Active Operational Incidents' :
+                                                                    activeModal === 'CLOSED_TICKETS' ? 'Resolution History' :
+                                                                        activeModal === 'DEPLOY' ? 'Ready for Deployment' : 'Asset Disposal Queue'}
+                                                        </h3>
+                                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                                            {activeModal === 'TICKETS' ? 'Priority 1 & Standard Support Queue' : 'Managed Fleet Operations'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex gap-4 items-center">
+                                                        {(activeModal === 'TICKETS' || activeModal === 'CLOSED_TICKETS') && (
+                                                            <div className="relative group">
+                                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 group-focus-within:text-indigo-400 transition-colors" size={18} />
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Scylla Search..."
+                                                                    className="pl-12 pr-6 py-2.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-2xl text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none w-72 transition-all placeholder:text-slate-500 dark:text-slate-400"
+                                                                    value={searchQuery}
+                                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <button onClick={() => { setActiveModal(null); setSearchQuery(''); }} className="p-3 bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-white/5 transition-all">
+                                                            <X size={20} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="overflow-auto custom-scrollbar flex-1">
+                                                    <table className="w-full text-left border-collapse">
+                                                        <thead className="sticky top-0 z-10">
+                                                            <tr className="bg-slate-100 dark:bg-slate-900/40 backdrop-blur-md border-b border-slate-200 dark:border-white/10">
+                                                                <th className="p-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Primary Identifier</th>
+                                                                <th className="p-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Origin / Stakeholder</th>
+                                                                <th className="p-5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Categorization</th>
+                                                                <th className="p-5 text-right text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Operational Logic</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100 dark:divide-white/[0.03]">
+                                                            {activeModal === 'PENDING' && (incomingRequests.length === 0 ? (
+                                                                <tr><td colSpan="4" className="p-4 text-slate-500 dark:text-slate-400 dark:text-slate-400 text-center">No incoming requests.</td></tr>
+                                                            ) : incomingRequests.map(req => (
+                                                                <tr key={req.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.04] transition-all group border-b border-slate-100 dark:border-white/[0.02]">
+                                                                    <td className="p-5">
+                                                                        <div className="font-['Outfit'] font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                                                                            {req.assetType || req.title}
+                                                                            {req.assetType === 'BYOD' && <span className="text-[9px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/20 font-black uppercase tracking-widest">BYOD</span>}
+                                                                        </div>
+                                                                        <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1 opacity-60">{req.id}</div>
+                                                                    </td>
+                                                                    <td className="p-5">
+                                                                        <div className="text-sm text-slate-700 dark:text-slate-300 font-semibold">{req.requestedBy?.name || 'Unknown'}</div>
+                                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-bold">{req.requestedBy?.role || 'User'} • {req.assetType}</div>
+                                                                    </td>
+                                                                    <td className="p-5">
+                                                                        <div className="flex flex-col gap-1.5">
+                                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit border ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-white/10'}`}>
+                                                                                {req.urgency ? req.urgency.toUpperCase() : 'STANDARD'}
+                                                                            </span>
+                                                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest ml-1">{req.status}</div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-5 text-right">
+                                                                        <div className="flex justify-end gap-3 items-center">
+                                                                            <button
+                                                                                onClick={() => { setSelectedItem(req); setActiveModal('REQUEST_DETAILS'); }}
+                                                                                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-white/5 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-300 dark:border-white/10 transition-all"
+                                                                                title="View Specifications"
+                                                                            >
+                                                                                <Eye size={18} />
+                                                                            </button>
+
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const reason = prompt("Enter rejection reason Scylla:");
+                                                                                    if (reason) itRejectRequest(req.id, reason);
+                                                                                }}
+                                                                                className="px-4 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl border border-rose-500/10 hover:border-rose-500/30 transition-all"
+                                                                            >
+                                                                                Discard
+                                                                            </button>
+
+                                                                            {req.status === 'IT_APPROVED' && req.assetType === 'BYOD' ? (
+                                                                                <button
+                                                                                    onClick={() => registerByod(req.id)}
+                                                                                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all flex items-center gap-2 text-xs"
+                                                                                >
+                                                                                    <ShieldCheck size={16} /> VALIDATE & COMMIT
+                                                                                </button>
+                                                                            ) : req.status === 'BYOD_COMPLIANCE_CHECK' && req.assetType === 'BYOD' ? (
+                                                                                <div className="flex gap-2">
+                                                                                    <button
+                                                                                        onClick={() => { setSelectedItem(req); setComplianceModalOpen(true); }}
+                                                                                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 text-xs"
+                                                                                    >
+                                                                                        <Activity size={16} /> SCAN COMPLIANCE
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => registerByod(req.id)}
+                                                                                        className="px-5 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white rounded-xl font-bold border border-slate-300 dark:border-white/10 transition-all text-xs"
+                                                                                    >
+                                                                                        BYPASS & REGISTER
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <button
+                                                                                    onClick={() => itApproveRequest(req.id)}
+                                                                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-xs uppercase tracking-widest"
+                                                                                >
+                                                                                    {req.assetType === 'BYOD' ? 'Initialize Verification' : 'Commit & Allocate'}
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )))}
+
+                                                            {activeModal === 'TICKETS' && (displayActiveTickets.length === 0 ? (
+                                                                <tr><td colSpan="4" className="p-8 text-slate-500 dark:text-slate-400 font-medium text-center">{isSearching ? 'Synchronizing Scylla...' : 'Operational tranquility: No active incidents.'}</td></tr>
+                                                            ) : displayActiveTickets.map(item => (
+                                                                <tr key={item.id} className="hover:bg-white/[0.04] transition-all group border-b border-white/[0.02]">
+                                                                    <td className="p-5">
+                                                                        <div className="font-['Outfit'] font-bold text-slate-900 dark:text-white text-base leading-tight">{item.subject}</div>
+                                                                        <div className="text-[10px] text-indigo-400 font-mono mt-1 uppercase tracking-widest opacity-60">{formatId(item.id, 'ticket', item)}</div>
+                                                                    </td>
+                                                                    <td className="p-5">
+                                                                        <div className="text-sm text-slate-700 dark:text-slate-300 font-semibold">{item.requestedBy?.name || 'Unknown'}</div>
+                                                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-black">
+                                                                            Assigned: <span className="text-blue-400">{item.assignedTo || 'UNALLOCATED'}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-5">
+                                                                        <div className="flex items-center gap-2.5">
+                                                                            <div className={`w-2 h-2 rounded-full ${item.status?.toUpperCase() === 'IN_PROGRESS' ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.6)]' : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]'} animate-pulse`}></div>
+                                                                            <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${item.status?.toUpperCase() === 'IN_PROGRESS' ? 'text-blue-400' : 'text-amber-400'}`}>{item.status}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-5 text-right">
+                                                                        <div className="flex justify-end gap-3 items-center">
+                                                                            <button
+                                                                                onClick={() => { setSelectedItem(item); setActiveModal('TICKET_VIEW'); }}
+                                                                                className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:bg-white/5 rounded-xl border border-transparent hover:border-slate-300 dark:border-white/10 transition-all"
+                                                                                title="Inspect Payload"
+                                                                            >
+                                                                                <Eye size={18} />
+                                                                            </button>
+                                                                            {(item.status?.toUpperCase() === 'OPEN') && (
+                                                                                <button
+                                                                                    onClick={() => acknowledgeTicket(item.id)}
+                                                                                    className="px-4 py-2 text-xs font-bold text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-xl border border-blue-500/10 hover:border-blue-500/30 transition-all uppercase tracking-widest"
+                                                                                >
+                                                                                    Acknowledge
+                                                                                </button>
+                                                                            )}
+                                                                            <button
+                                                                                onClick={() => openResolveModal(item)}
+                                                                                className="px-5 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-emerald-600/10 text-slate-700 dark:text-slate-300 hover:text-emerald-400 border border-slate-300 dark:border-white/10 hover:border-emerald-500/30 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                                                            >
+                                                                                <CheckCircle size={14} /> Commit Fix
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )))}
+
+                                                            {activeModal === 'CLOSED_TICKETS' && (displayClosedTickets.length === 0 ? (
+                                                                <tr><td colSpan="4" className="p-8 text-slate-500 dark:text-slate-400 font-medium text-center">{isSearching ? 'Synchronizing Scylla...' : 'Resolution history is currently empty.'}</td></tr>
+                                                            ) : displayClosedTickets.map(item => (
+                                                                <tr key={item.id} className="hover:bg-white/[0.04] transition-all group border-b border-white/[0.02]">
+                                                                    <td className="p-5">
+                                                                        <div className="font-['Outfit'] font-bold text-slate-700 dark:text-slate-300 text-base leading-tight opacity-70 group-hover:opacity-100 transition-opacity">{item.subject}</div>
+                                                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-1 uppercase tracking-widest">{formatId(item.id, 'ticket', item)}</div>
+                                                                    </td>
+                                                                    <td className="p-5">
+                                                                        <div className="text-sm text-slate-500 dark:text-slate-400 font-semibold">{item.requestedBy?.name || 'Unknown'}</div>
+                                                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-bold">
+                                                                            Solved by: <span className="text-emerald-500/70">{item.assignedTo || 'System'}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-5">
+                                                                        <div className="flex items-center gap-2.5">
+                                                                            <div className="w-2 h-2 rounded-full bg-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.3)]"></div>
+                                                                            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-emerald-500/50 group-hover:text-emerald-500 transition-colors">{item.status}</span>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-5 text-right">
+                                                                        <div className="flex justify-end gap-3 items-center">
+                                                                            <button
+                                                                                onClick={() => { setSelectedItem(item); setActiveModal('RESOLVED_TICKET_VIEW'); }}
+                                                                                className="px-5 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:border-white/20 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                                                            >
+                                                                                <Eye size={16} /> Audit Trail
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )))}
+
+                                                            {
+                                                                activeModal === 'DEPLOY' && (deployedArgs.length === 0 ? (
+                                                                    <tr><td colSpan="4" className="p-8 text-slate-500 dark:text-slate-400 font-medium text-center">No assets staged for deployment.</td></tr>
+                                                                ) : deployedArgs.map(item => (
+                                                                    <tr key={item.id} className="hover:bg-white/[0.04] transition-all group border-b border-white/[0.02]">
+                                                                        <td className="p-5">
+                                                                            <div className="font-['Outfit'] font-bold text-slate-900 dark:text-white text-base leading-tight">{item.name}</div>
+                                                                            <div className="text-[10px] text-indigo-400 font-mono mt-1 uppercase tracking-widest opacity-60">{formatId(item.id, 'asset', item)}</div>
+                                                                        </td>
+                                                                        <td className="p-5">
+                                                                            <div className="text-sm text-slate-700 dark:text-slate-300 font-semibold">{item.assignedUser || 'Unassigned'}</div>
+                                                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-bold">{item.location || 'Central Stockroom'}</div>
+                                                                        </td>
+                                                                        <td className="p-5">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">STAGED</span>
+                                                                                <div className="flex items-center gap-1 text-[10px] text-emerald-500/60 font-bold uppercase tracking-widest">
+                                                                                    <Shield size={10} /> Secure
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="p-5 text-right">
+                                                                            <div className="flex justify-end gap-3 items-center">
+                                                                                <button
+                                                                                    onClick={() => { setSelectedItem({ ...item, _viewType: 'deploy' }); setActiveModal('ITEM_VIEW'); }}
+                                                                                    className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:bg-white/5 rounded-xl border border-transparent hover:border-slate-300 dark:border-white/10 transition-all"
+                                                                                    title="Inspect Asset"
+                                                                                >
+                                                                                    <Eye size={18} />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => handleGenerateAck(item)}
+                                                                                    className="px-4 py-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-200 dark:bg-white/10 rounded-xl border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:border-white/20 transition-all flex items-center gap-2 uppercase tracking-widest"
+                                                                                >
+                                                                                    <Printer size={14} /> ACK
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => deployAsset(item.id)}
+                                                                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-xs uppercase tracking-widest"
+                                                                                >
+                                                                                    DEPLOY
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr >
+                                                                )))
+                                                            }
+
+                                                            {
+                                                                activeModal === 'DISPOSAL' && (disposalQueue.length === 0 ? (
+                                                                    <tr><td colSpan="4" className="p-8 text-slate-500 dark:text-slate-400 font-medium text-center">Disposal queue is sanitized and empty.</td></tr>
+                                                                ) : disposalQueue.map(item => (
+                                                                    <tr key={item.id} className="hover:bg-white/[0.04] transition-all group border-b border-white/[0.02]">
+                                                                        <td className="p-5">
+                                                                            <div className="font-['Outfit'] font-bold text-slate-900 dark:text-white text-base leading-tight">{item.name}</div>
+                                                                            <div className="text-[10px] text-rose-400 font-mono mt-1 uppercase tracking-widest opacity-60">{formatId(item.id, 'asset', item)}</div>
+                                                                        </td>
+                                                                        <td className="p-5">
+                                                                            <div className="text-sm text-slate-700 dark:text-slate-300 font-semibold">{item.reason || 'End of Life'}</div>
+                                                                            <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-bold">WIPE STATUS: <span className="text-amber-400">{item.wipeStatus || 'PENDING'}</span></div>
+                                                                        </td>
+                                                                        <td className="p-5">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-500/20">SCHEDULED</span>
+                                                                                {item.isSecure && (
+                                                                                    <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
+                                                                                        <Shield size={10} /> ENCRYPTED
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="p-5 text-right">
+                                                                            <div className="flex justify-end gap-3 items-center">
+                                                                                <button
+                                                                                    onClick={() => { setSelectedItem(item); setActiveModal('DISPOSAL_DETAILS'); }}
+                                                                                    className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:bg-white/5 rounded-xl border border-transparent hover:border-slate-300 dark:border-white/10 transition-all"
+                                                                                    title="Audit Specs"
+                                                                                >
+                                                                                    <Eye size={18} />
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        const certId = `SEC-WIPE-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+                                                                                        if (confirm(`Authorize Secure Destruction for ${item.id}?\nSanitization Certificate: ${certId}`)) {
+                                                                                            processDisposal(item.id, certId);
+                                                                                        }
+                                                                                    }}
+                                                                                    className="px-6 py-2.5 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-slate-900 dark:text-white border border-rose-500/20 hover:border-rose-600 rounded-xl font-bold transition-all text-xs uppercase tracking-widest shadow-lg shadow-rose-500/5 hover:shadow-rose-500/20"
+                                                                                >
+                                                                                    PURGE ASSET
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr >
+                                                                )))
+                                                            }
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                {/* ---- TICKET RESOLUTION WIZARD (3 STEPS) ---- */}
+                                {activeModal === 'RESOLVE_TICKET' && selectedItem && (
+                                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-300">
+                                        <div className="glass-panel overflow-hidden border border-slate-300 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-2xl max-h-[90vh] flex flex-col">
+                                            <div className="p-8 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0">
+                                                <div>
+                                                    <div className="flex items-center gap-3 mb-1">
+                                                        <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase tracking-widest border border-indigo-500/10">Incident Resolution</span>
+                                                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">STEP {resolutionStep} OF 3</span>
+                                                    </div>
+                                                    <h3 className="text-2xl font-['Outfit'] font-bold text-slate-900 dark:text-white tracking-tight">
+                                                        {resolutionStep === 1 ? 'Diagnostic Review' : resolutionStep === 2 ? 'Resolution Protocol' : 'Final Verification'}
+                                                    </h3>
+                                                </div>
+                                                <button onClick={() => setActiveModal(null)} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-white/5 transition-all">
+                                                    <X size={20} />
+                                                </button>
+                                            </div>
+
+                                            <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
+                                                {resolutionStep === 1 && (
+                                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                                                        <div className="p-6 bg-indigo-500/5 rounded-3xl border border-indigo-500/10">
+                                                            <h4 className="text-xs font-black text-indigo-300 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                                <Info size={14} /> Subject Analysis
+                                                            </h4>
+                                                            <p className="text-lg text-slate-900 dark:text-white font-medium mb-2">{selectedItem.subject}</p>
+                                                            <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{selectedItem.description}</p>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200 dark:border-white/5">
+                                                                <div className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Reporter</div>
+                                                                <div className="text-sm text-slate-900 dark:text-white font-bold">{selectedItem.requestedBy?.name}</div>
+                                                            </div>
+                                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200 dark:border-white/5">
+                                                                <div className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Created</div>
+                                                                <div className="text-sm text-slate-900 dark:text-white font-bold">{new Date(selectedItem.createdAt).toLocaleDateString()}</div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Diagnostic Checklist</h4>
+                                                            {[
+                                                                "User identity verified via SSO logs",
+                                                                "Hardware diagnostic telemetry clear",
+                                                                "Impact scope confirmed (Individual)",
+                                                                "Prior resolution history reviewed"
+                                                            ].map((item, i) => (
+                                                                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-slate-200 dark:border-white/5">
+                                                                    <div className="w-5 h-5 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                                                                        <Check size={12} />
+                                                                    </div>
+                                                                    <span className="text-xs text-slate-700 dark:text-slate-300">{item}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {resolutionStep === 2 && (
+                                                    <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                                                        <div className="space-y-4">
+                                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Resolution Category</label>
+                                                            <div className="grid grid-cols-3 gap-3">
+                                                                {['Fixed', 'Workaround', 'Referral'].map(type => (
+                                                                    <button
+                                                                        key={type}
+                                                                        onClick={() => setResolutionType(type)}
+                                                                        className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${resolutionType === type ? 'bg-indigo-600 border-indigo-500 text-slate-900 dark:text-white shadow-lg' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-300 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:bg-white/5'}`}
+                                                                    >
+                                                                        {type}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="space-y-4">
+                                                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Resolution Summary</label>
+                                                            <textarea
+                                                                className="w-full h-32 bg-slate-50 dark:bg-white/[0.03] border border-slate-300 dark:border-white/10 rounded-2xl p-4 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                                                                placeholder="Detail the technical steps taken to remediate this incident..."
+                                                                value={resolutionNotes}
+                                                                onChange={(e) => setResolutionNotes(e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {resolutionStep === 3 && (
+                                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4">
+                                                        <div className="text-center py-6">
+                                                            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center border-4 border-emerald-500/30 mx-auto mb-6">
+                                                                <CheckCircle size={40} className="text-emerald-400" />
+                                                            </div>
+                                                            <h4 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Ready for Archive</h4>
+                                                            <p className="text-sm text-slate-500 dark:text-slate-400">All resolution steps have been logged. Resolution will be synced to Neural Cache.</p>
+                                                        </div>
+
+                                                        <div className="p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-slate-200 dark:border-white/5 space-y-4">
+                                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                                                                <span>Resolution Type</span>
+                                                                <span className="text-indigo-400">{resolutionType}</span>
+                                                            </div>
+                                                            <div className="h-px bg-slate-100 dark:bg-white/5"></div>
+                                                            <div className="space-y-2">
+                                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Summary Preview</div>
+                                                                <div className="text-xs text-slate-700 dark:text-slate-300 italic">"{resolutionNotes || 'No summary provided'}"</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="p-8 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] shrink-0 flex justify-between items-center">
+                                                <div className="flex gap-2">
+                                                    {[1, 2, 3].map(step => (
+                                                        <div key={step} className={`w-8 h-1 rounded-full ${resolutionStep >= step ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-white/10'}`}></div>
+                                                    ))}
+                                                </div>
+                                                <div className="flex gap-4">
+                                                    {resolutionStep > 1 && <button onClick={() => setResolutionStep(resolutionStep - 1)} className="px-6 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white rounded-xl font-bold transition-all text-xs uppercase tracking-widest">Back</button>}
+                                                    {resolutionStep < 3 ? (
+                                                        <button onClick={() => setResolutionStep(resolutionStep + 1)} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all text-xs uppercase tracking-widest">Next</button>
+                                                    ) : (
+                                                        <button onClick={submitResolution} className="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all text-xs uppercase tracking-widest">Resolve & Close</button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <button 
-                                    onClick={async () => {
-                                        if (confirm(`Confirm MDM unenrollment and data wipe for BYOD devices belonging to ${req.user_id}?`)) {
-                                            await processExitByod(req.id);
-                                        }
-                                    }}
-                                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
-                                >
-                                    De-register BYOD → Success
-                                </button>
+                                )}
+
+                                {/* ---- BYOD EXIT DETAILS ---- */}
+                                {activeModal === 'BYOD_EXIT_DETAILS' && selectedItem && (
+                                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/60 backdrop-blur-xl animate-in fade-in duration-300">
+                                        <div className="glass-panel overflow-hidden border border-slate-300 dark:border-white/10 shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-2xl max-h-[90vh] flex flex-col">
+                                            <div className="p-8 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0">
+                                                <div>
+                                                    <h3 className="text-2xl font-['Outfit'] font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                                                        <ShieldCheck className="text-blue-400" size={24} />
+                                                        BYOD Offboarding
+                                                    </h3>
+                                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Managed Exit Protocol</p>
+                                                </div>
+                                                <button onClick={() => setActiveModal(null)} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-2xl border border-slate-200 dark:border-white/5 transition-all">
+                                                    <X size={20} />
+                                                </button>
+                                            </div>
+
+                                            <div className="p-8 overflow-y-auto custom-scrollbar space-y-8 flex-1">
+                                                {/* User Payload Info */}
+                                                <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.03] rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-inner">
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Stakeholder</label>
+                                                        <div className="text-base font-bold text-slate-900 dark:text-white leading-none">{selectedItem.user_name || 'Unknown'}</div>
+                                                        <div className="text-xs text-indigo-400 font-mono mt-1 opacity-70">{selectedItem.user_email || selectedItem.user_id}</div>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-1.5">Organization</label>
+                                                        <div className="text-base font-bold text-slate-700 dark:text-slate-300 leading-none">{selectedItem.user_department || 'General Operations'}</div>
+                                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest mt-1">Scylla Identified</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* BYOD Devices Snapshot */}
+                                                <div>
+                                                    <div className="flex items-center gap-4 mb-6">
+                                                        <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Provisioned Personal Assets</h4>
+                                                        <div className="h-px w-full bg-slate-100 dark:bg-white/5"></div>
+                                                    </div>
+
+                                                    {selectedItem.byod_snapshot && selectedItem.byod_snapshot.length > 0 ? (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                            {selectedItem.byod_snapshot.map((device, idx) => (
+                                                                <div key={idx} className="p-5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:bg-white/[0.05] border border-slate-200 dark:border-white/5 rounded-2xl transition-all group shadow-sm">
+                                                                    <div className="flex justify-between items-start mb-4">
+                                                                        <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/10 group-hover:scale-110 transition-transform">
+                                                                            <Smartphone size={20} className="text-blue-400" />
+                                                                        </div>
+                                                                        <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase tracking-widest border border-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors">
+                                                                            {device.os_version?.toUpperCase() || 'OS'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="font-['Outfit'] font-bold text-slate-900 dark:text-white text-base leading-tight">{device.device_model}</div>
+                                                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-1 opacity-60">SN: {device.serial_number}</div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-12 bg-slate-50 dark:bg-white/[0.02] border-2 border-dashed border-slate-200 dark:border-white/5 rounded-3xl">
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest">No verified device snapshots found</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="p-8 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/[0.02] shrink-0 flex gap-4">
+                                                <button
+                                                    onClick={() => setActiveModal(null)}
+                                                    className="flex-1 px-6 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white rounded-2xl font-bold border border-slate-300 dark:border-white/10 transition-all text-sm uppercase tracking-widest"
+                                                >
+                                                    Retain Assets
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm(`Authorize MDM Unenrollment & Sanitization for ${selectedItem.user_name || selectedItem.user_id}?`)) {
+                                                            await processExitByod(selectedItem.id);
+                                                            setActiveModal(null);
+                                                        }
+                                                    }}
+                                                    className="flex-[2] px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-slate-900 dark:text-white rounded-2xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3"
+                                                >
+                                                    <ShieldAlert size={20} /> EXECUTE DE-REGISTRATION
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    {/* --- BYOD EXIT COMPLIANCE TABLE --- */}
+                    <Card
+                        className="!bg-white dark:!bg-white dark:bg-slate-900 shadow-sm border-slate-100 dark:border-white/5 overflow-hidden"
+                        styles={{ body: { padding: 0 } }}
+                    >
+                        <div className="px-6 py-5 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
+                            <div>
+                                <Title level={4} className="!m-0 !text-lg font-bold text-slate-900 dark:text-white">BYOD Exit Compliance</Title>
+                                <Text className="text-xs text-slate-500 dark:text-slate-400">Managing device de-registration for departing personnel</Text>
                             </div>
-                        ))}
+                            <Space>
+                                <Badge count={`${exitRequests.filter(r => r.status === 'OPEN' || r.status === 'ASSETS_PROCESSED').length} Urgent Actions`} overflowCount={99} color="#ef4444" className="!text-[10px] font-bold" />
+                            </Space>
+                        </div>
+
+                        <Table
+                            dataSource={exitRequests.filter(r => r.status === 'OPEN' || r.status === 'ASSETS_PROCESSED')}
+                            rowKey="id"
+                            pagination={false}
+                            className="custom-antd-table"
+                            columns={[
+                                {
+                                    title: 'Employee Name',
+                                    key: 'user',
+                                    render: (record) => (
+                                        <Space size={12}>
+                                            <Avatar className="bg-indigo-50 text-indigo-600 font-bold !text-xs">
+                                                {(record.user_name || record.user_id || 'JW').split(' ').map(n => n[0]).join('')}
+                                            </Avatar>
+                                            <Text className="text-sm font-semibold text-slate-900 dark:text-white">{record.user_name || record.user_id}</Text>
+                                        </Space>
+                                    )
+                                },
+                                {
+                                    title: 'Device Model',
+                                    key: 'device',
+                                    render: (record) => (
+                                        <div>
+                                            <Text className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                                {record.byod_snapshot?.[0]?.device_model || 'Personal Device'}
+                                            </Text>
+                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                                SN: {record.byod_snapshot?.[0]?.serial_number || 'N/A'}
+                                            </div>
+                                        </div>
+                                    )
+                                },
+                                {
+                                    title: 'Offboarding Date',
+                                    key: 'date',
+                                    render: (record) => (
+                                        <Text className="text-sm text-slate-500 dark:text-slate-400">
+                                            {record.id.startsWith('EXIT') ? 'Oct 24, 2023' : 'Recently'}
+                                        </Text>
+                                    )
+                                },
+                                {
+                                    title: 'Status',
+                                    key: 'status',
+                                    render: (record) => (
+                                        <Tag color={record.status === 'OPEN' ? 'warning' : 'success'} className="!text-[10px] font-bold uppercase rounded-md py-0.5 px-2">
+                                            {record.status === 'OPEN' ? 'Pending' : 'Verified'}
+                                        </Tag>
+                                    )
+                                },
+                                {
+                                    title: 'Actions',
+                                    key: 'actions',
+                                    align: 'right',
+                                    render: (record) => (
+                                        <Space size={8}>
+                                            <button
+                                                className="px-3 py-1 bg-white border border-slate-200 text-slate-500 dark:text-slate-400 text-xs font-bold rounded-lg hover:bg-slate-50 transition-all"
+                                                onClick={() => { setSelectedItem(record); setActiveModal('BYOD_EXIT_DETAILS'); }}
+                                            >
+                                                Review
+                                            </button>
+                                            <button
+                                                className="px-3 py-1 bg-rose-600 text-slate-900 dark:text-white text-xs font-bold rounded-lg hover:bg-rose-500 transition-all"
+                                                onClick={async () => {
+                                                    if (confirm(`Confirm MDM unenrollment and data wipe for BYOD devices belonging to ${record.user_name || record.user_id}?`)) {
+                                                        await processExitByod(record.id);
+                                                    }
+                                                }}
+                                            >
+                                                De-register
+                                            </button>
+                                        </Space>
+                                    )
+                                }
+                            ]}
+                        />
+                        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-white/5">
+                            <Button type="link" className="text-xs font-bold text-indigo-600 hover:text-indigo-700 p-0 flex items-center gap-1">
+                                Show all compliance records <ArrowRight size={14} />
+                            </Button>
+                        </div>
+                    </Card>
+
+                    {/* Support Floating Action Button */}
+                    <div className="fixed bottom-8 right-8 z-40">
+                        <div className="w-12 h-12 bg-white dark:bg-slate-900 hover:bg-indigo-600 rounded-full shadow-2xl flex items-center justify-center group cursor-pointer transition-all">
+                            <Activity className="text-slate-900 dark:text-white group-hover:rotate-12 transition-transform" size={24} />
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+
+                    <SmartIdGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+                </Content>
+            </Layout>
+        </ConfigProvider>
     );
 }
+

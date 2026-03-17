@@ -4,16 +4,18 @@ Reference data endpoints for departments, locations, and other lookup data (Asyn
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import distinct
+from sqlalchemy import distinct, func
 from typing import List, Optional
 from pydantic import BaseModel
 from ..database.database import get_db
 from ..models.models import User, Asset
+from ..utils.auth_utils import get_current_user
 
 router = APIRouter(
     prefix="/reference",
     tags=["reference"]
 )
+
 
 
 class DepartmentResponse(BaseModel):
@@ -41,7 +43,7 @@ DEPARTMENTS = [
     "Administration",
     "Procurement",
     "Quality Assurance",
-    "Data & AI",
+    "DATA_AI",
     "Cloud Infrastructure",
     "Security",
     "Development",
@@ -69,7 +71,8 @@ LOCATIONS = [
 @router.get("/departments", response_model=List[DepartmentResponse])
 async def get_departments(
     include_counts: bool = False,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Get list of available departments.
@@ -94,30 +97,38 @@ async def get_departments(
 @router.get("/locations", response_model=List[LocationResponse])
 async def get_locations(
     include_counts: bool = False,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
     """
     Get list of available locations.
     Optionally include asset counts per location.
     """
-    locations = []
-    
     if include_counts:
-        # Get counts from database
+        # Optimized: Get all counts in a single query
+        result = await db.execute(
+            select(Asset.location, func.count(Asset.id))
+            .group_by(Asset.location)
+            .filter(Asset.location.isnot(None))
+        )
+        counts_dict = {row[0]: row[1] for row in result.all()}
+        
+        locations = []
         for loc in LOCATIONS:
-            result = await db.execute(
-                select(Asset).filter(Asset.location == loc)
-            )
-            assets = result.scalars().all()
-            locations.append(LocationResponse(name=loc, count=len(assets)))
-    else:
-        locations = [LocationResponse(name=loc) for loc in LOCATIONS]
+            locations.append(LocationResponse(
+                name=loc, 
+                count=counts_dict.get(loc, 0)
+            ))
+        return locations
     
-    return locations
+    return [LocationResponse(name=loc) for loc in LOCATIONS]
 
 
 @router.get("/departments/from-db", response_model=List[str])
-async def get_departments_from_db(db: AsyncSession = Depends(get_db)):
+async def get_departments_from_db(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get unique departments from actual user data.
     """
@@ -129,7 +140,10 @@ async def get_departments_from_db(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/locations/from-db", response_model=List[str])
-async def get_locations_from_db(db: AsyncSession = Depends(get_db)):
+async def get_locations_from_db(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
     """
     Get unique locations from actual asset data.
     """
@@ -141,7 +155,7 @@ async def get_locations_from_db(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/domains", response_model=List[str])
-async def get_domains():
+async def get_domains(current_user = Depends(get_current_user)):
     """
     Get list of available domains for END_USER role.
     """
@@ -154,7 +168,7 @@ async def get_domains():
 
 
 @router.get("/roles", response_model=List[dict])
-async def get_roles():
+async def get_roles(current_user = Depends(get_current_user)):
     """
     Get list of available user roles.
     """
@@ -162,16 +176,17 @@ async def get_roles():
         {"slug": "END_USER", "label": "End User", "description": "Regular employee"},
         {"slug": "IT_MANAGEMENT", "label": "IT Management", "description": "IT department management"},
         {"slug": "ASSET_MANAGER", "label": "Asset Manager", "description": "Asset inventory management"},
-        {"slug": "ASSET_INVENTORY_MANAGER", "label": "Inventory Manager", "description": "Stock and inventory control"},
-        {"slug": "PROCUREMENT_FINANCE", "label": "Procurement & Finance", "description": "Procurement and finance operations"},
+        {"slug": "ASSET_MANAGER", "label": "Inventory Manager", "description": "Stock and inventory control"},
+        {"slug": "PROCUREMENT", "label": "Procurement Manager", "description": "Procurement operations"},
+        {"slug": "FINANCE", "label": "Finance", "description": "Finance approvals and governance"},
         {"slug": "FINANCE", "label": "Finance", "description": "Finance department"},
         {"slug": "ADMIN", "label": "Administrator", "description": "System administrator"},
-        {"slug": "SYSTEM_ADMIN", "label": "System Admin", "description": "Full system access"},
+        {"slug": "ADMIN", "label": "System Admin", "description": "Full system access"},
     ]
 
 
 @router.get("/asset-types", response_model=List[str])
-async def get_asset_types():
+async def get_asset_types(current_user = Depends(get_current_user)):
     """
     Get list of available asset types.
     """
@@ -193,7 +208,7 @@ async def get_asset_types():
 
 
 @router.get("/asset-statuses", response_model=List[str])
-async def get_asset_statuses():
+async def get_asset_statuses(current_user = Depends(get_current_user)):
     """
     Get list of available asset statuses.
     """

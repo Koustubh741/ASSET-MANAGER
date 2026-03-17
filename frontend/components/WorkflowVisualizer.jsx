@@ -1,11 +1,11 @@
 import React from 'react';
-import { UserPlus, FileCheck, ShoppingCart, Truck, UserCheck, ArrowRight } from 'lucide-react';
+import { UserPlus, FileCheck, ShoppingCart, Truck, UserCheck, ArrowRight, ClipboardCheck, Cpu, CheckSquare, Package, Banknote } from 'lucide-react';
 
 const WorkflowVisualizer = () => {
     const steps = [
         {
             id: 1,
-            title: "Onboarding",
+            title: "Request",
             description: "Asset Request Initiated",
             icon: UserPlus,
             color: "blue",
@@ -13,35 +13,75 @@ const WorkflowVisualizer = () => {
         },
         {
             id: 2,
-            title: "Approval",
-            description: "Manager/IT Validation",
+            title: "Manager Approval",
+            description: "Initial Justification",
             icon: FileCheck,
             color: "purple",
             assigned: "Manager"
         },
         {
             id: 3,
-            title: "Procurement",
-            description: "PO Generation & Order",
-            icon: ShoppingCart,
-            color: "amber",
-            assigned: "Finance/Procurement"
+            title: "IT Review",
+            description: "Technical Specification",
+            icon: Cpu,
+            color: "indigo",
+            assigned: "IT Management"
         },
         {
             id: 4,
-            title: "Receiving",
-            description: "Asset Arrival & Tagging",
-            icon: Truck,
-            color: "indigo",
-            assigned: "IT Admin"
+            title: "Final Approval",
+            description: "Budget/Source Confirmation",
+            icon: CheckSquare,
+            color: "blue",
+            assigned: "Manager"
         },
         {
             id: 5,
-            title: "Assignment",
-            description: "Handover to User",
-            icon: UserCheck,
+            title: "Stock Check",
+            description: "Allocation or Purchase?",
+            icon: Package,
+            color: "amber",
+            assigned: "Inventory"
+        },
+        {
+            id: 6,
+            title: "Procurement",
+            description: "PO Creation & Ordering",
+            icon: ShoppingCart,
+            color: "orange",
+            assigned: "Procurement"
+        },
+        {
+            id: 7,
+            title: "Finance",
+            description: "Budget Validation",
+            icon: Banknote,
             color: "emerald",
-            assigned: "IT Support"
+            assigned: "Finance"
+        },
+        {
+            id: 8,
+            title: "Delivery",
+            description: "Logistic & Receiving",
+            icon: Truck,
+            color: "sky",
+            assigned: "Procurement"
+        },
+        {
+            id: 9,
+            title: "Quality",
+            description: "QC & Tagging",
+            icon: ClipboardCheck,
+            color: "teal",
+            assigned: "Inventory"
+        },
+        {
+            id: 10,
+            title: "Acceptance",
+            description: "Digital Receipt",
+            icon: UserCheck,
+            color: "cyan",
+            assigned: "End User"
         }
     ];
 
@@ -52,6 +92,10 @@ const WorkflowVisualizer = () => {
             amber: "bg-amber-500/20 text-amber-400 border-amber-500/30",
             indigo: "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
             emerald: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+            teal: "bg-teal-500/20 text-teal-400 border-teal-500/30",
+            orange: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+            sky: "bg-sky-500/20 text-sky-400 border-sky-500/30",
+            cyan: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
         };
         return colors[color] || colors.blue;
     };
@@ -60,18 +104,18 @@ const WorkflowVisualizer = () => {
         <div className="glass-panel p-8 w-full overflow-x-auto">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h3 className="text-xl font-bold text-white">Asset Management Lifecycle Steps</h3>
-                    <p className="text-slate-400 text-sm">Standard operational workflow for new assets</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Asset Management Lifecycle Steps</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Standard operational workflow for new assets</p>
                 </div>
                 <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium">
                     Active Workflow
                 </div>
             </div>
 
-            <div className="flex gap-6 items-start justify-between min-w-[800px] relative">
+            <div className="flex gap-6 items-start justify-between min-w-[1200px] relative">
 
                 {/* Flowing Line Animation */}
-                <div className="absolute top-[82px] left-10 right-10 h-1 bg-slate-800 z-0 rounded-full overflow-hidden">
+                <div className="absolute top-[82px] left-10 right-10 h-1 bg-slate-50 dark:bg-slate-800 z-0 rounded-full overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-flow-beam opacity-75"></div>
                 </div>
 
@@ -89,7 +133,7 @@ const WorkflowVisualizer = () => {
                     <div key={step.id} className="relative z-10 flex flex-col items-center flex-1 group">
 
                         {/* Step Label */}
-                        <span className="text-slate-500 text-xs font-bold tracking-widest uppercase mb-3 bg-slate-800/50 px-3 py-1 rounded-full border border-white/5">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs font-bold tracking-widest uppercase mb-3 bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-full border border-slate-200 dark:border-white/5">
                             Step {index + 1}
                         </span>
 
@@ -100,9 +144,9 @@ const WorkflowVisualizer = () => {
 
                         {/* Text Content */}
                         <div className="text-center space-y-2">
-                            <h4 className="text-white font-bold text-lg">{step.title}</h4>
-                            <p className="text-slate-500 text-[11px] uppercase font-bold tracking-wider">{step.assigned}</p>
-                            <p className="text-slate-400 text-xs max-w-[140px] leading-relaxed mx-auto">{step.description}</p>
+                            <h4 className="text-slate-900 dark:text-white font-bold text-lg">{step.title}</h4>
+                            <p className="text-slate-500 dark:text-slate-400 text-[11px] uppercase font-bold tracking-wider">{step.assigned}</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs max-w-[140px] leading-relaxed mx-auto">{step.description}</p>
                         </div>
                     </div>
                 ))}

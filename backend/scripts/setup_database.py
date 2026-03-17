@@ -1,4 +1,10 @@
-from database import engine
+import sys
+import os
+
+# Add root directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.database.database import engine, Base
 from sqlalchemy import text
 import models
 
@@ -20,7 +26,7 @@ def setup_database():
             
             print("\n=== CREATING TABLES ===\n")
             # Create all tables defined in models
-            models.Base.metadata.create_all(bind=engine)
+            Base.metadata.create_all(bind=engine)
             print("[OK] All tables created successfully!")
             
             print("\n=== VERIFICATION ===\n")

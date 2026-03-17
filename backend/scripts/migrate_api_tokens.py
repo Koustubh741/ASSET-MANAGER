@@ -7,7 +7,7 @@ import os
 # Add backend directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database import engine
+from app.database.database import engine
 from sqlalchemy import text
 
 def migrate():

@@ -19,7 +19,7 @@ export default function AllTicketsPage() {
         const loadTickets = async () => {
             try {
                 const apiTickets = await apiClient.getTickets();
-                
+
                 // Map API tickets to frontend format
                 const mappedTickets = apiTickets.map(t => ({
                     id: t.id,
@@ -42,21 +42,21 @@ export default function AllTicketsPage() {
     }, []);
 
     return (
-        <div className="min-h-screen p-8 bg-slate-950 text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
             <div className="max-w-7xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <Link href="/tickets" className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                    <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
                         <ArrowLeft size={24} />
-                    </Link>
+                    </button>
 
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">
                         {filterStatus === 'All' ? 'All Tickets' : `${filterStatus} Tickets`}
                     </h1>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl bg-white/5 border border-white/10">
+                <div className="glass-panel p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
                     <table className="w-full text-left text-sm">
-                        <thead className="text-slate-400 uppercase font-medium text-xs border-b border-white/10">
+                        <thead className="text-slate-500 dark:text-slate-400 uppercase font-medium text-xs border-b border-slate-200 dark:border-white/10">
                             <tr>
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Subject</th>
@@ -66,7 +66,7 @@ export default function AllTicketsPage() {
                                 <th className="px-6 py-4 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                             {tickets
                                 .filter(t => {
                                     if (filterStatus === 'All') return true;
@@ -77,24 +77,44 @@ export default function AllTicketsPage() {
                                     return s === fs;
                                 })
                                 .map(t => (
-                                    <tr key={t.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-slate-400">{t.id}</td>
-                                        <td className="px-6 py-4 font-medium text-slate-200">{t.subject}</td>
+                                    <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-400 truncate max-w-[100px]">{String(t.id).slice(0, 8)}…</td>
+                                        <td className="px-6 py-4 font-medium text-slate-800 dark:text-slate-200">{t.subject}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${t.priority === 'High' ? 'bg-red-500/10 text-red-400' :
-                                                t.priority === 'Medium' ? 'bg-orange-500/10 text-orange-400' :
-                                                    'bg-blue-500/10 text-blue-400'
+                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${t.priority === 'High' || t.priority === 'CRITICAL' ? 'bg-red-500/10 text-red-500' :
+                                                t.priority === 'Medium' || t.priority === 'MEDIUM' ? 'bg-orange-500/10 text-orange-500' :
+                                                    'bg-blue-500/10 text-blue-500'
                                                 }`}>
                                                 {t.priority}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-300">{t.status}</td>
-                                        <td className="px-6 py-4 text-slate-400">{t.user}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                ['OPEN', 'IN_PROGRESS'].includes(t.status?.toUpperCase()) ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' :
+                                                ['RESOLVED', 'CLOSED'].includes(t.status?.toUpperCase()) ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                                                'bg-slate-500/10 text-slate-500'
+                                            }`}>{t.status}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm truncate">{t.user}</td>
                                         <td className="px-6 py-4 text-right">
-                                            <Link href={`/tickets/${t.id}`} className="text-rose-400 hover:text-rose-300 font-medium">View</Link>
+                                            <Link href={`/tickets/${t.id}`} className="text-rose-500 hover:text-rose-400 font-medium text-sm">View →</Link>
                                         </td>
                                     </tr>
                                 ))}
+                            {tickets.filter(t => {
+                                if (filterStatus === 'All') return true;
+                                const s = t.status?.toUpperCase();
+                                const fs = filterStatus.toUpperCase();
+                                if (fs === 'OPEN') return s === 'OPEN' || s === 'IN_PROGRESS';
+                                if (fs === 'CLOSED') return s === 'CLOSED' || s === 'RESOLVED';
+                                return s === fs;
+                            }).length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500 text-sm">
+                                        No tickets found for <strong>{filterStatus}</strong> filter.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

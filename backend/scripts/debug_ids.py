@@ -1,6 +1,6 @@
 
-from database import SessionLocal
-from models import AssetRequest, User
+from app.database.database import SessionLocal
+from app.models.models import AssetRequest, User
 
 def check_ids():
     db = SessionLocal()
