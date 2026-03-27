@@ -12,6 +12,9 @@ class SystemPatchBase(BaseModel):
     patch_type: str = "Security"
     platform: str
     release_date: Optional[datetime] = None
+    kb_article_id: Optional[str] = None
+    binary_url: Optional[str] = None
+    is_custom: bool = False
 
 
 class SystemPatchCreate(SystemPatchBase):
@@ -19,6 +22,7 @@ class SystemPatchCreate(SystemPatchBase):
     cvss_score: Optional[float] = None
     kb_article_url: Optional[str] = None
     vendor_advisory: Optional[str] = None
+    superseded_by_id: Optional[UUID] = None
 
 
 class SystemPatchResponse(SystemPatchBase):
@@ -28,6 +32,7 @@ class SystemPatchResponse(SystemPatchBase):
     cvss_score: Optional[float] = None
     kb_article_url: Optional[str] = None
     vendor_advisory: Optional[str] = None
+    superseded_by_id: Optional[UUID] = None
 
     class Config:
         from_attributes = True
@@ -78,6 +83,8 @@ class PatchScheduleResponse(BaseModel):
     scheduled_at: datetime
     created_by: UUID
     status: str
+    window_start: Optional[datetime] = None
+    window_end: Optional[datetime] = None
     created_at: datetime
     executed_at: Optional[datetime] = None
     error_message: Optional[str] = None
@@ -110,3 +117,41 @@ class PatchBulkDeployResponse(BaseModel):
     queued_count: int
     skipped_count: int
     message: str
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ENTERPRISE JOB & LOG SCHEMAS (Phase 1)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class PatchDeploymentJobCreate(BaseModel):
+    patch_id: UUID
+    target_criteria: dict # e.g. {"group": "Servers"}
+
+class PatchDeploymentJobResponse(BaseModel):
+    id: UUID
+    patch_id: UUID
+    patch_title: Optional[str] = None
+    created_by: UUID
+    target_criteria: dict
+    total_assets: int
+    completed_assets: int
+    failed_assets: int
+    status: str
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class PatchLogResponse(BaseModel):
+    id: UUID
+    deployment_id: UUID
+    asset_id: UUID
+    level: str
+    message: str
+    stdout: Optional[str] = None
+    stderr: Optional[str] = None
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True

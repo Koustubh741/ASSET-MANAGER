@@ -1,5 +1,7 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends, Request
 from fastapi.responses import FileResponse
+from typing import Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 import pandas as pd
@@ -9,13 +11,11 @@ import uuid
 import shutil
 import re
 from ..database.database import get_db
-from ..models.models import PurchaseOrder, AssetRequest, User
+from ..models.models import PurchaseOrder, AssetRequest, User, SystemPatch, AuditLog, Department, Asset
 from ..services import asset_service, asset_request_service, procurement_service, user_service
 from ..schemas import asset_schema, asset_request_schema, procurement_schema, user_schema
-from ..database.database import get_db
-from ..models.models import PurchaseOrder, AssetRequest
-from ..utils.auth_utils import get_current_user
-from datetime import datetime
+from ..utils.auth_utils import get_current_user, STAFF_ROLES
+from datetime import datetime, timezone
 from uuid import UUID
 
 router = APIRouter(
@@ -23,7 +23,7 @@ router = APIRouter(
     tags=["upload"]
 )
 
-STAFF_ROLES = {"ADMIN", "PROCUREMENT", "ASSET_MANAGER", "FINANCE", "IT_MANAGEMENT"}
+# STAFF_ROLES imported above
 
 @router.post("/smart")
 async def smart_upload(
@@ -363,3 +363,96 @@ async def get_view_po(
         media_type='application/pdf', 
         filename=os.path.basename(po.po_pdf_path)
     )
+
+@router.post("/patch/{patch_id}")
+async def upload_patch_binary(
+    patch_id: UUID,
+    request: Request,
+    file: Optional[UploadFile] = File(None),
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Upload a binary file for a custom/offline patch.
+    """
+    if current_user.role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    # 1. Verify patch existence
+    result = await db.execute(select(SystemPatch).filter(SystemPatch.id == patch_id))
+    patch = result.scalars().first()
+    if not patch:
+        raise HTTPException(status_code=404, detail="System Patch not found")
+
+    # 2. Ensure directory (Dedicated patches folder, outside procurement)
+    patch_dir = "uploads/patches"
+    os.makedirs(patch_dir, exist_ok=True)
+
+    # 3. Save file (Support both Multipart and Raw Body)
+    file_id = str(uuid.uuid4())[:8]
+    
+    if file and file.filename:
+        # Standard Multipart
+        target_filename = f"patch_{patch_id}_{file_id}_{file.filename}"
+        file_path = os.path.join(patch_dir, target_filename)
+        with open(file_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        original_filename = file.filename
+        file_size = file.size if hasattr(file, 'size') else 0
+    else:
+        # Raw Binary Body (Curl --data-binary)
+        content_type = request.headers.get("content-type", "")
+        if "multipart" in content_type:
+             raise HTTPException(status_code=400, detail="Multipart file missing in request")
+        
+        target_filename = f"patch_{patch_id}_{file_id}_raw.bin"
+        file_path = os.path.join(patch_dir, target_filename)
+        body = await request.body()
+        if not body:
+            raise HTTPException(status_code=400, detail="No file data provided in multipart or raw body")
+        
+        with open(file_path, "wb") as f:
+            f.write(body)
+        original_filename = "raw_binary_upload"
+        file_size = len(body)
+
+    # 4. Update Patch metadata
+    patch.binary_url = f"/api/v1/upload/patch/download/{target_filename}"
+    patch.is_custom = True
+    
+    # Audit Log
+    audit = AuditLog(
+        id=uuid.uuid4(),
+        action="PATCH_BINARY_UPLOAD",
+        entity_type="SystemPatch",
+        entity_id=str(patch_id),
+        performed_by=current_user.id,
+        timestamp=datetime.now(timezone.utc),
+        details={"filename": original_filename, "size": file_size}
+    )
+    db.add(audit)
+    
+    await db.commit()
+    await db.refresh(patch)
+    
+    return {
+        "status": "success",
+        "message": "Patch binary uploaded successfully",
+        "patch_id": str(patch_id),
+        "binary_url": patch.binary_url
+    }
+
+@router.get("/patch/download/{filename}")
+async def download_patch_binary(
+    filename: str,
+    db: AsyncSession = Depends(get_db)
+    # Note: Agent download might need a token, but for now we'll allow it or use the agent secret
+):
+    """Serve the binary patch file."""
+    patch_dir = "uploads/patches"
+    file_path = os.path.join(patch_dir, filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Patch file not found")
+        
+    return FileResponse(file_path, filename=filename)

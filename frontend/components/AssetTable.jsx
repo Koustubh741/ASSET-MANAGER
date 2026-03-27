@@ -11,16 +11,16 @@ export default function AssetTable({ assets }) {
             case 'Active': return 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20' // Treat Active as In Use
             case 'In Stock': return 'bg-blue-500/10 text-blue-400 ring-blue-500/20'
             case 'Repair': return 'bg-orange-500/10 text-orange-400 ring-orange-500/20'
-            case 'Retired': return 'bg-slate-500/10 text-slate-500 dark:text-slate-400 ring-slate-500/20'
+            case 'Retired': return 'bg-slate-500/10 text-app-text-muted ring-slate-500/20'
             case 'Discovered': return 'bg-purple-500/10 text-purple-400 ring-purple-500/20'
-            default: return 'bg-slate-500/10 text-slate-500 dark:text-slate-400 ring-slate-500/20'
+            default: return 'bg-slate-500/10 text-app-text-muted ring-slate-500/20'
         }
     }
 
     return (
-        <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 shadow-xl backdrop-blur-sm bg-white dark:bg-white/5">
+        <div className="overflow-hidden rounded-xl border border-app-border shadow-xl backdrop-blur-sm bg-white bg-app-surface-soft">
             <table className="w-full text-left text-sm">
-                <thead className="bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 bg-slate-100 text-slate-500 dark:text-slate-400 font-medium border-b border-slate-200 dark:border-white/5 uppercase tracking-wider text-xs">
+                <thead className="bg-app-surface-soft text-app-text-muted bg-slate-100 text-app-text-muted font-medium border-b border-app-border uppercase tracking-wider text-xs">
                     <tr>
                         <th className="px-6 py-4">Asset Name</th>
                         <th className="px-6 py-4">OEM Name</th>
@@ -39,9 +39,9 @@ export default function AssetTable({ assets }) {
                     {safeAssets.map((asset, index) => {
                         const assetId = asset?.id ?? asset?.serial_number ?? `asset-${index}`;
                         return (
-                            <tr key={assetId} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-50 transition-colors duration-200">
+                            <tr key={assetId} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50 transition-colors duration-200">
                                 <td className="px-6 py-4">
-                                    <div className="font-semibold text-slate-900 dark:text-slate-800 dark:text-slate-100">{asset?.name ?? 'Unnamed'}</div>
+                                    <div className="font-semibold text-slate-900 dark:text-slate-800 text-app-text">{asset?.name ?? 'Unnamed'}</div>
                                 </td>
                                 <td className="px-6 py-4 text-slate-700 dark:text-slate-700 font-medium">
                                     {asset?.vendor || 'Unknown'}
@@ -68,10 +68,10 @@ export default function AssetTable({ assets }) {
                                         </span>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 text-slate-700 dark:text-slate-300 font-mono">
+                                <td className="px-6 py-4 text-app-text-muted font-mono">
                                     ₹{asset.cost ? asset.cost.toLocaleString() : '0'}
                                 </td>
-                                <td className="px-6 py-4 text-slate-700 dark:text-slate-300">
+                                <td className="px-6 py-4 text-app-text-muted">
                                     <div className="flex items-center space-x-2">
                                         <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs text-indigo-300 border border-indigo-500/30">
                                             {asset.assigned_to?.charAt(0).toUpperCase() || 'A'}
@@ -85,10 +85,10 @@ export default function AssetTable({ assets }) {
                                 <td className="px-6 py-4 text-slate-700 dark:text-slate-700 text-xs">{asset.location}</td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end space-x-1">
-                                        <Link href={`/assets/${assetId}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 hover:bg-slate-100 rounded-lg text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-blue-300 hover:text-blue-600 transition-colors">
+                                        <Link href={`/assets/${assetId}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 rounded-lg text-app-text-muted text-app-text-muted hover:text-blue-300 hover:text-blue-600 transition-colors">
                                             <Eye size={16} />
                                         </Link>
-                                        <Link href={`/assets/${assetId}?edit=true`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 hover:bg-slate-100 rounded-lg text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-emerald-300 hover:text-emerald-600 transition-colors">
+                                        <Link href={`/assets/${assetId}?edit=true`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 rounded-lg text-app-text-muted text-app-text-muted hover:text-emerald-300 hover:text-emerald-600 transition-colors">
                                             <Edit size={16} />
                                         </Link>
                                     </div>

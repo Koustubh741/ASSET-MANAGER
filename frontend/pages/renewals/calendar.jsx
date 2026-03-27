@@ -74,7 +74,7 @@ export default function RenewalsCalendarPage() {
     const selectedDayEvents = getDayEvents(selectedDate);
 
     return (
-        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-app-text">
             <Head>
                 <title>Renewals Calendar | Asset Management</title>
             </Head>
@@ -82,29 +82,29 @@ export default function RenewalsCalendarPage() {
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
                         <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-sky-400 bg-clip-text text-transparent">Renewals Calendar</h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1">Track contract and warranty expirations</p>
+                        <p className="text-app-text-muted mt-1">Track contract and warranty expirations</p>
                     </div>
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Calendar Grid */}
-                    <div className="flex-1 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10">
+                    <div className="flex-1 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-app-border">
                         {/* Month Nav */}
                         <div className="flex justify-between items-center mb-8">
-                            <button onClick={prevMonth} className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 rounded-full"><ChevronLeft /></button>
+                            <button onClick={prevMonth} className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-full"><ChevronLeft /></button>
                             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-200">
                                 {format(currentMonth, "MMMM yyyy")}
                             </h2>
-                            <button onClick={nextMonth} className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 rounded-full"><ChevronRight /></button>
+                            <button onClick={nextMonth} className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-full"><ChevronRight /></button>
                         </div>
 
                         {/* Days Header */}
-                        <div className="grid grid-cols-7 mb-4 text-center text-slate-500 dark:text-slate-400 text-sm font-medium uppercase tracking-wider">
+                        <div className="grid grid-cols-7 mb-4 text-center text-app-text-muted text-sm font-medium uppercase tracking-wider">
                             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d}>{d}</div>)}
                         </div>
 
@@ -119,12 +119,12 @@ export default function RenewalsCalendarPage() {
                                     <div
                                         key={i}
                                         onClick={() => setSelectedDate(day)}
-                                        className={`min-h-[100px] p-2 rounded-xl border border-slate-200 dark:border-white/5 transition-all cursor-pointer relative
+                                        className={`min-h-[100px] p-2 rounded-xl border border-app-border transition-all cursor-pointer relative
                                             ${!isCurrentMonth ? 'opacity-30 bg-slate-100 dark:bg-slate-950' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800'}
                                             ${isSelected ? 'ring-2 ring-emerald-500/50 bg-emerald-900/10' : ''}
                                         `}
                                     >
-                                        <span className={`text-sm font-medium ${isSelected ? 'text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        <span className={`text-sm font-medium ${isSelected ? 'text-emerald-400' : 'text-app-text-muted'}`}>
                                             {format(day, dateFormat)}
                                         </span>
 
@@ -136,7 +136,7 @@ export default function RenewalsCalendarPage() {
                                                 return <div key={idx} className={`h-1.5 rounded-full w-full ${bgColor}`} />;
                                             })}
                                             {dayEvents.length > 3 && (
-                                                <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center">+{dayEvents.length - 3} more</div>
+                                                <div className="text-[10px] text-app-text-muted text-center">+{dayEvents.length - 3} more</div>
                                             )}
                                         </div>
                                     </div>
@@ -146,14 +146,14 @@ export default function RenewalsCalendarPage() {
                     </div>
 
                     {/* Details Sidebar */}
-                    <div className="w-full lg:w-96 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 h-fit">
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 border-b border-slate-200 dark:border-white/10 pb-4">
+                    <div className="w-full lg:w-96 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-app-border h-fit">
+                        <h3 className="text-lg font-semibold text-app-text mb-4 border-b border-app-border pb-4">
                             Events for {format(selectedDate, "MMM d, yyyy")}
                         </h3>
 
                         <div className="space-y-4">
                             {selectedDayEvents.length > 0 ? selectedDayEvents.map((e, i) => (
-                                <div key={i} className="flex gap-4 p-4 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 hover:border-slate-200 dark:border-white/10 transition-colors">
+                                <div key={i} className="flex gap-4 p-4 rounded-xl bg-app-surface-soft border border-app-border hover:border-app-border transition-colors">
                                     <div className={`mt-1 
                                         ${e.type === 'Warranty' ? 'text-orange-400' : 
                                           e.type === 'License' ? 'text-purple-400' : 'text-blue-400'}`}>
@@ -162,7 +162,7 @@ export default function RenewalsCalendarPage() {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-slate-900 dark:text-slate-200">{e.title}</h4>
-                                        <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">{e.asset}</div>
+                                        <div className="text-sm text-app-text-muted mt-1">{e.asset}</div>
                                         <div className={`text-xs mt-2 inline-block px-2 py-0.5 rounded 
                                             ${e.type === 'Warranty' ? 'bg-orange-500/10 text-orange-400' : 
                                               e.type === 'License' ? 'bg-purple-500/10 text-purple-400' : 'bg-blue-500/10 text-blue-400'}`}>
@@ -171,7 +171,7 @@ export default function RenewalsCalendarPage() {
                                     </div>
                                 </div>
                             )) : (
-                                <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+                                <div className="text-center py-12 text-app-text-muted">
                                     <p>No renewals scheduled for this date.</p>
                                 </div>
                             )}

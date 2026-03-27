@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database.database import engine, Base
 from sqlalchemy import text
-import models
+from app.models import models
 
 def setup_database():
     """Create all necessary schemas and tables"""

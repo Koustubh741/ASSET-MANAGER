@@ -1,21 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { X, Send, Bot, Sparkles, Lock, Zap } from 'lucide-react';
-import { initialMockAssets } from '@/data/mockAssets';
 import apiClient from '@/lib/apiClient';
 import { useRole } from '@/contexts/RoleContext';
+import { useAssetContext } from '@/contexts/AssetContext';
 
 export default function AIAssistantSidebar({ isOpen, onClose }) {
     const { user } = useRole();
+    const { assets: contextAssets } = useAssetContext();
     const plan = user?.plan || 'STARTER';
     const [aiUsage, setAiUsage] = useState(null);
     const [usageLoading, setUsageLoading] = useState(false);
-    const [messages, setMessages] = useState([
-        { role: 'assistant', text: 'Hello! I am your AI Asset Assistant. I can help you find assets, check warranties, or analyze spending. How can I help you today?' }
-    ]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
+
+    const welcomeMessage = { role: 'assistant', text: 'Hello! I am your AI Asset Assistant. I can help you find assets, check warranties, or analyze spending. How can I help you today?' };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -27,11 +29,25 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
 
     useEffect(() => {
         if (isOpen) {
+            // Load Usage
             setUsageLoading(true);
             apiClient.getAIUsage()
                 .then((data) => setAiUsage(data))
                 .catch(() => setAiUsage({ plan: plan, queriesUsed: 0, queriesLimit: null }))
                 .finally(() => setUsageLoading(false));
+
+            // Load Chat History
+            setHistoryLoading(true);
+            apiClient.getChatHistory()
+                .then((history) => {
+                    const mappedHistory = history.map(h => ({ role: h.role, text: h.content || h.text }));
+                    setMessages(mappedHistory.length > 0 ? mappedHistory : [welcomeMessage]);
+                })
+                .catch((err) => {
+                    console.error("Failed to load chat history", err);
+                    setMessages([welcomeMessage]);
+                })
+                .finally(() => setHistoryLoading(false));
         }
     }, [isOpen, plan]);
 
@@ -85,13 +101,26 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
         if (!input.trim()) return;
 
         const userMsg = input;
-        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+        
+        // Optimistic UI update
+        const newUserMessage = { role: 'user', text: userMsg };
+        setMessages(prev => [...prev, newUserMessage]);
         setInput('');
         setIsTyping(true);
 
         try {
+            // Persist User Message
+            await apiClient.saveChatMessage('user', userMsg);
+
+            // Get AI response
             const data = await apiClient.postAIChat(userMsg);
-            setMessages(prev => [...prev, { role: 'assistant', text: data.response || 'No response received.' }]);
+            const assistantMsg = data.response || 'No response received.';
+            
+            // Persist AI Response
+            await apiClient.saveChatMessage('assistant', assistantMsg);
+
+            setMessages(prev => [...prev, { role: 'assistant', text: assistantMsg }]);
+            
             if (aiUsage && aiUsage.queriesLimit != null) {
                 setAiUsage(prev => ({ ...prev, queriesUsed: (prev?.queriesUsed || 0) + 1 }));
             }
@@ -104,10 +133,15 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
             } else {
                 const useFallback = msg.includes('503') || msg.toLowerCase().includes('temporarily unavailable');
                 if (useFallback) {
-                    const savedAssets = localStorage.getItem('assets');
-                    const assets = (savedAssets ? JSON.parse(savedAssets) : []).length ? JSON.parse(savedAssets) : initialMockAssets;
+                    const assets = contextAssets && contextAssets.length ? contextAssets : [];
                     const fallback = getFallbackResponse(userMsg, assets);
-                    setMessages(prev => [...prev, { role: 'assistant', text: `AI is temporarily unavailable. ${fallback}` }]);
+                    const fallbackMsg = `AI is temporarily unavailable. ${fallback}`;
+                    
+                    // Optional: Save fallback message too? 
+                    // No, usually better to keep it ephemeral or just save it. Let's save it.
+                    apiClient.saveChatMessage('assistant', fallbackMsg).catch(() => {});
+                    
+                    setMessages(prev => [...prev, { role: 'assistant', text: fallbackMsg }]);
                 } else {
                     setMessages(prev => [...prev, { role: 'assistant', text: `Sorry, I couldn't process that. ${msg || 'Please try again.'}` }]);
                 }
@@ -123,22 +157,22 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                 className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={onClose}
             />
-            <div className={`fixed inset-y-0 right-0 w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-white/10 shadow-2xl z-50 transform transition-transform duration-300 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed inset-y-0 right-0 w-96 bg-white dark:bg-slate-900 border-l border-app-border shadow-2xl z-50 transform transition-transform duration-300 flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 {/* Header */}
-                <div className="p-4 border-b border-slate-200 dark:border-white/10 bg-gradient-to-r from-blue-900/20 to-purple-900/20 from-blue-50 to-purple-50 flex justify-between items-center">
+                <div className="p-4 border-b border-app-border bg-gradient-to-r from-blue-900/20 to-purple-900/20 from-blue-50 to-purple-50 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-500/30">
                             <Bot size={20} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-900 dark:text-white">AI Assistant</h3>
+                            <h3 className="font-bold text-app-text">AI Assistant</h3>
                             <div className="flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400">Online</span>
+                                <span className="text-xs text-app-text-muted text-app-text-muted">Online</span>
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-100 rounded-lg">
+                    <button onClick={onClose} className="p-2 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 rounded-lg">
                         <X size={20} />
                     </button>
                 </div>
@@ -161,13 +195,13 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                                 <div className="p-4 rounded-full bg-amber-500/20 border border-amber-500/30 mb-4">
                                     <Lock size={32} className="text-amber-400" />
                                 </div>
-                                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">AI Assistant</h4>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 max-w-[240px]">
+                                <h4 className="text-lg font-bold text-app-text mb-2">AI Assistant</h4>
+                                <p className="text-sm text-app-text-muted mb-6 max-w-[240px]">
                                     Upgrade to Professional or Business to unlock the AI Assistant.
                                 </p>
                                 <Link
                                     href="/pricing"
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-slate-900 dark:text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-app-text font-semibold text-sm hover:opacity-90 transition-opacity"
                                 >
                                     <Zap size={16} /> View Plans
                                 </Link>
@@ -177,13 +211,13 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                                 <div className="p-4 rounded-full bg-rose-500/20 border border-rose-500/30 mb-4">
                                     <Lock size={32} className="text-rose-400" />
                                 </div>
-                                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Quota Exceeded</h4>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-6 max-w-[240px]">
+                                <h4 className="text-lg font-bold text-app-text mb-2">Quota Exceeded</h4>
+                                <p className="text-sm text-app-text-muted text-app-text-muted mb-6 max-w-[240px]">
                                     You have used all {aiUsage?.queriesLimit ?? 3000} AI queries this month. Upgrade to Business for unlimited access.
                                 </p>
                                 <Link
                                     href="/pricing"
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-slate-900 dark:text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-app-text font-semibold text-sm hover:opacity-90 transition-opacity"
                                 >
                                     <Zap size={16} /> Upgrade
                                 </Link>
@@ -198,8 +232,8 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                     {messages.map((m, i) => (
                         <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[85%] rounded-2xl p-4 ${m.role === 'user'
-                                ? 'bg-blue-600 text-slate-900 dark:text-white rounded-br-none'
-                                : 'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 bg-slate-100 border-slate-200 text-slate-900 dark:text-slate-200 rounded-bl-none'
+                                ? 'bg-blue-600 text-app-text rounded-br-none'
+                                : 'bg-app-surface-soft border border-app-border bg-slate-100 border-slate-200 text-slate-900 dark:text-slate-200 rounded-bl-none'
                                 }`}>
                                 <p className="text-sm leading-relaxed">{m.text}</p>
                             </div>
@@ -207,7 +241,7 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                     ))}
                     {isTyping && (
                         <div className="flex justify-start">
-                            <div className="bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 bg-slate-100 border-slate-200 rounded-2xl rounded-bl-none p-4 flex gap-1">
+                            <div className="bg-app-surface-soft border border-app-border bg-slate-100 border-slate-200 rounded-2xl rounded-bl-none p-4 flex gap-1">
                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -220,25 +254,25 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
 
                 {/* Input */}
                 {canUseAI && (
-                <div className="p-4 border-t border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-900/50">
+                <div className="p-4 border-t border-app-border bg-slate-100 dark:bg-slate-900/50">
                     <form onSubmit={handleSend} className="relative">
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask about assets, warranties..."
-                            className="w-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-white/10 bg-white border-slate-300 text-slate-900 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none text-slate-900 dark:text-white shadow-sm dark:shadow-inner"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none text-app-text shadow-sm dark:shadow-inner"
                         />
                         <button
                             type="submit"
                             disabled={!input.trim() || isTyping}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-slate-900 dark:text-white rounded-lg hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-app-text rounded-lg hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
                         >
                             <Send size={16} />
                         </button>
                     </form>
                     <div className="mt-2 text-center">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+                        <span className="text-[10px] text-app-text-muted flex items-center justify-center gap-1">
                             <Sparkles size={8} /> Powered by Enterprise AI
                             {aiUsage?.queriesLimit != null && (
                                 <span className="ml-1">({aiUsage.queriesUsed}/{aiUsage.queriesLimit} this month)</span>

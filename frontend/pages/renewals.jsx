@@ -13,14 +13,14 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
         <div className="fixed inset-0 z-50 flex justify-end">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-            <div className="relative w-full max-w-md bg-[#0f172a] border-l border-slate-200 dark:border-white/10 shadow-2xl h-full overflow-y-auto transform transition-transform duration-300 ease-out">
+            <div className="relative w-full max-w-md bg-[#0f172a] border-l border-app-border shadow-2xl h-full overflow-y-auto transform transition-transform duration-300 ease-out">
                 {/* Header */}
-                <div className="p-6 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 flex justify-between items-start">
+                <div className="p-6 border-b border-app-border bg-white dark:bg-slate-900/50 flex justify-between items-start">
                     <div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">Renewal Details</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">ID: {renewal.renewal_id}</p>
+                        <h3 className="text-xl font-bold text-app-text">Renewal Details</h3>
+                        <p className="text-sm text-app-text-muted mt-1">ID: {renewal.renewal_id}</p>
                     </div>
-                    <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <button onClick={onClose} className="text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                         <XCircle size={24} />
                     </button>
                 </div>
@@ -29,7 +29,7 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
                 <div className="p-6 space-y-6">
                     {/* Status Badge */}
                     <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wide font-semibold">Current Status</span>
+                        <span className="text-sm text-app-text-muted uppercase tracking-wide font-semibold">Current Status</span>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold border ${renewal.renewal_status === 'Requested' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
                             renewal.renewal_status === 'IT_Approved' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                 renewal.renewal_status === 'Finance_Approved' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
@@ -42,85 +42,85 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
 
                     {/* Key Info Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-white/5">
-                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-app-border">
+                            <div className="flex items-center gap-2 text-app-text-muted mb-2">
                                 <DollarSign size={16} />
                                 <span className="text-xs font-medium uppercase">Cost</span>
                             </div>
-                            <div className="text-lg font-mono text-slate-900 dark:text-white">₹{renewal.renewal_cost?.toLocaleString()}</div>
+                            <div className="text-lg font-mono text-app-text">₹{renewal.renewal_cost?.toLocaleString()}</div>
                         </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-white/5">
-                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-app-border">
+                            <div className="flex items-center gap-2 text-app-text-muted mb-2">
                                 <Calendar size={16} />
                                 <span className="text-xs font-medium uppercase">Period</span>
                             </div>
-                            <div className="text-sm text-slate-900 dark:text-white">1 Year (Annual)</div>
+                            <div className="text-sm text-app-text">1 Year (Annual)</div>
                         </div>
                     </div>
 
                     {/* Details List */}
                     <div className="space-y-4">
-                        <div className="pb-4 border-b border-slate-200 dark:border-white/5">
-                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="pb-4 border-b border-app-border">
+                            <h4 className="text-sm font-semibold text-app-text mb-3 flex items-center gap-2">
                                 <FileText size={16} className="text-blue-400" /> Request Information
                             </h4>
                             <div className="space-y-3">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">Asset Name:</span>
+                                    <span className="text-app-text-muted">Asset Name:</span>
                                     <span className="text-slate-900 dark:text-slate-200 font-medium text-right">{renewal.name}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">Renewal Type:</span>
+                                    <span className="text-app-text-muted">Renewal Type:</span>
                                     <span className="text-slate-900 dark:text-slate-200">Warranty Extension</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">Requested By:</span>
+                                    <span className="text-app-text-muted">Requested By:</span>
                                     <span className="text-slate-900 dark:text-slate-200">{renewal.assigned_to || 'System Admin'}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">Requested Date:</span>
+                                    <span className="text-app-text-muted">Requested Date:</span>
                                     <span className="text-slate-900 dark:text-slate-200">{new Date().toLocaleDateString()}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pb-4 border-b border-slate-200 dark:border-white/5">
-                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                        <div className="pb-4 border-b border-app-border">
+                            <h4 className="text-sm font-semibold text-app-text mb-3 flex items-center gap-2">
                                 <Building size={16} className="text-purple-400" /> Vendor Details
                             </h4>
                             <div className="space-y-3">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">Vendor:</span>
+                                    <span className="text-app-text-muted">Vendor:</span>
                                     <span className="text-slate-900 dark:text-slate-200">TechCare Solutions Ltd.</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">SLA Level:</span>
+                                    <span className="text-app-text-muted">SLA Level:</span>
                                     <span className="text-slate-900 dark:text-slate-200">Gold (24/7 Support)</span>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <h4 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Approval History</h4>
-                            <div className="relative pl-4 border-l-2 border-slate-200 dark:border-white/10 space-y-6">
+                            <h4 className="text-sm font-semibold text-app-text mb-3">Approval History</h4>
+                            <div className="relative pl-4 border-l-2 border-app-border space-y-6">
                                 {/* Timeline items */}
                                 <div className="relative">
                                     <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-emerald-500"></div>
-                                    <p className="text-sm text-slate-900 dark:text-white font-medium">Request Submitted</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">Auto-generated by System</p>
+                                    <p className="text-sm text-app-text font-medium">Request Submitted</p>
+                                    <p className="text-xs text-app-text-muted">Auto-generated by System</p>
                                 </div>
                                 {['IT_Approved', 'Finance_Approved', 'Commercial_Approved'].includes(renewal.renewal_status) && (
                                     <div className="relative">
                                         <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-blue-500"></div>
-                                        <p className="text-sm text-slate-900 dark:text-white font-medium">IT Verified</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Approved by IT Manager</p>
+                                        <p className="text-sm text-app-text font-medium">IT Verified</p>
+                                        <p className="text-xs text-app-text-muted">Approved by IT Manager</p>
                                     </div>
                                 )}
                                 {['Finance_Approved', 'Commercial_Approved'].includes(renewal.renewal_status) && (
                                     <div className="relative">
                                         <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full bg-purple-500"></div>
-                                        <p className="text-sm text-slate-900 dark:text-white font-medium">Finance Approved</p>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Approved by CFO</p>
+                                        <p className="text-sm text-app-text font-medium">Finance Approved</p>
+                                        <p className="text-xs text-app-text-muted">Approved by CFO</p>
                                     </div>
                                 )}
                             </div>
@@ -140,14 +140,14 @@ const RejectModal = ({ isOpen, onClose, onConfirm }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
-            <div className="relative bg-[#1e293b] rounded-2xl w-full max-w-md border border-slate-200 dark:border-white/10 p-6 shadow-2xl">
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Reject Renewal Request</h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">Please provide a reason for rejecting this renewal. This will be logged in the audit trail.</p>
+            <div className="relative bg-[#1e293b] rounded-2xl w-full max-w-md border border-app-border p-6 shadow-2xl">
+                <h3 className="text-xl font-bold text-app-text mb-2">Reject Renewal Request</h3>
+                <p className="text-app-text-muted text-sm mb-4">Please provide a reason for rejecting this renewal. This will be logged in the audit trail.</p>
 
                 <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full bg-black/30 border border-slate-200 dark:border-white/10 rounded-lg p-3 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-red-500/50 h-32 resize-none"
+                    className="w-full bg-black/30 border border-app-border rounded-lg p-3 text-app-text text-sm focus:outline-none focus:border-red-500/50 h-32 resize-none"
                     placeholder="Enter rejection reason..."
                     autoFocus
                 />
@@ -157,7 +157,7 @@ const RejectModal = ({ isOpen, onClose, onConfirm }) => {
                     <button
                         onClick={() => onConfirm(reason)}
                         disabled={!reason.trim()}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-slate-900 dark:text-white text-sm font-medium rounded-lg transition-colors"
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-app-text text-sm font-medium rounded-lg transition-colors"
                     >
                         Confirm Rejection
                     </button>
@@ -273,7 +273,7 @@ export default function Renewals() {
             'Rejected': 'bg-red-500/10 text-red-500 border-red-500/20'
         }
         return (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[status] || 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${styles[status] || 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                 {status?.replace('_', ' ')}
             </span>
         )
@@ -294,7 +294,7 @@ export default function Renewals() {
                     <Eye size={16} />
                 </button>
 
-                <div className="h-4 w-px bg-slate-200 dark:bg-white/10 mx-1"></div>
+                <div className="h-4 w-px bg-app-surface mx-1"></div>
 
                 <button
                     onClick={() => handleApprove(asset.id)}
@@ -312,19 +312,19 @@ export default function Renewals() {
         )
     }
 
-    if (loading) return <div className="p-8 text-slate-900 dark:text-white min-h-screen">Loading Workflows...</div>
+    if (loading) return <div className="p-8 text-app-text min-h-screen">Loading Workflows...</div>
 
     return (
         <div className="space-y-8 p-6 pb-20 min-h-screen">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Renewal Management</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-app-text tracking-tight">Renewal Management</h2>
+                    <p className="text-app-text-muted mt-1 flex items-center gap-2">
                         Enterprise Workflow: <span className="text-yellow-400">IT</span> <ChevronRight size={14} /> <span className="text-blue-400">Finance</span> <ChevronRight size={14} /> <span className="text-purple-400">Commercial</span>
                     </p>
                 </div>
-                <Link href="/" className="px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg flex items-center transition-colors border border-slate-200 dark:border-white/5">
+                <Link href="/" className="px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg flex items-center transition-colors border border-app-border">
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
                 </Link>
             </div>
@@ -333,48 +333,48 @@ export default function Renewals() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div
                     onClick={() => toggleFilter('Requested')}
-                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Requested' ? 'bg-yellow-500/10 border-yellow-500/50 ring-1 ring-yellow-500/50' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-white/5'}`}
+                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Requested' ? 'bg-yellow-500/10 border-yellow-500/50 ring-1 ring-yellow-500/50' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800/80 border-app-border'}`}
                 >
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <span className={`w-2 h-2 rounded-full ${filter === 'Requested' ? 'bg-yellow-400 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Pending IT Review</p>
+                            <p className="text-app-text-muted text-xs font-bold uppercase tracking-wider">Pending IT Review</p>
                         </div>
-                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.requested}</h3>
+                        <h3 className="text-2xl font-bold text-app-text">{stats.requested}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${filter === 'Requested' ? 'bg-yellow-500 text-black' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                    <div className={`p-4 rounded-2xl ${filter === 'Requested' ? 'bg-yellow-500 text-black' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                         <AlertCircle size={28} />
                     </div>
                 </div>
 
                 <div
                     onClick={() => toggleFilter('IT_Approved')}
-                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'IT_Approved' ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/50' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-white/5'}`}
+                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'IT_Approved' ? 'bg-blue-500/10 border-blue-500/50 ring-1 ring-blue-500/50' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800/80 border-app-border'}`}
                 >
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <span className={`w-2 h-2 rounded-full ${filter === 'IT_Approved' ? 'bg-blue-400 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Pending Finance</p>
+                            <p className="text-app-text-muted text-xs font-bold uppercase tracking-wider">Pending Finance</p>
                         </div>
-                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.it_approved}</h3>
+                        <h3 className="text-2xl font-bold text-app-text">{stats.it_approved}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${filter === 'IT_Approved' ? 'bg-blue-500 text-slate-900 dark:text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                    <div className={`p-4 rounded-2xl ${filter === 'IT_Approved' ? 'bg-blue-500 text-app-text' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                         <DollarSign size={28} />
                     </div>
                 </div>
 
                 <div
                     onClick={() => toggleFilter('Finance_Approved')}
-                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Finance_Approved' ? 'bg-purple-500/10 border-purple-500/50 ring-1 ring-purple-500/50' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-white/5'}`}
+                    className={`glass-card p-6 flex items-center justify-between cursor-pointer transition-all duration-200 hover:scale-[1.01] ${filter === 'Finance_Approved' ? 'bg-purple-500/10 border-purple-500/50 ring-1 ring-purple-500/50' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800/80 border-app-border'}`}
                 >
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <span className={`w-2 h-2 rounded-full ${filter === 'Finance_Approved' ? 'bg-purple-400 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'}`}></span>
-                            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Pending Commercial</p>
+                            <p className="text-app-text-muted text-xs font-bold uppercase tracking-wider">Pending Commercial</p>
                         </div>
-                        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stats.finance_approved}</h3>
+                        <h3 className="text-2xl font-bold text-app-text">{stats.finance_approved}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${filter === 'Finance_Approved' ? 'bg-purple-500 text-slate-900 dark:text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400'}`}>
+                    <div className={`p-4 rounded-2xl ${filter === 'Finance_Approved' ? 'bg-purple-500 text-app-text' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                         <Clock size={28} />
                     </div>
                 </div>
@@ -385,47 +385,47 @@ export default function Renewals() {
                 <div className="flex items-center gap-2 px-1 animate-fadeIn">
                     <div className="bg-blue-500/10 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-500/20 flex items-center gap-2">
                         <Filter size={12} />
-                        Filtered by Stage: <span className="font-bold text-slate-900 dark:text-white">{filter.replace('_', ' ')}</span>
+                        Filtered by Stage: <span className="font-bold text-app-text">{filter.replace('_', ' ')}</span>
                         <button onClick={() => setFilter(null)} className="ml-2 hover:text-slate-900 dark:hover:text-white"><XCircle size={14} /></button>
                     </div>
                 </div>
             )}
 
             {/* Data Table */}
-            <div className="bg-white dark:bg-slate-900/50 backdrop-blur border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-white dark:bg-slate-900/50 backdrop-blur border border-app-border rounded-2xl overflow-hidden shadow-xl">
                 <table className="w-full text-left border-collapse">
                     <thead>
-                        <tr className="border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-white/5">
-                            <th className="p-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Asset Details</th>
-                            <th className="p-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Requested By</th>
-                            <th className="p-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Renewal Cost</th>
-                            <th className="p-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stage</th>
-                            <th className="p-5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right pr-8">Actions</th>
+                        <tr className="border-b border-app-border bg-app-surface-soft">
+                            <th className="p-5 text-xs font-bold text-app-text-muted uppercase tracking-wider">Asset Details</th>
+                            <th className="p-5 text-xs font-bold text-app-text-muted uppercase tracking-wider">Requested By</th>
+                            <th className="p-5 text-xs font-bold text-app-text-muted uppercase tracking-wider">Renewal Cost</th>
+                            <th className="p-5 text-xs font-bold text-app-text-muted uppercase tracking-wider">Stage</th>
+                            <th className="p-5 text-xs font-bold text-app-text-muted uppercase tracking-wider text-right pr-8">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                         {filteredRenewals.length === 0 ? (
                             <tr>
                                 <td colSpan="5" className="p-16 text-center">
-                                    <div className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400">
+                                    <div className="flex flex-col items-center justify-center text-app-text-muted">
                                         <CheckCircle size={48} className="mb-4 text-slate-700" />
-                                        <p className="text-lg font-medium text-slate-500 dark:text-slate-400">No pending renewals found</p>
+                                        <p className="text-lg font-medium text-app-text-muted">No pending renewals found</p>
                                         <p className="text-sm">There are no items in this workflow stage.</p>
                                     </div>
                                 </td>
                             </tr>
                         ) : filteredRenewals.map(asset => (
-                            <tr key={asset.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 transition-colors group">
+                            <tr key={asset.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft transition-colors group">
                                 <td className="p-5">
-                                    <div className="font-medium text-slate-900 dark:text-white text-base">{asset.name}</div>
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{asset.serial_number}</div>
+                                    <div className="font-medium text-app-text text-base">{asset.name}</div>
+                                    <div className="text-xs text-app-text-muted font-mono mt-0.5">{asset.serial_number}</div>
                                 </td>
                                 <td className="p-5">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/5 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                                        <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-800 border border-app-border flex items-center justify-center text-xs font-bold text-app-text-muted">
                                             {asset.assigned_to?.charAt(0) || 'S'}
                                         </div>
-                                        <span className="text-slate-700 dark:text-slate-300 text-sm">{asset.assigned_to || 'System Admin'}</span>
+                                        <span className="text-app-text-muted text-sm">{asset.assigned_to || 'System Admin'}</span>
                                     </div>
                                 </td>
                                 <td className="p-5 text-slate-700 dark:text-slate-700 font-mono font-medium">₹{asset.renewal_cost?.toLocaleString()}</td>

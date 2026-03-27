@@ -9,29 +9,76 @@ import EndUserDashboard from '@/components/dashboards/EndUserDashboard'
 import FinanceDashboard from '@/components/dashboards/FinanceDashboard'
 import ProcurementManagerDashboard from '@/components/dashboards/ProcurementManagerDashboard'
 
+// NEW DEPARTMENTAL DASHBOARDS
+import EngineeringDashboard from '@/components/dashboards/EngineeringDashboard'
+import HRDashboard from '@/components/dashboards/HRDashboard'
+import OperationsDashboard from '@/components/dashboards/OperationsDashboard'
+import LegalDashboard from '@/components/dashboards/LegalDashboard'
+import BusinessOpsDashboard from '@/components/dashboards/BusinessOpsDashboard'
+
 export default function Dashboard() {
-    const { currentRole, user } = useRole();
+    const { currentRole, user, isAdmin, isFinanceStaff, isProcurementStaff, isAssetStaff, isITStaff, isManagerial } = useRole();
     const router = useRouter();
 
     if (!currentRole) return null;
 
-    if (currentRole.slug === 'FINANCE') return <FinanceDashboard />
-    if (currentRole.slug === 'PROCUREMENT') return <ProcurementManagerDashboard />
+    // 1. High-Level Role Routing First
+    if (isAdmin) return <SystemAdminDashboard />
+    if (isFinanceStaff) return <FinanceDashboard />
+    if (isProcurementStaff) return <ProcurementManagerDashboard />
+    if (isAssetStaff) return <AssetInventoryDashboard />
 
-    if (currentRole.slug === 'ADMIN') return <SystemAdminDashboard />
-    if (currentRole.slug === 'ASSET_MANAGER') return <AssetInventoryDashboard />
-
-    // IT Routing: Manager vs Technician
-    if (currentRole.slug === 'IT_MANAGEMENT' || currentRole.slug === 'IT_SUPPORT') {
+    // 2. IT Routing: Manager vs Technician
+    if (isITStaff) {
         const title = String(user?.position || '').toLowerCase();
-        const isTechnician = currentRole.slug === 'IT_SUPPORT' || 
+        const isTechnician = (isITStaff && !isManagerial) || 
                              title === 'team_member' || 
                              title.includes('support') || 
                              title.includes('specialist');
         return isTechnician ? <ITStaffDashboard /> : <ITSupportDashboard />;
     }
 
-    if (currentRole.slug === 'END_USER') return <EndUserDashboard />
+    // 3. Departmental "Root Fix" Routing
+    // This catches END_USER and MANAGER roles and directs them to their specialized portal
+    const deptSlug = user?.dept_obj?.slug || (user?.department || '').toLowerCase();
 
+    // Engineering / Cloud / IT (Non-Support)
+    if (deptSlug === 'engineering' || deptSlug === 'security' || deptSlug.includes('eng') || deptSlug.includes('dev') || deptSlug.includes('cloud') || deptSlug.includes('tech')) {
+        return <EngineeringDashboard />;
+    }
+
+    // Human Resources
+    if (deptSlug === 'hr' || deptSlug.includes('hr') || deptSlug.includes('human')) {
+        return <HRDashboard />;
+    }
+
+    // Operations / Logistics / Facilities
+    if (deptSlug === 'operations' || deptSlug.includes('op') || deptSlug.includes('log') || deptSlug.includes('facil')) {
+        return <OperationsDashboard />;
+    }
+
+    // Legal / Compliance / Audit / GRC
+    if (deptSlug === 'legal' || deptSlug.includes('leg') || deptSlug.includes('comp') || deptSlug.includes('audit')) {
+        return <LegalDashboard />;
+    }
+
+    // Sales / Marketing / Product / Business
+    if (deptSlug === 'sales' || deptSlug === 'product' || deptSlug === 'customer_success' || deptSlug.includes('sale') || deptSlug.includes('mark') || deptSlug.includes('prod') || deptSlug.includes('biz')) {
+        return <BusinessOpsDashboard />;
+    }
+
+    // Procurement
+    if (deptSlug === 'procurement') {
+        return <ProcurementManagerDashboard />;
+    }
+
+    // Finance
+    if (deptSlug === 'finance') {
+        return <FinanceDashboard />;
+    }
+
+
+    // 4. Default Fallback
     return <EndUserDashboard />
 }
+

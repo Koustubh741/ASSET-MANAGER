@@ -1,23 +1,11 @@
-import asyncio
-import os
-import sys
-
-# Add the backend directory to sys.path
-sys.path.append(os.getcwd())
-
 from app.database.database import engine
-from sqlalchemy import inspect
+from sqlalchemy import text
 
-async def check():
-    def get_cols():
-        inspect_obj = inspect(engine)
-        columns = inspect_obj.get_columns('users', schema='auth')
-        return [c['name'] for c in columns]
-    
-    # Run in thread since inspect is synchronous
-    loop = asyncio.get_event_loop()
-    cols = await loop.run_in_executor(None, get_cols)
-    print(f"Columns in auth.users: {cols}")
+def check():
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'audit_logs' AND table_schema = 'system'"))
+        columns = [row[0] for row in result.fetchall()]
+        print(f"AuditLog Columns: {columns}")
 
 if __name__ == "__main__":
-    asyncio.run(check())
+    check()

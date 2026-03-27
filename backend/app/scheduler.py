@@ -51,3 +51,43 @@ def setup_patch_scheduler_jobs():
         replace_existing=True,
     )
     logger.info("[Scheduler] Registered: sla_check_job @ every 5 mins")
+    # Phase 3 — Warranty Pulse Check (Every 1 hour)
+    from .services.warranty_pulse_service import run_warranty_pulse
+    from .database.database import AsyncSessionLocal
+    
+    async def run_warranty_pulse_job():
+        async with AsyncSessionLocal() as db:
+            await run_warranty_pulse(db)
+
+    scheduler.add_job(
+        run_warranty_pulse_job,
+        trigger="interval",
+        hours=1,
+        id="warranty_pulse_job",
+        replace_existing=True,
+    )
+    logger.info("[Scheduler] Registered: warranty_pulse_job @ every 1 hour")
+
+    # Phase 4 — Daily cleanup of old read notifications (Older than 90 days)
+    from .models.models import Notification
+    from sqlalchemy import delete
+    from datetime import datetime, timedelta, timezone
+    
+    async def run_notification_cleanup():
+        async with AsyncSessionLocal() as db:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+            stmt = delete(Notification).where(
+                Notification.is_read == True,
+                Notification.read_at < cutoff
+            )
+            await db.execute(stmt)
+            await db.commit()
+            logger.info("[Cleanup] Purged read notifications older than 90 days")
+
+    scheduler.add_job(
+        run_notification_cleanup,
+        trigger=CronTrigger(hour=3, minute=0),
+        id="notification_cleanup",
+        replace_existing=True,
+    )
+    logger.info("[Scheduler] Registered: notification_cleanup @ 03:00 daily")

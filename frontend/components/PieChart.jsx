@@ -7,8 +7,8 @@ const CustomTooltip = ({ active, payload }) => {
         return (
             <div className="bg-white dark:bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
                 <p className="text-slate-900 dark:text-slate-200 font-medium mb-1">{payload[0].name}</p>
-                <p className="text-slate-900 dark:text-white font-bold text-lg">
-                    {payload[0].value} <span className="text-slate-500 dark:text-slate-400 text-xs font-normal">assets</span>
+                <p className="text-app-text font-bold text-lg">
+                    {payload[0].value} <span className="text-app-text-muted text-xs font-normal">assets</span>
                 </p>
             </div>
         )
@@ -18,7 +18,7 @@ const CustomTooltip = ({ active, payload }) => {
 
 export default function CustomPieChart({ data, onPieClick, minAngle }) {
     if (!data || data.length === 0) return (
-        <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">
+        <div className="flex items-center justify-center h-full text-app-text-muted">
             No data available
         </div>
     )
@@ -47,7 +47,7 @@ export default function CustomPieChart({ data, onPieClick, minAngle }) {
                     verticalAlign="bottom"
                     height={36}
                     iconType="circle"
-                    formatter={(value) => <span className="text-slate-700 dark:text-slate-300 ml-1">{value}</span>}
+                    formatter={(value) => <span className="text-app-text-muted ml-1">{value}</span>}
                 />
             </PieChart>
         </ResponsiveContainer>

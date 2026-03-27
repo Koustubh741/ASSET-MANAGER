@@ -113,6 +113,7 @@ class TicketCategorySummaryResponse(BaseModel):
 
 class TicketResponse(TicketBase):
     id: UUID
+    display_id: Optional[str] = None
     status: str
     requestor_id: Optional[UUID] = None
     requestor_name: Optional[str] = None
@@ -129,11 +130,18 @@ class TicketResponse(TicketBase):
     
     tasks: Optional[List[TaskResponse]] = []
     
-    # Resolution Details
+    # Resolution & SLA Details
     resolution_notes: Optional[str] = None
     resolution_checklist: Optional[List[dict]] = None
     resolution_percentage: Optional[float] = 0.0
-    sla_deadline: Optional[datetime] = None
+    sla_deadline: Optional[datetime] = None # Legacy field (resolution)
+    
+    # Root Fix: Detailed SLA Metadata
+    sla_response_deadline: Optional[datetime] = None
+    sla_resolution_deadline: Optional[datetime] = None
+    sla_response_status: Optional[str] = "IN_PROGRESS"
+    sla_resolution_status: Optional[str] = "IN_PROGRESS"
+    
     timeline: Optional[List[dict]] = None
 
     created_at: datetime
@@ -150,6 +158,14 @@ class WorkflowRuleCreate(BaseModel):
     is_active: bool = True
     conditions: dict
     actions: dict
+
+class WorkflowRuleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    priority_order: Optional[int] = None
+    is_active: Optional[bool] = None
+    conditions: Optional[dict] = None
+    actions: Optional[dict] = None
 
 class WorkflowRuleResponse(WorkflowRuleCreate):
     id: UUID
@@ -171,3 +187,11 @@ class SLAPolicyResponse(SLAPolicyCreate):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class SLAPolicyUpdate(BaseModel):
+    name: Optional[str] = None
+    priority: Optional[str] = None
+    category: Optional[str] = None
+    response_time_limit: Optional[int] = None
+    resolution_time_limit: Optional[int] = None
+    is_active: Optional[bool] = None

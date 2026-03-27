@@ -17,7 +17,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function TrendLineChart({ data }) {
-    if (!data || data.length === 0) return <div className="text-center text-slate-500 dark:text-slate-400 py-10">No trend data available</div>
+    if (!data || data.length === 0) return <div className="text-center text-app-text-muted py-10">No trend data available</div>
 
     return (
         <ResponsiveContainer width="100%" height="100%">

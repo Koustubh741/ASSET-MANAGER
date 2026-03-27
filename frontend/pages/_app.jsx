@@ -3,6 +3,7 @@ import Layout from '@/components/Layout'
 import PortalLayout from '@/components/PortalLayout'
 import { RoleProvider } from '@/contexts/RoleContext'
 import { AssetProvider } from '@/contexts/AssetContext'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 import { ToastProvider } from '@/components/common/Toast'
 import AuthGuard from '@/components/AuthGuard'
 import { useRouter } from 'next/router'
@@ -52,13 +53,15 @@ export default function App({ Component, pageProps }) {
         <ToastProvider>
         <RoleProvider>
             <AssetProvider>
-                <AuthGuard>
-                    {(isLoginPage || isSetupPage) ? (
-                        <Component {...pageProps} />
-                    ) : (
-                        Wrapper
-                    )}
-                </AuthGuard>
+                <NotificationProvider>
+                    <AuthGuard>
+                        {(isLoginPage || isSetupPage) ? (
+                            <Component {...pageProps} />
+                        ) : (
+                            Wrapper
+                        )}
+                    </AuthGuard>
+                </NotificationProvider>
             </AssetProvider>
         </RoleProvider>
         </ToastProvider>

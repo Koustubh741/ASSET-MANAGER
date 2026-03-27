@@ -51,24 +51,24 @@ export default function AssignAsset() {
     return (
         <div className="max-w-2xl mx-auto space-y-8">
             <div className="flex items-center space-x-4">
-                <Link href={`/assets/${id}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white transition-colors">
+                <Link href={`/assets/${id}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-full text-app-text-muted hover:text-app-text transition-colors">
                     <ArrowLeft size={24} />
                 </Link>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Assign Asset</h2>
+                <h2 className="text-xl font-bold text-app-text tracking-tight">Assign Asset</h2>
             </div>
 
             <div className="glass-panel p-8">
-                <div className="mb-8 p-6 bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/5">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Selected Asset</p>
+                <div className="mb-8 p-6 bg-white dark:bg-slate-900/50 rounded-xl border border-app-border">
+                    <p className="text-sm text-app-text-muted mb-1">Selected Asset</p>
                     <div className="flex justify-between items-center">
-                        <p className="font-bold text-xl text-slate-900 dark:text-white">{asset.name}</p>
-                        <span className="text-xs font-mono px-2 py-1 rounded bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300">{asset.serial_number}</span>
+                        <p className="font-bold text-xl text-app-text">{asset.name}</p>
+                        <span className="text-xs font-mono px-2 py-1 rounded bg-app-surface text-app-text-muted">{asset.serial_number}</span>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Assign To (User Email/Name)</label>
+                        <label className="block text-sm font-medium text-app-text-muted mb-2">Assign To (User Email/Name)</label>
                         <input
                             required
                             name="assigned_to"
@@ -80,7 +80,7 @@ export default function AssignAsset() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Location</label>
+                        <label className="block text-sm font-medium text-app-text-muted mb-2">Location</label>
                         <input
                             required
                             name="location"
@@ -92,7 +92,7 @@ export default function AssignAsset() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Assignment Date</label>
+                        <label className="block text-sm font-medium text-app-text-muted mb-2">Assignment Date</label>
                         <input
                             type="date"
                             required

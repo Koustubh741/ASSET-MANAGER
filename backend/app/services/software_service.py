@@ -5,7 +5,7 @@ from ..models.models import SoftwareLicense, DiscoveredSoftware, AssetRequest, T
 from ..schemas.software_schema import SoftwareLicenseCreate, SoftwareLicenseUpdate
 from uuid import UUID
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 async def get_all_licenses(db: AsyncSession):
     with open("software_debug.log", "a") as f:
@@ -291,7 +291,7 @@ async def optimize_license_usage(db: AsyncSession, license_id: UUID, requester_i
             "action": "AUTO_ASSIGNED",
             "note": f"Auto-assigned to IT Management on creation (Assignee: {it_user.full_name if it_user else 'None'}).",
             "actor": "System",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }]
     )
     db.add(ticket)

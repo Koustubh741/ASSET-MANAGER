@@ -68,7 +68,7 @@ export default function ResetPassword() {
                                 <h1 className="text-xl font-bold mb-2 text-purple-400">
                                     Reset Password
                                 </h1>
-                                <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm">
+                                <p className="text-app-text-muted text-app-text-muted text-sm">
                                     Secure your account with a new strong password.
                                 </p>
                             </div>
@@ -83,9 +83,9 @@ export default function ResetPassword() {
                                 )}
 
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">New Password</label>
+                                    <label className="text-xs font-semibold text-app-text-muted uppercase text-app-text-muted">New Password</label>
                                     <div className="relative">
-                                        <Lock size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
+                                        <Lock size={16} className="absolute left-3 top-3 text-app-text-muted" />
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             name="new"
@@ -93,12 +93,12 @@ export default function ResetPassword() {
                                             value={passwords.new}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
-                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-10 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-10 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
                                         />
                                         <button
                                             type="button"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-3 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+                                            className="absolute right-3 top-3 text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
                                         >
                                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
@@ -106,9 +106,9 @@ export default function ResetPassword() {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase text-slate-500 dark:text-slate-400">Confirm New Password</label>
+                                    <label className="text-xs font-semibold text-app-text-muted uppercase text-app-text-muted">Confirm New Password</label>
                                     <div className="relative">
-                                        <Lock size={16} className="absolute left-3 top-3 text-slate-500 dark:text-slate-400" />
+                                        <Lock size={16} className="absolute left-3 top-3 text-app-text-muted" />
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             name="confirm"
@@ -116,7 +116,7 @@ export default function ResetPassword() {
                                             value={passwords.confirm}
                                             onChange={handleInputChange}
                                             placeholder="••••••••"
-                                            className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-slate-900 dark:text-white bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
                                         />
                                     </div>
                                 </div>
@@ -128,7 +128,7 @@ export default function ResetPassword() {
                                 <button
                                     type="submit"
                                     disabled={isLoading || !token}
-                                    className={`w-full py-3 rounded-xl font-bold text-slate-900 dark:text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 bg-purple-500 shadow-purple-500/50 ${(isLoading || !token) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full py-3 rounded-xl font-bold text-app-text shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 bg-purple-500 shadow-purple-500/50 ${(isLoading || !token) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isLoading ? 'Resetting...' : 'Update Password'} <ArrowRight size={18} />
                                 </button>
@@ -142,11 +142,11 @@ export default function ResetPassword() {
                                 </div>
                             </div>
                             <h2 className="text-2xl font-bold text-purple-400 mb-4">Password Updated!</h2>
-                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm mb-8">
+                            <p className="text-app-text-muted text-app-text-muted text-sm mb-8">
                                 Your password has been successfully reset. You can now log in with your new credentials.
                             </p>
 
-                            <Link href="/login" className="w-full py-3 rounded-xl font-bold text-slate-900 dark:text-white shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 bg-purple-500 shadow-purple-500/50">
+                            <Link href="/login" className="w-full py-3 rounded-xl font-bold text-app-text shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 bg-purple-500 shadow-purple-500/50">
                                 Go to Login <ArrowRight size={18} />
                             </Link>
                         </div>

@@ -9,16 +9,16 @@ export default function AssetRequestsPage() {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <h1 className="text-2xl font-bold text-app-text flex items-center gap-2">
                             <FileText className="w-8 h-8 text-indigo-400" />
                             Asset Requests
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-1">
+                        <p className="text-app-text-muted text-app-text-muted mt-1">
                             Manage asset approvals, BYOD compliance, and procurement workflows.
                         </p>
                     </div>
 
-                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white font-medium rounded-xl shadow-lg shadow-indigo-500/20 border border-indigo-500/20 flex items-center gap-2 transition-all">
+                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-app-text font-medium rounded-xl shadow-lg shadow-indigo-500/20 border border-indigo-500/20 flex items-center gap-2 transition-all">
                         <Plus className="w-5 h-5" />
                         New Request
                     </button>

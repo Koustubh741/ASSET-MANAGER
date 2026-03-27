@@ -50,7 +50,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Type, Counter as CounterType
 from collections import deque, Counter
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # type: ignore
 
 # ── Environment & logging ─────────────────────────────────────────────────────
 load_dotenv()
@@ -162,6 +162,97 @@ class AgentConfig:
         return ctx
 
 
+# ── Part 0b2: DB Config Loader ────────────────────────────────────────────────
+def load_cloud_config_from_db() -> None:
+    """
+    Fetch cloud provider credentials stored via the frontend UI from the
+    AgentConfiguration table and inject them as environment variables.
+
+    DB key → env var mapping:
+      AWS:   aws_access_key_id       → AWS_ACCESS_KEY_ID
+             aws_secret_access_key   → AWS_SECRET_ACCESS_KEY
+             aws_regions             → AWS_REGIONS  (comma-separated)
+      Azure: azure_subscription_id   → AZURE_SUBSCRIPTION_ID
+             azure_tenant_id         → AZURE_TENANT_ID
+             azure_client_id         → AZURE_CLIENT_ID
+             azure_client_secret     → AZURE_CLIENT_SECRET
+      GCP:   gcp_project_id          → GCP_PROJECT_ID
+             gcp_service_account_key → GCP_SERVICE_ACCOUNT_JSON (raw JSON)
+      OCI:   oci_tenancy_ocid        → OCI_TENANCY_OCID
+             oci_user_ocid           → OCI_USER_OCID
+             oci_fingerprint         → OCI_FINGERPRINT
+             oci_region              → OCI_REGION
+             oci_private_key         → OCI_PRIVATE_KEY_CONTENT
+
+    Env vars already set take priority — DB values only fill missing slots.
+    """
+    DB_TO_ENV: Dict[str, str] = {
+        # AWS
+        "aws_access_key_id":       "AWS_ACCESS_KEY_ID",
+        "aws_secret_access_key":   "AWS_SECRET_ACCESS_KEY",
+        "aws_regions":             "AWS_REGIONS",
+        # Azure
+        "azure_subscription_id":   "AZURE_SUBSCRIPTION_ID",
+        "azure_tenant_id":         "AZURE_TENANT_ID",
+        "azure_client_id":         "AZURE_CLIENT_ID",
+        "azure_client_secret":     "AZURE_CLIENT_SECRET",
+        # GCP
+        "gcp_project_id":          "GCP_PROJECT_ID",
+        "gcp_service_account_key": "GCP_SERVICE_ACCOUNT_JSON",
+        # OCI
+        "oci_tenancy_ocid":        "OCI_TENANCY_OCID",
+        "oci_user_ocid":           "OCI_USER_OCID",
+        "oci_fingerprint":         "OCI_FINGERPRINT",
+        "oci_region":              "OCI_REGION",
+        "oci_private_key":         "OCI_PRIVATE_KEY_CONTENT",
+    }
+
+    try:
+        import urllib.request
+        import urllib.parse
+        import base64
+        import json as _json
+
+        backend_url = os.getenv("BACKEND_URL", "127.0.0.1:8000")
+        agent_secret = os.getenv("AGENT_SECRET", "")
+        agent_id_key = "agent-cloud"
+
+        # Build HMAC-signed request to backend config endpoint
+        path = f"/api/v1/agents/{agent_id_key}/config/internal"
+        timestamp = str(int(time.time()))
+        msg = f"{timestamp}:{path}".encode()
+        sig = hmac.new(agent_secret.encode(), msg, hashlib.sha256).hexdigest()
+
+        base = backend_url if backend_url.startswith("http") else f"http://{backend_url}"
+        req = urllib.request.Request(
+            f"{base}{path}",
+            headers={
+                "X-Agent-Timestamp": timestamp,
+                "X-Agent-Signature": sig,
+                "X-Agent-ID": agent_id_key,
+            }
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data: Dict[str, str] = _json.loads(resp.read())
+
+        injected = 0
+        for db_key, env_key in DB_TO_ENV.items():
+            value = data.get(db_key)
+            if value and not os.environ.get(env_key):
+                os.environ[env_key] = value
+                injected += 1
+
+        if injected:
+            logger.info("[Config] Loaded %d cloud credential(s) from DB (frontend config).", injected)
+        else:
+            logger.debug("[Config] No new DB credentials to inject (env vars already set or DB empty).")
+
+    except Exception as exc:
+        logger.warning("[Config] Could not load DB cloud config (will use env vars only): %s", exc)
+
+
+
+
 # ── Part 0c: Metrics Collection ──────────────────────────────────────────────
 @dataclass
 class DiscoveryMetrics:
@@ -177,7 +268,7 @@ class DiscoveryMetrics:
     assets_synced: int = 0
     assets_failed: int = 0
     
-    sync_errors_by_status: CounterType = field(default_factory=Counter)
+    sync_errors_by_status: Dict[int, int] = field(default_factory=Counter)
     discovery_time_by_provider: Dict[str, float] = field(default_factory=dict)
     
     def to_dict(self, agent_id: str = "agent-cloud") -> Dict[str, Any]:
@@ -196,7 +287,7 @@ class DiscoveryMetrics:
                 "synced": self.assets_synced,
                 "failed": self.assets_failed,
             },
-            "errors_by_status": dict(self.sync_errors_by_status),
+            "errors_by_status": self.sync_errors_by_status,
             "discovery_times": self.discovery_time_by_provider,
         }
     
@@ -210,7 +301,7 @@ class DiscoveryMetrics:
         logger.info(f"  Failed syncs: {self.assets_failed}")
         if self.sync_errors_by_status:
             logger.info("  Errors by status code:")
-            for status, count in self.sync_errors_by_status.most_common():
+            for status, count in sorted(self.sync_errors_by_status.items(), key=lambda x: x[1], reverse=True):
                 logger.info(f"    HTTP {status}: {count}")
         if self.discovery_time_by_provider:
             logger.info("  Discovery times:")
@@ -229,7 +320,7 @@ class ProgressTracker:
         self.start_time = time.time()
         self.name = name
         self.lock = threading.Lock()
-        self.last_log_time = 0
+        self.last_log_time: float = 0.0
         self.log_interval = 5  # Log every 5 seconds
     
     def update(self, increment: int = 1):
@@ -408,7 +499,7 @@ class CloudProvider(ABC):
         Must be a static method so register_provider can call it without
         instantiating the class.
         """
-        pass
+        raise NotImplementedError
 
     @property
     def name(self) -> str:
@@ -417,13 +508,20 @@ class CloudProvider(ABC):
     @abstractmethod
     def discover(self) -> List[NormalisedAsset]:
         """Discover assets and return a list of NormalisedAsset instances."""
-        pass
+        raise NotImplementedError
+
+    def pre_flight_check(self) -> bool:
+        """
+        Check if the provider is likely to work (auth, config).
+        Returns True if ok, False if fatal configuration missing.
+        """
+        return True
 
 
 # ── Part 3a: AWS Provider ─────────────────────────────────────────────────────
 try:
-    import boto3
-    from botocore.exceptions import NoCredentialsError, PartialCredentialsError, BotoCoreError
+    import boto3  # type: ignore
+    from botocore.exceptions import NoCredentialsError, PartialCredentialsError, BotoCoreError  # type: ignore
     _BOTO3_AVAILABLE = True
 except ImportError:
     _BOTO3_AVAILABLE = False
@@ -441,13 +539,15 @@ class AWSProvider(CloudProvider):
     def __init__(self, regions: Optional[List[str]] = None) -> None:
         raw = os.getenv("AWS_REGIONS", os.getenv("AWS_REGION", "us-east-1"))
         self._regions = regions or [r.strip() for r in raw.split(",")]
+        self._ssl_verify = os.getenv("AWS_SSL_VERIFY", "true").lower() != "false"
 
     @staticmethod
     def _static_name() -> str:
         return "aws"
 
     def _discover_region(self, region: str) -> List[NormalisedAsset]:
-        ec2 = boto3.client("ec2", region_name=region)
+        # Respect SSL verify setting
+        ec2 = boto3.client("ec2", region_name=region, verify=self._ssl_verify)
         paginator = ec2.get_paginator("describe_instances")
         
         # 1. Collect all instances first
@@ -473,7 +573,10 @@ class AWSProvider(CloudProvider):
         if instance_types:
             try:
                 # AWS allows filtering by instance-type
-                chunks = [list(instance_types)[i:i + 100] for i in range(0, len(instance_types), 100)]
+                type_list: List[str] = [str(x) for x in instance_types]
+                chunks: List[List[str]] = []
+                for i in range(0, len(type_list), 100):
+                    chunks.append(type_list[i:i+100])
                 for chunk in chunks:
                     resp = ec2.describe_instance_types(InstanceTypes=chunk)
                     for t in resp.get("InstanceTypes", []):
@@ -492,7 +595,10 @@ class AWSProvider(CloudProvider):
         if image_ids:
             try:
                 # AWS allows filtering by image-id
-                chunks = [list(image_ids)[i:i + 100] for i in range(0, len(image_ids), 100)]
+                img_list: List[str] = [str(x) for x in image_ids]
+                chunks: List[List[str]] = []
+                for i in range(0, len(img_list), 100):
+                    chunks.append(img_list[i:i+100])
                 for chunk in chunks:
                     resp = ec2.describe_images(ImageIds=chunk)
                     for img in resp.get("Images", []):
@@ -508,14 +614,17 @@ class AWSProvider(CloudProvider):
                 logger.warning(f"[AWS] Failed to fetch AMIs in {region}: {e}")
 
         # 5. Fetch Volume Details (Storage Size)
-        vol_sizes = {}
+        vol_sizes: Dict[str, int] = {}
         if volume_ids:
             try:
-                chunks = [list(volume_ids)[i:i + 100] for i in range(0, len(volume_ids), 100)]
+                vol_list: List[str] = [str(x) for x in volume_ids]
+                chunks: List[List[str]] = []
+                for i in range(0, len(vol_list), 100):
+                    chunks.append(vol_list[i:i+100])
                 for chunk in chunks:
                     resp = ec2.describe_volumes(VolumeIds=chunk)
                     for v in resp.get("Volumes", []):
-                        vol_sizes[v["VolumeId"]] = v["Size"] # Size is in GiB
+                        vol_sizes[v["VolumeId"]] = int(v["Size"]) # Size is in GiB
             except Exception as e:
                 logger.warning(f"[AWS] Failed to fetch volumes in {region}: {e}")
 
@@ -535,11 +644,12 @@ class AWSProvider(CloudProvider):
             os_info = ami_details.get(ami_id, {"os_name": "Cloud Native", "platform": "Cloud"})
             
             # Calculate Total Storage
-            total_storage = 0
+            total_storage: int = 0
             for mapping in instance.get("BlockDeviceMappings", []):
                 if "Ebs" in mapping:
-                    vid = mapping["Ebs"].get("VolumeId")
-                    total_storage += vol_sizes.get(vid, 0)
+                    vid: Optional[str] = mapping["Ebs"].get("VolumeId")
+                    vol_size: int = int(vol_sizes.get(vid, 0)) if vid else 0
+                    total_storage = total_storage + vol_size
             
             # Map platform to broader OS type for UI icon/grouping
             os_platform = os_info["platform"].lower()
@@ -573,6 +683,20 @@ class AWSProvider(CloudProvider):
             ))
         return assets
 
+    def pre_flight_check(self) -> bool:
+        if not _BOTO3_AVAILABLE:
+            logger.error("[AWS] boto3 not installed.")
+            return False
+            
+        # Check for static keys vs environment identity
+        has_keys = bool(os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY"))
+        if has_keys:
+            logger.info("[AWS] Using static Access Keys for authentication.")
+        else:
+            logger.info("[AWS] No Access Keys found. Defaulting to Environment Identity (IAM Role/Profile).")
+            
+        return True
+
     def discover(self) -> List[NormalisedAsset]:
         if not _BOTO3_AVAILABLE:
             logger.warning("boto3 not installed. Skipping AWS. Run: pip install boto3")
@@ -597,10 +721,10 @@ class AWSProvider(CloudProvider):
 
 # ── Part 3b: Azure Provider ───────────────────────────────────────────────────
 try:
-    from azure.identity import DefaultAzureCredential
-    from azure.mgmt.compute import ComputeManagementClient
-    from azure.mgmt.network import NetworkManagementClient
-    from azure.core.exceptions import AzureError
+    from azure.identity import DefaultAzureCredential  # type: ignore
+    from azure.mgmt.compute import ComputeManagementClient  # type: ignore
+    from azure.mgmt.network import NetworkManagementClient  # type: ignore
+    from azure.core.exceptions import AzureError  # type: ignore
     _AZURE_AVAILABLE = True
 except ImportError:
     _AZURE_AVAILABLE = False
@@ -643,6 +767,10 @@ class AzureProvider(CloudProvider):
         if nics:
             private_ip = self._resolve_ip(network_client, nics[0].id, vm.name)
 
+        os_type = "N/A"
+        if vm.storage_profile and vm.storage_profile.os_disk:
+            os_type = str(vm.storage_profile.os_disk.os_type) if vm.storage_profile.os_disk.os_type else "N/A"
+
         return NormalisedAsset(
             hostname=vm.name,
             vendor="Azure",
@@ -652,11 +780,7 @@ class AzureProvider(CloudProvider):
             specs={
                 "Location": vm.location,
                 "ProvisioningState": vm.provisioning_state,
-                "OS": (
-                    str(vm.storage_profile.os_disk.os_type)
-                    if vm.storage_profile and vm.storage_profile.os_disk
-                    else "N/A"
-                ),
+                "OS": os_type,
             },
         )
 
@@ -677,16 +801,22 @@ class AzureProvider(CloudProvider):
             credential = DefaultAzureCredential()
             compute_client = ComputeManagementClient(credential, subscription_id)
             network_client = NetworkManagementClient(credential, subscription_id)
-            vms = list(compute_client.virtual_machines.list_all())
-            logger.info("[Azure] Found %d VMs. Resolving NICs with %d workers...", len(vms), _AZURE_NIC_WORKERS)
+            raw_vms = list(compute_client.virtual_machines.list_all())
+            logger.info("[Azure] Found %d VMs. Resolving NICs with %d workers...", len(raw_vms), _AZURE_NIC_WORKERS)
 
-            with ThreadPoolExecutor(max_workers=_AZURE_NIC_WORKERS) as pool:
-                futures = {pool.submit(self._build_asset, vm, network_client): vm.name for vm in vms}
-                for future in as_completed(futures):
+            # Discover all VMs in parallel — submit direct build
+            with ThreadPoolExecutor(max_workers=_AZURE_NIC_WORKERS) as executor:
+                future_to_vm = {}
+                for vm in raw_vms:
+                    fut = executor.submit(self._build_asset, vm, network_client)  # type: ignore # pyre-ignore
+                    future_to_vm[fut] = vm.name
+
+                for future in as_completed(future_to_vm):
+                    vm_name = future_to_vm[future]
                     try:
                         assets.append(future.result())
                     except Exception:
-                        logger.exception("[Azure] Failed building asset for VM '%s'.", futures[future])
+                        logger.exception("[Azure] Failed building asset for VM '%s'.", vm_name)
 
         except AzureError as e:
             raise ProviderAPIError(f"[Azure] SDK error: {e}") from e
@@ -695,11 +825,28 @@ class AzureProvider(CloudProvider):
 
         return assets
 
+    def pre_flight_check(self) -> bool:
+        if not _AZURE_AVAILABLE:
+            logger.error("[Azure] Azure SDK not installed.")
+            return False
+            
+        sub_id = os.getenv("AZURE_SUBSCRIPTION_ID")
+        if not sub_id:
+            logger.error("[Azure] AZURE_SUBSCRIPTION_ID is missing.")
+            return False
+            
+        has_secret = bool(os.getenv("AZURE_CLIENT_SECRET"))
+        if has_secret:
+            logger.info("[Azure] Using Service Principal Secret for authentication.")
+        else:
+            logger.info("[Azure] No Client Secret found. Defaulting to Managed Identity or CLI session.")
+            
+        return True
 
-# ── Part 3c: GCP Provider ─────────────────────────────────────────────────────
+
 try:
-    from google.cloud import compute_v1
-    from google.auth.exceptions import DefaultCredentialsError
+    from google.cloud import compute_v1  # type: ignore
+    from google.auth.exceptions import DefaultCredentialsError  # type: ignore
     _GCP_AVAILABLE = True
 except ImportError:
     _GCP_AVAILABLE = False
@@ -734,29 +881,75 @@ class GCPProvider(CloudProvider):
 
         try:
             instances_client = compute_v1.InstancesClient()
-            request = compute_v1.AggregatedListInstancesRequest(project=project_id)
+            try:
+                machine_types_client = compute_v1.MachineTypesClient()
+            except Exception as e:
+                logger.warning(f"[GCP] Failed to init MachineTypesClient (may lack permissions). RAM will be 0. {e}")
+                machine_types_client = None
 
-            for zone, response in instances_client.aggregated_list(request=request):
+            request = compute_v1.AggregatedListInstancesRequest(project=project_id)
+            machine_type_cache = {}
+
+            for zone_path, response in instances_client.aggregated_list(request=request):
+                zone = zone_path.split("/")[-1] if "/" in zone_path else zone_path
                 for instance in response.instances or []:
                     # Extract primary internal IP
                     private_ip: Optional[str] = None
                     if instance.network_interfaces:
                         private_ip = instance.network_interfaces[0].network_i_p
 
+                    model_name = instance.machine_type.split("/")[-1]
+
+                    # 1. Fetch RAM via MachineType
+                    ram_gb = 0
+                    vcpus = 0
+                    cache_key = f"{zone}/{model_name}"
+                    if cache_key not in machine_type_cache:
+                        if machine_types_client:
+                            try:
+                                mt_req = compute_v1.GetMachineTypeRequest(project=project_id, zone=zone, machine_type=model_name)
+                                mt = machine_types_client.get(request=mt_req)  # type: ignore
+                                mt_ram = getattr(mt, 'memory_mb', 0) / 1024
+                                mt_vcpus = getattr(mt, 'guest_cpus', 0)
+                                machine_type_cache[cache_key] = (float(mt_ram), int(mt_vcpus))
+                            except Exception as e:
+                                logger.debug(f"[GCP] Could not fetch machine type {model_name} in {zone}: {e}")
+                                machine_type_cache[cache_key] = (0.0, 0)
+                        else:
+                            machine_type_cache[cache_key] = (0.0, 0)
+
+                    cached_vals = machine_type_cache.get(cache_key, (0.0, 0))
+                    ram_gb = cached_vals[0]
+                    vcpus = cached_vals[1]
+
+                    # 2. Aggregate Storage from all Disks
+                    total_storage = 0
+                    if getattr(instance, 'disks', None):
+                        for disk in instance.disks:
+                            total_storage += getattr(disk, 'disk_size_gb', 0)
+
+                    # 3. Format OS Details
+                    os_detail = "N/A"
+                    if getattr(instance, 'disks', None):
+                        for disk in instance.disks:
+                            if getattr(disk, 'licenses', None):
+                                os_detail = disk.licenses[0].split("/")[-1]
+                                break
+
                     assets.append(NormalisedAsset(
                         hostname=instance.name,
                         vendor="GCP",
-                        model=instance.machine_type.split("/")[-1],
+                        model=model_name,
                         serial=f"GCP-{instance.id}" if instance.id else None,
                         ip=private_ip,
                         specs={
                             "Zone": zone,
                             "Status": instance.status,
-                            "OS": (
-                                instance.disks[0].licenses[0].split("/")[-1]
-                                if instance.disks and instance.disks[0].licenses
-                                else "N/A"
-                            ),
+                            "RAM": f"{int(ram_gb)} GB" if ram_gb > 0 else "0 GB",
+                            "Processor": f"{vcpus} vCPU" if vcpus > 0 else "Cloud vCPU",
+                            "Storage": f"{int(total_storage)} GB" if total_storage > 0 else "N/A",
+                            "OS": "Linux" if "debian" in os_detail.lower() or "ubuntu" in os_detail.lower() or "centos" in os_detail.lower() or "rhel" in os_detail.lower() else "Windows" if "windows" in os_detail.lower() else os_detail,
+                            "OS_Detail": os_detail,
                             "CreationTime": instance.creation_timestamp,
                         },
                     ))
@@ -770,10 +963,28 @@ class GCPProvider(CloudProvider):
 
         return assets
 
+    def pre_flight_check(self) -> bool:
+        if not _GCP_AVAILABLE:
+            logger.error("[GCP] Google Cloud SDK not installed.")
+            return False
+            
+        project_id = os.getenv("GCP_PROJECT_ID")
+        if not project_id:
+            logger.error("[GCP] GCP_PROJECT_ID is missing.")
+            return False
+            
+        has_sa_json = bool(os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+        if has_sa_json:
+            logger.info(f"[GCP] Using Service Account JSON: {os.getenv('GOOGLE_APPLICATION_CREDENTIALS')}")
+        else:
+            logger.info("[GCP] No Service Account JSON found. Defaulting to Application Default Credentials (Workload Identity).")
+            
+        return True
+
 
 # ── Part 3d: DigitalOcean Provider ────────────────────────────────────────────
 try:
-    import pydo
+    import pydo  # type: ignore
     _DIGITALOCEAN_AVAILABLE = True
 except ImportError:
     _DIGITALOCEAN_AVAILABLE = False
@@ -843,10 +1054,23 @@ class DigitalOceanProvider(CloudProvider):
 
         return assets
 
+    def pre_flight_check(self) -> bool:
+        if not _DIGITALOCEAN_AVAILABLE:
+            logger.error("[DigitalOcean] pydo not installed.")
+            return False
+            
+        token = os.getenv("DIGITALOCEAN_TOKEN")
+        if token:
+            logger.info("[DigitalOcean] Using Personal Access Token (PAT) for authentication.")
+            return True
+        else:
+            logger.error("[DigitalOcean] DIGITALOCEAN_TOKEN is missing.")
+            return False
+
 
 # ── Part 3e: Oracle Cloud (OCI) Provider ──────────────────────────────────────
 try:
-    import oci
+    import oci  # type: ignore
     _OCI_AVAILABLE = True
 except ImportError:
     _OCI_AVAILABLE = False
@@ -879,9 +1103,18 @@ class OracleCloudProvider(CloudProvider):
         assets: List[NormalisedAsset] = []
 
         try:
-            config = oci.config.from_file(os.getenv("OCI_CONFIG_FILE", "~/.oci/config"))
-            compute_client = oci.core.ComputeClient(config)
-            network_client = oci.core.VirtualNetworkClient(config)
+            # Try loading config from file first
+            try:
+                config_file = os.getenv("OCI_CONFIG_FILE", "~/.oci/config")
+                config = oci.config.from_file(config_file)
+                logger.debug("[Oracle] Using config file: %s", config_file)
+                compute_client = oci.core.ComputeClient(config)
+                network_client = oci.core.VirtualNetworkClient(config)
+            except (oci.exceptions.ConfigFileNotFound, oci.exceptions.InvalidConfig, oci.exceptions.InvalidKeyFilePath):
+                logger.info("[Oracle] Config file not found/invalid. Attempting Instance Principal authentication.")
+                signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+                compute_client = oci.core.ComputeClient({}, signer=signer)
+                network_client = oci.core.VirtualNetworkClient({}, signer=signer)
 
             instances = oci.pagination.list_call_get_all_results(
                 compute_client.list_instances, compartment_id
@@ -921,18 +1154,35 @@ class OracleCloudProvider(CloudProvider):
 
             logger.info("[Oracle] Found %d instances.", len(assets))
 
-        except oci.exceptions.ConfigFileNotFound:
-            raise ProviderAuthError("[Oracle] OCI config file not found. Configure ~/.oci/config or set OCI_CONFIG_FILE.") from None
         except Exception:
             logger.exception("[Oracle] Unexpected error.")
 
         return assets
 
+    def pre_flight_check(self) -> bool:
+        if not _OCI_AVAILABLE:
+            logger.error("[Oracle] OCI SDK not installed.")
+            return False
+            
+        compartment_id = os.getenv("OCI_COMPARTMENT_ID")
+        if not compartment_id:
+            logger.error("[Oracle] OCI_COMPARTMENT_ID is missing.")
+            return False
+            
+        # Check if config file exists
+        config_file = os.path.expanduser(os.getenv("OCI_CONFIG_FILE", "~/.oci/config"))
+        if os.path.exists(config_file):
+            logger.info(f"[Oracle] Using configuration file: {config_file}")
+        else:
+            logger.info("[Oracle] No configuration file found. Defaulting to Instance Principal identity.")
+            
+        return True
+
 
 # ── Part 3f: Alibaba Cloud Provider ──────────────────────────────────────────
 try:
-    from aliyunsdkcore.client import AcsClient
-    from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest
+    from aliyunsdkcore.client import AcsClient  # type: ignore
+    from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import DescribeInstancesRequest  # type: ignore
     _ALIBABA_AVAILABLE = True
 except ImportError:
     _ALIBABA_AVAILABLE = False
@@ -971,7 +1221,13 @@ class AlibabaCloudProvider(CloudProvider):
 
         for region in regions:
             try:
-                client = AcsClient(access_key_id, access_key_secret, region)
+                if access_key_id and access_key_secret:
+                    client = AcsClient(access_key_id, access_key_secret, region)
+                else:
+                    # Fallback to RAM Role for ECS
+                    logger.debug("[Alibaba] No keys found. Using RAM Role for ECS identity.")
+                    client = AcsClient(region_id=region) # SDK automatically tries metadata service if no keys provided
+                
                 page = 1
 
                 while True:
@@ -1008,9 +1264,22 @@ class AlibabaCloudProvider(CloudProvider):
                 logger.info("[Alibaba] Found %d instances in %s.", len(assets), region)
 
             except Exception:
-                logger.exception("[Alibaba] Error scanning region '%s'.", region)
+                logger.info("[Alibaba] Error scanning region '%s'.", region)
 
         return assets
+
+    def pre_flight_check(self) -> bool:
+        if not _ALIBABA_AVAILABLE:
+            logger.error("[Alibaba] Alibaba SDK not installed.")
+            return False
+            
+        access_key_id = os.getenv("ALIBABA_ACCESS_KEY_ID")
+        if access_key_id:
+            logger.info("[Alibaba] Using static Access Keys for authentication.")
+        else:
+            logger.info("[Alibaba] No Access Keys found. Defaulting to RAM Role for ECS identity.")
+            
+        return True
 
 
 # ── Part 3g: Generic JSON Provider ────────────────────────────────────────────
@@ -1128,31 +1397,32 @@ def report_metrics(config: AgentConfig, metrics: DiscoveryMetrics) -> bool:
     headers = _get_auth_headers(config)
     headers["Content-Length"] = str(len(body.encode("utf-8")))
     
-    ssl_context = config.make_ssl_context()
-    if config.ssl_verify:
-        conn = http.client.HTTPSConnection(
-            config.backend_host,
-            timeout=config.timeout_sec,
-            context=ssl_context
-        )
-    else:
-        conn = http.client.HTTPConnection(
-            config.backend_host,
-            timeout=config.timeout_sec
-        )
-
+    success = False
+    conn = None
     try:
+        ssl_context = config.make_ssl_context()
+        if config.ssl_verify:
+            conn = http.client.HTTPSConnection(
+                config.backend_host,
+                timeout=config.timeout_sec,
+                context=ssl_context
+            )
+        else:
+            conn = http.client.HTTPConnection(
+                config.backend_host,
+                timeout=config.timeout_sec
+            )
+
         conn.request("POST", "/api/v1/collect/metrics", body=body, headers=headers)
         response = conn.getresponse()
         response.read()
-        return response.status == 200
+        success = (response.status == 200)
     except Exception as e:
         logger.error(f"Failed to report metrics: {e}")
-        return False
     finally:
         if conn:
             conn.close()
-
+    return success
 
 def _build_payload(asset: NormalisedAsset, config: AgentConfig) -> Dict[str, Any]:
     """Convert a NormalisedAsset into the backend DiscoveryPayload schema."""
@@ -1162,12 +1432,13 @@ def _build_payload(asset: NormalisedAsset, config: AgentConfig) -> Dict[str, Any
         "hostname": asset.hostname,
         "ip_address": asset.ip,
         "hardware": {
-            "cpu": "Cloud vCPU",
-            "ram_mb": 0,
+            "cpu": asset.specs.get("Processor", "Cloud vCPU"),
+            "ram_mb": int(float(asset.specs.get("RAM", "0").split()[0]) * 1024) if "RAM" in asset.specs and asset.specs["RAM"] != "N/A" else 0,
             "serial": asset.serial,  # None if unknown — no fake UUID
             "model": asset.model,
             "vendor": asset.vendor,
             "type": asset.type,
+            "storage_gb": int(asset.specs.get("Storage", "0").split()[0]) if "Storage" in asset.specs and asset.specs["Storage"] != "N/A" else 0,
         },
         "os": {
             "name": asset.specs.get("OS", "Cloud OS"),
@@ -1188,19 +1459,22 @@ def check_backend_health(config: AgentConfig) -> bool:
     """Verify backend is accessible before starting discovery."""
     logger.info("Checking backend health...")
     
-    if config.ssl_verify:
-        conn = http.client.HTTPSConnection(
-            config.backend_host,
-            timeout=5,
-            context=ssl_context
-        )
-    else:
-        conn = http.client.HTTPConnection(
-            config.backend_host,
-            timeout=5
-        )
-
+    success = False
+    conn = None
     try:
+        ssl_context = config.make_ssl_context()
+        if config.ssl_verify:
+            conn = http.client.HTTPSConnection(
+                config.backend_host,
+                timeout=5,
+                context=ssl_context
+            )
+        else:
+            conn = http.client.HTTPConnection(
+                config.backend_host,
+                timeout=5
+            )
+
         headers = {"X-Agent-Key": config.agent_secret}
         conn.request("GET", "/health", headers=headers)
         response = conn.getresponse()
@@ -1208,18 +1482,16 @@ def check_backend_health(config: AgentConfig) -> bool:
         
         if response.status == 200:
             logger.info("✓ Backend is healthy")
-            return True
+            success = True
         else:
             logger.warning(f"Backend health check returned HTTP {response.status}")
-            return False
             
     except Exception as e:
         logger.error(f"Backend health check failed: {e}")
-        return False
     finally:
         if conn:
             conn.close()
-
+    return success
 
 def send_to_backend(
     asset: NormalisedAsset,
@@ -1248,19 +1520,20 @@ def send_to_backend(
     ssl_context = config.make_ssl_context()
 
     for attempt in range(1, config.max_retries + 1):
-        if config.ssl_verify:
-            conn = http.client.HTTPSConnection(
-                config.backend_host,
-                timeout=config.timeout_sec,
-                context=ssl_context
-            )
-        else:
-            conn = http.client.HTTPConnection(
-                config.backend_host,
-                timeout=config.timeout_sec
-            )
-
+        conn = None # Initialize conn for each attempt
         try:
+            if config.ssl_verify:
+                conn = http.client.HTTPSConnection(
+                    config.backend_host,
+                    timeout=config.timeout_sec,
+                    context=ssl_context
+                )
+            else:
+                conn = http.client.HTTPConnection(
+                    config.backend_host,
+                    timeout=config.timeout_sec
+                )
+
             conn.request("POST", "/api/v1/collect", body=body, headers=headers)
             response = conn.getresponse()
             resp_body = response.read().decode("utf-8", errors="replace")
@@ -1339,10 +1612,10 @@ def discover_all_providers_parallel(
     metrics.providers_attempted = len(providers)
     
     with ThreadPoolExecutor(max_workers=config.max_provider_workers) as executor:
-        future_to_provider = {
-            executor.submit(run_provider_discovery, provider, metrics, shutdown): provider.name
-            for provider in providers
-        }
+        future_to_provider = {}
+        for provider in providers:
+            fut = executor.submit(run_provider_discovery, provider, metrics, shutdown)  # type: ignore # pyre-ignore
+            future_to_provider[fut] = provider.name
         
         for future in as_completed(future_to_provider):
             provider_name = future_to_provider[future]
@@ -1414,6 +1687,10 @@ def main() -> None:
         if not check_backend_health(config):
             logger.warning("Backend health check failed, continuing anyway...")
 
+    # ── Load credentials from DB (frontend config UI fallback) ───────────────
+    if not args.dry_run:
+        load_cloud_config_from_db()
+
     # ── Build provider list ───────────────────────────────────────────────────
     extra_kwargs: Dict[str, Dict[str, Any]] = {}
 
@@ -1442,6 +1719,21 @@ def main() -> None:
     if not providers:
         logger.error("No valid providers could be initialised. Exiting.")
         sys.exit(1)
+
+    # ── Pre-flight Checks ─────────────────────────────────────────────────────
+    logger.info("Performing pre-flight checks for %d providers...", len(providers))
+    active_providers = []
+    for p in providers:
+        if p.pre_flight_check():
+            active_providers.append(p)
+        else:
+            logger.warning(f"[{p.name}] Pre-flight check FAILED. Skipping this provider.")
+
+    if not active_providers:
+        logger.error("No providers passed pre-flight checks. Exiting.")
+        sys.exit(1)
+        
+    providers = active_providers
 
     # ── Parallel Discovery ────────────────────────────────────────────────────
     logger.info(f"Running {len(providers)} providers in parallel...")
@@ -1487,7 +1779,10 @@ def main() -> None:
     logger.info(f"Syncing assets with {config.max_asset_workers} workers...")
     
     with ThreadPoolExecutor(max_workers=config.max_asset_workers) as executor:
-        futures = [executor.submit(sync_asset, asset) for asset in all_assets]
+        futures = []
+        for asset in all_assets:
+            fut = executor.submit(sync_asset, asset)  # type: ignore # pyre-ignore
+            futures.append(fut)
         
         for future in as_completed(futures):
             if not shutdown.should_continue():

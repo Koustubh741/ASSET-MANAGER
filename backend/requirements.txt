@@ -17,7 +17,13 @@ pysnmp
 scapy
 openai
 apscheduler
+celery
+redis
+flower
 
 # Remote Server Discovery
 paramiko
 pywinrm
+ldap3
+ntlm-auth
+

@@ -8,14 +8,16 @@ const ROLE_DASHBOARD_MAP = {
     'ASSET_MANAGER': '/dashboard/asset-inventory-manager',
     'PROCUREMENT': '/procurement',
     'FINANCE': '/finance',
-    'IT_MANAGEMENT': '/dashboard/it-management',
+    'IT_MANAGEMENT': '/executive-dashboard',
+    'CEO': '/executive-dashboard',
+    'CFO': '/executive-dashboard',
     'END_USER': '/dashboard/end-user',
     'MANAGER': '/dashboard/end-user',
-    'IT_SUPPORT': '/dashboard/it-management'
+    'IT_SUPPORT': '/executive-dashboard'
 };
 
 export default function AuthGuard({ children }) {
-    const { isAuthenticated, currentRole, ROLES, isLoading } = useRole();
+    const { isAuthenticated, currentRole, isAdmin, isFinanceStaff, isProcurementStaff, isLoading } = useRole();
     const router = useRouter();
     const [authorized, setAuthorized] = useState(false);
     const [setupStatusLoaded, setSetupStatusLoaded] = useState(false);
@@ -24,8 +26,7 @@ export default function AuthGuard({ children }) {
 
     useEffect(() => {
         if (!isAuthenticated || !currentRole) return;
-        const isSystemAdmin = currentRole.slug === 'ADMIN';
-        if (!isSystemAdmin) {
+        if (!isAdmin) {
             setSetupStatusLoaded(true);
             setSetupCompleted(true);
             return;
@@ -81,13 +82,7 @@ export default function AuthGuard({ children }) {
                 return;
             }
 
-            if (!currentRole) {
-                console.warn("AuthGuard: [INCOMPLETE] Authenticated but no role. This shouldn't happen.");
-                setAuthorized(true);
-                return;
-            }
 
-            const isSystemAdmin = currentRole.slug === 'ADMIN';
             const targetPath = ROLE_DASHBOARD_MAP[currentRole.slug] || '/dashboard/end-user';
 
             // Special case: if we are already at the target path, we are authorized.
@@ -97,7 +92,7 @@ export default function AuthGuard({ children }) {
             }
 
             if (isSetupPage) {
-                if (!isSystemAdmin) {
+                if (!isAdmin) {
                     isNavigating.current = true;
                     router.push(targetPath).finally(() => { isNavigating.current = false; });
                     return;
@@ -112,7 +107,7 @@ export default function AuthGuard({ children }) {
             }
 
             if (currentPath === '/') {
-                if (isSystemAdmin && setupStatusLoaded && !setupCompleted) {
+                if (isAdmin && setupStatusLoaded && !setupCompleted) {
                     isNavigating.current = true;
                     router.push('/setup').finally(() => { isNavigating.current = false; });
                     return;
@@ -127,27 +122,38 @@ export default function AuthGuard({ children }) {
             const isFinancePath = currentPath === '/finance' || currentPath.startsWith('/finance/');
             const isProcurementPath = currentPath === '/procurement' || currentPath.startsWith('/procurement/');
 
-            const isAdminRole = (currentRole.slug === 'ADMIN');
-            const isFinanceRole = (currentRole.slug === 'FINANCE' || isAdminRole);
-            const isProcurementRole = (currentRole.slug === 'PROCUREMENT' || isAdminRole);
-
-            if (isSystemAdminPath && !isAdminRole) {
+            if (isSystemAdminPath && !isAdmin) {
                 isNavigating.current = true;
-                router.replace(targetPath).finally(() => { isNavigating.current = false; });
+                if (currentPath !== targetPath) {
+                    router.replace(targetPath).finally(() => { isNavigating.current = false; });
+                } else {
+                    isNavigating.current = false;
+                    setAuthorized(true);
+                }
                 return;
             }
 
-            if (isFinancePath && !isFinanceRole) {
+            if (isFinancePath && !isFinanceStaff) {
                 console.warn(`AuthGuard: [UNAUTHORIZED] ${currentRole.slug} attempted to access Finance portal. Redirecting.`);
                 isNavigating.current = true;
-                router.replace(targetPath).finally(() => { isNavigating.current = false; });
+                if (currentPath !== targetPath) {
+                    router.replace(targetPath).finally(() => { isNavigating.current = false; });
+                } else {
+                    isNavigating.current = false;
+                    setAuthorized(true);
+                }
                 return;
             }
 
-            if (isProcurementPath && !isProcurementRole) {
+            if (isProcurementPath && !isProcurementStaff) {
                 console.warn(`AuthGuard: [UNAUTHORIZED] ${currentRole.slug} attempted to access Procurement portal. Redirecting.`);
                 isNavigating.current = true;
-                router.replace(targetPath).finally(() => { isNavigating.current = false; });
+                if (currentPath !== targetPath) {
+                    router.replace(targetPath).finally(() => { isNavigating.current = false; });
+                } else {
+                    isNavigating.current = false;
+                    setAuthorized(true);
+                }
                 return;
             }
 
@@ -155,7 +161,7 @@ export default function AuthGuard({ children }) {
         };
 
         if (router.isReady) {
-            if (isAuthenticated && currentRole?.slug === 'ADMIN' && !setupStatusLoaded) {
+            if (isAuthenticated && isAdmin && !setupStatusLoaded) {
                 return;
             }
             checkAuth();
@@ -163,11 +169,11 @@ export default function AuthGuard({ children }) {
 
     }, [isAuthenticated, currentRole, router.asPath, router.isReady, isLoading, setupStatusLoaded, setupCompleted]);
 
-    const needsSetupCheck = isAuthenticated && currentRole?.slug === 'ADMIN' && !setupStatusLoaded;
+    const needsSetupCheck = isAuthenticated && isAdmin && !setupStatusLoaded;
     const showLoading = isLoading || needsSetupCheck || (!authorized && router.pathname !== '/login' && router.pathname !== '/setup' && router.asPath !== '/setup');
 
     if (showLoading) {
-        return <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center text-slate-500 dark:text-slate-400 text-sm">Loading Identity...</div>;
+        return <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center text-app-text-muted text-sm">Loading Identity...</div>;
     }
 
     return children;

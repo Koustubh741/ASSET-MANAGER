@@ -243,7 +243,7 @@ export default function CMDBMapPage() {
                 <div className="p-4 rounded-full bg-blue-500/10 animate-pulse">
                     <Activity size={48} className="text-blue-500" />
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 font-mono text-sm animate-pulse">Mapping infrastructure dependencies...</p>
+                <p className="text-app-text-muted font-mono text-sm animate-pulse">Mapping infrastructure dependencies...</p>
             </div>
         );
     }
@@ -252,61 +252,61 @@ export default function CMDBMapPage() {
         return (
             <div className="min-h-screen bg-[#0B1120] flex flex-col items-center justify-center space-y-4">
                 <AlertCircle size={48} className="text-rose-500" />
-                <p className="text-slate-900 dark:text-slate-100 font-bold">Failed to build configuration map</p>
+                <p className="text-app-text font-bold">Failed to build configuration map</p>
                 <Link href="/enterprise" className="text-blue-400 hover:text-blue-300 text-sm">Return to Portal</Link>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-app-text flex flex-col overflow-hidden">
             {/* --- TOP BAR --- */}
-            <div className="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 backdrop-blur-md px-8 py-4 flex items-center justify-between z-20">
+            <div className="border-b border-app-border bg-white dark:bg-slate-900/50 backdrop-blur-md px-8 py-4 flex items-center justify-between z-20">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => window.history.length > 1 ? router.back() : router.push('/enterprise-features')}
-                        className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-lg transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white"
+                        className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg transition-colors text-app-text-muted hover:text-app-text"
                     >
                         <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <h1 className="text-xl font-bold text-app-text flex items-center gap-2">
                             <Activity className="text-blue-500" size={20} />
                             CMDB Visualizer
                         </h1>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">Topology & Impact Analysis</p>
+                        <p className="text-xs text-app-text-muted font-mono">Topology & Impact Analysis</p>
                     </div>
                 </div>
 
                 {/* --- CONTROLS --- */}
                 <div className="flex items-center gap-4">
                     {/* View Toggles */}
-                    <div className="bg-slate-50 dark:bg-slate-800 p-1 rounded-lg flex border border-slate-200 dark:border-white/5">
+                    <div className="bg-slate-50 dark:bg-slate-800 p-1 rounded-lg flex border border-app-border">
                         <button
                             onClick={() => { setViewMode('standard'); setSelectedNode(null); setSimulatingChange(false); }}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'standard' ? 'bg-blue-600 text-slate-900 dark:text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'}`}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'standard' ? 'bg-blue-600 text-app-text shadow' : 'text-app-text-muted hover:text-app-text'}`}
                         >
                             Standard
                         </button>
                         <button
                             onClick={() => { setViewMode('impact'); setSelectedNode(null); }}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'impact' ? 'bg-red-600 text-slate-900 dark:text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'}`}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'impact' ? 'bg-red-600 text-app-text shadow' : 'text-app-text-muted hover:text-app-text'}`}
                         >
                             Incident Impact
                         </button>
                         <button
                             onClick={() => { setViewMode('risk'); setSelectedNode(null); setSimulatingChange(false); }}
-                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'risk' ? 'bg-amber-600 text-slate-900 dark:text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'}`}
+                            className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${viewMode === 'risk' ? 'bg-amber-600 text-app-text shadow' : 'text-app-text-muted hover:text-app-text'}`}
                         >
                             Change Risk
                         </button>
                     </div>
 
-                    <div className="h-6 w-px bg-slate-200 dark:bg-white/10 mx-2"></div>
+                    <div className="h-6 w-px bg-app-surface mx-2"></div>
 
                     <button
                         onClick={() => setShowBusinessLayer(!showBusinessLayer)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border transition-all ${showBusinessLayer ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border transition-all ${showBusinessLayer ? 'bg-purple-500/20 border-purple-500 text-purple-400' : 'bg-slate-50 dark:bg-slate-800 border-app-border text-app-text-muted hover:text-app-text'}`}
                     >
                         <Briefcase size={14} />
                         Business View
@@ -402,38 +402,38 @@ export default function CMDBMapPage() {
 
                             {/* Label */}
                             <div className={`mt-3 text-center transition-opacity duration-300 ${viewMode !== 'standard' && selectedNode && node.id !== selectedNode && !impactedNodes.has(node.id) ? 'opacity-20' : 'opacity-100'}`}>
-                                <p className="text-xs font-bold text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-900/80 px-2 py-0.5 rounded-full border border-slate-200 dark:border-white/10 backdrop-blur-sm whitespace-nowrap">{node.name}</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mt-0.5">{node.type}</p>
+                                <p className="text-xs font-bold text-slate-900 dark:text-slate-200 bg-white dark:bg-slate-900/80 px-2 py-0.5 rounded-full border border-app-border backdrop-blur-sm whitespace-nowrap">{node.name}</p>
+                                <p className="text-[10px] text-app-text-muted uppercase font-semibold mt-0.5">{node.type}</p>
                             </div>
 
                             {/* TOOLTIP ON HOVER */}
-                            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+                            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 w-48 bg-white dark:bg-slate-900 border border-app-border rounded-xl p-3 shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
                                 <div className="flex justify-between items-start mb-2">
-                                    <span className="text-xs font-bold text-slate-900 dark:text-white">{node.name}</span>
+                                    <span className="text-xs font-bold text-app-text">{node.name}</span>
                                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${node.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-500/20 text-orange-400'}`}>{node.status}</span>
                                 </div>
                                 <div className="space-y-1">
                                     {node.details && (
                                         <>
-                                            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                                            <div className="flex justify-between text-[10px] text-app-text-muted">
                                                 <span>OEM</span>
                                                 <span className="text-blue-400 font-semibold uppercase">{node.details.vendor || 'Unknown'}</span>
                                             </div>
-                                            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                                            <div className="flex justify-between text-[10px] text-app-text-muted">
                                                 <span>S/N</span>
                                                 <span className="text-slate-900 dark:text-slate-200 font-mono truncate max-w-[80px]">{node.details.serial_number || 'UNKNOWN'}</span>
                                             </div>
                                         </>
                                     )}
-                                    <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                                    <div className="flex justify-between text-[10px] text-app-text-muted">
                                         <span>Health</span>
                                         <span className="text-emerald-400">98%</span>
                                     </div>
-                                    <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                                    <div className="flex justify-between text-[10px] text-app-text-muted">
                                         <span>Issues</span>
                                         <span>0 Open</span>
                                     </div>
-                                    <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                                    <div className="flex justify-between text-[10px] text-app-text-muted">
                                         <span>Last Patch</span>
                                         <span>2d ago</span>
                                     </div>
@@ -451,26 +451,26 @@ export default function CMDBMapPage() {
                                 <AlertTriangle className="text-red-500" size={24} />
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Critical Impact Detected</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                                    Failure in <span className="font-mono text-xs text-slate-900 dark:text-white bg-slate-200 dark:bg-white/10 px-1 py-0.5 rounded">{visibleNodes.find(n => n.id === selectedNode)?.name}</span> will cascade to {impactedNodes.size - 1} dependent systems.
+                                <h3 className="text-lg font-bold text-app-text mb-1">Critical Impact Detected</h3>
+                                <p className="text-sm text-app-text-muted mb-4">
+                                    Failure in <span className="font-mono text-xs text-app-text bg-app-surface px-1 py-0.5 rounded">{visibleNodes.find(n => n.id === selectedNode)?.name}</span> will cascade to {impactedNodes.size - 1} dependent systems.
                                 </p>
                                 <div className="grid grid-cols-3 gap-2">
-                                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-2 text-center border border-slate-200 dark:border-white/5">
-                                        <div className="text-xl font-bold text-slate-900 dark:text-white">{[...impactedNodes].filter(id => id.includes('svc-') || id.includes('app')).length}</div>
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Services</div>
+                                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-2 text-center border border-app-border">
+                                        <div className="text-xl font-bold text-app-text">{[...impactedNodes].filter(id => id.includes('svc-') || id.includes('app')).length}</div>
+                                        <div className="text-[10px] text-app-text-muted uppercase">Services</div>
                                     </div>
-                                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-2 text-center border border-slate-200 dark:border-white/5">
-                                        <div className="text-xl font-bold text-slate-900 dark:text-white">{[...impactedNodes].some(id => id.includes('user')) ? 'All' : '0'}</div>
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Users</div>
+                                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-2 text-center border border-app-border">
+                                        <div className="text-xl font-bold text-app-text">{[...impactedNodes].some(id => id.includes('user')) ? 'All' : '0'}</div>
+                                        <div className="text-[10px] text-app-text-muted uppercase">Users</div>
                                     </div>
-                                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-2 text-center border border-slate-200 dark:border-white/5">
+                                    <div className="bg-slate-100 dark:bg-slate-950 rounded-lg p-2 text-center border border-app-border">
                                         <div className="text-xl font-bold text-red-400">High</div>
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Severity</div>
+                                        <div className="text-[10px] text-app-text-muted uppercase">Severity</div>
                                     </div>
                                 </div>
                             </div>
-                            <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white">
+                            <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-full text-app-text-muted hover:text-app-text">
                                 <XCircle size={20} />
                             </button>
                         </div>
@@ -481,7 +481,7 @@ export default function CMDBMapPage() {
                 {viewMode === 'risk' && simulatingChange && selectedNode && (
                     <div className="absolute top-24 right-8 w-80 bg-white dark:bg-slate-900/90 backdrop-blur-xl border border-amber-500/30 rounded-2xl p-6 shadow-2xl animate-in fade-in slide-in-from-right-6 z-40">
                         <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-app-text flex items-center gap-2">
                                 <Zap className="text-amber-400" size={18} />
                                 Change Risk
                             </h3>
@@ -491,28 +491,28 @@ export default function CMDBMapPage() {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="bg-black/20 rounded-lg p-3 border border-slate-200 dark:border-white/5">
-                                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Target Asset</p>
-                                <p className="text-sm font-medium text-slate-900 dark:text-white">{visibleNodes.find(n => n.id === selectedNode)?.name}</p>
+                            <div className="bg-black/20 rounded-lg p-3 border border-app-border">
+                                <p className="text-xs text-app-text-muted uppercase font-semibold mb-1">Target Asset</p>
+                                <p className="text-sm font-medium text-app-text">{visibleNodes.find(n => n.id === selectedNode)?.name}</p>
                             </div>
 
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">Total Dependencies</span>
-                                    <span className="text-slate-900 dark:text-white font-mono">{changeRisk?.count}</span>
+                                    <span className="text-app-text-muted">Total Dependencies</span>
+                                    <span className="text-app-text font-mono">{changeRisk?.count}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">User Impact</span>
+                                    <span className="text-app-text-muted">User Impact</span>
                                     <span className={`${changeRisk?.userImpact ? 'text-red-400' : 'text-emerald-400'}`}>{changeRisk?.userImpact ? 'Yes' : 'No'}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-slate-500 dark:text-slate-400">Business Critical</span>
+                                    <span className="text-app-text-muted">Business Critical</span>
                                     <span className={`${changeRisk?.bizImpact ? 'text-red-400' : 'text-emerald-400'}`}>{changeRisk?.bizImpact ? 'Yes' : 'No'}</span>
                                 </div>
                             </div>
 
-                            <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                                <button className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-slate-900 dark:text-white rounded-lg font-medium text-sm transition-colors shadow-lg shadow-blue-500/20">
+                            <div className="pt-4 border-t border-app-border">
+                                <button className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-app-text rounded-lg font-medium text-sm transition-colors shadow-lg shadow-blue-500/20">
                                     Generate Risk Report
                                 </button>
                             </div>

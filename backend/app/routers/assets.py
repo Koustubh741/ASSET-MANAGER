@@ -11,8 +11,8 @@ from ..services import asset_service
 from ..services import asset_request_service
 from ..database.database import get_db
 from ..models.models import AssetRequest
-from ..utils.auth_utils import get_current_user
-from datetime import date
+from ..utils.auth_utils import get_current_user, STAFF_ROLES
+from datetime import date, datetime, timezone
 
 router = APIRouter(
     prefix="/assets",
@@ -28,18 +28,18 @@ async def get_all_assets(
     """
     Get all assets (Asynchronous).
     """
-    # Security Root Fix: Only privileged roles see global asset list
-    # Managers see assets within their department
-    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"] and current_user.position != "MANAGER":
+    privileged_roles = STAFF_ROLES
+    print(f"DEBUG: User={current_user.full_name}, Role={current_user.role}, Position={current_user.position}")
+    if current_user.role not in privileged_roles and current_user.position != "MANAGER":
         raise HTTPException(
             status_code=403, 
-            detail="Unauthorized: You can only view your own assets via /my-assets"
+            detail=f"Unauthorized: You can only view your own assets via /my-assets. Your Role: {current_user.role}, Position: {current_user.position}"
         )
     
     # Enforce department scoping for managers
     department = None
     assigned_to = None
-    if current_user.role not in ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"] and current_user.position == "MANAGER":
+    if current_user.role not in privileged_roles and current_user.position == "MANAGER":
         department = current_user.department or current_user.domain
         assigned_to = current_user.full_name # Unified scoping: Dept OR Mine
         
@@ -167,7 +167,7 @@ async def get_asset(
         
     # ROOT FIX: Security & Privacy Wall
     # 1. Privileged roles see global inventory
-    privileged_roles = ["FINANCE", "PROCUREMENT", "ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"]
+    privileged_roles = STAFF_ROLES
     if current_user.role in privileged_roles:
         return asset
 
@@ -231,11 +231,12 @@ async def update_asset(
     """
     Update an asset (Asynchronous).
     """
-    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or ADMIN can update assets
-    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"]:
+    # RBAC: Only Asset Managers, IT Management, or IT Support can update assets
+    # ROOT FIX: Centralized RBAC
+    if current_user.role not in STAFF_ROLES:
         raise HTTPException(
-            status_code=403,
-            detail="Unauthorized: Only Asset Managers or IT Management can update assets"
+            status_code=403, 
+            detail=f"Access Denied: Role {current_user.role} is not authorized for global asset view."
         )
     
     try:
@@ -304,11 +305,12 @@ async def update_asset_status(
     Update asset status (Asynchronous).
     Accepts JSON body with 'status' field.
     """
-    # RBAC: Only ASSET_MANAGER, IT_MANAGEMENT, ADMIN, or ADMIN can update asset status
-    if current_user.role not in ["ASSET_MANAGER", "IT_MANAGEMENT", "ADMIN"]:
+    # RBAC: Only Asset Managers, IT Management, or IT Support can update asset status
+    privileged_update_roles = STAFF_ROLES
+    if current_user.role not in privileged_update_roles:
         raise HTTPException(
             status_code=403,
-            detail="Unauthorized: Only Asset Managers or IT Management can update asset status"
+            detail="Unauthorized: Insufficient permissions to update asset status"
         )
     
     updated_asset = await asset_service.update_asset(
@@ -702,7 +704,7 @@ async def provision_software(
         details={
             "software": software_name,
             "status": "Installed",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     )
     db.add(audit_entry)

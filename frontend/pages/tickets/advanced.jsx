@@ -140,23 +140,23 @@ export default function AdvancedTicketsPage() {
     };
 
     return (
-        <Layout className="min-h-screen bg-slate-50 dark:bg-[#07090D] font-['Inter'] transition-colors duration-300">
+        <Layout className="min-h-screen bg-app-bg font-['Inter'] transition-colors duration-300">
             <Head>
                 <title>Advanced Ops | Scylla Ticket Center</title>
             </Head>
 
             {/* --- TOP METRICS BAR --- */}
-            <div className="bg-white/40 dark:bg-[#0D1117]/40 border-b border-slate-200 dark:border-white/5 px-8 py-5 flex items-center justify-between sticky top-0 z-50 backdrop-blur-2xl transition-all duration-500">
+            <div className="bg-app-surface/40 border-b border-app-border px-8 py-5 flex items-center justify-between sticky top-0 z-50 backdrop-blur-2xl transition-all duration-500">
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => router.push('/dashboard/it_support')}
-                        className="group p-2.5 bg-slate-100 dark:bg-white/5 hover:bg-indigo-600 dark:hover:bg-indigo-600 rounded-2xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-all shadow-sm border border-slate-200 dark:border-white/5"
+                        className="group p-2.5 bg-app-surface-soft hover:bg-indigo-600 dark:hover:bg-indigo-600 rounded-2xl text-app-text-muted hover:text-app-text transition-all shadow-sm border border-app-border"
                     >
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase font-['Outfit']">
+                            <h1 className="text-2xl font-black text-app-text tracking-tighter uppercase font-['Outfit']">
                                 Ticket Ops <span className="text-indigo-600 dark:text-indigo-500 italic">Center</span>
                             </h1>
                             <Tooltip title="View Smart ID Guide">
@@ -168,7 +168,7 @@ export default function AdvancedTicketsPage() {
                                 </button>
                             </Tooltip>
                         </div>
-                        <p className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.3em] leading-none mt-1.5 flex items-center gap-2">
+                        <p className="text-[9px] text-app-text-muted font-black uppercase tracking-[0.3em] leading-none mt-1.5 flex items-center gap-2">
                             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
                             Real-time Fleet Intelligence
                         </p>
@@ -180,15 +180,15 @@ export default function AdvancedTicketsPage() {
                         { label: 'Active', value: stats.open, color: 'text-indigo-600 dark:text-indigo-400', glow: 'shadow-[0_0_20px_rgba(79,70,229,0.15)]', icon: Ticket },
                         { label: 'Unassigned', value: stats.unassigned, color: 'text-amber-600 dark:text-amber-400', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.15)]', icon: User },
                         { label: 'High Priority', value: stats.highPriority, color: 'text-rose-600 dark:text-rose-400', glow: 'shadow-[0_0_20px_rgba(225,29,72,0.15)]', icon: AlertCircle },
-                        { label: 'SLA Breach', value: stats.overdue, color: 'text-rose-700 dark:text-rose-600', glow: 'shadow-[0_0_20px_rgba(225,29,72,0.25)]', icon: Clock }
+                        { label: 'SLA Breach', value: stats.overdue, color: 'text-rose-700 dark:text-rose-500', glow: 'shadow-[0_0_20px_rgba(225,29,72,0.25)]', icon: Clock }
                     ].map((stat, i) => (
-                        <div key={i} className={`flex items-center gap-4 px-5 py-2.5 bg-white/50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 rounded-2xl ${stat.glow} transition-all hover:translate-y-[-2px]`}>
-                            <div className={`p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-white/5 ${stat.color}`}>
+                        <div key={i} className={`flex items-center gap-4 px-5 py-2.5 bg-white/50 dark:bg-white/[0.03] border border-app-border rounded-2xl ${stat.glow} transition-all hover:translate-y-[-2px]`}>
+                            <div className={`p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 border-app-border ${stat.color}`}>
                                 <stat.icon size={16} />
                             </div>
                             <div className="flex flex-col">
                                 <span className={`text-lg font-black leading-none ${stat.color}`}>{stat.value}</span>
-                                <span className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest mt-1">{stat.label}</span>
+                                <span className="text-[9px] text-app-text-muted font-black uppercase tracking-widest mt-1">{stat.label}</span>
                             </div>
                         </div>
                     ))}
@@ -197,34 +197,34 @@ export default function AdvancedTicketsPage() {
 
             <Layout className="bg-transparent">
                 {/* --- LEFT SIDEBAR (FILTERS) --- */}
-                <Sider width={300} className="bg-white dark:bg-[#0D1117] border-r border-slate-200 dark:border-white/5 p-8 space-y-10 custom-scrollbar overflow-y-auto" style={{ background: 'transparent' }}>
+                <Sider width={300} className="bg-app-surface border-r border-app-border p-8 space-y-10 custom-scrollbar overflow-y-auto" style={{ background: 'transparent' }}>
                     <div>
-                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] block mb-4">Neural Query</label>
+                        <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] block mb-4">Neural Query</label>
                         <div className="relative group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 dark:text-slate-600 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-all duration-300" size={16} />
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-app-text-muted dark:text-slate-600 group-focus-within:text-indigo-500 dark:group-focus-within:text-indigo-400 transition-all duration-300" size={16} />
                             <input
                                 type="text"
                                 placeholder="ID, User, Subject..."
-                                className="w-full bg-slate-100 dark:bg-white/[0.02] border border-slate-200 dark:border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 focus:ring-8 focus:ring-indigo-500/[0.05] transition-all placeholder:text-slate-500 dark:text-slate-400 dark:placeholder:text-slate-700 font-medium font-['Inter']"
+                                className="w-full bg-slate-100 dark:bg-white/[0.02] border border-app-border rounded-2xl py-3.5 pl-12 pr-4 text-sm text-app-text focus:outline-none focus:border-indigo-500 focus:ring-8 focus:ring-indigo-500/[0.05] transition-all placeholder:text-app-text-muted dark:placeholder:text-slate-700 font-medium font-['Inter']"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <Divider className="border-slate-200 dark:border-white/5 !my-8" />
+                    <Divider className="border-app-border !my-8" />
 
                     <div className="space-y-10">
                         <div>
-                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] block mb-5">Lifecycle Status</label>
+                            <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] block mb-5">Lifecycle Status</label>
                             <div className="grid grid-cols-1 gap-2">
                                 {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map(s => (
                                     <button
                                         key={s}
                                         onClick={() => setFilters(f => ({ ...f, status: s }))}
                                         className={`group relative flex items-center justify-between px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 border ${filters.status === s
-                                            ? 'bg-indigo-600 border-indigo-500 text-slate-900 dark:text-white shadow-xl shadow-indigo-600/20 translate-x-1'
-                                            : 'bg-slate-50 dark:bg-white/[0.02] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white border-slate-200 dark:border-white/5 hover:border-indigo-500/30'}`}
+                                            ? 'bg-indigo-600 border-indigo-500 text-white text-app-text shadow-xl shadow-indigo-600/20 translate-x-1'
+                                            : 'bg-slate-50 dark:bg-white/[0.02] text-app-text-muted hover:text-slate-900 dark:hover:text-white border-app-border hover:border-indigo-500/30'}`}
                                     >
                                         <span>{s.replace('_', ' ')}</span>
                                         {filters.status === s && <Activity size={14} className="animate-pulse" />}
@@ -234,7 +234,7 @@ export default function AdvancedTicketsPage() {
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] block mb-5">Neural Priority</label>
+                            <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] block mb-5">Neural Priority</label>
                             <div className="flex flex-wrap gap-2.5">
                                 {['ALL', 'HIGH', 'MEDIUM', 'LOW'].map(p => {
                                     const isP1 = p === 'HIGH';
@@ -244,8 +244,8 @@ export default function AdvancedTicketsPage() {
                                             key={p}
                                             onClick={() => setFilters(f => ({ ...f, priority: p }))}
                                             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all duration-300 ${isSelected
-                                                ? (isP1 ? 'bg-rose-600 border-rose-500 text-slate-900 dark:text-white shadow-lg shadow-rose-600/20' : 'bg-indigo-600 border-indigo-500 text-slate-900 dark:text-white shadow-lg shadow-indigo-600/20')
-                                                : 'bg-white dark:bg-white/[0.02] border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-300 dark:border-white/20'}`}
+                                                ? (isP1 ? 'bg-rose-600 border-rose-500 text-white text-app-text shadow-lg shadow-rose-600/20' : 'bg-indigo-600 border-indigo-500 text-white text-app-text shadow-lg shadow-indigo-600/20')
+                                                : 'bg-white dark:bg-white/[0.02] border-app-border text-app-text-muted hover:border-slate-400 dark:hover:border-slate-300'}`}
                                         >
                                             {p}
                                         </button>
@@ -263,13 +263,13 @@ export default function AdvancedTicketsPage() {
                             <div className="relative flex flex-col items-center text-center gap-4">
                                 <div className="relative">
                                     <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse"></div>
-                                    <div className="w-16 h-16 bg-white dark:bg-slate-900 rounded-[2rem] flex items-center justify-center border border-slate-100 dark:border-white/10 shadow-xl relative text-emerald-500">
+                                    <div className="w-16 h-16 bg-white dark:bg-slate-900 rounded-[2rem] flex items-center justify-center border border-slate-100 border-app-border shadow-xl relative text-emerald-500">
                                         <Activity size={32} className="heartbeat" />
                                     </div>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight font-['Outfit']">System Health</h4>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em] mt-1.5 flex items-center justify-center gap-2">
+                                    <h4 className="text-sm font-black text-slate-800 text-app-text uppercase tracking-tight font-['Outfit']">System Health</h4>
+                                    <p className="text-[10px] text-app-text-muted font-bold uppercase tracking-[0.2em] mt-1.5 flex items-center justify-center gap-2">
                                         Node: <span className="text-indigo-600 dark:text-indigo-400">SCYLLA-01</span>
                                     </p>
                                 </div>
@@ -288,30 +288,30 @@ export default function AdvancedTicketsPage() {
                         <div className="flex items-center gap-6">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full"></div>
-                                <div className="relative p-4 bg-white dark:bg-white/5 rounded-[2rem] border border-slate-200 dark:border-white/10 text-indigo-600 dark:text-indigo-400 shadow-xl">
+                                <div className="relative p-4 bg-white bg-app-surface-soft rounded-[2rem] border border-app-border text-indigo-600 dark:text-indigo-400 shadow-xl">
                                     <LayoutGrid size={28} />
                                 </div>
                             </div>
                             <div>
-                                <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter uppercase font-['Outfit']">Operational Grid</h2>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
+                                <h2 className="text-2xl font-black text-app-text tracking-tighter uppercase font-['Outfit']">Operational Grid</h2>
+                                <p className="text-xs text-app-text-muted font-bold uppercase tracking-[0.3em] mt-2 flex items-center gap-2">
                                     <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-md text-[9px] border border-indigo-200 dark:border-indigo-500/30">LATEST SYNC</span>
                                     Displaying {tickets.length} synchronized instances
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex items-center bg-white dark:bg-white/[0.03] p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 shadow-2xl backdrop-blur-xl">
+                        <div className="flex items-center bg-white dark:bg-white/[0.03] p-1.5 rounded-2xl border border-app-border shadow-2xl backdrop-blur-xl">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${viewMode === 'grid' ? 'bg-indigo-600 text-slate-900 dark:text-white shadow-xl shadow-indigo-600/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white'}`}
+                                className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${viewMode === 'grid' ? 'bg-indigo-600 text-white text-app-text shadow-xl shadow-indigo-600/30' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-white'}`}
                             >
                                 <LayoutGrid size={16} />
                                 <span>Grid</span>
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${viewMode === 'list' ? 'bg-indigo-600 text-slate-900 dark:text-white shadow-xl shadow-indigo-600/30' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white'}`}
+                                className={`px-4 py-2.5 rounded-xl transition-all duration-300 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${viewMode === 'list' ? 'bg-indigo-600 text-white text-app-text shadow-xl shadow-indigo-600/30' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-white'}`}
                             >
                                 <List size={16} />
                                 <span>List</span>
@@ -322,13 +322,13 @@ export default function AdvancedTicketsPage() {
                     {loading ? (
                         <div className="h-[60vh] flex flex-col items-center justify-center gap-4 opacity-50">
                             <Spin size="large" />
-                            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest animate-pulse">Syncing Tactical Data...</span>
+                            <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest animate-pulse">Syncing Tactical Data...</span>
                         </div>
                     ) : tickets.length === 0 ? (
                         <div className="h-[60vh] flex items-center justify-center">
                             <Empty
                                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                description={<span className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs">No matching incidents found</span>}
+                                description={<span className="text-app-text-muted font-bold uppercase tracking-widest text-xs">No matching incidents found</span>}
                             />
                         </div>
                     ) : (
@@ -339,7 +339,7 @@ export default function AdvancedTicketsPage() {
                                     <Card
                                         key={ticket.id}
                                         onClick={() => setSelectedTicket(ticket)}
-                                        className={`!bg-white dark:!bg-[#0D1117] !border-slate-200 dark:!border-slate-200 dark:border-white/5 hover:!border-indigo-500/50 transition-all duration-500 cursor-pointer group relative overflow-hidden shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:-translate-y-2 rounded-[2rem]
+                                        className={`!bg-app-surface !border-slate-200 dark:!border-app-border hover:!border-indigo-500/50 transition-all duration-500 cursor-pointer group relative overflow-hidden shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.4)] hover:-translate-y-2 rounded-[2rem]
                                         ${selectedTicket?.id === ticket.id ? '!border-indigo-500 !bg-indigo-500/5 !ring-4 !ring-indigo-500/10' : ''}`}
                                         styles={{ body: { padding: '32px' } }}
                                     >
@@ -355,7 +355,7 @@ export default function AdvancedTicketsPage() {
                                                         : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500'}`}>
                                                     {ticket.priority || 'MEDIUM'}
                                                 </div>
-                                                <div className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/5 text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest italic font-['Outfit']">
+                                                <div className="px-2.5 py-1 rounded-lg bg-app-surface-soft border border-app-border text-[9px] font-black text-app-text-muted uppercase tracking-widest italic font-['Outfit']">
                                                     {getClassificationTag(ticket)}
                                                 </div>
                                             </div>
@@ -363,7 +363,7 @@ export default function AdvancedTicketsPage() {
                                             <div className="flex items-center gap-3">
                                                 <Tooltip title={`Full ID: ${ticket.id} - Click to copy`}>
                                                     <span
-                                                        className="text-[10px] text-slate-500 dark:text-slate-400 dark:text-slate-600 font-mono font-bold hover:text-indigo-400 transition-colors cursor-help"
+                                                        className="text-[10px] text-app-text-muted dark:text-slate-600 font-mono font-bold hover:text-indigo-400 transition-colors cursor-help"
                                                         onClick={(e) => { e.stopPropagation(); copyToClipboard(ticket.id, 'Ticket ID'); }}
                                                     >
                                                         {formatId(ticket.id, 'ticket', ticket)}
@@ -372,14 +372,14 @@ export default function AdvancedTicketsPage() {
                                             </div>
                                         </div>
 
-                                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 line-clamp-2 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors font-['Outfit']">
+                                        <h3 className="text-xl font-bold text-app-text mb-3 line-clamp-2 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors font-['Outfit']">
                                             {ticket.subject}
                                         </h3>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-8 font-medium leading-relaxed font-['Inter']">
+                                        <p className="text-sm text-app-text-muted line-clamp-2 mb-8 font-medium leading-relaxed font-['Inter']">
                                             {ticket.description || 'No additional diagnostic payload provided.'}
                                         </p>
 
-                                        <div className="flex items-center justify-between pt-8 border-t border-slate-100 dark:border-white/5 mt-auto relative">
+                                        <div className="flex items-center justify-between pt-8 border-t border-slate-100 border-app-border mt-auto relative">
                                             <div className="flex items-center gap-4">
                                                 <div className="relative group/avatar">
                                                     <div className="absolute inset-0 bg-indigo-500/20 blur-lg rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity"></div>
@@ -415,12 +415,12 @@ export default function AdvancedTicketsPage() {
 
                 {/* --- RIGHT SIDEBAR (PREVIEW) --- */}
                 {selectedTicket && (
-                    <Sider width={400} className="bg-white dark:bg-[#0D1117] border-l border-slate-200 dark:border-white/5 p-8 overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500 shadow-2xl dark:shadow-none" style={{ background: 'transparent' }}>
+                    <Sider width={400} className="bg-app-surface border-l border-app-border p-8 overflow-y-auto custom-scrollbar animate-in slide-in-from-right-10 duration-500 shadow-2xl dark:shadow-none" style={{ background: 'transparent' }}>
                         <div className="flex justify-between items-center mb-10">
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Incident Preview</h3>
+                            <h3 className="text-xl font-black text-app-text tracking-tight uppercase">Incident Preview</h3>
                             <button
                                 onClick={() => setSelectedTicket(null)}
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-white/5 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white transition-all shadow-sm dark:shadow-none"
+                                className="p-2 hover:bg-slate-100 dark:hover:bg-app-surface-soft rounded-xl text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all shadow-sm dark:shadow-none"
                             >
                                 <ArrowLeft size={18} className="rotate-180" />
                             </button>
@@ -428,11 +428,11 @@ export default function AdvancedTicketsPage() {
 
                         <div className="space-y-10">
                             <div>
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-4">Identity Matrix</label>
-                                <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/[0.02] p-5 rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-4">Identity Matrix</label>
+                                <div className="flex items-center gap-4 bg-slate-50 dark:bg-white/[0.02] p-5 rounded-[2rem] border border-app-border shadow-sm dark:shadow-none">
                                     <Avatar size={54} src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedTicket.requestor_name}`} className="border-2 border-slate-200 dark:border-indigo-500/20" />
                                     <div>
-                                        <h4 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">{selectedTicket.requestor_name}</h4>
+                                        <h4 className="text-lg font-bold text-app-text leading-tight">{selectedTicket.requestor_name}</h4>
                                         <p
                                             className="text-xs text-indigo-600 dark:text-indigo-400 font-medium cursor-help hover:underline decoration-indigo-400/30"
                                             onClick={() => copyToClipboard(selectedTicket.requestor_id, 'Requester ID')}
@@ -440,30 +440,30 @@ export default function AdvancedTicketsPage() {
                                         >
                                             {formatId(selectedTicket.requestor_id, 'user')} • {selectedTicket.requestor_email}
                                         </p>
-                                        <div className="mt-2 text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{selectedTicket.requestor_department || 'General Operations'}</div>
+                                        <div className="mt-2 text-[9px] text-app-text-muted font-black uppercase tracking-widest">{selectedTicket.requestor_department || 'General Operations'}</div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-6">
                                 <div>
-                                    <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest block mb-3">Diagnostic Log</label>
-                                    <div className="bg-slate-50 dark:bg-white/[0.03] p-6 rounded-[2rem] border border-slate-200 dark:border-white/5 text-sm text-slate-500 dark:text-slate-400 leading-relaxed italic shadow-sm dark:shadow-inner">
+                                    <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-3">Diagnostic Log</label>
+                                    <div className="bg-slate-50 dark:bg-white/[0.03] p-6 rounded-[2rem] border border-app-border text-sm text-app-text-muted leading-relaxed italic shadow-sm dark:shadow-inner">
                                         "{selectedTicket.description || 'No detailed diagnostic payload available for this incident.'}"
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="p-5 bg-white dark:bg-white/[0.01] rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm dark:shadow-none">
-                                        <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-600 uppercase tracking-widest block mb-2">Created</span>
-                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{new Date(selectedTicket.created_at).toLocaleDateString()}</span>
+                                    <div className="p-5 bg-white dark:bg-white/[0.01] rounded-3xl border border-slate-100 border-app-border shadow-sm dark:shadow-none">
+                                        <span className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest block mb-2">Created</span>
+                                        <span className="text-xs font-bold text-app-text-muted">{new Date(selectedTicket.created_at).toLocaleDateString()}</span>
                                     </div>
                                     <div
-                                        className="p-5 bg-white dark:bg-white/[0.01] rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm dark:shadow-none cursor-help group/id"
+                                        className="p-5 bg-white dark:bg-white/[0.01] rounded-3xl border border-slate-100 border-app-border shadow-sm dark:shadow-none cursor-help group/id"
                                         onClick={() => selectedTicket.assigned_to_id && copyToClipboard(selectedTicket.assigned_to_id, 'Solver ID')}
                                         title={selectedTicket.assigned_to_id ? `UUID: ${selectedTicket.assigned_to_id} - Click to copy` : 'Unallocated'}
                                     >
-                                        <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-600 uppercase tracking-widest block mb-2">Assigned To</span>
+                                        <span className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest block mb-2">Assigned To</span>
                                         <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
                                             {selectedTicket.assigned_to_name ? (
                                                 <span className="flex flex-col">
@@ -474,11 +474,11 @@ export default function AdvancedTicketsPage() {
                                         </span>
                                     </div>
                                     <div
-                                        className="p-5 bg-white dark:bg-white/[0.01] rounded-3xl border border-slate-100 dark:border-white/5 shadow-sm dark:shadow-none cursor-help group/id"
+                                        className="p-5 bg-white dark:bg-white/[0.01] rounded-3xl border border-slate-100 border-app-border shadow-sm dark:shadow-none cursor-help group/id"
                                         onClick={() => selectedTicket.related_asset_id && copyToClipboard(selectedTicket.related_asset_id, 'Asset ID')}
                                         title={selectedTicket.related_asset_id ? `UUID: ${selectedTicket.related_asset_id} - Click to copy` : 'No Asset Linked'}
                                     >
-                                        <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-600 uppercase tracking-widest block mb-2">Impacted Asset</span>
+                                        <span className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest block mb-2">Impacted Asset</span>
                                         <span className="text-xs font-bold text-blue-500 dark:text-blue-400">
                                             {selectedTicket.related_asset_id ? (
                                                 <span className="flex flex-col">
@@ -494,20 +494,20 @@ export default function AdvancedTicketsPage() {
                             <div className="pt-8 space-y-3">
                                 <Button
                                     block
-                                    className="!h-14 !bg-indigo-600 !border-none !text-slate-900 dark:text-white !font-black !text-xs !uppercase !tracking-[0.2em] !rounded-2xl shadow-xl shadow-indigo-600/20 hover:!bg-indigo-500 transition-all flex items-center justify-center gap-2"
+                                    className="!h-14 !bg-indigo-600 !border-none !text-app-text !font-black !text-xs !uppercase !tracking-[0.2em] !rounded-2xl shadow-xl shadow-indigo-600/20 hover:!bg-indigo-500 transition-all flex items-center justify-center gap-2"
                                     onClick={() => router.push(`/tickets/${selectedTicket.id}`)}
                                 >
                                     Open Full Analysis <ChevronRight size={16} />
                                 </Button>
                                 <div className="grid grid-cols-2 gap-3">
                                     <Button
-                                        className="!h-12 !bg-slate-100 dark:!bg-slate-100 dark:bg-white/5 !border-slate-200 dark:!border-slate-300 dark:border-white/10 !text-slate-500 dark:text-slate-400 dark:!text-slate-500 dark:text-slate-400 !font-bold !text-[10px] !uppercase !tracking-widest !rounded-2xl hover:!text-slate-900 dark:hover:!text-slate-900 dark:text-white hover:!bg-slate-200 dark:hover:!bg-slate-200 dark:bg-white/10 shadow-sm dark:shadow-none"
+                                        className="!h-12 !bg-slate-100 dark:!bg-app-surface-soft !border-slate-200 dark:!border-slate-300 border-app-border !text-app-text-muted dark:!text-app-text-muted !font-bold !text-[10px] !uppercase !tracking-widest !rounded-2xl hover:!text-slate-900 dark:hover:!text-app-text hover:!bg-slate-200 dark:hover:!bg-app-surface shadow-sm dark:shadow-none"
                                         onClick={() => acknowledgeTicket(selectedTicket.id)}
                                         disabled={selectedTicket.status?.toUpperCase() !== 'OPEN'}
                                     >
                                         Acknowledge
                                     </Button>
-                                    <Button className="!h-12 !bg-slate-100 dark:!bg-slate-100 dark:bg-white/5 !border-slate-200 dark:!border-slate-300 dark:border-white/10 !text-slate-500 dark:text-slate-400 dark:!text-slate-500 dark:text-slate-400 !font-bold !text-[10px] !uppercase !tracking-widest !rounded-2xl hover:!text-rose-600 dark:hover:!text-rose-400 hover:!bg-rose-600/10 dark:hover:!bg-rose-500/10 hover:!border-rose-300 dark:hover:!border-rose-500/30 shadow-sm dark:shadow-none">
+                                    <Button className="!h-12 !bg-slate-100 dark:!bg-app-surface-soft !border-slate-200 dark:!border-slate-300 border-app-border !text-app-text-muted dark:!text-app-text-muted !font-bold !text-[10px] !uppercase !tracking-widest !rounded-2xl hover:!text-rose-600 dark:hover:!text-rose-400 hover:!bg-rose-600/10 dark:hover:!bg-rose-500/10 hover:!border-rose-300 dark:hover:!border-rose-500/30 shadow-sm dark:shadow-none">
                                         Escalate
                                     </Button>
                                 </div>

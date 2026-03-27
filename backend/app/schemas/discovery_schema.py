@@ -26,7 +26,7 @@ class DiscoverySoftware(BaseModel):
     vendor: Optional[str] = "Unknown"
 
 class DiscoveryPayload(BaseModel):
-    agent_id: UUID
+    agent_id: str
     scan_id: Optional[UUID] = None # For session tracking
     location_id: Optional[UUID] = None # Physical/Virtual location ID
     hostname: str
@@ -46,7 +46,7 @@ class SaaSDiscoveryItem(BaseModel):
     is_discovered: bool = True
 
 class SaaSDiscoveryPayload(BaseModel):
-    agent_id: UUID
+    agent_id: str
     scan_id: Optional[UUID] = None # For session tracking
     platform: str # e.g., "Google Workspace", "Microsoft 365"
     licenses: List[SaaSDiscoveryItem]
@@ -62,7 +62,7 @@ class UserSyncItem(BaseModel):
     status: Optional[str] = "ACTIVE"
 
 class UserSyncPayload(BaseModel):
-    agent_id: UUID
+    agent_id: str
     scan_id: Optional[UUID] = None # For session tracking
     source_domain: str
     users: List[UserSyncItem]
@@ -72,5 +72,5 @@ class BarcodeScanPayload(BaseModel):
     serial_number: str
     scan_type: str # VERIFY | REGISTER | CHECK_IN
     location: Optional[str] = None
-    technician_id: Optional[UUID] = None
+    technician_id: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = {}

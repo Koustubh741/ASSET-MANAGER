@@ -69,7 +69,7 @@ function ToastItem({ variant, message, onDismiss }) {
             <button
                 type="button"
                 onClick={onDismiss}
-                className="p-1 rounded-lg hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 transition-colors"
+                className="p-1 rounded-lg hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors"
                 aria-label="Dismiss"
             >
                 <X size={16} />

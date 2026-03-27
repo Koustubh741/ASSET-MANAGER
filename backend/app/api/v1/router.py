@@ -27,11 +27,18 @@ from app.routers import (
     analytics_oem,
     groups,
     tasks,
+    departments,
+    user_preferences,
+    ai_configs,
+    chat,
+    notifications,
+    analytics_executive,
 )
 
 api_router = APIRouter()
 
 # routers already define their own prefixes
+api_router.include_router(analytics_executive.router)
 api_router.include_router(upload.router)
 api_router.include_router(workflows.router)
 api_router.include_router(disposal.router)
@@ -59,3 +66,9 @@ api_router.include_router(categories.router)
 api_router.include_router(analytics_oem.router)
 api_router.include_router(groups.router)
 api_router.include_router(tasks.router)
+api_router.include_router(departments.router)
+api_router.include_router(user_preferences.router)
+api_router.include_router(ai_configs.router)
+api_router.include_router(chat.router)
+api_router.include_router(notifications.router)
+api_router.include_router(analytics_executive.router)

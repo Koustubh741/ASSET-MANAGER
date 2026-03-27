@@ -10,7 +10,7 @@ export default function SupportRedirect() {
     }, [router]);
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950">
-            <p className="text-slate-500 dark:text-slate-400 text-sm animate-pulse">
+            <p className="text-app-text-muted text-sm animate-pulse">
                 Redirecting to Support Portal…
             </p>
         </div>

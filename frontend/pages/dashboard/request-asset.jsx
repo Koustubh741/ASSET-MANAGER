@@ -101,12 +101,12 @@ export default function AssetRequestPage() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => router.back()}
-                        className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl border border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10 transition-all group shadow-sm hover:shadow-md active:scale-95"
+                        className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl border border-app-border hover:bg-slate-50 dark:hover:bg-white/10 transition-all group shadow-sm hover:shadow-md active:scale-95"
                     >
-                        <ChevronLeft size={24} className="text-slate-500 dark:text-slate-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 group-hover:-translate-x-1 transition-all" />
+                        <ChevronLeft size={24} className="text-app-text-muted group-hover:text-blue-500 dark:group-hover:text-blue-400 group-hover:-translate-x-1 transition-all" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white uppercase tracking-tighter">Asset Provisioning</h1>
+                        <h1 className="text-xl font-['Outfit'] font-black text-app-text uppercase tracking-tighter">Asset Provisioning</h1>
                         <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mt-2 flex items-center gap-2">
                             <Package size={12} className="animate-bounce" /> Enterprise Hardware Catalog v4.0
                         </p>
@@ -120,7 +120,7 @@ export default function AssetRequestPage() {
                         placeholder="Search Catalog..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl pl-12 pr-6 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all w-full md:w-72 shadow-sm font-bold uppercase tracking-widest placeholder:text-slate-400 dark:placeholder:text-slate-600 dark:text-white"
+                        className="bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl border border-app-border rounded-2xl pl-12 pr-6 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all w-full md:w-72 shadow-sm font-bold uppercase tracking-widest placeholder:text-slate-400 dark:placeholder:text-slate-600 text-app-text"
                     />
                 </div>
             </div>
@@ -139,7 +139,7 @@ export default function AssetRequestPage() {
                                     className={`group cursor-pointer p-6 rounded-[2.5rem] border-2 transition-all duration-500 relative overflow-hidden flex flex-col justify-between h-56
                                         ${isSelected
                                             ? 'bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 border-blue-400 shadow-[0_20px_50px_rgba(37,99,235,0.3)] dark:shadow-[0_20px_50px_rgba(37,99,235,0.2)] -translate-y-2 scale-[1.02]'
-                                            : 'bg-white dark:bg-slate-900/40 border-slate-100 dark:border-white/5 hover:border-blue-300 dark:hover:border-blue-500/30 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none'}`}
+                                            : 'bg-white dark:bg-slate-900/40 border-slate-100 border-app-border hover:border-blue-300 dark:hover:border-blue-500/30 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none'}`}
                                 >
                                     {/* Glossy Overlay for Selected */}
                                     {isSelected && (
@@ -154,15 +154,15 @@ export default function AssetRequestPage() {
                                         </div>
                                         {isSelected && (
                                             <div className="bg-white/20 p-2 rounded-full backdrop-blur-md animate-in zoom-in-0 duration-500">
-                                                <CheckCircle size={16} className="text-slate-900 dark:text-white" />
+                                                <CheckCircle size={16} className="text-app-text" />
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="relative z-10">
                                         <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 ${isSelected ? 'text-blue-100/90' : 'text-slate-400 dark:text-slate-500'}`}>Class: {item.id}</p>
-                                        <h3 className={`text-xl font-black tracking-tight ${isSelected ? 'text-white' : 'text-slate-900 dark:text-white'}`}>{item.name}</h3>
-                                        <p className={`text-xs mt-2 line-clamp-2 leading-relaxed font-medium ${isSelected ? 'text-blue-50/80' : 'text-slate-500 dark:text-slate-400'}`}>{item.desc}</p>
+                                        <h3 className={`text-xl font-black tracking-tight ${isSelected ? 'text-white' : 'text-app-text'}`}>{item.name}</h3>
+                                        <p className={`text-xs mt-2 line-clamp-2 leading-relaxed font-medium ${isSelected ? 'text-blue-50/80' : 'text-app-text-muted'}`}>{item.desc}</p>
                                     </div>
                                 </div>
                             );
@@ -172,37 +172,37 @@ export default function AssetRequestPage() {
 
                 {/* Configuration Panel */}
                 <div className="lg:col-span-4">
-                    <form onSubmit={handleSubmit} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-8 md:p-10 border border-slate-200 dark:border-white/10 shadow-2xl rounded-[2.5rem] transition-all sticky top-8">
+                    <form onSubmit={handleSubmit} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-8 md:p-10 border border-app-border shadow-2xl rounded-[2.5rem] transition-all sticky top-8">
                         <div className="space-y-8">
                             <div>
                                 <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-4">Request Configuration</h4>
-                                <div className="p-5 rounded-2xl bg-slate-50/50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 flex items-center gap-4 group/item">
+                                <div className="p-5 rounded-2xl bg-slate-50/50 bg-app-surface-soft border border-slate-200/50 border-app-border flex items-center gap-4 group/item">
                                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover/item:scale-110 transition-transform">
                                         {selectedAsset.icon && (
                                             <selectedAsset.icon size={28} />
                                         )}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{selectedAsset.name}</p>
+                                        <p className="text-sm font-black text-app-text uppercase tracking-tight">{selectedAsset.name}</p>
                                         <p className="text-[10px] text-blue-500 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">{selectedAsset.specs}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Business Goal</label>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Business Goal</label>
                                 <textarea
                                     required
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     rows="4"
-                                    className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-2xl px-6 py-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium resize-none shadow-inner"
+                                    className="w-full bg-slate-50 dark:bg-black/20 border border-app-border rounded-2xl px-6 py-4 text-sm text-app-text focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium resize-none shadow-inner"
                                     placeholder="Enter business justification for this hardware..."
                                 ></textarea>
                             </div>
 
                             <div className="space-y-4">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Operational Urgency</label>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Operational Urgency</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     {['Standard', 'High'].map((u) => (
                                         <button
@@ -212,7 +212,7 @@ export default function AssetRequestPage() {
                                             className={`py-4 rounded-2xl border text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden
                                                 ${urgency === u
                                                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
-                                                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-400 dark:text-slate-500 hover:border-blue-300 dark:hover:border-blue-500/30'}`}
+                                                    : 'bg-white dark:bg-slate-900 border-app-border text-slate-400 dark:text-slate-500 hover:border-blue-300 dark:hover:border-blue-500/30'}`}
                                         >
                                             <span className="relative z-10">{u}</span>
                                             {urgency === u && (

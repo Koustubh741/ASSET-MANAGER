@@ -142,7 +142,7 @@ export default function AssetComparisonPage() {
     };
 
     return (
-        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-app-text">
             <Head>
                 <title>Compare Assets | Asset Management</title>
             </Head>
@@ -150,21 +150,21 @@ export default function AssetComparisonPage() {
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
                         <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Asset Comparison Tool</h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1">Side-by-side specification analysis</p>
+                        <p className="text-app-text-muted mt-1">Side-by-side specification analysis</p>
                     </div>
                 </div>
 
                 {/* Selection Panel */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 glass-panel rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 glass-panel rounded-2xl bg-app-surface-soft border border-app-border">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Asset A</label>
+                        <label className="text-sm font-medium text-app-text-muted">Asset A</label>
                         <select
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-slate-900 dark:text-slate-200"
+                            className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-xl p-3 text-slate-900 dark:text-slate-200"
                             value={selectedAsset1 || ''}
                             onChange={(e) => setSelectedAsset1(e.target.value)}
                         >
@@ -174,15 +174,15 @@ export default function AssetComparisonPage() {
                     </div>
 
                     <div className="hidden md:flex justify-center pb-3">
-                        <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400">
+                        <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full border border-app-border text-app-text-muted">
                             <Split size={24} />
                         </div>
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-500 dark:text-slate-400">Asset B</label>
+                        <label className="text-sm font-medium text-app-text-muted">Asset B</label>
                         <select
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-slate-900 dark:text-slate-200"
+                            className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-xl p-3 text-slate-900 dark:text-slate-200"
                             value={selectedAsset2 || ''}
                             onChange={(e) => setSelectedAsset2(e.target.value)}
                         >
@@ -195,14 +195,14 @@ export default function AssetComparisonPage() {
                         <button
                             onClick={handleCompare}
                             disabled={!selectedAsset1 || !selectedAsset2 || loading}
-                            className="btn btn-primary px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-slate-900 dark:text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="btn btn-primary px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-app-text font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {loading ? 'Analyzing...' : 'Compare Specifications'}
                         </button>
                         {comparisonData && (
                             <button
                                 onClick={() => setComparisonData(null)}
-                                className="px-8 py-3 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-all"
+                                className="px-8 py-3 rounded-xl bg-app-surface-soft border border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-all"
                             >
                                 Clear
                             </button>
@@ -220,15 +220,15 @@ export default function AssetComparisonPage() {
 
                 {/* Comparison Result */}
                 {comparisonData && (
-                    <div className="grid grid-cols-3 gap-0 border border-slate-200 dark:border-white/10 rounded-2xl bg-white dark:bg-slate-900/50 overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className="grid grid-cols-3 gap-0 border border-app-border rounded-2xl bg-white dark:bg-slate-900/50 overflow-hidden animate-in zoom-in-95 duration-300">
                         {/* Headers */}
-                        <div className="p-4 bg-slate-100 dark:bg-slate-950/50 border-b border-r border-slate-200 dark:border-white/10 text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-center">
+                        <div className="p-4 bg-slate-100 dark:bg-slate-950/50 border-b border-r border-app-border text-sm font-semibold text-app-text-muted uppercase tracking-wider flex items-center justify-center">
                             Specification
                         </div>
-                        <div className="p-4 bg-white dark:bg-slate-900/50 border-b border-r border-slate-200 dark:border-white/10 text-center font-bold text-lg text-emerald-400">
+                        <div className="p-4 bg-white dark:bg-slate-900/50 border-b border-r border-app-border text-center font-bold text-lg text-emerald-400">
                             {comparisonData.asset1.name}
                         </div>
-                        <div className="p-4 bg-white dark:bg-slate-900/50 border-b border-slate-200 dark:border-white/10 text-center font-bold text-lg text-cyan-400">
+                        <div className="p-4 bg-white dark:bg-slate-900/50 border-b border-app-border text-center font-bold text-lg text-cyan-400">
                             {comparisonData.asset2.name}
                         </div>
 
@@ -245,15 +245,15 @@ export default function AssetComparisonPage() {
 
                             return (
                                 <React.Fragment key={spec}>
-                                    <div className="p-4 bg-slate-100 dark:bg-slate-950/30 border-b border-r border-slate-200 dark:border-white/5 text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center justify-center text-center">
+                                    <div className="p-4 bg-slate-100 dark:bg-slate-950/30 border-b border-r border-app-border text-sm font-medium text-app-text-muted flex items-center justify-center text-center">
                                         {formatKey(spec)}
                                     </div>
-                                    <div className="p-4 border-b border-r border-slate-200 dark:border-white/5 text-center">
+                                    <div className="p-4 border-b border-r border-app-border text-center">
                                         <span className={`text-slate-900 dark:text-slate-200 ${spec === 'segment' ? 'px-2 py-0.5 rounded text-xs font-bold ' + (val1 === 'IT' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400') : ''}`}>
                                             {String(val1)}
                                         </span>
                                     </div>
-                                    <div className="p-4 border-b border-slate-200 dark:border-white/5 text-center">
+                                    <div className="p-4 border-b border-app-border text-center">
                                         <span className={`text-slate-900 dark:text-slate-200 ${spec === 'segment' ? 'px-2 py-0.5 rounded text-xs font-bold ' + (val2 === 'IT' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400') : ''}`}>
                                             {String(val2)}
                                         </span>
@@ -263,10 +263,10 @@ export default function AssetComparisonPage() {
                         })}
 
                         {/* Summary / Score */}
-                        <div className="p-4 bg-slate-100 dark:bg-slate-950/30 border-r border-slate-200 dark:border-white/5 text-sm font-bold text-slate-900 dark:text-white flex items-center justify-center">
+                        <div className="p-4 bg-slate-100 dark:bg-slate-950/30 border-r border-app-border text-sm font-bold text-app-text flex items-center justify-center">
                             Overall Condition
                         </div>
-                        <div className="p-4 border-r border-slate-200 dark:border-white/5 text-center">
+                        <div className="p-4 border-r border-app-border text-center">
                             <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-sm">
                                 {comparisonData.asset1.condition}
                             </span>

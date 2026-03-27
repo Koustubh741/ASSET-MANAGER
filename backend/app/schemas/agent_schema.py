@@ -28,3 +28,23 @@ class AgentScheduleResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+class DiscoveryAgentUpdate(BaseModel):
+    name: Optional[str] = None
+    status: Optional[str] = None
+    health: Optional[float] = None
+    last_sync: Optional[datetime] = None
+
+class DiscoveryAgentResponse(BaseModel):
+    id: str
+    name: str
+    type: str
+    role: Optional[str] = None
+    status: str
+    health: float
+    last_sync: Optional[datetime] = None
+    description: Optional[str] = None
+    capabilities: List[str] = []
+    
+    class Config:
+        from_attributes = True

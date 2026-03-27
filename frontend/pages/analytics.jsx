@@ -31,8 +31,8 @@ function StatBadge({ label, value, delta, icon: Icon, color = 'indigo' }) {
                     </span>
                 )}
             </div>
-            <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-['Outfit'] mt-1">{value ?? '—'}</p>
-            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mt-1">{label}</p>
+            <p className="text-2xl font-black text-app-text tracking-tight font-['Outfit'] mt-1">{value ?? '—'}</p>
+            <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] mt-1">{label}</p>
         </div>
     );
 }
@@ -44,7 +44,7 @@ function ResolutionRing({ rate = 0 }) {
     return (
         <div className="relative w-36 h-36 shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r={r} fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-200 dark:text-white/5" />
+                <circle cx="60" cy="60" r={r} fill="none" stroke="currentColor" strokeWidth="8" className="text-slate-200 text-app-text/5" />
                 <circle cx="60" cy="60" r={r} fill="none" stroke="url(#rg)" strokeWidth="8"
                     strokeDasharray={circ} strokeDashoffset={progress}
                     strokeLinecap="round" className="transition-all duration-1000" />
@@ -56,8 +56,8 @@ function ResolutionRing({ rate = 0 }) {
                 </defs>
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-black text-slate-900 dark:text-white font-['Outfit']">{rate}%</span>
-                <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mt-0.5">Resolution</span>
+                <span className="text-2xl font-black text-app-text font-['Outfit']">{rate}%</span>
+                <span className="text-[9px] font-black text-app-text-muted uppercase tracking-widest mt-0.5">Resolution</span>
             </div>
         </div>
     );
@@ -102,7 +102,7 @@ export default function AnalyticsPage() {
         <div className="min-h-screen p-6 lg:p-10 space-y-10">
 
             {/* ── Header ──────────────────────────────────────────────────── */}
-            <header className="relative glass-panel p-8 overflow-hidden group border border-slate-300 dark:border-white/10 dark:border-white/10 border-slate-200">
+            <header className="relative glass-panel p-8 overflow-hidden group border border-slate-300 border-app-border border-app-border border-slate-200">
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-purple-500/3 to-transparent pointer-events-none" />
                 <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-indigo-400/40 to-transparent" />
 
@@ -113,16 +113,16 @@ export default function AnalyticsPage() {
                                 <BarChart2 size={28} />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-black text-slate-900 dark:text-white font-['Outfit'] tracking-tight">
+                                <h1 className="text-2xl font-black text-app-text font-['Outfit'] tracking-tight">
                                     Ticket <span className="text-indigo-400">Analytics</span>
                                 </h1>
-                                <p className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mt-1">
+                                <p className="text-[11px] font-black text-app-text-muted uppercase tracking-[0.3em] mt-1">
                                     Neural Classification · Performance Matrix
                                 </p>
                             </div>
                         </div>
                         {lastRefresh && (
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono ml-1">
+                            <p className="text-[10px] text-app-text-muted font-mono ml-1">
                                 Last updated: {lastRefresh.toLocaleTimeString()}
                             </p>
                         )}
@@ -130,15 +130,15 @@ export default function AnalyticsPage() {
 
                     <div className="flex items-center gap-3 flex-wrap">
                         {/* Time Range Selector */}
-                        <div className="flex bg-slate-100 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10 p-1">
+                        <div className="flex bg-app-surface-soft rounded-xl border border-app-border p-1">
                             {['7d', '30d', '90d'].map(range => (
                                 <button
                                     key={range}
                                     onClick={() => setTimeRange(range)}
                                     className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
                                             ${timeRange === range
-                                            ? 'bg-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/20'
-                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-700 dark:text-slate-300'}`}
+                                            ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20'
+                                            : 'text-app-text-muted hover:text-slate-700 dark:hover:text-app-text-muted'}`}
                                 >
                                     {range}
                                 </button>
@@ -147,14 +147,14 @@ export default function AnalyticsPage() {
 
                         <div className="flex gap-4">
                             <Link href="/analytics/oem">
-                                <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white dark:bg-slate-900 dark:bg-white text-slate-900 dark:text-white dark:text-slate-950 text-sm font-black transition-all hover:scale-105 active:scale-95 group">
+                                <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-950 text-sm font-black transition-all hover:scale-105 active:scale-95 group">
                                     <Zap size={14} className="group-hover:text-indigo-400" />
                                     Manage Intelligence
                                 </button>
                             </Link>
                             <button
                                 onClick={fetchAll}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 text-sm font-black transition-all hover:bg-slate-200 dark:hover:bg-slate-200 dark:bg-white/10 active:scale-95"
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-app-surface-soft text-app-text-muted text-sm font-black transition-all hover:bg-slate-200 dark:hover:bg-app-surface active:scale-95"
                             >
                                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                                 Refresh
@@ -176,13 +176,13 @@ export default function AnalyticsPage() {
             {/* ── Resolution Ring + Top Category ──────────────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Resolution Rate */}
-                <div className="glass-panel p-8 flex items-center gap-8 relative overflow-hidden group border border-slate-200 dark:border-white/10">
+                <div className="glass-panel p-8 flex items-center gap-8 relative overflow-hidden group border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
                     <ResolutionRing rate={resolutionRate} />
                     <div className="relative z-10">
-                        <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mb-2">Overall Resolution Rate</p>
-                        <p className="text-xl font-black text-slate-900 dark:text-white font-['Outfit']">{resolvedTickets} <span className="text-lg text-slate-500 dark:text-slate-400 font-bold">resolved</span></p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">out of <span className="text-slate-900 dark:text-white font-black">{totalTickets}</span> total</p>
+                        <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-2">Overall Resolution Rate</p>
+                        <p className="text-xl font-black text-app-text font-['Outfit']">{resolvedTickets} <span className="text-lg text-app-text-muted font-bold">resolved</span></p>
+                        <p className="text-sm text-app-text-muted mt-1">out of <span className="text-app-text font-black">{totalTickets}</span> total</p>
                         <div className="mt-4 flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             {resolutionRate >= 75 ? 'On Track' : resolutionRate >= 50 ? 'Needs Attention' : 'Critical'}
@@ -191,37 +191,37 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Dominant Category */}
-                <div className="glass-panel p-8 relative overflow-hidden group border border-slate-200 dark:border-white/10">
+                <div className="glass-panel p-8 relative overflow-hidden group border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
-                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mb-4 relative z-10">Dominant Category</p>
+                    <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-4 relative z-10">Dominant Category</p>
                     {topCategory ? (
                         <div className="relative z-10">
-                            <p className="text-2xl font-black text-slate-900 dark:text-white font-['Outfit'] leading-tight">{topCategory.category}</p>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{topCategory.total} tickets · {topCategory.open} open</p>
-                            <div className="mt-4 h-2 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
+                            <p className="text-2xl font-black text-app-text font-['Outfit'] leading-tight">{topCategory.category}</p>
+                            <p className="text-app-text-muted text-sm mt-1">{topCategory.total} tickets · {topCategory.open} open</p>
+                            <div className="mt-4 h-2 bg-slate-200 bg-app-surface-soft rounded-full overflow-hidden">
                                 <div
                                     style={{ width: `${Math.min(100, (topCategory.total / totalTickets) * 100)}%` }}
                                     className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full transition-all duration-1000"
                                 />
                             </div>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black mt-2 uppercase tracking-widest">
+                            <p className="text-[10px] text-app-text-muted font-black mt-2 uppercase tracking-widest">
                                 {Math.round((topCategory.total / totalTickets) * 100)}% of total volume
                             </p>
                         </div>
                     ) : (
-                        <p className="text-slate-500 dark:text-slate-400 italic text-sm">No data</p>
+                        <p className="text-app-text-muted italic text-sm">No data</p>
                     )}
                 </div>
 
-                <div className="glass-panel p-8 relative overflow-hidden group border border-slate-200 dark:border-white/10 lg:col-span-1">
+                <div className="glass-panel p-8 relative overflow-hidden group border border-app-border lg:col-span-1">
                     <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none" />
-                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mb-4 relative z-10">System Status</p>
+                    <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-4 relative z-10">System Status</p>
                     <div className="relative z-10 py-4">
                         <div className="flex items-center gap-3">
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <p className="text-lg font-bold text-slate-900 dark:text-white">All Systems Operational</p>
+                            <p className="text-lg font-bold text-app-text">All Systems Operational</p>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Latest sync: {new Date().toLocaleTimeString()}</p>
+                        <p className="text-xs text-app-text-muted mt-2">Latest sync: {new Date().toLocaleTimeString()}</p>
                     </div>
                 </div>
             </div>
@@ -229,7 +229,7 @@ export default function AnalyticsPage() {
             {/* ── Main Two-Panel Grid ──────────────────────────────────────── */}
             <div className="grid grid-cols-1 gap-8">
                 {/* Analytic Categories */}
-                <section className="glass-panel p-8 group relative border border-slate-200 dark:border-white/10">
+                <section className="glass-panel p-8 group relative border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div className="flex items-center gap-4">
@@ -237,10 +237,10 @@ export default function AnalyticsPage() {
                                 <PieChart size={22} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-black text-slate-900 dark:text-white font-['Outfit'] uppercase tracking-tight">
+                                <h2 className="text-xl font-black text-app-text font-['Outfit'] uppercase tracking-tight">
                                     Analytic Categories
                                 </h2>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">Neural Classification</p>
+                                <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-0.5">Neural Classification</p>
                             </div>
                         </div>
                         <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl">
@@ -255,7 +255,7 @@ export default function AnalyticsPage() {
 
             {/* ── Category Breakdown Bar Chart ─────────────────────────────── */}
             {categoryStats.length > 0 && (
-                <section className="glass-panel p-8 relative overflow-hidden border border-slate-200 dark:border-white/10">
+                <section className="glass-panel p-8 relative overflow-hidden border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/3 to-transparent pointer-events-none" />
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div className="flex items-center gap-4">
@@ -263,10 +263,10 @@ export default function AnalyticsPage() {
                                 <BarChart2 size={22} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-black text-slate-900 dark:text-white font-['Outfit'] uppercase tracking-tight">
+                                <h2 className="text-xl font-black text-app-text font-['Outfit'] uppercase tracking-tight">
                                     Volume Breakdown
                                 </h2>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">All categories · open vs resolved</p>
+                                <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-0.5">All categories · open vs resolved</p>
                             </div>
                         </div>
                     </div>
@@ -280,10 +280,10 @@ export default function AnalyticsPage() {
                                 const barWidth = totalTickets > 0 ? (stat.total / Math.max(...categoryStats.map(s => s.total))) * 100 : 0;
                                 return (
                                     <div key={stat.category} className="flex items-center gap-4 group/row">
-                                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest w-36 shrink-0 truncate">
+                                        <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest w-36 shrink-0 truncate">
                                             {stat.category}
                                         </span>
-                                        <div className="flex-1 h-7 bg-slate-100 dark:bg-white/5 rounded-lg overflow-hidden flex border border-slate-200 dark:border-white/5">
+                                        <div className="flex-1 h-7 bg-app-surface-soft rounded-lg overflow-hidden flex border border-app-border">
                                             <div
                                                 style={{ width: `${(stat.open / stat.total) * barWidth}%` }}
                                                 className="h-full bg-gradient-to-r from-rose-500 to-orange-400 transition-all duration-700"
@@ -303,15 +303,15 @@ export default function AnalyticsPage() {
                     </div>
 
                     {/* Legend */}
-                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200 dark:border-white/10 relative z-10">
+                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-app-border relative z-10">
                         <div className="flex items-center gap-6">
                             <div className="flex items-center gap-2">
                                 <div className="w-10 h-2 rounded-full bg-gradient-to-r from-rose-500 to-orange-400" />
-                                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Open / In Progress</span>
+                                <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Open / In Progress</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-10 h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400" />
-                                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Resolved</span>
+                                <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Resolved</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
@@ -325,15 +325,15 @@ export default function AnalyticsPage() {
             {/* ── Asset Reliability & Departmental Impact ──────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Reliability Matrix */}
-                <section className="glass-panel p-8 relative overflow-hidden border border-slate-200 dark:border-white/10">
+                <section className="glass-panel p-8 relative overflow-hidden border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
                     <div className="flex items-center gap-4 mb-8">
                         <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                             <Target size={22} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-slate-900 dark:text-white font-['Outfit'] uppercase tracking-tight">Reliability Matrix</h2>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">Top-Fault Assets & Categories</p>
+                            <h2 className="text-xl font-black text-app-text font-['Outfit'] uppercase tracking-tight">Reliability Matrix</h2>
+                            <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-0.5">Top-Fault Assets & Categories</p>
                         </div>
                     </div>
 
@@ -342,19 +342,19 @@ export default function AnalyticsPage() {
                             .sort((a, b) => b.reliability_score - a.reliability_score)
                             .slice(0, 4)
                             .map((stat) => (
-                                <div key={stat.category} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-200/50 dark:border-white/5">
+                                <div key={stat.category} className="flex items-center justify-between p-4 bg-app-surface-soft rounded-2xl border border-slate-200/50 border-app-border">
                                     <div className="flex items-center gap-4">
                                         <div className={`w-2 h-2 rounded-full ${stat.reliability_score > 7 ? 'bg-rose-500' : 'bg-amber-500'}`} />
-                                        <span className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">{stat.category}</span>
+                                        <span className="text-sm font-bold text-app-text uppercase tracking-tight">{stat.category}</span>
                                     </div>
                                     <div className="flex items-center gap-6">
                                         <div className="text-right">
-                                            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Risk</p>
+                                            <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Risk</p>
                                             <p className={`text-sm font-black ${stat.reliability_score > 7 ? 'text-rose-500' : 'text-amber-500'}`}>{stat.reliability_score}/10</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Nodes</p>
-                                            <p className="text-sm font-black text-slate-900 dark:text-white">{stat.total}</p>
+                                            <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Nodes</p>
+                                            <p className="text-sm font-black text-app-text">{stat.total}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -363,15 +363,15 @@ export default function AnalyticsPage() {
                 </section>
 
                 {/* Departmental Impact Heatmap */}
-                <section className="glass-panel p-8 relative overflow-hidden border border-slate-200 dark:border-white/10">
+                <section className="glass-panel p-8 relative overflow-hidden border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
                     <div className="flex items-center gap-4 mb-8">
                         <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                             <Target size={22} />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-slate-900 dark:text-white font-['Outfit'] uppercase tracking-tight">Departmental Load</h2>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-0.5">Ticket volume by org segment</p>
+                            <h2 className="text-xl font-black text-app-text font-['Outfit'] uppercase tracking-tight">Departmental Load</h2>
+                            <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-0.5">Ticket volume by org segment</p>
                         </div>
                     </div>
 
@@ -394,10 +394,10 @@ export default function AnalyticsPage() {
                             return depts.map(d => (
                                 <div key={d.dept} className="space-y-2">
                                     <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                        <span className="text-slate-500 dark:text-slate-400">{d.dept}</span>
-                                        <span className="text-slate-900 dark:text-white">{d.count} Events</span>
+                                        <span className="text-app-text-muted">{d.dept}</span>
+                                        <span className="text-app-text">{d.count} Events</span>
                                     </div>
-                                    <div className="h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-2 bg-app-surface-soft rounded-full overflow-hidden">
                                         <div
                                             className="h-full bg-indigo-500 transition-all duration-1000"
                                             style={{ width: `${(d.count / max) * 100}%` }}

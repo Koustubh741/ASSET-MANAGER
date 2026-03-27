@@ -69,17 +69,17 @@ export default function FinanceAnalyticsPage() {
             {/* Header */}
             <header className="flex flex-wrap justify-between items-end gap-4">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                    <h1 className="text-xl font-bold text-app-text flex items-center gap-3">
                         <PieIcon className="text-emerald-400" size={32} />
                         Finance Analytics
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 mt-1">
+                    <p className="text-app-text-muted text-app-text-muted mt-1">
                         Asset valuation, depreciation & spend trends
                     </p>
                 </div>
                 <button
                     onClick={exportCsv}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-900 dark:text-white text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
                 >
                     <Download size={18} /> Export CSV
                 </button>
@@ -93,10 +93,10 @@ export default function FinanceAnalyticsPage() {
                             <DollarSign size={22} />
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-slate-900 dark:text-white">
+                            <p className="text-2xl font-black text-app-text">
                                 {loading ? '—' : `₹${(totalValue / 100000).toFixed(1)}L`}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Total Book Value</p>
+                            <p className="text-xs text-app-text-muted uppercase font-bold tracking-wider">Total Book Value</p>
                         </div>
                     </div>
                 </div>
@@ -107,10 +107,10 @@ export default function FinanceAnalyticsPage() {
                             <TrendingDown size={22} />
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-slate-900 dark:text-white">
+                            <p className="text-2xl font-black text-app-text">
                                 {loading ? '—' : `₹${(totalDepr / 100000).toFixed(1)}L`}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Total Depreciation</p>
+                            <p className="text-xs text-app-text-muted uppercase font-bold tracking-wider">Total Depreciation</p>
                         </div>
                     </div>
                 </div>
@@ -121,10 +121,10 @@ export default function FinanceAnalyticsPage() {
                             <Activity size={22} />
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-slate-900 dark:text-white">
+                            <p className="text-2xl font-black text-app-text">
                                 {loading ? '—' : assetCount}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Total Assets</p>
+                            <p className="text-xs text-app-text-muted uppercase font-bold tracking-wider">Total Assets</p>
                         </div>
                     </div>
                 </div>
@@ -135,10 +135,10 @@ export default function FinanceAnalyticsPage() {
                             <TrendingUp size={22} />
                         </div>
                         <div>
-                            <p className="text-2xl font-black text-slate-900 dark:text-white">
+                            <p className="text-2xl font-black text-app-text">
                                 {loading ? '—' : `₹${(avgCost / 1000).toFixed(1)}k`}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Avg Asset Cost</p>
+                            <p className="text-xs text-app-text-muted uppercase font-bold tracking-wider">Avg Asset Cost</p>
                         </div>
                     </div>
                 </div>
@@ -146,11 +146,11 @@ export default function FinanceAnalyticsPage() {
 
             {/* Monthly Spend Trend */}
             <div className="glass-panel p-6">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                <h3 className="text-lg font-bold text-app-text mb-4">
                     Monthly Spend Trend (12 months)
                 </h3>
                 {loading ? (
-                    <div className="h-64 flex items-center justify-center text-slate-500 dark:text-slate-400">Loading…</div>
+                    <div className="h-64 flex items-center justify-center text-app-text-muted">Loading…</div>
                 ) : monthlySpend.length > 0 ? (
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
@@ -172,7 +172,7 @@ export default function FinanceAnalyticsPage() {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className="h-64 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                    <div className="h-64 flex items-center justify-center text-app-text-muted">
                         No spend data available yet.
                     </div>
                 )}
@@ -181,7 +181,7 @@ export default function FinanceAnalyticsPage() {
             {/* Depreciation breakdown */}
             {depreciation?.assets?.length > 0 && (
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                    <h3 className="text-lg font-bold text-app-text mb-4">
                         Depreciation by Asset (top 10)
                     </h3>
                     <div className="h-64">
@@ -209,16 +209,16 @@ export default function FinanceAnalyticsPage() {
             {/* Summary table from financials API */}
             {summary && (
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Financial Summary</h3>
+                    <h3 className="text-lg font-bold text-app-text mb-4">Financial Summary</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         {Object.entries(summary)
                             .filter(([k, v]) => typeof v === 'number' || typeof v === 'string')
                             .map(([key, value]) => (
-                                <div key={key} className="bg-slate-50 dark:bg-white/5 rounded-xl p-4 border border-slate-200 dark:border-white/10">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">
+                                <div key={key} className="bg-app-surface-soft rounded-xl p-4 border border-app-border">
+                                    <p className="text-xs text-app-text-muted text-app-text-muted uppercase font-bold tracking-wider mb-1">
                                         {key.replace(/_/g, ' ')}
                                     </p>
-                                    <p className="text-base font-bold text-slate-900 dark:text-white">
+                                    <p className="text-base font-bold text-app-text">
                                         {typeof value === 'number'
                                             ? (key.toLowerCase().includes('value') || key.toLowerCase().includes('cost') || key.toLowerCase().includes('spend'))
                                                 ? `₹${Number(value).toLocaleString()}`

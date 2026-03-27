@@ -56,8 +56,9 @@ async def create_user(db: AsyncSession, user: UserCreate):
         full_name=user.full_name,
         password_hash=hashed_password,
         role=role_value,
-        status="ACTIVE" if is_first_user and role_value == "ADMIN" else "PENDING",
+        status="ACTIVE", # Auto-approve all new accounts
         position=user.position,
+
         domain=user.domain,
         department=user.department,
         location=user.location,

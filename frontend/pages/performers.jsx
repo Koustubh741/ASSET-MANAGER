@@ -37,7 +37,16 @@ export default function TopPerformersPage() {
             const days = timeRange === 'monthly' ? 30 : null;
             const data = await apiClient.getTicketSolverStats(days);
             // Ensure data is sorted by count descending
-            const sortedData = [...data].sort((a, b) => b.count - a.count);
+            // Normalize backend field names to what the UI expects
+            const normalized = data.map(s => ({
+                id: s.id,
+                name: s.full_name || s.name || 'Unknown',
+                count: s.tickets_solved ?? s.count ?? 0,
+                mttr_hours: s.avg_resolve_time_hours ?? s.mttr_hours ?? 0,
+                categories: s.specialties || s.categories || [],
+                role: s.role || 'Systems Support Engineer',
+            }));
+            const sortedData = [...normalized].sort((a, b) => (b.count || 0) - (a.count || 0));
             setSolvers(sortedData);
         } catch (error) {
             console.error('Failed to fetch solver stats:', error);
@@ -50,13 +59,13 @@ export default function TopPerformersPage() {
     const categories = ['All Categories', ...new Set(solvers.flatMap(s => s.categories || []))];
 
     const filteredSolvers = solvers.filter(s => {
-        const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === 'All Categories' || (s.categories && s.categories.includes(selectedCategory));
         return matchesSearch && matchesCategory;
     });
 
     const topPerformer = filteredSolvers[0];
-    const totalResolutions = solvers.reduce((sum, s) => sum + s.count, 0);
+    const totalResolutions = solvers.reduce((sum, s) => sum + (s.count || 0), 0);
 
     const handleViewPortfolio = (solver) => {
         router.push(`/performers/${solver.id}`);
@@ -73,7 +82,7 @@ export default function TopPerformersPage() {
             };
             case 1: return {
                 bg: 'bg-slate-400/20',
-                text: 'text-slate-500 dark:text-slate-400',
+                text: 'text-app-text-muted',
                 border: 'border-slate-400/30',
                 icon: Medal,
                 shadow: 'shadow-[0_0_20px_rgba(148,163,184,0.15)]'
@@ -104,19 +113,19 @@ export default function TopPerformersPage() {
                         <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
                             <Trophy size={24} />
                         </div>
-                        <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">IT Support Champions</h1>
+                        <h1 className="text-2xl font-black text-app-text tracking-tight">IT Support Champions</h1>
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 text-lg ml-1">Celebrating our top problem solvers and engineering excellence.</p>
+                    <p className="text-app-text-muted text-lg ml-1">Celebrating our top problem solvers and engineering excellence.</p>
                 </div>
 
-                <div className="flex items-center gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-2 rounded-2xl border border-slate-200 dark:border-white/5">
+                <div className="flex items-center gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-2 rounded-2xl border border-app-border">
                     <div className="px-4 py-2 text-center">
-                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Total Resolved</p>
+                        <p className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest">Total Resolved</p>
                         <p className="text-xl font-bold text-emerald-500">{totalResolutions}</p>
                     </div>
-                    <div className="w-px h-8 bg-slate-200 dark:bg-white/10" />
+                    <div className="w-px h-8 bg-app-surface" />
                     <div className="px-4 py-2 text-center">
-                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Team Members</p>
+                        <p className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest">Team Members</p>
                         <p className="text-xl font-bold text-indigo-500">{solvers.length}</p>
                     </div>
                 </div>
@@ -134,15 +143,15 @@ export default function TopPerformersPage() {
                                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs font-black uppercase tracking-widest">
                                     <Sparkles size={14} /> Current Leader
                                 </div>
-                                <h2 className="text-xl lg:text-6xl font-black text-slate-900 dark:text-white leading-tight">
+                                <h2 className="text-xl lg:text-6xl font-black text-app-text leading-tight">
                                     {topPerformer.name}
                                 </h2>
-                                <p className="text-xl text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
+                                <p className="text-xl text-app-text-muted max-w-md leading-relaxed">
                                     Expertly handled <span className="text-amber-500 font-bold">{topPerformer.count} tickets</span> this period. Consistently delivering high-performance solutions.
                                 </p>
                                 <div className="flex flex-wrap gap-3">
                                     {['Optimization Guru', 'Efficiency Master', 'Top Rated'].map(tag => (
-                                        <span key={tag} className="px-3 py-1 rounded-lg bg-slate-200 dark:bg-white/10 border border-slate-300 dark:border-white/10 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <span key={tag} className="px-3 py-1 rounded-lg bg-app-surface border border-slate-300 border-app-border text-[10px] font-bold uppercase tracking-wider text-app-text-muted">
                                             {tag}
                                         </span>
                                     ))}
@@ -150,12 +159,12 @@ export default function TopPerformersPage() {
                                 <div className="pt-4 flex items-center gap-4">
                                     <button 
                                         onClick={() => handleViewPortfolio(topPerformer)}
-                                        className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 dark:text-white font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                                        className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-app-text font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
                                     >
                                         View Portfolio <TrendingUp size={18} />
                                     </button>
-                                    <button className="p-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 border border-slate-300 dark:border-white/10 rounded-xl transition-all">
-                                        <Share2 size={20} className="text-slate-500 dark:text-slate-400" />
+                                    <button className="p-3 bg-app-surface-soft hover:bg-app-surface border border-slate-300 border-app-border rounded-xl transition-all">
+                                        <Share2 size={20} className="text-app-text-muted" />
                                     </button>
                                 </div>
                             </div>
@@ -166,17 +175,17 @@ export default function TopPerformersPage() {
                                     <div className="absolute inset-0 bg-amber-500/20 rounded-full animate-pulse" />
                                     <div className="absolute inset-4 border-2 border-dashed border-amber-500/30 rounded-full animate-spin-slow" />
                                     <div className="absolute inset-8 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center shadow-2xl">
-                                        <Trophy size={100} className="text-slate-900 dark:text-white drop-shadow-lg" />
+                                        <Trophy size={100} className="text-app-text drop-shadow-lg" />
                                     </div>
 
                                     {/* Stats Floating around */}
                                     <div className="absolute -top-4 -right-4 glass-card p-4 border-amber-500/30 backdrop-blur-xl animate-float">
                                         <p className="text-2xl font-black text-amber-500">{topPerformer.count}</p>
-                                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">Resolved</p>
+                                        <p className="text-[10px] font-bold text-app-text-muted uppercase tracking-tighter">Resolved</p>
                                     </div>
                                     <div className="absolute -bottom-4 -left-4 glass-card p-4 border-emerald-500/30 backdrop-blur-xl animate-float" style={{ animationDelay: '1s' }}>
                                         <p className="text-2xl font-black text-emerald-500">100%</p>
-                                        <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter">SLA Compliance</p>
+                                        <p className="text-[10px] font-bold text-app-text-muted uppercase tracking-tighter">SLA Compliance</p>
                                     </div>
                                 </div>
                             </div>
@@ -188,13 +197,13 @@ export default function TopPerformersPage() {
             {/* Navigation / Filter Bar */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="relative w-full md:w-96">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-app-text-muted" size={18} />
                     <input
                         type="text"
                         placeholder="Search performers..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all font-medium"
+                        className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all font-medium"
                     />
                 </div>
 
@@ -209,22 +218,22 @@ export default function TopPerformersPage() {
                         }}
                         trigger={['click']}
                     >
-                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-500 dark:text-slate-400 hover:border-amber-500/50 transition-all">
+                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-app-border text-xs font-bold text-app-text-muted hover:border-amber-500/50 transition-all">
                             <span className="flex items-center gap-2">
                                 <Filter size={16} /> {selectedCategory}
                             </span>
                         </button>
                     </Dropdown>
-                    <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-white/10">
+                    <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-app-border">
                         <button
                             onClick={() => setTimeRange('lifetime')}
-                            className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'lifetime' ? 'bg-amber-500 text-slate-900 dark:text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white'}`}
+                            className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'lifetime' ? 'bg-amber-500 text-app-text shadow-lg shadow-amber-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text'}`}
                         >
                             Lifetime
                         </button>
                         <button
                             onClick={() => setTimeRange('monthly')}
-                            className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'monthly' ? 'bg-amber-500 text-slate-900 dark:text-white shadow-lg shadow-amber-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white'}`}
+                            className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'monthly' ? 'bg-amber-500 text-app-text shadow-lg shadow-amber-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text'}`}
                         >
                             Monthly
                         </button>
@@ -242,14 +251,14 @@ export default function TopPerformersPage() {
                     </div>
                 ) : filteredSolvers.length === 0 ? (
                     <div className="glass-panel p-20 text-center">
-                        <User size={48} className="mx-auto text-slate-700 dark:text-slate-300 mb-4" />
-                        <p className="text-slate-500 dark:text-slate-400 font-medium">No performers matching your search terms.</p>
+                        <User size={48} className="mx-auto text-app-text-muted mb-4" />
+                        <p className="text-app-text-muted font-medium">No performers matching your search terms.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4">
                         {filteredSolvers.map((solver, index) => {
                             const styles = getRankStyles(index);
-                            const percent = (solver.count / topPerformer.count) * 100;
+                            const percent = topPerformer && topPerformer.count ? ((solver.count || 0) / topPerformer.count) * 100 : 0;
 
                             return (
                                 <div
@@ -257,7 +266,7 @@ export default function TopPerformersPage() {
                                     className={`group relative glass-panel p-6 border transition-all duration-300 hover:scale-[1.01] hover:shadow-xl ${styles.border} ${styles.shadow}`}
                                 >
                                     <div className="flex items-center gap-6">
-                                        <div className="flex items-center justify-center w-12 text-2xl font-black text-slate-700 dark:text-slate-300">
+                                        <div className="flex items-center justify-center w-12 text-2xl font-black text-app-text-muted">
                                             #{index + 1}
                                         </div>
 
@@ -268,18 +277,18 @@ export default function TopPerformersPage() {
                                         <div className="flex-grow">
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-amber-500 transition-colors">
+                                                    <h3 className="text-xl font-bold text-app-text group-hover:text-amber-500 transition-colors">
                                                         {solver.name}
                                                     </h3>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">{solver.role || 'Systems Support Engineer'}</p>
+                                                    <p className="text-xs text-app-text-muted font-medium uppercase tracking-wider">{solver.role || 'Systems Support Engineer'}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-2xl font-black text-slate-900 dark:text-white">{solver.count}</p>
-                                                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Resolutions</p>
+                                                    <p className="text-2xl font-black text-app-text">{solver.count}</p>
+                                                    <p className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest">Resolutions</p>
                                                 </div>
                                             </div>
 
-                                            <div className="relative h-2 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                                            <div className="relative h-2 bg-app-surface-soft rounded-full overflow-hidden">
                                                 <div
                                                     className={`absolute top-0 left-0 h-full rounded-full bg-gradient-to-r ${index === 0 ? 'from-amber-400 to-orange-500' : 'from-indigo-500 to-purple-500'} transition-all duration-1000 ease-out`}
                                                     style={{ width: `${percent}%` }}
@@ -292,17 +301,17 @@ export default function TopPerformersPage() {
                                                 <p className="text-sm font-bold text-emerald-500 flex items-center gap-1 justify-center">
                                                     <Zap size={14} /> {solver.mttr_hours || 0}h
                                                 </p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-tighter">MTTR</p>
+                                                <p className="text-[10px] text-app-text-muted uppercase font-black tracking-tighter">MTTR</p>
                                             </div>
                                             <div className="text-center">
                                                 <p className="text-sm font-bold text-blue-500 flex items-center gap-1 justify-center">
                                                     <CheckCircle2 size={14} /> {(Math.max(2.5, 5.0 - (solver.mttr_hours || 0) * 0.1)).toFixed(1)}/5
                                                 </p>
-                                                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-black tracking-tighter">Est. CSAT</p>
+                                                <p className="text-[10px] text-app-text-muted uppercase font-black tracking-tighter">Est. CSAT</p>
                                             </div>
                                             <button 
                                                 onClick={() => handleViewPortfolio(solver)}
-                                                className="p-2 opacity-0 group-hover:opacity-100 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 rounded-lg transition-all"
+                                                className="p-2 opacity-0 group-hover:opacity-100 bg-app-surface-soft hover:bg-app-surface rounded-lg transition-all"
                                             >
                                                 <TrendingUp size={18} className="text-amber-500" />
                                             </button>
@@ -316,8 +325,8 @@ export default function TopPerformersPage() {
             </div>
 
             {/* Footer / Recognition text */}
-            <div className="text-center p-8 bg-gradient-to-r from-amber-500/5 via-indigo-500/5 to-amber-500/5 rounded-3xl border border-slate-200 dark:border-white/5">
-                <p className="text-sm text-slate-500 dark:text-slate-400 italic">
+            <div className="text-center p-8 bg-gradient-to-r from-amber-500/5 via-indigo-500/5 to-amber-500/5 rounded-3xl border border-app-border">
+                <p className="text-sm text-app-text-muted italic">
                     "Great things in business are never done by one person. They're done by a team of people."
                 </p>
                 <div className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-amber-500 uppercase tracking-widest">
@@ -327,10 +336,10 @@ export default function TopPerformersPage() {
 
             <style jsx>{`
                 .glass-panel {
-                    @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2rem] border border-slate-200 dark:border-white/10 shadow-xl shadow-slate-200/50 dark:shadow-none;
+                    @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2rem] border border-app-border shadow-xl shadow-slate-200/50 dark:shadow-none;
                 }
                 .glass-card {
-                    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg;
+                    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-2xl border border-app-border shadow-lg;
                 }
                 @keyframes float {
                     0%, 100% { transform: translateY(0px); }

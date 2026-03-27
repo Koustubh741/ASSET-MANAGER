@@ -1,78 +1,22 @@
-import Link from 'next/link';
 import {
-    Search, Eye, Split, Calendar, ClipboardCheck,
-    Ticket, Network, Users, DollarSign, Bot, FileText,
-    ChevronDown, ChevronUp, Package, UserMinus, Smartphone, Database
+    ChevronDown, ChevronUp, Package, UserMinus, Smartphone, Database,
+    Search, Eye, Split, Calendar, ClipboardCheck, Ticket, Network, Users, DollarSign, Bot, FileText
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import apiClient from '@/lib/apiClient';
 import AIAssistantSidebar from '@/components/AIAssistantSidebar';
 import OrganizationHierarchy from '@/components/OrganizationHierarchy';
 import BulkImport from '@/components/BulkImport';
 
-const PLATFORM_WORKFLOWS = [
-    {
-        id: 'asset-request',
-        title: 'Asset Request & Procurement',
-        icon: Package,
-        color: 'blue',
-        steps: [
-            { step: 1, role: 'Employee', action: 'Submits request with justification', state: 'SUBMITTED' },
-            { step: 2, role: 'Manager', action: 'Reviews and approves or rejects', state: 'MANAGER_APPROVED' },
-            { step: 3, role: 'IT', action: 'Verifies technical specs and approves', state: 'IT_APPROVED' },
-            { step: 4, role: 'Manager', action: 'Confirms IT decision (Oversight Phase)', state: 'MANAGER_CONFIRMED_IT' },
-            { step: 5, role: 'Procurement', action: 'Creates Purchase Order (PO)', state: 'PROCUREMENT_REQUIRED / PO_CREATED' },
-            { step: 6, role: 'Finance', action: 'Validates and approves budget for PO', state: 'PO_VALIDATED → FINANCE_APPROVED' },
-            { step: 7, role: 'Procurement', action: 'Confirms delivery from vendor', state: 'DELIVERY_CONFIRMED' },
-            { step: 8, role: 'Inventory Manager', action: 'Performs Quality Control (QC) and allocates asset', state: 'QC_PENDING → ALLOCATED' },
-            { step: 9, role: 'Employee', action: 'Verifies asset condition; Accepts or Reports Issue', state: 'USER_ACCEPTANCE_PENDING' },
-            { step: 10, role: 'Manager', action: 'Confirms final assignment (Oversight Phase)', state: 'MANAGER_CONFIRMED_ASSIGNMENT' },
-            { step: 11, role: 'System', action: 'Asset marked In Use; workflow closed', state: 'IN_USE → CLOSED' },
-        ],
-        note: 'BYOD requests branch to compliance path after IT approval. Verification rejections or returns automatically trigger high/medium priority support tickets.',
-    },
-    {
-        id: 'byod-compliance',
-        title: 'BYOD Compliance Path (after IT Approval)',
-        icon: Smartphone,
-        color: 'sky',
-        steps: [
-            { step: 1, role: 'Employee', action: 'Submits BYOD request; follows approval path through Manager and IT', state: 'SUBMITTED → MANAGER_CONFIRMED_IT' },
-            { step: 2, role: 'System', action: 'Routes to BYOD compliance path (no procurement)', state: 'BYOD path' },
-            { step: 3, role: 'IT', action: 'Runs compliance check via Policy Engine / MDM Enrollment', state: 'BYOD_COMPLIANCE_CHECK' },
-            { step: '4a', role: 'System', action: 'If compliant: device registered; user accepts terms', state: 'User registration → IN_USE' },
-            { step: '4b', role: 'System', action: 'If non-compliant: request rejected', state: 'BYOD_REJECTED → CLOSED' },
-            { step: 5, role: 'System', action: 'Device in use or workflow closed', state: 'IN_USE → CLOSED' },
-        ],
-        note: 'BYOD devices are automatically offboarded (data wipe/unenroll) during the Employee Exit workflow.',
-    },
-    {
-        id: 'ticketing',
-        title: 'IT Support (Ticketing)',
-        icon: Ticket,
-        color: 'rose',
-        steps: [
-            { step: 1, role: 'User', action: 'Creates ticket (Manual or Auto-generated from Return/Verification Failure)', state: 'Open' },
-            { step: 2, role: 'IT Technician', action: 'Picks up ticket; completes mandatory diagnostic checklist', state: 'In Progress' },
-            { step: 3, role: 'IT Technician', action: 'Performs remediation (fix, replacement, or escalation)', state: 'Pending' },
-            { step: 4, role: 'IT Technician', action: 'Submits resolution notes and closes ticket', state: 'Closed' },
-        ],
-        note: 'Asset returns trigger Medium-priority tickets. Verification failures trigger High-priority tickets with automated diagnostic checklists.',
-    },
-    {
-        id: 'exit',
-        title: 'Employee Exit (Offboarding)',
-        icon: UserMinus,
-        color: 'amber',
-        steps: [
-            { step: 1, role: 'Admin', action: 'Initiates exit workflow for departing employee', state: 'Initiated' },
-            { step: 2, role: 'System', action: 'Freezes asset and BYOD snapshot; locks changes', state: 'Snapshot' },
-            { step: 3, role: 'Inventory Manager', action: 'Reclaims physical company-owned assets', state: 'Reclaim' },
-            { step: 4, role: 'IT', action: 'Wipes data and unenrolls BYOD devices', state: 'Wipe' },
-            { step: 5, role: 'Admin', action: 'Finalizes exit and disables account', state: 'Closed' },
-        ],
-        note: 'The system automatically snapshots the entire asset state to prevent data loss or unauthorized device retention.',
-    },
-];
+// Icons mapping for dynamic workflows
+const ICON_MAP = {
+    Package,
+    Smartphone,
+    Ticket,
+    UserMinus,
+    Database
+};
 
 const NODE_WIDTH = 152;
 const NODE_HEIGHT = 68;
@@ -168,7 +112,7 @@ function WorkflowFlowchart({ workflow }) {
     }
 
     return (
-        <div className="overflow-x-auto overflow-y-auto rounded-lg bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/5 p-4">
+        <div className="overflow-x-auto overflow-y-auto rounded-lg bg-white dark:bg-slate-900/60 border border-app-border p-4">
             <svg viewBox={`0 0 ${Number(width) || 400} ${Number(height) || 200}`} className="min-w-full" style={{ minHeight: 200 }}>
                 <defs>
                     <marker id={`arrow-${workflow.id}`} markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
@@ -220,6 +164,30 @@ export default function EnterpriseFeatures() {
     const [workflowView, setWorkflowView] = useState('list'); // 'list' | 'flowchart'
     const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'hierarchy'
     const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+    const [workflows, setWorkflows] = useState([]);
+    const [loadingWorkflows, setLoadingWorkflows] = useState(true);
+
+    useEffect(() => {
+        const fetchMetadata = async () => {
+            try {
+                const data = await apiClient.get('/setup/metadata');
+                setWorkflows(data.workflows || []);
+            } catch (e) {
+                console.error("Failed to fetch platform metadata", e);
+            } finally {
+                setLoadingWorkflows(false);
+            }
+        };
+        fetchMetadata();
+    }, []);
+
+    // Map string icons to Lucide components
+    const mappedWorkflows = useMemo(() => {
+        return workflows.map(wf => ({
+            ...wf,
+            icon: ICON_MAP[wf.icon] || Package
+        }));
+    }, [workflows]);
 
     const features = [
         {
@@ -330,28 +298,28 @@ export default function EnterpriseFeatures() {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 p-8 relative">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-app-text p-8 relative">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-12 flex justify-between items-start">
                     <div>
                         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
                             Enterprise Features Portal
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-lg">
+                        <p className="text-app-text-muted text-lg">
                             Access the new enterprise-grade modules and tools.
                         </p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-white/5">
+                        <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-xl border border-app-border">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-slate-900 dark:text-white shadow-lg shadow-blue-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-200'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-app-text shadow-lg shadow-blue-500/20' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
                             >
                                 Features Grid
                             </button>
                             <button
                                 onClick={() => setViewMode('hierarchy')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'hierarchy' ? 'bg-purple-600 text-slate-900 dark:text-white shadow-lg shadow-purple-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-slate-200'}`}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'hierarchy' ? 'bg-purple-600 text-app-text shadow-lg shadow-purple-500/20' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
                             >
                                 Org Hierarchy
                             </button>
@@ -360,7 +328,7 @@ export default function EnterpriseFeatures() {
                             onClick={() => setIsAIStillOpen(true)}
                             className="group flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all hover:scale-105"
                         >
-                            <Bot size={20} className="text-slate-900 dark:text-white" />
+                            <Bot size={20} className="text-app-text" />
                             <span>AI Assistant</span>
                         </button>
                     </div>
@@ -380,32 +348,34 @@ export default function EnterpriseFeatures() {
                                 <ClipboardCheck size={22} className="text-emerald-400" />
                                 Platform Overview – Process Workflows
                             </h2>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 max-w-2xl">
+                            <p className="text-app-text-muted text-sm mb-4 max-w-2xl">
                                 Understand how each process flows end-to-end. View as a list or as flowcharts.
                             </p>
                             <div className="flex gap-2 mb-6">
                                 <button
                                     onClick={() => setWorkflowView('list')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'list' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'list' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted text-app-text-muted border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
                                 >
                                     List view
                                 </button>
                                 <button
                                     onClick={() => setWorkflowView('flowchart')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'flowchart' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'flowchart' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted text-app-text-muted border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
                                 >
                                     Flowchart view
                                 </button>
                             </div>
                             {workflowView === 'flowchart' ? (
                                 <div className="space-y-8">
-                                    {PLATFORM_WORKFLOWS.map((wf) => {
+                                    {loadingWorkflows ? (
+                                        <div className="p-12 text-center text-slate-500 font-mono text-sm animate-pulse">Loading platform workflows...</div>
+                                    ) : mappedWorkflows.map((wf) => {
                                         const Icon = wf.icon;
                                         const colorMap = { blue: 'border-blue-500/30', rose: 'border-rose-500/30', amber: 'border-amber-500/30', sky: 'border-sky-500/30' };
                                         const iconColorMap = { blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400', sky: 'text-sky-400' };
                                         return (
                                             <div key={wf.id} className={`rounded-xl border ${colorMap[wf.color] || colorMap.blue} bg-white dark:bg-slate-900/30 overflow-hidden`}>
-                                                <div className="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-white/5">
+                                                <div className="flex items-center gap-3 p-4 border-b border-app-border">
                                                     <div className={`p-2 rounded-lg bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
                                                         <Icon size={20} />
                                                     </div>
@@ -413,7 +383,7 @@ export default function EnterpriseFeatures() {
                                                 </div>
                                                 <div className="p-4">
                                                     <WorkflowFlowchart workflow={wf} />
-                                                    {wf.note && <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-3">{wf.note}</p>}
+                                                    {wf.note && <p className="text-xs text-app-text-muted italic mt-3">{wf.note}</p>}
                                                 </div>
                                             </div>
                                         );
@@ -421,7 +391,9 @@ export default function EnterpriseFeatures() {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    {PLATFORM_WORKFLOWS.map((wf) => {
+                                    {loadingWorkflows ? (
+                                        <div className="p-12 text-center text-slate-500 font-mono text-sm animate-pulse">Loading platform workflows...</div>
+                                    ) : mappedWorkflows.map((wf) => {
                                         const Icon = wf.icon;
                                         const isExpanded = expandedWorkflow === wf.id;
                                         const colorMap = { blue: 'border-blue-500/30 bg-blue-500/5', rose: 'border-rose-500/30 bg-rose-500/5', amber: 'border-amber-500/30 bg-amber-500/5', sky: 'border-sky-500/30 bg-sky-500/5' };
@@ -433,7 +405,7 @@ export default function EnterpriseFeatures() {
                                             >
                                                 <button
                                                     onClick={() => setExpandedWorkflow(isExpanded ? null : wf.id)}
-                                                    className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-100 transition-colors"
+                                                    className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 transition-colors"
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={`p-2 rounded-lg bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
@@ -441,22 +413,22 @@ export default function EnterpriseFeatures() {
                                                         </div>
                                                         <span className="font-semibold text-slate-900 dark:text-slate-200">{wf.title}</span>
                                                     </div>
-                                                    {isExpanded ? <ChevronUp size={20} className="text-slate-500 dark:text-slate-400" /> : <ChevronDown size={20} className="text-slate-500 dark:text-slate-400" />}
+                                                    {isExpanded ? <ChevronUp size={20} className="text-app-text-muted" /> : <ChevronDown size={20} className="text-app-text-muted" />}
                                                 </button>
                                                 {isExpanded && (
                                                     <div className="px-4 pb-4 pt-0 space-y-3">
                                                         {wf.steps.map((s) => (
                                                             <div key={s.step} className="flex gap-4 items-start pl-2 border-l-2 border-slate-700/50 py-1">
-                                                                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 w-6">{s.step}</span>
+                                                                <span className="text-xs font-bold text-app-text-muted w-6">{s.step}</span>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase">{s.role}</span>
+                                                                    <span className="text-xs font-semibold text-app-text-muted text-app-text-muted uppercase">{s.role}</span>
                                                                     <p className="text-slate-700 dark:text-slate-700 text-sm mt-0.5">{s.action}</p>
-                                                                    <p className="text-slate-500 dark:text-slate-400 text-xs font-mono mt-1">{s.state}</p>
+                                                                    <p className="text-app-text-muted text-xs font-mono mt-1">{s.state}</p>
                                                                 </div>
                                                             </div>
                                                         ))}
                                                         {wf.note && (
-                                                            <p className="text-xs text-slate-500 dark:text-slate-400 italic pl-8 pt-1">{wf.note}</p>
+                                                            <p className="text-xs text-app-text-muted italic pl-8 pt-1">{wf.note}</p>
                                                         )}
                                                     </div>
                                                 )}
@@ -479,10 +451,10 @@ export default function EnterpriseFeatures() {
                                                 <feature.icon size={24} />
                                             </div>
                                         </div>
-                                        <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100 group-hover:text-slate-900 dark:hover:text-white">
+                                        <h3 className="text-xl font-semibold mb-2 text-app-text group-hover:text-slate-900 dark:hover:text-white">
                                             {feature.title}
                                         </h3>
-                                        <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed">
+                                        <p className="text-sm text-app-text-muted text-app-text-muted leading-relaxed">
                                             {feature.description}
                                         </p>
                                     </div>
@@ -494,13 +466,13 @@ export default function EnterpriseFeatures() {
                                                     <feature.icon size={24} />
                                                 </div>
                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400">OPEN</span>
+                                                    <span className="text-xs font-mono text-app-text-muted">OPEN</span>
                                                 </div>
                                             </div>
-                                            <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100 group-hover:text-slate-900 dark:hover:text-white">
+                                            <h3 className="text-xl font-semibold mb-2 text-app-text group-hover:text-slate-900 dark:hover:text-white">
                                                 {feature.title}
                                             </h3>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400 leading-relaxed">
+                                            <p className="text-sm text-app-text-muted text-app-text-muted leading-relaxed">
                                                 {feature.description}
                                             </p>
                                         </div>
@@ -509,8 +481,8 @@ export default function EnterpriseFeatures() {
                             ))}
                         </div>
 
-                        <div className="mt-12 p-6 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/5">
-                            <h4 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                        <div className="mt-12 p-6 rounded-2xl bg-white dark:bg-slate-900/50 border border-app-border">
+                            <h4 className="text-sm font-semibold text-app-text-muted uppercase tracking-wider mb-4">
                                 Implementation Status
                             </h4>
                             <div className="flex flex-wrap gap-2">

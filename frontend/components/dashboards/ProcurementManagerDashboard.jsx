@@ -109,12 +109,12 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
     const showDeliveries = activeView === 'deliveries';
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 neural-compact">
             {showDashboard && (
                 <header className="flex justify-between items-end">
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white">Procurement Hub</h1>
-                        <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400">Manage purchasing, vendors, and budgets</p>
+                        <h1 className="text-xl font-bold text-app-text">Procurement Hub</h1>
+                        <p className="text-app-text-muted text-app-text-muted">Manage purchasing, vendors, and budgets</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <button
@@ -125,12 +125,12 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                         </button>
                         <button
                             onClick={exportProcurementSummary}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 border border-slate-200 dark:border-white/20 text-slate-900 dark:text-white text-sm font-medium"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
                         >
                             <Download size={18} /> Export PO & Delivery Summary
                         </button>
                         <div className="text-right">
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Quarterly Budget Remaining</p>
+                            <p className="text-xs text-app-text-muted">Quarterly Budget Remaining</p>
                             <p className="text-2xl font-bold text-emerald-400">—</p>
                         </div>
                     </div>
@@ -155,8 +155,8 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                 <ShoppingCart size={24} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{awaitingPO.length}</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Awaiting PO</p>
+                                <h3 className="text-2xl font-bold text-app-text">{awaitingPO.length}</h3>
+                                <p className="text-xs text-app-text-muted">Awaiting PO</p>
                             </div>
                         </div>
                     </div>
@@ -166,8 +166,8 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                 <FileText size={24} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{awaitingDelivery.length}</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Awaiting Delivery</p>
+                                <h3 className="text-2xl font-bold text-app-text">{awaitingDelivery.length}</h3>
+                                <p className="text-xs text-app-text-muted">Awaiting Delivery</p>
                             </div>
                         </div>
                     </div>
@@ -177,10 +177,10 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                 <DollarSign size={24} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                                <h3 className="text-2xl font-bold text-app-text">
                                     {totalPendingPOValue > 0 ? `₹${(totalPendingPOValue / 100000).toFixed(1)}L` : '₹0'}
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Total Pending PO Value</p>
+                                <p className="text-xs text-app-text-muted">Total Pending PO Value</p>
                             </div>
                         </div>
                     </div>
@@ -190,8 +190,8 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                 <Calendar size={24} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{awaitingDelivery.length}</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Expected Deliveries</p>
+                                <h3 className="text-2xl font-bold text-app-text">{awaitingDelivery.length}</h3>
+                                <p className="text-xs text-app-text-muted">Expected Deliveries</p>
                             </div>
                         </div>
                     </div>
@@ -201,8 +201,8 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                 <CreditCard size={24} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">2</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Invoice Discrepancies</p>
+                                <h3 className="text-2xl font-bold text-app-text">0</h3>
+                                <p className="text-xs text-app-text-muted">Invoice Discrepancies</p>
                             </div>
                         </div>
                     </div>
@@ -212,7 +212,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
             {/* Trend chart - dashboard only */}
             {showDashboard && (
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">PO / Request trend (6 months)</h3>
+                    <h3 className="text-lg font-bold text-app-text mb-4">PO / Request trend (6 months)</h3>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={trendData}>
@@ -236,22 +236,22 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
             {showDeliveries && awaitingDelivery.length > 0 && (
                 <div className="glass-panel p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-app-text flex items-center gap-2">
                             <Activity className="text-indigo-400" />
                             PO Intelligence
-                            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">Vendor, cost, extraction data</span>
+                            <span className="text-xs font-normal text-app-text-muted">Vendor, cost, extraction data</span>
                         </h3>
                         <button
                             onClick={() => setShowPoAudit(!showPoAudit)}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/20 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10"
+                            className="text-xs px-3 py-1.5 rounded-lg bg-app-surface-soft border border-app-border-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface"
                         >
                             {showPoAudit ? 'Hide' : 'Show'} audit table
                         </button>
                     </div>
                     {showPoAudit && (
-                        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-white/10">
+                        <div className="overflow-x-auto rounded-xl border border-app-border">
                             <table className="w-full text-sm text-left">
-                                <thead className="text-slate-500 dark:text-slate-400 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-xs uppercase font-bold">
+                                <thead className="text-app-text-muted text-app-text-muted border-b border-app-border text-xs uppercase font-bold">
                                     <tr>
                                         <th className="p-3">Request ID</th>
                                         <th className="p-3">Asset Type</th>
@@ -262,18 +262,18 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                         <th className="p-3 text-right">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-slate-700 dark:text-slate-300 divide-y divide-white/5 divide-slate-200">
+                                <tbody className="text-app-text-muted divide-y divide-white/5 divide-slate-200">
                                     {awaitingDelivery.map(req => {
                                         const po = poDetails[req.id];
                                         const isEditing = editingPoId === req.id;
                                         return (
-                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-50">
+                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50">
                                                 <td className="p-3 font-mono text-xs">{req.id}</td>
                                                 <td className="p-3">{req.assetType}</td>
                                                 <td className="p-3">
                                                     {isEditing ? (
                                                         <input
-                                                            className="w-full max-w-[140px] bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-white/20 rounded px-2 py-1 text-sm text-slate-900 dark:text-white"
+                                                            className="w-full max-w-[140px] bg-slate-50 dark:bg-slate-800 border border-app-border-soft rounded px-2 py-1 text-sm text-app-text"
                                                             value={editPoData[req.id]?.vendor_name ?? po?.vendor_name ?? ''}
                                                             onChange={(e) => {
                                                                 const v = e.target.value;
@@ -288,7 +288,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                                     {isEditing ? (
                                                         <input
                                                             type="number"
-                                                            className="w-24 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-white/20 rounded px-2 py-1 text-sm text-slate-900 dark:text-white text-right"
+                                                            className="w-24 bg-slate-50 dark:bg-slate-800 border border-app-border-soft rounded px-2 py-1 text-sm text-app-text text-right"
                                                             value={editPoData[req.id]?.total_cost ?? po?.total_cost ?? ''}
                                                             onChange={(e) => {
                                                                 const v = parseFloat(e.target.value) || 0;
@@ -307,7 +307,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                                     {isEditing ? (
                                                         <button
                                                             onClick={() => po?.id && handleSavePO(req.id, po.id)}
-                                                            className="text-xs px-3 py-1.5 rounded bg-emerald-600 text-slate-900 dark:text-white hover:bg-emerald-500"
+                                                            className="text-xs px-3 py-1.5 rounded bg-emerald-600 text-app-text hover:bg-emerald-500"
                                                         >
                                                             Save
                                                         </button>
@@ -322,7 +322,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                                             </button>
                                                             <button
                                                                 onClick={() => { setEditingPoId(req.id); setEditPoData(prev => ({ ...prev, [req.id]: { vendor_name: po?.vendor_name, total_cost: po?.total_cost } })); }}
-                                                                className="text-xs px-3 py-1.5 rounded bg-slate-200 dark:bg-white/10 hover:bg-white/20"
+                                                                className="text-xs px-3 py-1.5 rounded bg-app-surface hover:bg-white/20"
                                                             >
                                                                 Edit
                                                             </button>
@@ -344,29 +344,29 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                 <>
                     <header className="flex justify-between items-end">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-app-text flex items-center gap-2">
                                 <FileText className="text-blue-400" />
                                 Purchase orders
                             </h1>
-                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm mt-1">Create and manage purchase orders for approved requests</p>
+                            <p className="text-app-text-muted text-app-text-muted text-sm mt-1">Create and manage purchase orders for approved requests</p>
                         </div>
                     </header>
                     <div className="glass-panel p-6">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-app-text mb-4 flex items-center gap-2">
                             <ShoppingCart className="text-blue-400" />
                             Create Purchase Orders
                             <span className="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded-full border border-blue-500/20">{awaitingPO.length}</span>
                         </h3>
 
                         {awaitingPO.length === 0 ? (
-                            <div className="p-8 text-center bg-slate-50 dark:bg-white/5 rounded-xl border border-dashed border-slate-200 dark:border-white/10">
-                                <p className="text-slate-500 dark:text-slate-400 font-medium">No requests awaiting PO creation</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Approved requests will appear here for purchase order creation.</p>
+                            <div className="p-8 text-center bg-app-surface-soft rounded-xl border border-dashed border-app-border">
+                                <p className="text-app-text-muted font-medium">No requests awaiting PO creation</p>
+                                <p className="text-sm text-app-text-muted mt-1">Approved requests will appear here for purchase order creation.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto -mx-2 md:mx-0">
                                 <table className="w-full text-sm text-left min-w-[640px] md:min-w-0">
-                                    <thead className="text-slate-500 dark:text-slate-400 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-xs uppercase font-bold">
+                                    <thead className="text-app-text-muted text-app-text-muted border-b border-app-border text-xs uppercase font-bold">
                                         <tr>
                                             <th className="pb-3">Request Details</th>
                                             <th className="pb-3">Requested By</th>
@@ -375,19 +375,19 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                             <th className="pb-3 text-right">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="text-slate-700 dark:text-slate-300 divide-y divide-white/5 divide-slate-200">
+                                    <tbody className="text-app-text-muted divide-y divide-white/5 divide-slate-200">
                                         {awaitingPO.map(req => (
-                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-50 transition-colors">
+                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50 transition-colors">
                                                 <td className="py-3">
-                                                    <div className="font-medium text-slate-900 dark:text-white">{req.assetType}</div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{req.id}</div>
+                                                    <div className="font-medium text-app-text">{req.assetType}</div>
+                                                    <div className="text-xs text-app-text-muted font-mono mt-0.5">{req.id}</div>
                                                 </td>
                                                 <td className="py-3">
                                                     <div>{req.requestedBy?.name ?? '—'}</div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400">{req.requestedBy?.role ?? req.requestedBy?.position ?? ''}</div>
+                                                    <div className="text-xs text-app-text-muted">{req.requestedBy?.role ?? req.requestedBy?.position ?? ''}</div>
                                                 </td>
                                                 <td className="py-3">
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 max-w-xs truncate">{req.justification}</div>
+                                                    <div className="text-xs text-app-text-muted text-app-text-muted max-w-xs truncate">{req.justification}</div>
                                                 </td>
                                                 <td className="py-3">
                                                     <span className="px-2 py-1 text-xs rounded font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -401,13 +401,13 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                                                 const reason = prompt("Enter rejection reason:");
                                                                 if (reason && reason.trim()) procurementReject(req.id, reason.trim());
                                                             }}
-                                                            className="bg-rose-600 hover:bg-rose-500 text-slate-900 dark:text-white text-xs px-3 py-2 rounded-lg font-medium shadow-lg shadow-rose-500/10 transition-all flex items-center gap-2"
+                                                            className="bg-rose-600 hover:bg-rose-500 text-app-text text-xs px-3 py-2 rounded-lg font-medium shadow-lg shadow-rose-500/10 transition-all flex items-center gap-2"
                                                         >
                                                             <XCircle size={14} /> Reject
                                                         </button>
                                                         <button
                                                             onClick={() => setSelectedRequest(req)}
-                                                            className="bg-blue-600 hover:bg-blue-500 text-slate-900 dark:text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2"
+                                                            className="bg-blue-600 hover:bg-blue-500 text-app-text text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2"
                                                         >
                                                             <Eye size={14} /> Review & Approve
                                                         </button>
@@ -428,16 +428,16 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                 <>
                     <header className="flex justify-between items-end">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <h1 className="text-2xl font-bold text-app-text flex items-center gap-2">
                                 <Truck className="text-emerald-400" />
                                 Deliveries
                             </h1>
-                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400 text-sm mt-1">Confirm delivery and send to inventory</p>
+                            <p className="text-app-text-muted text-app-text-muted text-sm mt-1">Confirm delivery and send to inventory</p>
                         </div>
                     </header>
                     {awaitingDelivery.length > 0 && (
                         <div className="glass-panel p-6">
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-app-text mb-4 flex items-center gap-2">
                                 <Truck className="text-emerald-400" />
                                 Confirm Deliveries (Finance Approved)
                                 <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">{awaitingDelivery.length}</span>
@@ -445,7 +445,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
 
                             <div className="overflow-x-auto -mx-2 md:mx-0">
                                 <table className="w-full text-sm text-left min-w-[560px] md:min-w-0">
-                                    <thead className="text-slate-500 dark:text-slate-400 dark:text-slate-400 border-b border-slate-200 dark:border-white/10 text-xs uppercase font-bold">
+                                    <thead className="text-app-text-muted text-app-text-muted border-b border-app-border text-xs uppercase font-bold">
                                         <tr>
                                             <th className="pb-3">Asset Type</th>
                                             <th className="pb-3">For User</th>
@@ -453,12 +453,12 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                             <th className="pb-3 text-right">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="text-slate-700 dark:text-slate-300 divide-y divide-white/5 divide-slate-200">
+                                    <tbody className="text-app-text-muted divide-y divide-white/5 divide-slate-200">
                                         {awaitingDelivery.map(req => (
-                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-100 dark:bg-white/5 hover:bg-slate-50 transition-colors">
+                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50 transition-colors">
                                                 <td className="py-3">
-                                                    <div className="font-medium text-slate-900 dark:text-white">{req.assetType}</div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">{req.id}</div>
+                                                    <div className="font-medium text-app-text">{req.assetType}</div>
+                                                    <div className="text-xs text-app-text-muted font-mono">{req.id}</div>
                                                 </td>
                                                 <td className="py-3">{req.requestedBy?.name ?? '—'}</td>
                                                 <td className="py-3">
@@ -470,14 +470,14 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => setSelectedRequest(req)}
-                                                            className="p-2 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:text-white hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-lg transition-all"
+                                                            className="p-2 text-app-text-muted text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg transition-all"
                                                             title="View Details"
                                                         >
                                                             <Eye size={18} />
                                                         </button>
                                                         <button
                                                             onClick={() => setSelectedRequest(req)}
-                                                            className="bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
+                                                            className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
                                                         >
                                                             <CheckCircle size={14} /> Confirm Delivery → Inventory
                                                         </button>
@@ -493,9 +493,9 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                     {/* Deliveries view empty state */}
                     {awaitingDelivery.length === 0 && (
                         <div className="glass-panel p-8 text-center">
-                            <Truck className="w-12 h-12 text-slate-500 dark:text-slate-400 mx-auto mb-3" />
-                            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Confirm Deliveries</h3>
-                            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-400">No requests awaiting delivery confirmation. Finance-approved requests will appear here.</p>
+                            <Truck className="w-12 h-12 text-app-text-muted mx-auto mb-3" />
+                            <h3 className="text-lg font-bold text-app-text mb-1">Confirm Deliveries</h3>
+                            <p className="text-app-text-muted text-app-text-muted">No requests awaiting delivery confirmation. Finance-approved requests will appear here.</p>
                         </div>
                     )}
                 </>

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 import uuid
 
@@ -37,7 +37,7 @@ async def create_company(db: AsyncSession, company: CompanyCreate, setup_complet
         website=company.website,
         industry=company.industry,
         address=company.address,
-        setup_completed_at=datetime.utcnow() if setup_completed else None,
+        setup_completed_at=datetime.now(timezone.utc) if setup_completed else None,
     )
     db.add(db_company)
     await db.commit()
@@ -91,7 +91,7 @@ async def complete_setup(
         update_data = company_data.model_dump()
         for key, value in update_data.items():
             setattr(existing, key, value)
-        existing.setup_completed_at = datetime.utcnow()
+        existing.setup_completed_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(existing)
         company = existing

@@ -13,6 +13,7 @@ from ..database.database import get_db
 from ..models.models import Asset, PurchaseOrder, PurchaseInvoice, FinanceRecord, User, AssetRequest
 from ..utils.auth_utils import get_current_user
 from fastapi import HTTPException, status
+from ..services.notification_service import send_notification
 
 router = APIRouter(
     prefix="/financials",
@@ -723,6 +724,17 @@ async def approve_budget_record(
     record.finance_status = "APPROVED"
     record.finance_approver_id = current_user.id
     record.finance_approver_name = current_user.full_name
+    
+    # Root Fix: Trigger unified notification (Email + UI)
+    await send_notification(
+        db=db,
+        request_id=record.asset_request_id,
+        event_type="status_change",
+        old_status="PO_VALIDATED",
+        new_status="FINANCE_APPROVED",
+        reviewer_name=current_user.full_name
+    )
+    
     await db.commit()
     return {"status": "approved"}
 
@@ -757,5 +769,17 @@ async def reject_budget_record(
     record.finance_approver_id = current_user.id
     record.finance_approver_name = current_user.full_name
     record.finance_decision_reason = reason
+    
+    # Root Fix: Trigger unified notification (Email + UI)
+    await send_notification(
+        db=db,
+        request_id=record.asset_request_id,
+        event_type="status_change",
+        old_status="PO_VALIDATED",
+        new_status="FINANCE_REJECTED",
+        reviewer_name=current_user.full_name,
+        reason=reason
+    )
+    
     await db.commit()
     return {"status": "rejected"}

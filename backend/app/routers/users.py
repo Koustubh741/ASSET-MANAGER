@@ -9,6 +9,7 @@ from ..schemas.user_schema import UserCreate, UserResponse, UserUpdate
 from ..services import user_service
 from typing import List, Optional
 from ..utils import auth_utils
+from ..utils.auth_utils import STAFF_ROLES
 
 router = APIRouter(
     prefix="/users",
@@ -23,11 +24,26 @@ async def check_admin_access(
     """
     Verify user has admin privileges for user management.
     """
-    allowed_roles = ["ADMIN", "ADMIN"]
+    allowed_roles = ["ADMIN"]
     if current_user.role not in allowed_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only ADMIN or ADMIN can manage users"
+            detail="Only ADMIN can manage user accounts"
+        )
+    return current_user
+
+
+async def check_staff_access(
+    current_user = Depends(auth_utils.get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Allow IT staff and management to view organization data (read-only).
+    """
+    if current_user.role not in STAFF_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Staff credentials required to access organization data"
         )
     return current_user
 
@@ -79,10 +95,10 @@ async def list_users(
 @router.get("/hierarchy")
 async def get_hierarchy(
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_admin_access)
+    staff_user = Depends(check_staff_access)
 ):
     """
-    Get the complete organization hierarchy (Admin only).
+    Get the complete organization hierarchy (Staff access authorized).
     """
     return await user_service.get_user_hierarchy(db)
 
@@ -91,7 +107,7 @@ async def get_hierarchy(
 async def get_role_counts(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    admin_user = Depends(check_admin_access)
+    staff_user = Depends(check_staff_access)
 ):
     """
     Get count of users per role (Admin only).

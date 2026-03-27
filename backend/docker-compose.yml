@@ -8,7 +8,7 @@ services:
     environment:
       - POSTGRES_DB=ITSM
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=1234
+      - POSTGRES_PASSWORD=Koustubh@123
     ports:
       - "5433:5432"
 
@@ -19,10 +19,29 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql+psycopg2://postgres:1234@db:5432/ITSM
+      - DATABASE_URL=postgresql+psycopg2://postgres:Koustubh%40123@db:5432/ITSM
       - DEBUG=True
     depends_on:
       - db
+      - redis
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+  worker:
+    build: .
+    command: celery -A app.worker.celery_app.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:Koustubh%40123@db:5432/ITSM
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
 
 volumes:
   postgres_data:

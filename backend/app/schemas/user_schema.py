@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Dict, Any
 from datetime import datetime
 from uuid import UUID
 
@@ -11,6 +11,15 @@ def normalize_field_value(v: Optional[str]) -> Optional[str]:
         return v.upper()
     return v.strip().title()
 
+# DEPARTMENT SCHEMAS
+class DepartmentResponse(BaseModel):
+    id: UUID
+    slug: str
+    name: str
+    dept_metadata: Optional[Dict[str, Any]] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
 # USER SCHEMAS
 class UserBase(BaseModel):
     email: EmailStr
@@ -20,6 +29,7 @@ class UserBase(BaseModel):
     position: Optional[str] = None  # MANAGER | TEAM_MEMBER
     domain: Optional[str] = None  # DATA_AI | CLOUD | SECURITY | DEVELOPMENT
     department: Optional[str] = None
+    department_id: Optional[UUID] = None
     location: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
@@ -42,6 +52,7 @@ class UserUpdate(BaseModel):
     position: Optional[str] = None
     domain: Optional[str] = None
     department: Optional[str] = None
+    department_id: Optional[UUID] = None
     location: Optional[str] = None
     company: Optional[str] = None
     manager_id: Optional[UUID] = None
@@ -53,8 +64,10 @@ class UserResponse(UserBase):
     id: Union[UUID, str]
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    dept_obj: Optional[DepartmentResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
+
 
 # LOGIN SCHEMAS
 class LoginRequest(BaseModel):

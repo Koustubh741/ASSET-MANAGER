@@ -41,7 +41,7 @@ async def manager_confirm_stage(
     Returns:
         Updated AssetRequestResponse or None if request not found
     """
-    from .asset_request_service import _populate_requester_info
+    from .asset_request_service import _populate_requester_info, sync_request_state
     
     result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
     db_request = result.scalars().first()
@@ -93,6 +93,7 @@ async def manager_confirm_stage(
     # Update status
     db_request.status = new_status
     db_request.updated_at = datetime.now()
+    sync_request_state(db_request)
     
     # FINALIZATION LOGIC: If confirming ASSIGNMENT, update the Asset record itself
     if stage == "ASSIGNMENT" and decision == "CONFIRM" and db_request.asset_id:

@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy import delete
 from typing import List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..database.database import get_db
 from ..models.models import Task, Ticket, User, AssignmentGroup
@@ -59,7 +59,7 @@ async def update_task(
         setattr(db_task, key, value)
     
     if db_task.status == "Completed" and not db_task.completed_at:
-        db_task.completed_at = datetime.utcnow()
+        db_task.completed_at = datetime.now(timezone.utc)
         
     await db.commit()
     await db.refresh(db_task)

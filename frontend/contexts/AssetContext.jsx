@@ -14,7 +14,12 @@ export const ASSET_STATUS = {
     ALLOCATED: 'Allocated',
     CONFIGURING: 'Configuring',
     READY_FOR_DEPLOYMENT: 'Ready for Deployment',
-    SCRAP_CANDIDATE: 'Scrap Candidate'
+    SCRAP_CANDIDATE: 'Scrap Candidate',
+    IN_STOCK: 'In Stock',
+    ACTIVE: 'Active',
+    RESERVED: 'Reserved',
+    REPAIR: 'Repair',
+    PENDING: 'Pending'
 };
 
 export const OWNER_ROLE = {
@@ -85,14 +90,9 @@ export function AssetProvider({ children }) {
         }
     };
 
-    // Persistence for Demo/Fallback mode
-    useEffect(() => {
-        if (requests.length > 0) {
-            localStorage.setItem('enterprise_requests', JSON.stringify(requests));
-        }
-    }, [requests]);
+    // Persistence for Demo/Fallback mode - REMOVED for Root Fix
 
-    const { isAuthenticated, isLoading: authLoading, user, currentRole } = useRole();
+    const { isAuthenticated, isLoading: authLoading, user, currentRole, isAdmin, isITStaff, isAssetStaff, isFinanceStaff, isProcurementStaff, isManagerial } = useRole();
     const toast = useToast();
 
     const loadData = async () => {
@@ -108,20 +108,13 @@ export function AssetProvider({ children }) {
             try {
                 // Domain-based filtering logic
                 console.log(`[AssetContext] User position: ${user?.position}, Domain: ${user?.domain}, RoleSlug: ${currentRole?.slug}`);
-                if (currentRole?.slug === 'ADMIN' ||
-                    currentRole?.slug === 'ASSET_MANAGER' ||
-                    currentRole?.slug === 'FINANCE' ||
-                    currentRole?.slug === 'PROCUREMENT' ||
-                    currentRole?.slug === 'IT_MANAGEMENT' ||
-                    currentRole?.slug === 'IT_SUPPORT' ||
-                    currentRole?.slug === 'SUPPORT_SPECIALIST'
-                ) {
+                if (isAdmin || isAssetStaff || isFinanceStaff || isProcurementStaff || isITStaff) {
                     // Admin-level/Centralized roles see EVERYTHING (higher limit so pending requests aren't cut off)
                     apiAssetRequests = await apiClient.getAssetRequests({ limit: 300 });
                     apiAssets = await apiClient.getAssets();
                     apiTickets = await apiClient.getTickets(0, 300);
                     console.log(`[AssetContext] Admin fetch: ${apiAssetRequests.length} requests, ${apiAssets.length} assets, ${apiTickets.length} tickets`);
-                } else if (user?.position === 'MANAGER') {
+                } else if (isManagerial) {
                     if (!user.department && !user.domain) {
                         console.warn(`[AssetContext] Manager ${user.name} has no department or domain assigned. Falling back to personal requests only.`);
                         apiAssetRequests = await apiClient.getAssetRequests({ mine: true });
@@ -203,7 +196,7 @@ export function AssetProvider({ children }) {
                     if (rawStatus === 'IN_USE') status = 'FULFILLED';
                     if (rawStatus === 'MANAGER_REJECTED' || rawStatus === 'IT_REJECTED' || rawStatus === 'PROCUREMENT_REJECTED' || rawStatus === 'USER_REJECTED' || rawStatus === 'BYOD_REJECTED' || rawStatus === 'QC_FAILED') status = 'REJECTED';
                     if (rawStatus === 'PO_UPLOADED') status = 'PROCUREMENT_REQUIRED';
-                    if (rawStatus === 'PO_VALIDATED') status = 'PO_VALIDATED'; // Keep so Finance queue can filter; deriveOwnerRole returns FINANCE
+                    if (rawStatus === 'PO_VALIDATED') status = 'PO_VALIDATED';
                     if (rawStatus === 'FINANCE_APPROVED') status = 'PROCUREMENT_REQUIRED';
                     if (rawStatus === 'MANAGER_CONFIRMED_IT') status = 'MANAGER_CONFIRMED_IT';
                     if (rawStatus === 'USER_ACCEPTANCE_PENDING') status = 'USER_ACCEPTANCE_PENDING';
@@ -211,10 +204,12 @@ export function AssetProvider({ children }) {
                     if (rawStatus === 'BYOD_COMPLIANCE_CHECK') status = 'BYOD_COMPLIANCE_CHECK';
 
                     // Map procurement_finance_status and status for Finance/Procurement queues and WorkflowProgressBar
-                    const procurementStage = (r.procurement_finance_status === 'APPROVED' || r.status === 'FINANCE_APPROVED') ? 'FINANCE_APPROVED' :
-                        (r.procurement_finance_status === 'PO_VALIDATED' || r.status === 'PO_VALIDATED') ? 'PO_VALIDATED' :
-                            r.procurement_finance_status ? r.procurement_finance_status : null;
-                    const ownerRole = deriveOwnerRole(status, r.asset_type || r.type || 'Standard', procurementStage);
+                    // Root Fix: Backend is now providing current_owner_role and procurement_finance_status
+                    const procurementStage = r.procurement_finance_status || 
+                        (r.status === 'FINANCE_APPROVED' ? 'FINANCE_APPROVED' : 
+                         (r.status === 'PO_VALIDATED' ? 'PO_VALIDATED' : null));
+                    
+                    const ownerRole = r.current_owner_role || deriveOwnerRole(status, r.asset_type || r.type || 'Standard', procurementStage);
 
                     console.log(`[AssetContext] Request ${r.id}: rawStatus=${rawStatus}, mappedStatus=${status}, ownerRole=${ownerRole}`);
 
@@ -265,11 +260,7 @@ export function AssetProvider({ children }) {
                 setTickets(mappedTickets);
 
                 // 3) Load exit requests (only for relevant roles)
-                if (currentRole?.slug === 'ADMIN' ||
-                    currentRole?.slug === 'ASSET_MANAGER' ||
-                    currentRole?.slug === 'IT_MANAGEMENT' ||
-                    currentRole?.slug === 'ASSET_INVENTORY_MANAGER'
-                ) {
+                if (isAdmin || isAssetStaff || isITStaff) {
                     console.log("[AssetContext] Fetching exit requests for role:", currentRole?.slug);
                     try {
                         const apiExitRequests = await apiClient.getExitRequests();
@@ -282,7 +273,6 @@ export function AssetProvider({ children }) {
                     console.log("[AssetContext] Skipping exit requests for role:", currentRole?.slug);
                 }
 
-                if (typeof window !== 'undefined') localStorage.removeItem('enterprise_requests');
             } catch (reqErr) {
                 console.warn("Non‑critical: failed to load asset requests or tickets from API:", reqErr);
             }

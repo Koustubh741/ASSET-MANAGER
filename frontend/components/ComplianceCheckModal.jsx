@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShieldCheck, ShieldAlert, Check, Lock, Smartphone } from 'lucide-react';
 import apiClient from '../lib/apiClient';
+import { useRole } from '../contexts/RoleContext';
 
 const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
+    const { user } = useRole();
     const [isChecking, setIsChecking] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
@@ -20,11 +22,10 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
         setIsChecking(true);
         setError(null);
         try {
-            const userStr = localStorage.getItem('user');
-            const user = userStr ? JSON.parse(userStr) : {};
+            const currentUserId = user?.id;
 
             // Call the new BYOD compliance endpoint
-            const data = await apiClient.byodComplianceCheck(request.id, user.id);
+            const data = await apiClient.byodComplianceCheck(request.id, currentUserId);
             setResult(data);
 
             // If successful, wait a moment then close
@@ -56,7 +57,7 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                         <ShieldCheck className="w-5 h-5 text-emerald-600" />
                         BYOD Security Scan
                     </h3>
-                    <button onClick={onClose} className="text-slate-500 dark:text-slate-400 hover:text-slate-500 dark:text-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close modal" title="Close">
+                    <button onClick={onClose} className="text-app-text-muted hover:text-app-text-muted transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded" aria-label="Close modal" title="Close">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -67,15 +68,15 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                             <Smartphone className="w-8 h-8 text-blue-600" />
                         </div>
                         <h4 className="font-medium text-slate-900">{request.asset_model || 'Unknown Device'}</h4>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">{request.serial_number}</p>
+                        <p className="text-sm text-app-text-muted">{request.serial_number}</p>
                     </div>
 
                     <div className="space-y-3">
-                        <h5 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Security Policies</h5>
+                        <h5 className="text-xs font-semibold text-app-text-muted uppercase tracking-wider">Security Policies</h5>
                         {policies.map((policy, idx) => (
                             <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
                                 <div className="flex items-center gap-3">
-                                    <policy.icon className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                    <policy.icon className="w-4 h-4 text-app-text-muted" />
                                     <span className="text-sm font-medium text-slate-700">{policy.name}</span>
                                 </div>
                                 {result ? (
@@ -106,8 +107,8 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                         onClick={handleRunCheck}
                         disabled={isChecking || (result && result.success)}
                         className={`w-full py-2.5 px-4 rounded-lg font-medium shadow-sm flex items-center justify-center gap-2 transition-all ${result && result.success
-                                ? 'bg-emerald-600 text-slate-900 dark:text-white cursor-default'
-                                : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white hover:bg-slate-200 dark:bg-slate-700 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-600'
+                                ? 'bg-emerald-600 text-app-text cursor-default'
+                                : 'bg-white dark:bg-slate-900 text-app-text hover:bg-slate-200 dark:bg-slate-700 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-600'
                             }`}
                     >
                         {isChecking ? 'Running Scan...' : result && result.success ? 'Compliant' : 'Run Compliance Check'}

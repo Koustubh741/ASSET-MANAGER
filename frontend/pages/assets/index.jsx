@@ -29,105 +29,10 @@ export default function AssetsPage() {
 
 
     useEffect(() => {
-        const processAssets = () => {
-            // Use assets from Context (API or Mock); guard against undefined
-            let parsed = Array.isArray(contextAssets) ? [...contextAssets] : [];
-
-            if (parsed.length === 0) {
-                setAssets([]);
-                setFilteredAssets([]);
-                return;
-            }
-
-            // 1. FORMATTING & PATCHING (Quotes, Costs, Specs)
-            // We apply this frontend-side patching to ensure UI consistency regardless of source
-            let dataChanged = false;
-
-            // Check if patching is needed (simplified check)
-            const needsFormatting = parsed.some(a =>
-                (typeof a.name === 'string' && (a.name.includes('"') || a.name.startsWith("'"))) ||
-                a.cost === 0 ||
-                a.assigned_by === 'Bulk Import' ||
-                (a.segment === 'IT' && !a.specs && (a.type === 'Laptop' || a.type === 'Desktop'))
-            );
-
-            if (needsFormatting) {
-                parsed = parsed.map(a => {
-                    const cleanStr = (s) => s ? String(s).replace(/^["']|["']$/g, '').trim() : s;
-                    const parseVal = (v) => {
-                        if (!v) return 0;
-                        if (typeof v === 'number') return v;
-                        const n = parseFloat(String(v).replace(/[₹$,\s]/g, ''));
-                        return isNaN(n) ? 0 : n;
-                    };
-
-                    // Clean status
-                    let st = cleanStr(a.status);
-                    if (st && (st.match(/active/i) || st.match(/in use/i))) st = 'In Use';
-                    // Maintain consistency with Context Enums if possible, but UI expects Title Case
-
-                    // COST PATCHING
-                    let finalCost = parseVal(a.cost || a.purchase_cost); // Handle API field name
-                    if (finalCost === 0) {
-                        const t = (a.type || '').toLowerCase();
-                        if (t.includes('laptop')) finalCost = Math.floor(Math.random() * (85000 - 45000) + 45000);
-                        else if (t.includes('desktop') || t.includes('mac')) finalCost = Math.floor(Math.random() * (70000 - 35000) + 35000);
-                        else if (t.includes('monitor')) finalCost = Math.floor(Math.random() * (25000 - 8000) + 8000);
-                        else finalCost = Math.floor(Math.random() * (15000 - 5000) + 5000);
-                    }
-
-                    // SPECS PATCHING
-                    let specs = a.specs || a.specifications || {}; // Handle API field
-                    const typeLower = (a.type || '').toLowerCase();
-                    if (Object.keys(specs).length === 0 && a.segment === 'IT') {
-                        // ... (keep existing specs generation)
-                        const processors = ['Intel Core i5', 'Intel Core i7', 'Intel Core i9', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Apple M1', 'Apple M2'];
-                        const rams = ['8GB', '16GB', '32GB', '64GB'];
-                        const storages = ['256GB SSD', '512GB SSD', '1TB SSD', '2TB SSD'];
-                        const os = ['Windows 10 Pro', 'Windows 11 Pro', 'macOS Ventura', 'macOS Sonoma', 'Ubuntu Linux'];
-
-                        if (typeLower.includes('laptop') || typeLower.includes('desktop') || typeLower.includes('mac')) {
-                            specs = {
-                                processor: processors[Math.floor(Math.random() * processors.length)],
-                                ram: rams[Math.floor(Math.random() * rams.length)],
-                                storage: storages[Math.floor(Math.random() * storages.length)],
-                                os: os[Math.floor(Math.random() * os.length)]
-                            };
-                        } else if (typeLower.includes('monitor')) {
-                            specs = { resolution: '4K UHD', refresh_rate: '60Hz', panel: 'IPS' };
-                        }
-                    }
-
-                    return {
-                        ...a,
-                        name: cleanStr(a.name),
-                        segment: cleanStr(a.segment),
-                        type: cleanStr(a.type), // API might lack this? seed_data added it to specs.
-                        model: cleanStr(a.model) || (specs.model),
-                        serial_number: cleanStr(a.serial_number),
-                        status: st,
-                        location: cleanStr(a.location) || (a.location_id ? 'Office' : 'Unknown'), // API has IDs, need mapping? For now keep simple
-                        assigned_to: cleanStr(a.assigned_to), // API has ID?
-                        cost: finalCost,
-                        specs: specs
-                    };
-                });
-            }
-
-            // 2. SEMANTIC VALIDATION (include Discovered from discovery agent)
-            const validStatuses = ['active', 'in use', 'in stock', 'repair', 'maintenance', 'retired', 'available', 'discovered'];
-            parsed = parsed.filter(a => {
-                const raw = (a?.status != null ? String(a.status) : '').trim();
-                if (!raw) return false;
-                const s = raw.toLowerCase();
-                return validStatuses.includes(s);
-            });
-
-            setAssets(parsed);
-            setFilteredAssets(parsed);
-        }
-
-        processAssets();
+        // Use normalized assets from Context (Backend already sanitizes now)
+        const parsed = Array.isArray(contextAssets) ? contextAssets : []
+        setAssets(parsed)
+        setFilteredAssets(parsed)
     }, [contextAssets])
 
     const router = useRouter()
@@ -213,20 +118,20 @@ export default function AssetsPage() {
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Asset Inventory</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Manage and track all hardware and software assets</p>
+                    <h2 className="text-xl font-bold text-app-text tracking-tight">Asset Inventory</h2>
+                    <p className="text-app-text-muted mt-1">Manage and track all hardware and software assets</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleRefresh}
                         disabled={isRefreshing}
                         title="Refresh inventory (picks up newly discovered assets)"
-                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-slate-200 dark:bg-white/10 hover:bg-white/20 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white border border-slate-200 dark:border-white/10 backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
+                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-app-surface hover:bg-white/20 text-app-text-muted hover:text-app-text border border-app-border backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
                     >
                         <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
                         <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                     </button>
-                    <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-slate-900 dark:text-white shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
+                    <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
                         <Plus size={20} />
                         <span>Add Asset</span>
                     </Link>
@@ -234,62 +139,62 @@ export default function AssetsPage() {
             </div>
 
             {/* Filters */}
-            <div className="backdrop-blur-md bg-slate-200 dark:bg-white/10 dark:bg-white/5 border border-slate-300 dark:border-white/20 dark:border-white/10 shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 dark:text-slate-400" size={20} />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-app-text-muted" size={20} />
                     <input
                         type="text"
                         placeholder="Search by anything (Name, Spec, Location, Cost...)"
-                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-10 pr-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-slate-500 dark:text-slate-400"
+                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-xl py-3 pl-10 pr-4 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-app-text-muted"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center space-x-4 w-full md:w-auto">
-                    <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center space-x-2 text-app-text-muted">
                         <Filter size={20} />
                         <span className="font-medium hidden md:inline">Filter:</span>
                     </div>
 
                     <select
-                        className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-lg text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
                         value={filterSegment}
                         onChange={(e) => setFilterSegment(e.target.value)}
                     >
-                        <option value="All" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">All Segments</option>
-                        <option value="IT" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">IT</option>
-                        <option value="NON-IT" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">NON-IT</option>
+                        <option value="All" className="bg-white dark:bg-slate-900 text-app-text">All Segments</option>
+                        <option value="IT" className="bg-white dark:bg-slate-900 text-app-text">IT</option>
+                        <option value="NON-IT" className="bg-white dark:bg-slate-900 text-app-text">NON-IT</option>
                     </select>
 
                     <select
-                        className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-lg text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                     >
                         {uniqueTypes.map(t => (
-                            <option key={t} value={t} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                            <option key={t} value={t} className="bg-white dark:bg-slate-900 text-app-text">
                                 {t === 'All' ? 'All Types' : t}
                             </option>
                         ))}
                     </select>
 
                     <select
-                        className="w-full px-4 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-500 dark:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-lg text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-50 dark:bg-slate-800/50"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
-                        <option value="All" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">All Status</option>
-                        <option value="In Use" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">In Use</option>
-                        <option value="In Stock" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">In Stock</option>
-                        <option value="Repair" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Repair</option>
-                        <option value="Maintenance" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Maintenance</option>
-                        <option value="Discovered" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Discovered</option>
-                        <option value="Retired" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Retired</option>
+                        <option value="All" className="bg-white dark:bg-slate-900 text-app-text">All Status</option>
+                        <option value="In Use" className="bg-white dark:bg-slate-900 text-app-text">In Use</option>
+                        <option value="In Stock" className="bg-white dark:bg-slate-900 text-app-text">In Stock</option>
+                        <option value="Repair" className="bg-white dark:bg-slate-900 text-app-text">Repair</option>
+                        <option value="Maintenance" className="bg-white dark:bg-slate-900 text-app-text">Maintenance</option>
+                        <option value="Discovered" className="bg-white dark:bg-slate-900 text-app-text">Discovered</option>
+                        <option value="Retired" className="bg-white dark:bg-slate-900 text-app-text">Retired</option>
                     </select>
 
                     {/* Results Count */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/5 text-xs text-slate-500 dark:text-slate-400 dark:text-slate-400 font-medium">
-                        Showing <span className="text-slate-900 dark:text-white">{filteredAssets.length}</span> assets
+                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-app-border text-xs text-app-text-muted text-app-text-muted font-medium">
+                        Showing <span className="text-app-text">{filteredAssets.length}</span> assets
                     </div>
                 </div>
             </div>

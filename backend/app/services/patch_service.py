@@ -1,11 +1,41 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import Optional, List, Dict
 from sqlalchemy.future import select
 from sqlalchemy import func
-from ..models.models import SystemPatch, PatchDeployment, Asset
+from ..models.models import SystemPatch, PatchDeployment, Asset, PatchSchedule, AgentCommand
 from ..schemas.patch_schema import SystemPatchCreate, PatchDeploymentCreate
 from uuid import UUID
 import uuid
+
+PLATFORM_MAP = {
+    # Windows variants
+    "windows": "Windows", "win": "Windows", "win10": "Windows",
+    "win11": "Windows", "windows 10": "Windows", "windows 11": "Windows",
+    # Linux variants
+    "linux": "Linux", "ubuntu": "Linux", "debian": "Linux",
+    "centos": "Linux", "rhel": "Linux", "fedora": "Linux",
+    "amazon": "Linux", "redhat": "Linux",
+    # macOS variants
+    "macos": "macOS", "mac": "macOS", "osx": "macOS", "darwin": "macOS",
+}
+
+def detect_platform(asset) -> Optional[str]:
+    """Try to detect platform from asset specifications or type."""
+    specs = asset.specifications or {}
+    
+    # Check common variations of OS/Platform keys
+    val = (
+        specs.get("os") or specs.get("OS") or
+        specs.get("os_name") or specs.get("OS_Name") or
+        specs.get("platform") or specs.get("Platform") or
+        asset.type or ""
+    )
+    # Ensure it's a string before calling lower()
+    raw = str(val).lower().strip()
+    for key, platform in PLATFORM_MAP.items():
+        if key in raw:
+            return platform
+    return None  # Unknown
 
 async def get_all_patches(db: AsyncSession):
     """Return all patches sorted by CVSS score (desc) then release date (desc)."""
@@ -34,6 +64,9 @@ async def create_patch(db: AsyncSession, patch: SystemPatchCreate):
         cvss_score=patch.cvss_score,
         kb_article_url=patch.kb_article_url,
         vendor_advisory=patch.vendor_advisory,
+        # Local Hosting (Phase 2)
+        binary_url=patch.binary_url,
+        is_custom=patch.is_custom,
     )
     db.add(db_patch)
     await db.commit()
@@ -82,64 +115,51 @@ async def update_patch_status(db: AsyncSession, asset_id: UUID, patch_id: UUID, 
 async def get_compliance_summary(db: AsyncSession):
     """
     Returns patch compliance summary for all assets, filtered by platform.
-    Each asset's compliance score only counts patches that match its OS platform.
+    Uses persistent VulnerabilityMapping table for Enterprise Scale.
     """
-    PLATFORM_MAP = {
-        # Windows variants
-        "windows": "Windows", "win": "Windows", "win10": "Windows",
-        "win11": "Windows", "windows 10": "Windows", "windows 11": "Windows",
-        # Linux variants
-        "linux": "Linux", "ubuntu": "Linux", "debian": "Linux",
-        "centos": "Linux", "rhel": "Linux", "fedora": "Linux",
-        # macOS variants
-        "macos": "macOS", "mac": "macOS", "osx": "macOS", "darwin": "macOS",
-    }
+    from ..models.models import VulnerabilityMapping
 
-    def detect_platform(asset) -> Optional[str]:
-        """Try to detect platform from asset specifications or type."""
-        specs = asset.specifications or {}
-        raw = (
-            specs.get("os", "") or
-            specs.get("os_name", "") or
-            specs.get("platform", "") or
-            asset.type or ""
-        ).lower().strip()
-        for key, platform in PLATFORM_MAP.items():
-            if key in raw:
-                return platform
-        return None  # Unknown — will match all patches
-
-    assets_result = await db.execute(select(Asset).filter(Asset.status == "IN_USE"))
+    assets_result = await db.execute(
+        select(Asset).filter(func.lower(Asset.status).in_(["in use", "active"]))
+    )
     assets = assets_result.scalars().all()
 
+    # Get all global deployments to avoid N+1 queries ideally, or per asset.
+    dep_result = await db.execute(select(PatchDeployment))
+    all_deps = dep_result.scalars().all()
+
+    # Get all mappings
+    map_result = await db.execute(select(VulnerabilityMapping))
+    all_mappings = map_result.scalars().all()
+
+    # Get all patches (for critical severity check)
     patches_result = await db.execute(select(SystemPatch))
-    all_patches = patches_result.scalars().all()
+    patches_map = {p.id: p for p in patches_result.scalars().all()}
 
     summary = []
     for asset in assets:
         platform = detect_platform(asset)
 
-        # Only count patches applicable to this asset's platform
-        # If platform is None (unknown), count all patches
-        applicable_patches = (
-            [p for p in all_patches if p.platform == platform]
-            if platform else all_patches
-        )
-        total_count = len(applicable_patches)
+        # Asset's known vulnerabilities (applicable patches with pre-calculated risk)
+        asset_mappings = [m for m in all_mappings if m.asset_id == asset.id]
+        total_count = len(asset_mappings)
 
-        # Get deployments for this asset
-        dep_result = await db.execute(
-            select(PatchDeployment).filter(PatchDeployment.asset_id == asset.id)
-        )
-        deps = dep_result.scalars().all()
+        # Deployments for this asset
+        asset_deps = [d for d in all_deps if d.asset_id == asset.id]
+        
+        # We only care about deployments that are in the mapping (applicable)
+        valid_patch_ids = {m.patch_id for m in asset_mappings}
+        applicable_deps = [d for d in asset_deps if d.patch_id in valid_patch_ids]
 
-        installed = len([d for d in deps if d.status == "INSTALLED"])
-        failed = len([d for d in deps if d.status == "FAILED"])
+        installed = len([d for d in applicable_deps if d.status == "INSTALLED"])
         missing = total_count - installed
 
-        # Critical missing — only within applicable patches
-        critical_patch_ids = {p.id for p in applicable_patches if p.severity == "Critical"}
-        installed_ids = {d.patch_id for d in deps if d.status == "INSTALLED"}
+        # Critical missing calculation
+        critical_patch_ids = {
+            m.patch_id for m in asset_mappings 
+            if patches_map.get(m.patch_id) and patches_map[m.patch_id].severity == "Critical"
+        }
+        installed_ids = {d.patch_id for d in applicable_deps if d.status == "INSTALLED"}
         critical_missing = len(critical_patch_ids - installed_ids)
 
         score = (installed / total_count * 100) if total_count > 0 else 100.0
@@ -156,3 +176,29 @@ async def get_compliance_summary(db: AsyncSession):
         })
 
     return summary
+
+async def evaluate_asset_risk(db: AsyncSession, patch_id: UUID, asset_id: UUID) -> float:
+    """
+    Calculate environmental risk score (Phase 3).
+    Formula: CVSS Score * (Asset Criticality Factor)
+    """
+    patch_res = await db.execute(select(SystemPatch).where(SystemPatch.id == patch_id))
+    patch = patch_res.scalars().first()
+    
+    asset_res = await db.execute(select(Asset).where(Asset.id == asset_id))
+    asset = asset_res.scalars().first()
+    
+    if not patch or not asset:
+        return 0.0
+        
+    cvss = patch.cvss_score or 5.0 # default to medium if unknown
+    
+    # Asset Criticality Factor (Inferred from type or specs)
+    criticality = 1.0
+    asset_type = (asset.type or "").lower()
+    if "server" in asset_type or "production" in asset_type:
+        criticality = 2.0
+    elif "pilot" in asset_type or asset.is_pilot:
+        criticality = 0.5
+        
+    return min(10.0, cvss * criticality)

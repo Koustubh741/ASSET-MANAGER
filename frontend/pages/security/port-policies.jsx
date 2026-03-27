@@ -105,7 +105,7 @@ export default function PortPoliciesPage() {
                             </div>
                             <h1 className="text-xl font-bold tracking-tight">Port Policies</h1>
                         </div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        <p className="text-xs text-app-text-muted mt-1">
                             Central control plane for host, network, and cloud port blocking.
                         </p>
                     </div>
@@ -114,7 +114,7 @@ export default function PortPoliciesPage() {
                 <div className="flex items-center gap-3">
                     {agentId && (
                         <div className="px-3 py-1 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-700 text-xs text-slate-700 dark:text-slate-700">
-                            Filtering for agent: <span className="font-mono text-slate-900 dark:text-slate-100">{agentId}</span>
+                            Filtering for agent: <span className="font-mono text-app-text">{agentId}</span>
                         </div>
                     )}
                     <button
@@ -135,40 +135,40 @@ export default function PortPoliciesPage() {
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <Plus size={16} className="text-indigo-400" />
-                                <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Create New Policy</h2>
+                                <h2 className="text-sm font-semibold text-app-text">Create New Policy</h2>
                             </div>
-                            <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-app-text-muted">
                                 BLOCK OR ALLOW BY PORT
                             </span>
                         </div>
                         <form className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm" onSubmit={handleCreate}>
                             <div className="md:col-span-1">
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Name</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Name</label>
                                 <input
                                     type="text"
                                     required
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     placeholder="Block RDP on endpoints"
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Description</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Description</label>
                                 <input
                                     type="text"
                                     value={form.description}
                                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     placeholder="e.g., Block inbound RDP (3389) for all laptops"
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Scope</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Scope</label>
                                 <select
                                     value={form.scope_type}
                                     onChange={(e) => setForm({ ...form, scope_type: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="HOST">Host</option>
                                     <option value="NETWORK_DEVICE">Network Device</option>
@@ -176,22 +176,22 @@ export default function PortPoliciesPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Direction</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Direction</label>
                                 <select
                                     value={form.direction}
                                     onChange={(e) => setForm({ ...form, direction: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="INBOUND">Inbound</option>
                                     <option value="OUTBOUND">Outbound</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Protocol</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Protocol</label>
                                 <select
                                     value={form.protocol}
                                     onChange={(e) => setForm({ ...form, protocol: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="TCP">TCP</option>
                                     <option value="UDP">UDP</option>
@@ -199,55 +199,55 @@ export default function PortPoliciesPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Port</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Port</label>
                                 <input
                                     type="number"
                                     value={form.port}
                                     onChange={(e) => setForm({ ...form, port: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                     placeholder="e.g., 3389"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Range Start</label>
+                                    <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Range Start</label>
                                     <input
                                         type="number"
                                         value={form.port_range_start}
                                         onChange={(e) => setForm({ ...form, port_range_start: e.target.value })}
-                                        className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                        className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                         placeholder="e.g., 1000"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Range End</label>
+                                    <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Range End</label>
                                     <input
                                         type="number"
                                         value={form.port_range_end}
                                         onChange={(e) => setForm({ ...form, port_range_end: e.target.value })}
-                                        className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                        className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                         placeholder="e.g., 2000"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Action</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Action</label>
                                 <select
                                     value={form.action}
                                     onChange={(e) => setForm({ ...form, action: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="BLOCK">Block</option>
                                     <option value="ALLOW">Allow</option>
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Priority</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Priority</label>
                                 <input
                                     type="number"
                                     value={form.priority}
                                     onChange={(e) => setForm({ ...form, priority: Number(e.target.value) || 100 })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 />
                             </div>
                             <div className="flex items-center gap-2">
@@ -266,7 +266,7 @@ export default function PortPoliciesPage() {
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-slate-900 dark:text-white shadow-lg shadow-indigo-500/30"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-app-text shadow-lg shadow-indigo-500/30"
                                 >
                                     {creating ? 'Creating...' : 'Create Policy'}
                                 </button>
@@ -277,16 +277,16 @@ export default function PortPoliciesPage() {
                     {/* Filters */}
                     <div className="bg-white dark:bg-slate-900/70 border border-slate-800 rounded-xl p-5">
                         <div className="flex items-center gap-2 mb-4">
-                            <Filter size={16} className="text-slate-500 dark:text-slate-400" />
-                            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filter Policies</h2>
+                            <Filter size={16} className="text-app-text-muted" />
+                            <h2 className="text-sm font-semibold text-app-text">Filter Policies</h2>
                         </div>
                         <div className="space-y-3 text-sm">
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Scope</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Scope</label>
                                 <select
                                     value={filters.scope_type}
                                     onChange={(e) => setFilters({ ...filters, scope_type: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="">All</option>
                                     <option value="HOST">Host</option>
@@ -295,11 +295,11 @@ export default function PortPoliciesPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Direction</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Direction</label>
                                 <select
                                     value={filters.direction}
                                     onChange={(e) => setFilters({ ...filters, direction: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="">All</option>
                                     <option value="INBOUND">Inbound</option>
@@ -307,11 +307,11 @@ export default function PortPoliciesPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 dark:text-slate-400 mb-1">Status</label>
+                                <label className="block text-xs font-medium text-app-text-muted text-app-text-muted mb-1">Status</label>
                                 <select
                                     value={filters.enabled}
                                     onChange={(e) => setFilters({ ...filters, enabled: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-slate-900 dark:text-slate-100 text-sm"
+                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="">All</option>
                                     <option value="true">Enabled</option>
@@ -325,14 +325,14 @@ export default function PortPoliciesPage() {
                 {/* Policies Table */}
                 <section className="bg-white dark:bg-slate-900/70 border border-slate-800 rounded-xl p-5">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Defined Policies</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <h2 className="text-sm font-semibold text-app-text">Defined Policies</h2>
+                        <p className="text-xs text-app-text-muted">
                             {loading ? 'Loading…' : `${policies.length} policies`}
                         </p>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full text-xs">
-                            <thead className="bg-slate-100 dark:bg-slate-950/60 border-b border-slate-800 text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-[0.15em]">
+                            <thead className="bg-slate-100 dark:bg-slate-950/60 border-b border-slate-800 text-app-text-muted text-app-text-muted uppercase tracking-[0.15em]">
                                 <tr>
                                     <th className="px-3 py-2 text-left">Name</th>
                                     <th className="px-3 py-2 text-left">Scope</th>
@@ -347,7 +347,7 @@ export default function PortPoliciesPage() {
                             <tbody>
                                 {!loading && policies.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} className="px-3 py-8 text-center text-slate-500 dark:text-slate-400">
+                                        <td colSpan={8} className="px-3 py-8 text-center text-app-text-muted">
                                             No policies defined yet. Start by creating one above.
                                         </td>
                                     </tr>
@@ -367,9 +367,9 @@ export default function PortPoliciesPage() {
                                         >
                                             <td className="px-3 py-2">
                                                 <div className="flex flex-col">
-                                                    <span className="text-slate-900 dark:text-slate-100 font-medium">{p.name}</span>
+                                                    <span className="text-app-text font-medium">{p.name}</span>
                                                     {p.description && (
-                                                        <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs">
+                                                        <span className="text-[11px] text-app-text-muted truncate max-w-xs">
                                                             {p.description}
                                                         </span>
                                                     )}

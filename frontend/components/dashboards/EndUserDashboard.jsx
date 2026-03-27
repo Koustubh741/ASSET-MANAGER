@@ -36,17 +36,17 @@ export default function EndUserDashboard() {
             <span>
                 {parts.map((part, i) => (
                     regex.test(part) ?
-                        <span key={i} className={`font-black rounded-sm px-0.5 ${isInverse ? 'bg-white/40 text-slate-900 dark:text-white' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>{part}</span> :
+                        <span key={i} className={`font-black rounded-sm px-0.5 ${isInverse ? 'bg-white/40 text-app-text' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'}`}>{part}</span> :
                         <span key={i}>{part}</span>
                 ))}
             </span>
         );
     };
-    const { currentRole, setCurrentRole, ROLES, logout, user } = useRole();
+    const { currentRole, setCurrentRole, ROLES, logout, user, isManagerial } = useRole();
     const { assets, requests, tickets, createRequest, managerApproveRequest, managerRejectRequest, managerConfirmIT, userAcceptAsset, refreshData } = useAssetContext();
     const displayProfile = {
         name: user?.name || "Alex Johnson",
-        role: currentRole?.slug === 'MANAGER' ? 'Manager' : (currentRole?.label || "Senior Software Engineer"),
+        role: isManagerial ? 'Manager' : (currentRole?.label || "Senior Software Engineer"),
         empId: user?.employee_id || "EMP-2024-8821",
         company: user?.company || "Acme Corp Global",
         doj: user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Recently Joined",
@@ -101,13 +101,13 @@ export default function EndUserDashboard() {
     };
 
     const pendingAcceptance = requests.filter(r => r.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING).length;
-    const managerApprovalsNeeded = (currentRole?.slug === 'MANAGER')
+    const managerApprovalsNeeded = isManagerial
         ? requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).length
         : 0;
     const openTicketsCount = tickets.filter(t => !['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(t.status?.toUpperCase())).length;
 
     return (
-        <div className="space-y-6 relative">
+        <div className="space-y-6 relative neural-compact">
             {/* Offboarding Banner */}
             {user?.status === 'EXITING' && (
                 <div className="bg-orange-500/10 border border-orange-500/20 backdrop-blur-md p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-top duration-500 shadow-xl shadow-orange-500/10 mb-6">
@@ -116,7 +116,7 @@ export default function EndUserDashboard() {
                             <LogOut size={28} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Active Offboarding Workflow</h3>
+                            <h3 className="text-xl font-bold text-app-text">Active Offboarding Workflow</h3>
                             <p className="text-orange-600/70 dark:text-orange-200/70 text-sm mt-0.5">Your exit process has been initiated. Please ensure all company assets are returned to IT.</p>
                         </div>
                     </div>
@@ -134,7 +134,7 @@ export default function EndUserDashboard() {
             />
 
             {/* User Profile Section - The "Command HUD" */}
-            <div className="glass-panel p-10 relative overflow-hidden border border-slate-200 dark:border-white/10 group shadow-2xl bg-white dark:bg-slate-900/40">
+            <div className="glass-panel p-10 relative overflow-hidden border border-app-border group shadow-2xl bg-white dark:bg-slate-900/40">
                 {/* Dynamic Background Accents */}
                 <div className="absolute -top-32 -right-32 w-[500px] h-[500px] bg-blue-500/5 blur-[120px] rounded-full group-hover:bg-blue-500/10 transition-all duration-1000"></div>
                 <div className="absolute -bottom-32 -left-32 w-[400px] h-[400px] bg-indigo-500/5 blur-[100px] rounded-full group-hover:bg-indigo-500/10 transition-all duration-1000 delay-150"></div>
@@ -142,17 +142,17 @@ export default function EndUserDashboard() {
                 <div className="flex flex-col lg:flex-row gap-12 relative z-10">
                     <div className="flex-shrink-0 flex flex-col items-center lg:items-start">
                         <div className="relative group/avatar">
-                            <div className="w-32 h-32 rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-600 flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.2)] group-hover/avatar:scale-105 transition-transform duration-700 border border-slate-300 dark:border-white/20">
-                                <span className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white drop-shadow-xl tracking-tighter">
+                            <div className="w-32 h-32 rounded-[2rem] bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-600 flex items-center justify-center shadow-[0_0_40px_rgba(37,99,235,0.2)] group-hover/avatar:scale-105 transition-transform duration-700 border border-app-border-soft">
+                                <span className="text-xl font-['Outfit'] font-black text-app-text drop-shadow-xl tracking-tighter">
                                     {displayProfile.name.split(' ').map(n => n[0]).join('')}
                                 </span>
                             </div>
                             <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-emerald-500 rounded-2xl border-4 border-[#0F172A] flex items-center justify-center shadow-lg animate-pulse">
-                                <Shield size={20} className="text-slate-900 dark:text-white" />
+                                <Shield size={20} className="text-app-text" />
                             </div>
                         </div>
                         <div className="mt-8 text-center lg:text-left">
-                            <h1 className="text-2xl font-['Outfit'] font-black text-slate-900 dark:text-white tracking-tight mb-2 uppercase">{displayProfile.name}</h1>
+                            <h1 className="text-2xl font-['Outfit'] font-black text-app-text tracking-tight mb-2 uppercase">{displayProfile.name}</h1>
                             <div className="flex items-center justify-center lg:justify-start gap-3 bg-indigo-500/10 px-4 py-1.5 rounded-xl border border-indigo-500/20 w-fit backdrop-blur-sm">
                                 <Sparkles size={14} className="text-indigo-600 dark:text-indigo-400" />
                                 <p className="text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em]">{displayProfile.role}</p>
@@ -163,28 +163,28 @@ export default function EndUserDashboard() {
                     <div className="flex-1">
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-8 mb-12">
                             <div className="space-y-1.5 group/item">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] block group-hover/item:text-slate-500 dark:text-slate-400 transition-colors">Enterprise ID</label>
-                                <p className="text-sm font-black text-slate-500 dark:text-slate-400 dark:text-slate-200 font-mono tracking-tight">{displayProfile.empId}</p>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] block group-hover/item:text-app-text-muted transition-colors">Enterprise ID</label>
+                                <p className="text-sm font-black text-app-text-muted dark:text-slate-200 font-mono tracking-tight">{displayProfile.empId}</p>
                             </div>
                             <div className="space-y-1.5 group/item">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] block group-hover/item:text-slate-500 dark:text-slate-400 transition-colors">Department</label>
-                                <p className="text-sm font-black text-slate-500 dark:text-slate-400 dark:text-slate-200 uppercase tracking-tight">{displayProfile.department}</p>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] block group-hover/item:text-app-text-muted transition-colors">Department</label>
+                                <p className="text-sm font-black text-app-text-muted dark:text-slate-200 uppercase tracking-tight">{displayProfile.department}</p>
                             </div>
                             <div className="space-y-1.5 group/item">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] block group-hover/item:text-slate-700 dark:group-hover/item:text-slate-500 dark:text-slate-400 transition-colors">Domain Sync</label>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] block group-hover/item:text-slate-700 dark:group-hover/item:text-app-text-muted transition-colors">Domain Sync</label>
                                 <p className="text-sm font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tight">{displayProfile.domain?.replace('/', ' / ')}</p>
                             </div>
                             <div className="space-y-1.5 group/item">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] block group-hover/item:text-slate-500 dark:text-slate-400 transition-colors">Deployment Date</label>
-                                <p className="text-sm font-black text-slate-500 dark:text-slate-400 dark:text-slate-200 tracking-tight">{displayProfile.doj}</p>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] block group-hover/item:text-app-text-muted transition-colors">Deployment Date</label>
+                                <p className="text-sm font-black text-app-text-muted dark:text-slate-200 tracking-tight">{displayProfile.doj}</p>
                             </div>
                             <div className="space-y-1.5 group/item">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] block group-hover/item:text-slate-500 dark:text-slate-400 transition-colors">Base Location</label>
-                                <p className="text-sm font-black text-slate-500 dark:text-slate-400 dark:text-slate-200 tracking-tight">{displayProfile.location}</p>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] block group-hover/item:text-app-text-muted transition-colors">Base Location</label>
+                                <p className="text-sm font-black text-app-text-muted dark:text-slate-200 tracking-tight">{displayProfile.location}</p>
                             </div>
                             <div className="space-y-1.5 group/item">
-                                <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] block group-hover/item:text-slate-500 dark:text-slate-400 transition-colors">Verified Email</label>
-                                <p className="text-sm font-black text-slate-500 dark:text-slate-400 italic tracking-tight">{displayProfile.email}</p>
+                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] block group-hover/item:text-app-text-muted transition-colors">Verified Email</label>
+                                <p className="text-sm font-black text-app-text-muted italic tracking-tight">{displayProfile.email}</p>
                             </div>
                         </div>
 
@@ -199,13 +199,13 @@ export default function EndUserDashboard() {
                                 <button
                                     key={item.id}
                                     onClick={item.action}
-                                    className="p-5 rounded-2xl bg-slate-100 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-slate-300 dark:border-white/20 hover:bg-slate-200 dark:hover:bg-white/[0.06] transition-all group/btn flex flex-col items-center text-center gap-3 relative overflow-hidden active:scale-95"
+                                    className="p-5 rounded-2xl bg-slate-100 dark:bg-white/[0.03] border border-app-border hover:border-slate-300 dark:hover:border-app-border-soft hover:bg-slate-200 dark:hover:bg-white/[0.06] transition-all group/btn flex flex-col items-center text-center gap-3 relative overflow-hidden active:scale-95"
                                 >
                                     <div className={`absolute inset-0 bg-gradient-to-br from-${item.color}-500/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity`}></div>
                                     <div className={`w-12 h-12 rounded-xl bg-${item.color}-500/10 flex items-center justify-center border border-${item.color}-500/20 group-hover/btn:scale-110 transition-transform duration-500 relative z-10 shadow-lg shadow-${item.color}-500/5`}>
                                         <item.icon size={22} className={`text-${item.color}-600 dark:text-${item.color}-400 group-hover/btn:text-${item.color}-500 dark:group-hover/btn:text-${item.color}-300`} />
                                     </div>
-                                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] relative z-10 group-hover/btn:text-indigo-600 dark:group-hover/btn:text-slate-900 dark:text-white transition-colors">{item.label}</span>
+                                    <span className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] relative z-10 group-hover/btn:text-indigo-600 dark:group-hover/btn:text-app-text transition-colors">{item.label}</span>
                                 </button>
                             ))}
                         </div>
@@ -221,42 +221,42 @@ export default function EndUserDashboard() {
                                     <Laptop className="text-blue-400" size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-['Outfit'] font-black text-slate-900 dark:text-white tracking-tight uppercase">Assigned Fleet</h3>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Managed Enterprise Devices</p>
+                                    <h3 className="text-2xl font-['Outfit'] font-black text-app-text tracking-tight uppercase">Assigned Fleet</h3>
+                                    <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-1">Managed Enterprise Devices</p>
                                 </div>
                             </div>
-                            <span className="px-3 py-1 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/10 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{assignedAssets.length} Active Units</span>
+                            <span className="px-3 py-1 bg-app-surface-soft rounded-lg border border-app-border text-[10px] font-black text-app-text-muted uppercase tracking-widest">{assignedAssets.length} Active Units</span>
                         </div>
 
                         {assignedAssets.length === 0 ? (
-                            <div className="glass-panel p-16 text-center border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.01]">
-                                <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-white/5 flex items-center justify-center mx-auto mb-6 border border-slate-200 dark:border-white/5 shadow-sm dark:shadow-inner">
-                                    <Laptop className="text-slate-700 dark:text-slate-300" size={40} />
+                            <div className="glass-panel p-16 text-center border-dashed border-app-border bg-slate-50 dark:bg-white/[0.01]">
+                                <div className="w-20 h-20 rounded-full bg-app-surface-soft flex items-center justify-center mx-auto mb-6 border border-app-border shadow-sm dark:shadow-inner">
+                                    <Laptop className="text-app-text-muted" size={40} />
                                 </div>
-                                <h4 className="text-lg font-['Outfit'] font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest mb-2">No Active Inventory</h4>
-                                <p className="text-slate-500 dark:text-slate-400 italic text-sm max-w-xs mx-auto">No corporate assets are currently registered to your operational profile.</p>
+                                <h4 className="text-lg font-['Outfit'] font-black text-app-text-muted text-app-text-muted uppercase tracking-widest mb-2">No Active Inventory</h4>
+                                <p className="text-app-text-muted italic text-sm max-w-xs mx-auto">No corporate assets are currently registered to your operational profile.</p>
                             </div>
                         ) : assignedAssets.map((asset) => (
-                            <div key={asset.id} className="glass-panel p-0 overflow-hidden group hover:border-blue-500/40 transition-all duration-700 border border-slate-200 dark:border-white/10 shadow-xl bg-white dark:bg-slate-900/60">
-                                <div className="p-8 border-b border-slate-100 dark:border-white/5 bg-gradient-to-r from-blue-500/[0.07] to-transparent flex justify-between items-center relative overflow-hidden">
+                            <div key={asset.id} className="glass-panel p-0 overflow-hidden group hover:border-blue-500/40 transition-all duration-700 border border-app-border shadow-xl bg-white dark:bg-slate-900/60">
+                                <div className="p-8 border-b border-slate-100 border-app-border bg-gradient-to-r from-blue-500/[0.07] to-transparent flex justify-between items-center relative overflow-hidden">
                                     {/* Decorative Background Icon */}
-                                    <Laptop className="absolute -right-8 -bottom-8 w-32 h-32 text-slate-900 dark:text-white/[0.02] -rotate-12" />
+                                    <Laptop className="absolute -right-8 -bottom-8 w-32 h-32 text-app-text/[0.02] -rotate-12" />
 
                                     <div className="flex items-center gap-6 relative z-10">
-                                        <div className="w-16 h-16 rounded-[1.25rem] bg-slate-200 dark:bg-slate-950/80 flex items-center justify-center text-blue-500 dark:text-blue-400 border border-slate-300 dark:border-white/10 shadow-2xl group-hover:scale-105 transition-transform duration-500">
+                                        <div className="w-16 h-16 rounded-[1.25rem] bg-slate-200 dark:bg-slate-950/80 flex items-center justify-center text-blue-500 dark:text-blue-400 border border-slate-300 border-app-border shadow-2xl group-hover:scale-105 transition-transform duration-500">
                                             {asset.type?.toLowerCase().includes('laptop') ? <Laptop size={32} /> : <Smartphone size={32} />}
                                         </div>
                                         <div>
-                                            <h4 className="text-xl font-['Outfit'] font-black text-slate-900 dark:text-white leading-tight uppercase tracking-tight">
+                                            <h4 className="text-xl font-['Outfit'] font-black text-app-text leading-tight uppercase tracking-tight">
                                                 {asset.name}
-                                                {asset.model && asset.model !== asset.name && <span className="text-slate-500 dark:text-slate-400 font-bold text-xs ml-3 lowercase">[{asset.model}]</span>}
+                                                {asset.model && asset.model !== asset.name && <span className="text-app-text-muted font-bold text-xs ml-3 lowercase">[{asset.model}]</span>}
                                             </h4>
                                             <div className="flex items-center gap-4 mt-2.5">
                                                 <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-500/10 rounded-lg border border-blue-500/20">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                                                     <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">{asset.vendor || 'Standard OEM'}</span>
                                                 </div>
-                                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-white/5">SRL: {asset.serial_number || 'ST-2024-XXXX'}</span>
+                                                <span className="text-[10px] font-mono text-app-text-muted bg-app-surface-soft px-2.5 py-1 rounded-lg border border-app-border">SRL: {asset.serial_number || 'ST-2024-XXXX'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -265,7 +265,7 @@ export default function EndUserDashboard() {
                                             <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse"></div>
                                             <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">Operational</span>
                                         </div>
-                                        <p className="text-[9px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-black flex items-center gap-2 justify-end">
+                                        <p className="text-[9px] text-app-text-muted uppercase tracking-widest font-black flex items-center gap-2 justify-end">
                                             <Calendar size={10} /> {asset.assignment_date || 'Recent Sync'}
                                         </p>
                                     </div>
@@ -274,9 +274,9 @@ export default function EndUserDashboard() {
                                 <div className="p-10 bg-slate-50/50 dark:bg-black/20 backdrop-blur-sm">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                                         <div className="space-y-6">
-                                            <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-3">
-                                                <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em]">Neural Registry</p>
-                                                <Cpu size={14} className="text-slate-500 dark:text-slate-400 dark:text-slate-600" />
+                                            <div className="flex items-center justify-between border-b border-black/5 border-app-border pb-3">
+                                                <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em]">Neural Registry</p>
+                                                <Cpu size={14} className="text-app-text-muted dark:text-slate-600" />
                                             </div>
                                             <div className="grid grid-cols-1 gap-3">
                                                 {Object.entries(asset.specifications || asset.specs || {}).map(([key, value]) => {
@@ -288,10 +288,10 @@ export default function EndUserDashboard() {
                                                     else if (k.includes('ip') || k.includes('mac') || k.includes('network')) SpecIcon = Server;
 
                                                     return (
-                                                        <div key={key} className="flex items-center justify-between p-4 rounded-xl bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200/50 dark:border-white/5 hover:bg-slate-200/50 dark:hover:bg-slate-100 dark:bg-white/[0.05] transition-all group/spec">
+                                                        <div key={key} className="flex items-center justify-between p-4 rounded-xl bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200/50 border-app-border hover:bg-slate-200/50 dark:hover:bg-slate-100 dark:bg-white/[0.05] transition-all group/spec">
                                                             <div className="flex items-center gap-4">
-                                                                <SpecIcon size={14} className="text-slate-500 dark:text-slate-400 group-hover/spec:text-blue-400 transition-colors" />
-                                                                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover/spec:text-slate-500 dark:text-slate-400">{key}</span>
+                                                                <SpecIcon size={14} className="text-app-text-muted group-hover/spec:text-blue-400 transition-colors" />
+                                                                <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest group-hover/spec:text-app-text-muted">{key}</span>
                                                             </div>
                                                             <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tighter">{strVal || 'UNSET'}</span>
                                                         </div>
@@ -301,19 +301,19 @@ export default function EndUserDashboard() {
                                         </div>
                                         <div className="space-y-6">
                                             <div className="space-y-4">
-                                                <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Deployment Intelligence</p>
+                                                <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em]">Deployment Intelligence</p>
                                                 <div className="space-y-2">
                                                     <div className="flex items-center gap-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
                                                         <MapPin size={16} className="text-amber-500" />
                                                         <div>
-                                                            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Work Zone</p>
+                                                            <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Work Zone</p>
                                                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{asset.location || 'Remote HQ'}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
                                                         <Calendar size={16} className="text-blue-400" />
                                                         <div>
-                                                            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Compliance Audit</p>
+                                                            <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Compliance Audit</p>
                                                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Scheduled: 15 Sept 2024</p>
                                                         </div>
                                                     </div>
@@ -344,20 +344,20 @@ export default function EndUserDashboard() {
                     {/* Sidebar Widgets */}
                     <div className="space-y-8">
                         {/* Procurement & Support Sync */}
-                        <div className="glass-card p-8 border border-slate-200 dark:border-white/10 space-y-10 shadow-xl relative overflow-hidden bg-white dark:bg-slate-900/40">
+                        <div className="glass-card p-8 border border-app-border space-y-10 shadow-xl relative overflow-hidden bg-white dark:bg-slate-900/40">
                             <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full"></div>
 
                             {/* Filter Toggle */}
-                            <div className="flex bg-slate-100 dark:bg-slate-950/60 rounded-xl p-1 border border-slate-200 dark:border-white/5 h-11 relative z-10">
+                            <div className="flex bg-slate-100 dark:bg-slate-950/60 rounded-xl p-1 border border-app-border h-11 relative z-10">
                                 <button
                                     onClick={() => setRequestFilter('active')}
-                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg transition-all ${requestFilter === 'active' ? 'bg-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'}`}
+                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg transition-all ${requestFilter === 'active' ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20' : 'text-app-text-muted hover:text-app-text-muted'}`}
                                 >
                                     Active Trace
                                 </button>
                                 <button
                                     onClick={() => setRequestFilter('history')}
-                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg transition-all ${requestFilter === 'history' ? 'bg-indigo-600 text-slate-900 dark:text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'}`}
+                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg transition-all ${requestFilter === 'history' ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20' : 'text-app-text-muted hover:text-app-text-muted'}`}
                                 >
                                     Audit Logs
                                 </button>
@@ -365,13 +365,13 @@ export default function EndUserDashboard() {
 
                             {/* Asset Procurement Stream */}
                             <div className="space-y-6 relative z-10">
-                                <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 pb-3">
+                                <div className="flex items-center justify-between border-b border-black/5 border-app-border pb-3">
                                     <div className="flex items-center gap-3">
                                         <Briefcase size={18} className="text-blue-400" />
-                                        <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-[0.3em]">Procurement</h3>
+                                        <h3 className="text-[11px] font-black text-app-text uppercase tracking-[0.3em]">Procurement</h3>
                                     </div>
-                                    <button onClick={() => refreshData?.()} className="p-1.5 hover:bg-black/5 dark:hover:bg-slate-100 dark:bg-white/5 rounded-lg transition-colors group">
-                                        <RefreshCw size={14} className="text-slate-500 dark:text-slate-400 group-hover:rotate-180 transition-transform duration-700" />
+                                    <button onClick={() => refreshData?.()} className="p-1.5 hover:bg-black/5 dark:hover:bg-app-surface-soft rounded-lg transition-colors group">
+                                        <RefreshCw size={14} className="text-app-text-muted group-hover:rotate-180 transition-transform duration-700" />
                                     </button>
                                 </div>
 
@@ -380,8 +380,8 @@ export default function EndUserDashboard() {
                                         const isCompleted = ['FULFILLED', 'REJECTED', 'CLOSED', 'CANCELLED'].includes(req.status);
                                         return requestFilter === 'active' ? !isCompleted : isCompleted;
                                     }).length === 0 ? (
-                                        <div className="text-center py-12 opacity-50 bg-slate-50 dark:bg-white/[0.01] rounded-2xl border border-dashed border-slate-200 dark:border-white/5">
-                                            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-600 uppercase tracking-widest">No Signals Detected</p>
+                                        <div className="text-center py-12 opacity-50 bg-slate-50 dark:bg-white/[0.01] rounded-2xl border border-dashed border-app-border">
+                                            <p className="text-[10px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest">No Signals Detected</p>
                                         </div>
                                     ) : requests.filter(req => {
                                         const isCompleted = ['FULFILLED', 'REJECTED', 'CLOSED', 'CANCELLED'].includes(req.status);
@@ -389,7 +389,7 @@ export default function EndUserDashboard() {
                                     })
                                         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                                         .map(req => (
-                                            <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-4 rounded-xl glass-interactive border border-slate-200 dark:border-white/5 group">
+                                            <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-4 rounded-xl glass-interactive border border-app-border group">
                                                 <div className="flex justify-between items-start mb-3">
                                                     <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-lg border 
                                         ${req.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
@@ -397,9 +397,9 @@ export default function EndUserDashboard() {
                                                                 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
                                                         {req.status}
                                                     </span>
-                                                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400">{new Date(req.createdAt).toLocaleDateString()}</span>
+                                                    <span className="text-[9px] font-mono text-app-text-muted">{new Date(req.createdAt).toLocaleDateString()}</span>
                                                 </div>
-                                                <h4 className="text-xs font-black text-slate-700 dark:text-slate-300 group-hover:text-indigo-400 transition-colors mb-2 uppercase tracking-tight">{req.assetType} Provisioning</h4>
+                                                <h4 className="text-xs font-black text-app-text-muted group-hover:text-indigo-400 transition-colors mb-2 uppercase tracking-tight">{req.assetType} Provisioning</h4>
 
                                                 {req.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING && (
                                                     <button
@@ -409,13 +409,13 @@ export default function EndUserDashboard() {
                                                                 userAcceptAsset(req.id);
                                                             }
                                                         }}
-                                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-3"
+                                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-app-text text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-3"
                                                     >
                                                         <CheckCircle size={14} /> Confirm Receipt
                                                     </button>
                                                 )}
-                                                <div className="mt-4 flex items-center justify-between text-[10px] border-t border-black/5 dark:border-white/5 pt-3">
-                                                    <span className="text-slate-500 dark:text-slate-400 dark:text-slate-600 font-black uppercase tracking-widest">Ownership</span>
+                                                <div className="mt-4 flex items-center justify-between text-[10px] border-t border-black/5 border-app-border pt-3">
+                                                    <span className="text-app-text-muted dark:text-slate-600 font-black uppercase tracking-widest">Ownership</span>
                                                     <span className="text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-widest bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">{req.currentOwnerRole}</span>
                                                 </div>
                                             </div>
@@ -424,10 +424,10 @@ export default function EndUserDashboard() {
                             </div>
 
                             {/* Support Channel Trace */}
-                            <div className="space-y-6 pt-10 border-t border-black/5 dark:border-white/5 relative z-10">
-                                <div className="flex items-center gap-3 border-b border-black/5 dark:border-white/5 pb-3">
+                            <div className="space-y-6 pt-10 border-t border-black/5 border-app-border relative z-10">
+                                <div className="flex items-center gap-3 border-b border-black/5 border-app-border pb-3">
                                     <Ticket size={18} className="text-rose-500 dark:text-rose-400" />
-                                    <h3 className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-[0.3em]">Support Tickets</h3>
+                                    <h3 className="text-[11px] font-black text-app-text uppercase tracking-[0.3em]">Support Tickets</h3>
                                 </div>
 
                                 <div className="space-y-4 max-h-[350px] overflow-y-auto custom-scrollbar pr-2">
@@ -435,8 +435,8 @@ export default function EndUserDashboard() {
                                         const isCompleted = ['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(t.status?.toUpperCase());
                                         return requestFilter === 'active' ? !isCompleted : isCompleted;
                                     }).length === 0 ? (
-                                        <div className="text-center py-12 opacity-50 bg-white dark:bg-white/[0.01] rounded-2xl border border-dashed border-slate-200 dark:border-white/5">
-                                            <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">All Clear</p>
+                                        <div className="text-center py-12 opacity-50 bg-white dark:bg-white/[0.01] rounded-2xl border border-dashed border-app-border">
+                                            <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em]">All Clear</p>
                                         </div>
                                     ) : tickets.filter(t => {
                                         const isCompleted = ['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(t.status?.toUpperCase());
@@ -444,7 +444,7 @@ export default function EndUserDashboard() {
                                     })
                                         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                                         .map(ticket => (
-                                            <div key={ticket.id} onClick={() => setSelectedRequest(ticket)} className="p-4 rounded-xl glass-interactive border border-slate-200 dark:border-white/5 group">
+                                            <div key={ticket.id} onClick={() => setSelectedRequest(ticket)} className="p-4 rounded-xl glass-interactive border border-app-border group">
                                                 <div className="flex justify-between items-start mb-3">
                                                     <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-lg border 
                                         ${ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
@@ -452,11 +452,11 @@ export default function EndUserDashboard() {
                                                                 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
                                                         {ticket.status}
                                                     </span>
-                                                    <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400">{new Date(ticket.createdAt).toLocaleDateString()}</span>
+                                                    <span className="text-[9px] font-mono text-app-text-muted">{new Date(ticket.createdAt).toLocaleDateString()}</span>
                                                 </div>
-                                                <h4 className="text-xs font-black text-slate-700 dark:text-slate-300 group-hover:text-rose-400 transition-colors mb-1 truncate uppercase tracking-tight">{ticket.subject || 'Incident Report'}</h4>
+                                                <h4 className="text-xs font-black text-app-text-muted group-hover:text-rose-400 transition-colors mb-1 truncate uppercase tracking-tight">{ticket.subject || 'Incident Report'}</h4>
                                                 <div className="flex items-center justify-between mb-4">
-                                                    <p className="text-[9px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em]">{ticket.category}</p>
+                                                    <p className="text-[9px] text-app-text-muted font-black uppercase tracking-[0.2em]">{ticket.category}</p>
                                                     {ticket.related_asset_id && (
                                                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/5 rounded-lg border border-blue-500/10">
                                                             <Laptop size={10} className="text-blue-400" />
@@ -467,10 +467,10 @@ export default function EndUserDashboard() {
                                                     )}
                                                 </div>
 
-                                                <div className="flex items-center justify-between mt-2 pt-3 border-t border-slate-200 dark:border-white/5">
+                                                <div className="flex items-center justify-between mt-2 pt-3 border-t border-app-border">
                                                     <div className="flex items-center gap-2">
                                                         <div className={`w-1.5 h-1.5 rounded-full ${ticket.priority === 'HIGH' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'}`}></div>
-                                                        <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{ticket.priority} IMPACT</span>
+                                                        <span className="text-[9px] font-black text-app-text-muted uppercase tracking-widest">{ticket.priority} IMPACT</span>
                                                     </div>
                                                     {ticket.resolution_percentage > 0 && (
                                                         <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest bg-indigo-500/5 px-2 py-0.5 rounded border border-indigo-500/10">{Math.round(ticket.resolution_percentage)}% DONE</span>
@@ -482,8 +482,8 @@ export default function EndUserDashboard() {
                             </div>
 
                             {/* IT Advisory */}
-                            <div className="pt-10 border-t border-black/5 dark:border-white/5 relative z-10">
-                                <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.4em] mb-6">Operational Advisory</h3>
+                            <div className="pt-10 border-t border-black/5 border-app-border relative z-10">
+                                <h3 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.4em] mb-6">Operational Advisory</h3>
                                 <div className="space-y-4">
                                     {[
                                         { label: 'Cloud Access Protocol', icon: Server, color: 'text-blue-500 dark:text-blue-400' },
@@ -492,7 +492,7 @@ export default function EndUserDashboard() {
                                     ].map((policy, i) => (
                                         <div key={i} className="flex items-center gap-4 group cursor-pointer p-2 hover:bg-black/[0.02] dark:hover:bg-slate-50 dark:bg-white/[0.02] rounded-lg transition-all">
                                             <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 transition-all group-hover:bg-indigo-500 group-hover:scale-125"></div>
-                                            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors uppercase tracking-[0.15em]">{policy.label}</span>
+                                            <span className="text-[10px] font-black text-app-text-muted group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors uppercase tracking-[0.15em]">{policy.label}</span>
                                             <policy.icon size={12} className={`ml-auto opacity-0 group-hover:opacity-100 transition-opacity ${policy.color}`} />
                                         </div>
                                     ))}
@@ -503,9 +503,9 @@ export default function EndUserDashboard() {
                 </div >
 
                 {/* Quick Policies */}
-                <div className="glass-card p-8 border border-slate-200 dark:border-white/10 shadow-xl relative overflow-hidden group bg-white dark:bg-slate-900/40">
+                <div className="glass-card p-8 border border-app-border shadow-xl relative overflow-hidden group bg-white dark:bg-slate-900/40">
                     <div className="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full group-hover:bg-indigo-500/10 transition-all duration-700"></div>
-                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.3em] mb-6 flex items-center gap-2 relative z-10">
+                    <h3 className="text-sm font-black text-app-text uppercase tracking-[0.3em] mb-6 flex items-center gap-2 relative z-10">
                         <Shield size={16} className="text-indigo-600 dark:text-indigo-400" /> Operational Policies
                     </h3>
                     <div className="space-y-4 relative z-10">
@@ -514,12 +514,12 @@ export default function EndUserDashboard() {
                             { label: 'Data Security Standards', icon: ShieldCheck },
                             { label: 'Remote Connectivity Guidelines', icon: Globe }
                         ].map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/30 transition-all cursor-pointer group/policy">
+                            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/30 transition-all cursor-pointer group/policy">
                                 <div className="flex items-center gap-4">
-                                    <item.icon size={14} className="text-slate-500 dark:text-slate-400 group-hover/policy:text-indigo-600 dark:group-hover/policy:text-indigo-400 transition-colors" />
-                                    <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 group-hover/policy:text-slate-800 dark:group-hover/policy:text-slate-200 uppercase tracking-widest">{item.label}</span>
+                                    <item.icon size={14} className="text-app-text-muted group-hover/policy:text-indigo-600 dark:group-hover/policy:text-indigo-400 transition-colors" />
+                                    <span className="text-[10px] font-black text-app-text-muted group-hover/policy:text-slate-800 dark:group-hover/policy:text-slate-200 uppercase tracking-widest">{item.label}</span>
                                 </div>
-                                <ArrowUpRight size={12} className="text-slate-700 dark:text-slate-300 group-hover/policy:text-indigo-600 dark:group-hover/policy:text-indigo-400 transition-all group-hover/policy:translate-x-0.5 group-hover/policy:-translate-y-0.5" />
+                                <ArrowUpRight size={12} className="text-app-text-muted group-hover/policy:text-indigo-600 dark:group-hover/policy:text-indigo-400 transition-all group-hover/policy:translate-x-0.5 group-hover/policy:-translate-y-0.5" />
                             </div>
                         ))}
                     </div>
@@ -528,7 +528,7 @@ export default function EndUserDashboard() {
 
             {/* MANAGER APPROVAL SECTION */}
             {
-                (currentRole?.slug === 'MANAGER') && (
+                isManagerial && (
                     <div className="glass-panel p-10 border border-indigo-500/30 mt-12 shadow-2xl relative overflow-hidden group bg-white dark:bg-slate-900/40">
                         {/* Decorative Glow */}
                         <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-indigo-500/5 blur-[100px] rounded-full group-hover:bg-indigo-500/10 transition-all duration-700"></div>
@@ -539,8 +539,8 @@ export default function EndUserDashboard() {
                                     <Briefcase className="text-indigo-400" size={32} />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-['Outfit'] font-black text-slate-900 dark:text-white tracking-tight uppercase">Managerial Authorization</h3>
-                                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
+                                    <h3 className="text-2xl font-['Outfit'] font-black text-app-text tracking-tight uppercase">Managerial Authorization</h3>
+                                    <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-1 flex items-center gap-2">
                                         <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
                                         Team Provisioning Queue
                                     </p>
@@ -552,40 +552,40 @@ export default function EndUserDashboard() {
                         </div>
 
                         {requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).length === 0 ? (
-                            <div className="text-center py-16 bg-slate-50 dark:bg-white/[0.01] rounded-3xl border border-dashed border-slate-200 dark:border-white/5 relative z-10">
-                                <CheckCircle className="text-slate-700 dark:text-slate-300 mx-auto mb-4" size={48} />
-                                <p className="text-sm font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Queue Synchronized</p>
+                            <div className="text-center py-16 bg-slate-50 dark:bg-white/[0.01] rounded-3xl border border-dashed border-app-border relative z-10">
+                                <CheckCircle className="text-app-text-muted mx-auto mb-4" size={48} />
+                                <p className="text-sm font-black text-app-text-muted uppercase tracking-widest">Queue Synchronized</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                                 {requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).map(req => (
-                                    <div key={req.id} className="p-8 rounded-[2.5rem] bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5 flex flex-col justify-between group/task hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/30 transition-all shadow-xl">
+                                    <div key={req.id} className="p-8 rounded-[2.5rem] bg-slate-50 dark:bg-white/[0.02] border border-app-border flex flex-col justify-between group/task hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/30 transition-all shadow-xl">
                                         <div>
                                             <div className="flex items-center justify-between gap-4 mb-6">
                                                 <div className="flex items-center gap-4">
-                                                    <h4 className="text-lg font-['Outfit'] font-black text-slate-900 dark:text-white uppercase tracking-tight ">{req.assetType} Request</h4>
+                                                    <h4 className="text-lg font-['Outfit'] font-black text-app-text uppercase tracking-tight ">{req.assetType} Request</h4>
                                                     {req.assetType === 'BYOD' && <span className="text-[10px] font-black bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-lg border border-sky-500/20 uppercase tracking-widest">BYOD</span>}
                                                 </div>
-                                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 lowercase">{new Date(req.createdAt).toLocaleDateString()}</span>
+                                                <span className="text-[10px] font-mono text-app-text-muted lowercase">{new Date(req.createdAt).toLocaleDateString()}</span>
                                             </div>
                                             <div className="space-y-4 mb-8">
-                                                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-black/20 border border-slate-200 dark:border-white/5">
-                                                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Requester Signature</p>
+                                                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-black/20 border border-app-border">
+                                                    <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-1">Requester Signature</p>
                                                     <p className="text-sm font-black text-slate-900 dark:text-slate-200 uppercase">{req.requestedBy?.name || req.requester_name}</p>
                                                     <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold italic mt-0.5">{req.requestedBy?.email || req.requester_email || 'SECURE_CHANNEL_NO_MAIL'}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">Justification Trace</p>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-white/5 p-4 rounded-2xl border border-slate-200 dark:border-white/5 leading-relaxed">
+                                                    <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-2">Justification Trace</p>
+                                                    <p className="text-xs text-app-text-muted italic bg-app-surface-soft p-4 rounded-2xl border border-app-border leading-relaxed">
                                                         "{req.justification || req.reason || 'No mission objective provided'}"
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex gap-4 pt-6 border-t border-slate-200 dark:border-white/5">
+                                        <div className="flex gap-4 pt-6 border-t border-app-border">
                                             <button
                                                 onClick={() => setSelectedRequest(req)}
-                                                className="flex-1 py-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-300 dark:border-white/10 active:scale-95"
+                                                className="flex-1 py-3 bg-app-surface-soft hover:bg-app-surface text-app-text-muted hover:text-app-text rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-300 border-app-border active:scale-95"
                                             >
                                                 <Eye size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">Inspect</span>
                                             </button>
@@ -600,7 +600,7 @@ export default function EndUserDashboard() {
                                             </button>
                                             <button
                                                 onClick={() => managerApproveRequest(req.id, user.id, user.name)}
-                                                className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 text-slate-900 dark:text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-105"
+                                                className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-105"
                                             >
                                                 <CheckCircle size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">Authorize</span>
                                             </button>
@@ -612,24 +612,24 @@ export default function EndUserDashboard() {
                     </div>
                 )
             } {/* MANAGER HISTORY */}
-            <div className="mt-8 pt-6 border-t border-slate-200 dark:border-white/5">
-                <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Request History</h4>
+            <div className="mt-8 pt-6 border-t border-app-border">
+                <h4 className="text-sm font-bold text-app-text-muted uppercase tracking-wider mb-4">Request History</h4>
                 <div className="space-y-3">
                     {requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).length === 0 ? (
-                        <p className="text-slate-500 dark:text-slate-400 text-xs italic">No history available.</p>
+                        <p className="text-app-text-muted text-xs italic">No history available.</p>
                     ) : requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).map(req => (
-                        <div key={req.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5 opacity-75 hover:opacity-100 transition-opacity">
+                        <div key={req.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-lg border border-app-border opacity-75 hover:opacity-100 transition-opacity">
                             <div className="flex items-center gap-3">
                                 <div className={`w-2 h-2 rounded-full ${req.status === 'REJECTED' ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
                                 <div>
-                                    <p className="text-sm font-medium text-slate-900 dark:text-white">{req.assetType} Request</p>
+                                    <p className="text-sm font-medium text-app-text">{req.assetType} Request</p>
                                     <div className="flex flex-col mt-0.5">
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Sent by: <span className="text-slate-700 dark:text-slate-200">{req.requestedBy?.name || req.requester_name}</span></p>
+                                        <p className="text-xs text-app-text-muted">Sent by: <span className="text-slate-700 dark:text-slate-200">{req.requestedBy?.name || req.requester_name}</span></p>
                                         <div className="flex flex-col mt-0.5">
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[180px] italic">{req.requestedBy?.email || req.requester_email}</p>
+                                            <p className="text-xs text-app-text-muted truncate max-w-[180px] italic">{req.requestedBy?.email || req.requester_email}</p>
                                             <div className="flex items-center gap-2 mt-0.5">
                                                 <span className="text-xs text-indigo-400 font-medium">Dept: {req.requester_department || 'General'}</span>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400">{new Date(req.createdAt).toLocaleString()}</span>
+                                                <span className="text-xs text-app-text-muted">{new Date(req.createdAt).toLocaleString()}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -638,7 +638,7 @@ export default function EndUserDashboard() {
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => setSelectedRequest(req)}
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white text-xs font-medium rounded-lg border border-slate-200 dark:border-white/10 transition-colors"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 bg-app-surface hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-app-text text-xs font-medium rounded-lg border border-app-border transition-colors"
                                 >
                                     <Eye size={14} />
                                     View
@@ -646,11 +646,11 @@ export default function EndUserDashboard() {
                                 <div className="text-right">
                                     <span className={`text-xs px-2 py-1 rounded border ${req.status === 'MANAGER_APPROVED' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                                         req.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                            'bg-slate-500/10 text-slate-500 dark:text-slate-400'
+                                            'bg-slate-500/10 text-app-text-muted'
                                         }`}>
                                         {req.status}
                                     </span>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Current: {req.currentOwnerRole}</p>
+                                    <p className="text-xs text-app-text-muted mt-1">Current: {req.currentOwnerRole}</p>
                                 </div>
                             </div>
                         </div>
@@ -667,9 +667,9 @@ export default function EndUserDashboard() {
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
                         <div className="absolute inset-0 bg-slate-50 dark:bg-slate-950/40 dark:bg-slate-950/80 backdrop-blur-md" onClick={() => setSelectedRequest(null)}></div>
 
-                        <div className="glass-panel w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative z-10 border border-slate-200 dark:border-white/10 shadow-[0_0_100px_rgba(0,0,0,0.1)] dark:shadow-[0_0_100px_rgba(37,99,235,0.15)] animate-in zoom-in-95 duration-300 bg-white dark:bg-slate-900/90">
+                        <div className="glass-panel w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative z-10 border border-app-border shadow-[0_0_100px_rgba(0,0,0,0.1)] dark:shadow-[0_0_100px_rgba(37,99,235,0.15)] animate-in zoom-in-95 duration-300 bg-white dark:bg-slate-900/90">
                             {/* Modal Header */}
-                            <div className="p-8 border-b border-black/5 dark:border-white/10 bg-gradient-to-r from-indigo-500/5 dark:from-indigo-500/10 via-transparent to-transparent flex justify-between items-center relative overflow-hidden">
+                            <div className="p-8 border-b border-black/5 border-app-border bg-gradient-to-r from-indigo-500/5 dark:from-indigo-500/10 via-transparent to-transparent flex justify-between items-center relative overflow-hidden">
                                 <div className="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/5 dark:bg-indigo-500/10 blur-[60px] rounded-full"></div>
                                 <div className="flex items-center gap-6 relative z-10">
                                     <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
@@ -683,16 +683,16 @@ export default function EndUserDashboard() {
                                                         'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'}`}>
                                                 {selectedRequest.status}
                                             </span>
-                                            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/5 px-2 py-1 rounded-lg border border-slate-200 dark:border-white/5">ID: {selectedRequest.id?.slice(-8).toUpperCase() || 'SYS-TRACE'}</span>
+                                            <span className="text-[10px] font-mono text-app-text-muted bg-app-surface-soft px-2 py-1 rounded-lg border border-app-border">ID: {selectedRequest.id?.slice(-8).toUpperCase() || 'SYS-TRACE'}</span>
                                         </div>
-                                        <h2 className="text-2xl font-['Outfit'] font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                                        <h2 className="text-2xl font-['Outfit'] font-black text-app-text uppercase tracking-tight">
                                             {selectedRequest.assetType ? `${selectedRequest.assetType} Provisioning` : (selectedRequest.subject || 'Incident Briefing')}
                                         </h2>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setSelectedRequest(null)}
-                                    className="p-3 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-200 dark:bg-white/10 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white transition-all active:scale-90"
+                                    className="p-3 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface rounded-2xl border border-app-border text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all active:scale-90"
                                 >
                                     <X size={24} />
                                 </button>
@@ -704,25 +704,25 @@ export default function EndUserDashboard() {
                                     {/* Left Column: Context */}
                                     <div className="space-y-10">
                                         <section>
-                                            <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                                            <h4 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
                                                 <Info size={14} className="text-blue-400" /> Executive Summary
                                             </h4>
-                                            <div className="glass-panel p-6 bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-200 leading-relaxed font-medium italic">
+                                            <div className="glass-panel p-6 bg-slate-50 dark:bg-white/[0.02] border border-app-border">
+                                                <p className="text-sm text-app-text-muted dark:text-slate-200 leading-relaxed font-medium italic">
                                                     "{selectedRequest.justification || selectedRequest.description || selectedRequest.reason || 'No detailed briefing provided.'}"
                                                 </p>
                                             </div>
                                         </section>
 
                                         <section>
-                                            <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mb-6">Object Parameters</h4>
+                                            <h4 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-6">Object Parameters</h4>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
-                                                    <p className="text-[9px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-600 uppercase tracking-widest mb-1">Category</p>
+                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border">
+                                                    <p className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest mb-1">Category</p>
                                                     <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{selectedRequest.category || selectedRequest.assetType || 'GENERAL'}</p>
                                                 </div>
-                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
-                                                    <p className="text-[9px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-600 uppercase tracking-widest mb-1">Established</p>
+                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border">
+                                                    <p className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest mb-1">Established</p>
                                                     <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{new Date(selectedRequest.createdAt || selectedRequest.created_at).toLocaleDateString()}</p>
                                                 </div>
                                                 {selectedRequest.related_asset_id && (
@@ -732,13 +732,13 @@ export default function EndUserDashboard() {
                                                         </p>
                                                         <p className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase">
                                                             {assignedAssets.find(a => a.id === selectedRequest.related_asset_id)?.name || 'Linked Asset'}
-                                                            <span className="text-[10px] text-slate-500 dark:text-slate-400 ml-2 font-normal lowercase">({selectedRequest.related_asset_id.slice(0, 8)})</span>
+                                                            <span className="text-[10px] text-app-text-muted ml-2 font-normal lowercase">({selectedRequest.related_asset_id.slice(0, 8)})</span>
                                                         </p>
                                                     </div>
                                                 )}
                                                 {selectedRequest.priority && (
-                                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/5">
-                                                        <p className="text-[9px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-600 uppercase tracking-widest mb-1">Priority</p>
+                                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border">
+                                                        <p className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest mb-1">Priority</p>
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
                                                             <p className="text-xs font-black text-rose-600 dark:text-rose-400 uppercase">{selectedRequest.priority} IMPACT</p>
@@ -756,17 +756,17 @@ export default function EndUserDashboard() {
                                     {/* Right Column: Analytics & Status */}
                                     <div className="space-y-10">
                                         <section>
-                                            <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                                            <h4 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
                                                 <Zap size={14} className="text-amber-400" /> Deployment Logistics
                                             </h4>
                                             <div className="space-y-4">
                                                 {selectedRequest.resolution_percentage >= 0 && (
-                                                    <div className="glass-panel p-6 border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-transparent">
+                                                    <div className="glass-panel p-6 border border-app-border bg-slate-50 dark:bg-transparent">
                                                         <div className="flex justify-between items-center mb-4">
-                                                            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 dark:text-slate-400 uppercase tracking-widest">Protocol Resolution</span>
+                                                            <span className="text-[10px] font-black text-app-text-muted text-app-text-muted uppercase tracking-widest">Protocol Resolution</span>
                                                             <span className="text-xl font-['Outfit'] font-black text-indigo-600 dark:text-indigo-400">{Math.round(selectedRequest.resolution_percentage)}%</span>
                                                         </div>
-                                                        <div className="h-2 w-full bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-300 dark:border-white/5">
+                                                        <div className="h-2 w-full bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-300 border-app-border">
                                                             <div
                                                                 className="h-full bg-gradient-to-r from-indigo-600 to-blue-400 transition-all duration-1000"
                                                                 style={{ width: `${selectedRequest.resolution_percentage}%` }}
@@ -785,11 +785,11 @@ export default function EndUserDashboard() {
                                                 )}
 
                                                 {!selectedRequest.rejectionReason && !selectedRequest.resolution_percentage && (
-                                                    <div className="glass-panel p-10 border border-slate-200 dark:border-white/5 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-white/[0.01]">
+                                                    <div className="glass-panel p-10 border border-app-border flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-white/[0.01]">
                                                         <div className="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center mb-4 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
                                                             <RefreshCw size={24} className="text-indigo-600 dark:text-indigo-400 animate-spin-slow" />
                                                         </div>
-                                                        <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em]">Syncing Payload Logs...</p>
+                                                        <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em]">Syncing Payload Logs...</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -797,27 +797,27 @@ export default function EndUserDashboard() {
 
                                         {/* Audit Timeline */}
                                         <section>
-                                            <h4 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] mb-8">Operational History</h4>
-                                            <div className="space-y-8 relative before:absolute before:left-3.5 before:top-4 before:bottom-0 before:w-px before:bg-slate-200 dark:before:bg-slate-100 dark:bg-white/5">
+                                            <h4 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-8">Operational History</h4>
+                                            <div className="space-y-8 relative before:absolute before:left-3.5 before:top-4 before:bottom-0 before:w-px before:bg-slate-200 dark:before:bg-app-surface-soft">
                                                 {(selectedRequest.auditTrail || selectedRequest.timeline || []).map((log, idx) => (
                                                     <div key={idx} className="relative pl-12 group">
-                                                        <div className={`absolute left-1 top-0.5 w-5 h-5 rounded-lg border border-slate-200 dark:border-white/10 flex items-center justify-center z-10 transition-transform group-hover:scale-110 shadow-lg
+                                                        <div className={`absolute left-1 top-0.5 w-5 h-5 rounded-lg border border-app-border flex items-center justify-center z-10 transition-transform group-hover:scale-110 shadow-lg
                                             ${(log.action || '').includes('CREATED') ? 'bg-blue-600/20 text-blue-600 dark:text-blue-400 border-blue-500/30' :
                                                                 (log.action || '').includes('APPROVE') || (log.action || '').includes('RESOLVE') ? 'bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
                                                                     (log.action || '').includes('REJECT') ? 'bg-rose-600/20 text-rose-600 dark:text-rose-400 border-rose-500/30' :
-                                                                        'bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 dark:text-slate-400 border-slate-200 dark:border-white/10'}`}>
+                                                                        'bg-slate-100 dark:bg-slate-700/50 text-app-text-muted text-app-text-muted border-app-border'}`}>
                                                             <div className="w-1.5 h-1.5 rounded-full bg-current"></div>
                                                         </div>
                                                         <div className="flex flex-col">
                                                             <div className="flex justify-between items-start mb-2">
                                                                 <span className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">{log.action || log.status || 'PROTOCOL_UPDATE'}</span>
-                                                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{new Date(log.timestamp || log.date).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}</span>
+                                                                <span className="text-[10px] font-mono text-app-text-muted">{new Date(log.timestamp || log.date).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' })}</span>
                                                             </div>
-                                                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                            <p className="text-[10px] text-app-text-muted font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
                                                                 <User size={10} className="text-indigo-600 dark:text-indigo-400 opacity-50" /> {log.byRole || log.role || 'CORE_SYNC'} : {log.byUser || log.user || 'SYSTEM'}
                                                             </p>
                                                             {(log.comment || log.notes) && (
-                                                                <div className="text-xs text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-white/[0.03] p-4 rounded-2xl border border-slate-200 dark:border-white/5 relative">
+                                                                <div className="text-xs text-app-text-muted italic bg-slate-50 dark:bg-white/[0.03] p-4 rounded-2xl border border-app-border relative">
                                                                     <div className="absolute top-2 left-2 text-indigo-600 dark:text-indigo-500/20"><Quote size={8} /></div>
                                                                     {log.comment || log.notes}
                                                                 </div>
@@ -832,7 +832,7 @@ export default function EndUserDashboard() {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="p-8 border-t border-black/5 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] flex justify-end gap-5 shrink-0 relative z-10">
+                            <div className="p-8 border-t border-black/5 border-app-border bg-slate-50 dark:bg-white/[0.03] flex justify-end gap-5 shrink-0 relative z-10">
                                 {selectedRequest.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING && (
                                     <button
                                         onClick={() => {
@@ -841,14 +841,14 @@ export default function EndUserDashboard() {
                                                 setSelectedRequest(null);
                                             }
                                         }}
-                                        className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-3 animate-pulse"
+                                        className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-app-text text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-3 animate-pulse"
                                     >
                                         <CheckCircle size={20} /> Authorize Receipt
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setSelectedRequest(null)}
-                                    className="px-8 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl border border-slate-200 dark:border-white/10 transition-all active:scale-95"
+                                    className="px-8 py-4 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl border border-app-border transition-all active:scale-95"
                                 >
                                     Seal Briefing
                                 </button>

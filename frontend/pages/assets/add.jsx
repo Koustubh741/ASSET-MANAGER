@@ -87,10 +87,10 @@ export default function AddAsset() {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="flex items-center space-x-4">
-                <Link href="/assets" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white transition-colors">
+                <Link href="/assets" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-full text-app-text-muted hover:text-app-text transition-colors">
                     <ArrowLeft size={24} />
                 </Link>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Add New Asset</h2>
+                <h2 className="text-xl font-bold text-app-text tracking-tight">Add New Asset</h2>
             </div>
 
             {/* Smart Import Section - Enabled */}
@@ -99,13 +99,13 @@ export default function AddAsset() {
                 <div className="relative z-10">
                     <div className="flex items-center justify-between mb-6">
                         <div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <h3 className="text-xl font-bold text-app-text flex items-center gap-2">
                                 <span className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg">
-                                    <Save size={18} className="text-slate-900 dark:text-white" />
+                                    <Save size={18} className="text-app-text" />
                                 </span>
                                 Smart Import (CSV / Excel)
                             </h3>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-xl">
+                            <p className="text-app-text-muted text-sm mt-1 max-w-xl">
                                 Upload a CSV or Excel file to bulk import assets. New assets will be added to your inventory instantly.
                             </p>
                         </div>
@@ -113,7 +113,7 @@ export default function AddAsset() {
                             <a
                                 href="/sample_assets.csv"
                                 download="sample_assets.csv"
-                                className="btn bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 hover:text-slate-900 dark:text-white flex items-center gap-2 text-xs"
+                                className="btn bg-app-surface-soft text-app-text-muted border border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:text-app-text flex items-center gap-2 text-xs"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     const csvContent = "Asset Name,Segment,Type,Location,Status,Cost\nDell XPS 13,IT,Laptop,Mumbai Office,In Use,85000\nErgo Chair,NON-IT,Chair,Delhi Office,In Use,12000";
@@ -275,16 +275,16 @@ export default function AddAsset() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Basic Info */}
                     <div className="space-y-6">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-4 flex items-center">
+                        <h3 className="text-xl font-bold text-app-text border-b border-app-border pb-4 flex items-center">
                             <span className="w-2 h-6 bg-blue-500 rounded-full mr-3"></span>
                             Basic Information
                         </h3>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Asset Name</label>
+                            <label className="block text-sm font-medium text-app-text-muted mb-2">Asset Name</label>
                             <input required name="name" value={formData.name} onChange={handleChange} className="input-field" placeholder="e.g. MacBook Pro 16" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Segment</label>
+                            <label className="block text-sm font-medium text-app-text-muted mb-2">Segment</label>
                             <select name="segment" value={formData.segment} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
                                 <option className="bg-white dark:bg-slate-900">IT</option>
                                 <option className="bg-white dark:bg-slate-900">NON-IT</option>
@@ -292,7 +292,7 @@ export default function AddAsset() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Type</label>
+                                <label className="block text-sm font-medium text-app-text-muted mb-2">Type</label>
                                 <select name="type" value={formData.type} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
                                     <option className="bg-white dark:bg-slate-900">Laptop</option>
                                     <option className="bg-white dark:bg-slate-900">Desktop</option>
@@ -302,7 +302,7 @@ export default function AddAsset() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Status</label>
+                                <label className="block text-sm font-medium text-app-text-muted mb-2">Status</label>
                                 <select name="status" value={formData.status} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
                                     <option className="bg-white dark:bg-slate-900">In Use</option>
                                     <option className="bg-white dark:bg-slate-900">In Stock</option>
@@ -312,43 +312,43 @@ export default function AddAsset() {
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Vendor</label>
+                            <label className="block text-sm font-medium text-app-text-muted mb-2">Vendor</label>
                             <input required name="vendor" value={formData.vendor} onChange={handleChange} className="input-field" placeholder="e.g. Apple, Dell" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Model</label>
+                            <label className="block text-sm font-medium text-app-text-muted mb-2">Model</label>
                             <input required name="model" value={formData.model} onChange={handleChange} className="input-field" placeholder="e.g. M3 Max" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Serial Number</label>
+                            <label className="block text-sm font-medium text-app-text-muted mb-2">Serial Number</label>
                             <input required name="serial_number" value={formData.serial_number} onChange={handleChange} className="input-field" />
                         </div>
                     </div>
 
                     {/* Details */}
                     <div className="space-y-6">
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-white/10 pb-4 flex items-center">
+                        <h3 className="text-xl font-bold text-app-text border-b border-app-border pb-4 flex items-center">
                             <span className="w-2 h-6 bg-purple-500 rounded-full mr-3"></span>
                             Details & Specs
                         </h3>
                         <div>
-                            <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Location</label>
+                            <label className="block text-sm font-medium text-app-text-muted mb-2">Location</label>
                             <input name="location" value={formData.location} onChange={handleChange} className="input-field" placeholder="e.g. New York HQ" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Purchase Date</label>
+                                <label className="block text-sm font-medium text-app-text-muted mb-2">Purchase Date</label>
                                 <input type="date" name="purchase_date" value={formData.purchase_date} onChange={handleChange} className="input-field" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-2">Warranty Expiry</label>
+                                <label className="block text-sm font-medium text-app-text-muted mb-2">Warranty Expiry</label>
                                 <input type="date" name="warranty_expiry" value={formData.warranty_expiry} onChange={handleChange} className="input-field" />
                             </div>
                         </div>
 
-                        <div className="pt-2 border-t border-slate-200 dark:border-white/5 space-y-3 mt-4">
+                        <div className="pt-2 border-t border-app-border space-y-3 mt-4">
                             <div className="flex justify-between items-center mb-1">
-                                <label className="block text-sm font-medium text-slate-500 dark:text-slate-400">Custom Specifications</label>
+                                <label className="block text-sm font-medium text-app-text-muted">Custom Specifications</label>
                                 <button type="button" onClick={addSpecField} className="text-xs text-blue-400 hover:text-blue-300 px-2 py-1 rounded bg-blue-500/10 flex items-center gap-1 transition-colors">
                                     <Plus size={14} /> Add Field
                                 </button>
@@ -382,14 +382,14 @@ export default function AddAsset() {
                                     </div>
                                 ))}
                                 {formData.specifications.length === 0 && (
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic text-center py-2 bg-white dark:bg-slate-900/20 rounded border border-dashed border-slate-200 dark:border-white/5">No custom specifications added.</p>
+                                    <p className="text-xs text-app-text-muted italic text-center py-2 bg-white dark:bg-slate-900/20 rounded border border-dashed border-app-border">No custom specifications added.</p>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex justify-end pt-6 border-t border-slate-200 dark:border-white/10">
+                <div className="flex justify-end pt-6 border-t border-app-border">
                     <button
                         type="submit"
                         disabled={isSubmitting}

@@ -9,6 +9,7 @@ from ..models.models import User, AssetRequest, Ticket, AssignmentGroup, Assignm
 from typing import Dict, Any, Optional, List
 from uuid import UUID
 from datetime import datetime
+from ..routers.notifications import create_notification # Real-time SSE integration
 import logging
 
 logger = logging.getLogger(__name__)
@@ -54,13 +55,30 @@ class NotificationService:
         {body}
         ========================================
         """)
-        
-        # In production, use:
-        # import smtplib
-        # from email.mime.text import MIMEText
-        # ...
-        
         return True
+
+    async def _emit_realtime(
+        self, 
+        title: str, 
+        message: str, 
+        user_id: Optional[UUID] = None, 
+        notif_type: str = "system", 
+        link: Optional[str] = None,
+        **kwargs
+    ):
+        """Bridge to the real-time SSE Notification Center."""
+        try:
+            await create_notification(
+                db=self.db,
+                title=title,
+                message=message,
+                notification_type=notif_type,
+                user_id=str(user_id) if user_id else None,
+                link=link,
+                source=kwargs.get("source")
+            )
+        except Exception as e:
+            logger.error(f"Failed to emit real-time notification: {e}")
     
     async def notify_request_submitted(self, request_id: UUID):
         """Notify when a new request is submitted"""
@@ -72,19 +90,18 @@ class NotificationService:
         
         requester_email = await self._get_user_email(request.requester_id)
         
-        # Notify requester
+        # Notify requester (Email + UI)
         await self._simulate_email(
             to=requester_email,
             subject=f"Asset Request #{request_id} Submitted",
-            body=f"""
-            Your asset request has been submitted successfully.
-            
-            Asset Type: {request.asset_type}
-            Model: {request.asset_model or 'N/A'}
-            Status: SUBMITTED
-            
-            Your request is now pending manager approval.
-            """
+            body=f"Your asset request has been submitted successfully.\nAsset Type: {request.asset_type}\nStatus: SUBMITTED"
+        )
+        await self._emit_realtime(
+            title="📥 Request Submitted",
+            message=f"Your request for {request.asset_name or request.asset_type} is pending approval.",
+            user_id=request.requester_id,
+            notif_type="workflow",
+            link="/dashboard/end-user/requests"
         )
         
         return True
@@ -151,19 +168,18 @@ class NotificationService:
         
         if new_status.endswith("_REJECTED"):
             # Notify requester of rejection
-            notifications.append({
-                "to": requester_email,
-                "subject": f"Asset Request #{request_id} - {new_status}",
-                "body": f"""
-                Your asset request has been {new_status}.
-                
-                Reviewed by: {reviewer_name or 'System'}
-                Reason: {reason or 'No reason provided'}
-                
-                Asset Type: {request.asset_type}
-                Model: {request.asset_model or 'N/A'}
-                """
-            })
+            await self._simulate_email(
+                to=requester_email,
+                subject=f"Asset Request #{request_id} - {new_status}",
+                body=f"Your asset request has been {new_status}.\nReason: {reason or 'No reason provided'}"
+            )
+            await self._emit_realtime(
+                title=f"❌ Request {new_status.replace('_', ' ').title()}",
+                message=f"Request for {request.asset_name or request.asset_type} was rejected: {reason or 'No reason provided'}",
+                user_id=request.requester_id,
+                notif_type="alert",
+                link="/dashboard/end-user/requests"
+            )
             # Procurement rejected: also notify IT Management
             if new_status == "PROCUREMENT_REJECTED" or new_status == "PO_REJECTED":
                 it_emails = await self._get_users_by_role("IT_MANAGEMENT")
@@ -227,29 +243,28 @@ class NotificationService:
 
         elif new_status == "IT_APPROVED":
             # Notify requester and Manager that IT has approved
-            notifications.append({
-                "to": requester_email,
-                "subject": f"Asset Request #{request_id} - IT Approved",
-                "body": f"""
-                Your asset request has been approved by IT Management.
-                
-                Next Step: Manager final confirmation of the technical decision.
-                """
-            })
-            # Also notify manager (who needs to confirm)
-            # Find manager emails again (already did this in notify_manager_approval_required, could refactor)
-            managers = await self.db.execute(
-                select(User).filter(User.position == "MANAGER", User.status == "ACTIVE")
+            await self._simulate_email(
+                to=requester_email,
+                subject=f"Asset Request #{request_id} - IT Approved",
+                body=f"Your asset request has been approved by IT Management.\nNext Step: Manager final confirmation."
             )
-            manager_emails = [m.email for m in managers.scalars().all() if m.email]
-            for email in manager_emails:
-                notifications.append({
-                    "to": email,
-                    "subject": f"Manager Confirmation Required - Request #{request_id}",
-                    "body": f"""
-                    IT has approved asset request #{request_id}. Please provide your final confirmation to trigger fulfillment.
-                    """
-                })
+            await self._emit_realtime(
+                title="✅ IT Approval Granted",
+                message=f"IT has approved your request for {request.asset_name or request.asset_type}.",
+                user_id=request.requester_id,
+                notif_type="workflow",
+                link="/dashboard/end-user/requests"
+            )
+            # Find and notify managers in UI
+            managers = await self.db.execute(select(User).filter(User.position == "MANAGER", User.status == "ACTIVE"))
+            for m in managers.scalars().all():
+                await self._emit_realtime(
+                    title="✍️ Confirmation Required",
+                    message=f"IT approved a request from {request.requester_id}. Final confirmation needed.",
+                    user_id=m.id,
+                    notif_type="workflow",
+                    link="/dashboard/manager/approvals"
+                )
 
         elif new_status == "MANAGER_CONFIRMED_IT":
             # Determine routing based on ownership type
@@ -295,20 +310,15 @@ class NotificationService:
         
         elif new_status == "PO_VALIDATED":
             # Notify finance team
-            finance_emails = await self._get_users_by_role("FINANCE")
-            for email in finance_emails:
-                notifications.append({
-                    "to": email,
-                    "subject": f"Action Required: Budget Approval for Request #{request_id}",
-                    "body": f"""
-                    A Purchase Order has been validated and requires budget approval.
-                    
-                    Asset Type: {request.asset_type}
-                    Estimated Cost: ${request.cost_estimate or 0}
-                    
-                    Please review and approve the budget allocation.
-                    """
-                })
+            finance_users = await self.db.execute(select(User).filter(User.role == "FINANCE", User.status == "ACTIVE"))
+            for f in finance_users.scalars().all():
+                await self._emit_realtime(
+                    title="💰 Budget Approval Needed",
+                    message=f"A new PO for {request.asset_name or request.asset_type} requires your approval.",
+                    user_id=f.id,
+                    notif_type="procurement",
+                    link="/dashboard/finance/budget"
+                )
         
         elif new_status == "PO_UPLOADED":
             # Notify procurement team to validate
@@ -396,18 +406,18 @@ class NotificationService:
         
         elif new_status == "IN_USE":
             # Notify requester that asset is assigned
-            notifications.append({
-                "to": requester_email,
-                "subject": f"Asset Assigned - Request #{request_id}",
-                "body": f"""
-                Your asset has been successfully assigned and is now in use.
-                
-                Asset Type: {request.asset_type}
-                Model: {request.asset_model or 'N/A'}
-                
-                Thank you for using the Asset Management System.
-                """
-            })
+            await self._simulate_email(
+                to=requester_email,
+                subject=f"Asset Assigned - Request #{request_id}",
+                body=f"Your asset has been successfully assigned and is now in use."
+            )
+            await self._emit_realtime(
+                title="🎉 Asset Fully Assigned",
+                message=f"Your {request.asset_name or request.asset_type} is now active and in use.",
+                user_id=request.requester_id,
+                notif_type="system",
+                link="/dashboard/end-user/assets"
+            )
         
         # Send all notifications
         for notif in notifications:
@@ -473,6 +483,20 @@ class NotificationService:
                 subject=f"New Support Ticket: {ticket.subject}",
                 body=body
             )
+        
+        # UI Notification for IT/Group (Broadcast to all recipients)
+        for email in recipients:
+            # Need to find the user_id for each email to send personal alerts
+            u_res = await self.db.execute(select(User).filter(User.email == email))
+            u = u_res.scalars().first()
+            if u:
+                await self._emit_realtime(
+                    title=f"🎫 New Ticket: {ticket.priority}",
+                    message=f"{ticket.subject} assigned to your group.",
+                    user_id=u.id,
+                    notif_type="alert" if ticket.priority == "High" else "system",
+                    link=f"/dashboard/it-management/tickets"
+                )
         return True
 
     async def notify_ticket_updated(self, ticket_id: UUID, status: str, updated_by: str, comment: str = None):
@@ -529,6 +553,13 @@ class NotificationService:
             to=requester_email,
             subject=f"Support Ticket Resolved: {ticket.subject}",
             body=body
+        )
+        await self._emit_realtime(
+            title="✅ Ticket Resolved",
+            message=f"Your ticket '{ticket.subject}' has been marked as resolved.",
+            user_id=ticket.requestor_id,
+            notif_type="system",
+            link="/dashboard/end-user/requests"
         )
         return True
 

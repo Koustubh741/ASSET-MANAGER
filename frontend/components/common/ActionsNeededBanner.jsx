@@ -21,7 +21,7 @@ export default function ActionsNeededBanner({ items = [], title = 'Actions neede
     };
 
     return (
-        <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-white/10 bg-slate-100 border-slate-200 backdrop-blur-sm flex flex-wrap items-center gap-3">
+        <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-app-border bg-slate-100 border-slate-200 backdrop-blur-sm flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 text-slate-700 dark:text-slate-700 font-semibold text-sm shrink-0">
                 <AlertCircle size={18} className="text-amber-400" />
                 {title}

@@ -101,13 +101,13 @@ export default function AssetRelationships() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                    <Link href={`/assets/${id}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-full text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white transition-colors">
+                    <Link href={`/assets/${id}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-full text-app-text-muted hover:text-app-text transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Asset Relationships (CMDB)</h2>
+                        <h2 className="text-xl font-bold text-app-text tracking-tight">Asset Relationships (CMDB)</h2>
                         {relationships && (
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{relationships.asset_name}</p>
+                            <p className="text-app-text-muted text-sm mt-1">{relationships.asset_name}</p>
                         )}
                     </div>
                 </div>
@@ -123,15 +123,15 @@ export default function AssetRelationships() {
             {/* Add Relationship Form */}
             {showAddForm && (
                 <div className="glass-panel p-6">
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Add New Relationship</h3>
+                    <h3 className="text-lg font-bold text-app-text mb-4">Add New Relationship</h3>
                     <form onSubmit={handleAddRelationship} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-2">Target Asset</label>
+                            <label className="block text-sm text-app-text-muted mb-2">Target Asset</label>
                             <select
                                 required
                                 value={newRelationship.target_asset_id}
                                 onChange={(e) => setNewRelationship({...newRelationship, target_asset_id: e.target.value})}
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
                             >
                                 <option value="">Select an asset...</option>
                                 {assets.map(asset => (
@@ -142,11 +142,11 @@ export default function AssetRelationships() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-2">Relationship Type</label>
+                            <label className="block text-sm text-app-text-muted mb-2">Relationship Type</label>
                             <select
                                 value={newRelationship.relationship_type}
                                 onChange={(e) => setNewRelationship({...newRelationship, relationship_type: e.target.value})}
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
                             >
                                 {relationshipTypes.map(type => (
                                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -154,17 +154,17 @@ export default function AssetRelationships() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-2">Description (Optional)</label>
+                            <label className="block text-sm text-app-text-muted mb-2">Description (Optional)</label>
                             <input
                                 type="text"
                                 value={newRelationship.description}
                                 onChange={(e) => setNewRelationship({...newRelationship, description: e.target.value})}
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
                                 placeholder="e.g., Database connection"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-slate-500 dark:text-slate-400 mb-2">Criticality (1-5)</label>
+                            <label className="block text-sm text-app-text-muted mb-2">Criticality (1-5)</label>
                             <input
                                 type="range"
                                 min="1"
@@ -173,13 +173,13 @@ export default function AssetRelationships() {
                                 onChange={(e) => setNewRelationship({...newRelationship, criticality: parseInt(e.target.value)})}
                                 className="w-full"
                             />
-                            <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <div className="flex justify-between text-xs text-app-text-muted mt-1">
                                 <span>Low</span>
                                 <span>Critical ({newRelationship.criticality})</span>
                             </div>
                         </div>
                         <div className="md:col-span-2 flex justify-end space-x-3">
-                            <button type="button" onClick={() => setShowAddForm(false)} className="btn bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:bg-slate-600 text-slate-900 dark:text-white">
+                            <button type="button" onClick={() => setShowAddForm(false)} className="btn bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:bg-slate-600 text-app-text">
                                 Cancel
                             </button>
                             <button type="submit" className="btn btn-primary">
@@ -193,15 +193,15 @@ export default function AssetRelationships() {
             <div className="glass-panel min-h-[400px] p-8">
                 {loading ? (
                     <div className="flex items-center justify-center h-64">
-                        <p className="text-slate-500 dark:text-slate-400">Loading relationships...</p>
+                        <p className="text-app-text-muted">Loading relationships...</p>
                     </div>
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center h-64 text-center">
                         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-full mb-6">
                             <AlertCircle size={48} className="text-red-400" />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Error Loading Relationships</h3>
-                        <p className="text-slate-500 dark:text-slate-400 max-w-md mb-4">{error}</p>
+                        <h3 className="text-xl font-bold text-app-text mb-2">Error Loading Relationships</h3>
+                        <p className="text-app-text-muted max-w-md mb-4">{error}</p>
                         <button onClick={fetchRelationships} className="btn btn-primary">
                             Retry
                         </button>
@@ -213,27 +213,27 @@ export default function AssetRelationships() {
                                 <Network size={32} className="text-blue-400" />
                             </div>
                         </div>
-                        <p className="text-center text-slate-500 dark:text-slate-400 mb-8">
+                        <p className="text-center text-app-text-muted mb-8">
                             Total: {relationships.total_relationships} relationship(s)
                         </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Upstream */}
-                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-white/10">
-                                <h4 className="font-bold text-slate-900 dark:text-slate-200 mb-4 border-b border-slate-200 dark:border-white/5 pb-2 flex items-center">
+                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-app-border">
+                                <h4 className="font-bold text-slate-900 dark:text-slate-200 mb-4 border-b border-app-border pb-2 flex items-center">
                                     <span className="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
                                     Upstream (This Asset Depends On)
                                 </h4>
                                 <ul className="space-y-3">
                                     {relationships.upstream.map(rel => (
-                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-slate-100 dark:bg-white/5 rounded-lg group">
+                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-lg group">
                                             <div className="flex items-center space-x-3">
                                                 <span className={`px-2 py-0.5 text-xs rounded bg-${getTypeColor(rel.relationship_type)}-500/20 text-${getTypeColor(rel.relationship_type)}-400`}>
                                                     {rel.relationship_type}
                                                 </span>
-                                                <Link href={`/assets/${rel.related_asset?.id}`} className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white">
+                                                <Link href={`/assets/${rel.related_asset?.id}`} className="text-app-text-muted hover:text-app-text">
                                                     {rel.related_asset?.name}
-                                                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">({rel.related_asset?.type})</span>
+                                                    <span className="text-xs text-app-text-muted ml-2">({rel.related_asset?.type})</span>
                                                 </Link>
                                             </div>
                                             <button
@@ -245,27 +245,27 @@ export default function AssetRelationships() {
                                         </li>
                                     ))}
                                     {relationships.upstream.length === 0 && (
-                                        <li className="text-slate-500 dark:text-slate-400 italic text-center py-4">No upstream dependencies</li>
+                                        <li className="text-app-text-muted italic text-center py-4">No upstream dependencies</li>
                                     )}
                                 </ul>
                             </div>
 
                             {/* Downstream */}
-                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-white/10">
-                                <h4 className="font-bold text-slate-900 dark:text-slate-200 mb-4 border-b border-slate-200 dark:border-white/5 pb-2 flex items-center">
+                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-app-border">
+                                <h4 className="font-bold text-slate-900 dark:text-slate-200 mb-4 border-b border-app-border pb-2 flex items-center">
                                     <span className="w-3 h-3 bg-emerald-500 rounded-full mr-2"></span>
                                     Downstream (Depends On This Asset)
                                 </h4>
                                 <ul className="space-y-3">
                                     {relationships.downstream.map(rel => (
-                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-slate-100 dark:bg-white/5 rounded-lg group">
+                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-lg group">
                                             <div className="flex items-center space-x-3">
                                                 <span className={`px-2 py-0.5 text-xs rounded bg-${getTypeColor(rel.relationship_type)}-500/20 text-${getTypeColor(rel.relationship_type)}-400`}>
                                                     {rel.relationship_type}
                                                 </span>
-                                                <Link href={`/assets/${rel.related_asset?.id}`} className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white">
+                                                <Link href={`/assets/${rel.related_asset?.id}`} className="text-app-text-muted hover:text-app-text">
                                                     {rel.related_asset?.name}
-                                                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">({rel.related_asset?.type})</span>
+                                                    <span className="text-xs text-app-text-muted ml-2">({rel.related_asset?.type})</span>
                                                 </Link>
                                             </div>
                                             <button
@@ -277,7 +277,7 @@ export default function AssetRelationships() {
                                         </li>
                                     ))}
                                     {relationships.downstream.length === 0 && (
-                                        <li className="text-slate-500 dark:text-slate-400 italic text-center py-4">No downstream dependencies</li>
+                                        <li className="text-app-text-muted italic text-center py-4">No downstream dependencies</li>
                                     )}
                                 </ul>
                             </div>
@@ -288,8 +288,8 @@ export default function AssetRelationships() {
                         <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6">
                             <Network size={48} className="text-blue-400" />
                         </div>
-                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No Relationships Found</h3>
-                        <p className="text-slate-500 dark:text-slate-400 max-w-md mb-6">
+                        <h3 className="text-xl font-bold text-app-text mb-2">No Relationships Found</h3>
+                        <p className="text-app-text-muted max-w-md mb-6">
                             This asset does not have any defined dependencies yet. Click "Add Relationship" to create one.
                         </p>
                         <button onClick={() => setShowAddForm(true)} className="btn btn-primary flex items-center space-x-2">

@@ -1,11 +1,18 @@
+from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy.future import select
 from sqlalchemy import update, and_
 from uuid import UUID
-from datetime import datetime, timedelta
-from ..models.models import Ticket, User
+from datetime import datetime, timedelta, timezone
+from ..models.models import Ticket, User, AssignmentGroup
 from ..models.automation import WorkflowRule, SLAPolicy, TicketSLA
+import logging
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+    from ..models.models import Ticket, User, AssignmentGroup
+    from ..models.automation import WorkflowRule, SLAPolicy, TicketSLA, ChangeApproval
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,17 +44,32 @@ class AutomationService:
             match = True
             conditions: dict = rule.conditions
             for field, value in conditions.items():
-                ticket_value = getattr(ticket, field, None)
-                if ticket_value != value:
-                    match = False
-                    break
+                if field == "subject_keywords":
+                    if not ticket.subject or not any(kw.lower() in ticket.subject.lower() for kw in value):
+                        match = False
+                        break
+                elif field == "description_keywords":
+                    if not ticket.description or not any(kw.lower() in ticket.description.lower() for kw in value):
+                        match = False
+                        break
+                else:
+                    ticket_value = getattr(ticket, field, None)
+                    if ticket_value != value:
+                        match = False
+                        break
             
             if match:
                 logger.info(f"Ticket {ticket_id} matched rule: {rule.name}")
                 # Apply actions
                 if "assign_to_role" in rule.actions or "assign_to_id" in rule.actions:
                     if "assign_to_id" in rule.actions:
-                        ticket.assigned_to_id = UUID(rule.actions["assign_to_id"])
+                        target_id = UUID(rule.actions["assign_to_id"])
+                        # CROSS-REFERENCE: Check if target is a group
+                        group_res = await db.execute(select(AssignmentGroup).where(AssignmentGroup.id == target_id))
+                        if group_res.scalars().first():
+                            ticket.assignment_group_id = target_id
+                        else:
+                            ticket.assigned_to_id = target_id
                     elif "assign_to_role" in rule.actions:
                         # Find a user with this role (simplified: pick first active)
                         user_res = await db.execute(
@@ -68,8 +90,9 @@ class AutomationService:
                 current_timeline.append({
                     "action": "AUTO_ROUTED",
                     "comment": f"Automatically routed by rule: {rule.name}",
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "byRole": "SYSTEM"
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "byRole": "SYSTEM",
+                    "byUser": "SYSTEM"
                 })
                 ticket.timeline = current_timeline
                 
@@ -92,7 +115,7 @@ class AutomationService:
         policies_res = await db.execute(policy_query)
         policies = policies_res.scalars().all()
 
-        best_policy = None
+        best_policy: SLAPolicy | None = None
         best_score = -1
 
         print(f"DEBUG: Initializing SLA for ticket {ticket_id} (Priority: {ticket.priority}, Category: {ticket.category})")
@@ -111,12 +134,14 @@ class AutomationService:
                 best_policy = p
 
         if best_policy is not None:
-            print(f"DEBUG: Selected Policy: {best_policy.name}")
-            logger.info(f"Ticket {ticket_id} assigned SLA Policy: {best_policy.name}")
+            # Ensure static analysis knows best_policy is not None here
+            policy: SLAPolicy = best_policy
+            print(f"DEBUG: Selected Policy: {policy.name}")
+            logger.info(f"Ticket {ticket_id} assigned SLA Policy: {policy.name}")
             
-            now = datetime.utcnow()
-            response_time: Optional[int] = best_policy.response_time_limit
-            resolution_time: int = best_policy.resolution_time_limit
+            now = datetime.now(timezone.utc)
+            response_time: int | None = policy.response_time_limit
+            resolution_time: int = policy.resolution_time_limit
             
             res_deadline = now + timedelta(minutes=response_time) if response_time else None
             rem_deadline = now + timedelta(minutes=resolution_time)
@@ -124,10 +149,10 @@ class AutomationService:
             # Check for existing SLA to update
             sla_query = select(TicketSLA).where(TicketSLA.ticket_id == ticket.id)
             existing_sla_res = await db.execute(sla_query)
-            existing_sla = existing_sla_res.scalars().first()
+            existing_sla: TicketSLA | None = existing_sla_res.scalars().first()
 
-            if existing_sla:
-                existing_sla.sla_policy_id = best_policy.id
+            if existing_sla is not None:
+                existing_sla.sla_policy_id = policy.id
                 existing_sla.response_deadline = res_deadline
                 existing_sla.resolution_deadline = rem_deadline
                 existing_sla.response_status = "IN_PROGRESS"
@@ -135,7 +160,7 @@ class AutomationService:
             else:
                 new_sla = TicketSLA(
                     ticket_id=ticket.id,
-                    sla_policy_id=best_policy.id,
+                    sla_policy_id=policy.id,
                     response_deadline=res_deadline,
                     resolution_deadline=rem_deadline
                 )
@@ -148,7 +173,7 @@ class AutomationService:
         """
         Background job to check all active SLAs for breaches.
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Check Response Breaches
         res_breach_query = select(TicketSLA).where(and_(
@@ -200,8 +225,9 @@ class AutomationService:
             current_timeline.append({
                 "action": "ESCALATED",
                 "comment": f"Ticket escalated due to {reason.replace('_', ' ').title()}. Reassigned to {manager.full_name}",
-                "timestamp": datetime.utcnow().isoformat(),
-                "byRole": "SYSTEM"
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "byRole": "SYSTEM",
+                "byUser": "SYSTEM"
             })
             ticket.timeline = current_timeline
             
@@ -220,7 +246,41 @@ class AutomationService:
         return result.scalars().first()
 
     @staticmethod
-    async def submit_change_approval(db: AsyncSession, entity_type: str, entity_id: UUID, stages: list):
+    async def mark_sla_responded(db: AsyncSession, ticket_id: UUID):
+        """
+        Set response status to MET if currently IN_PROGRESS or BREACHED but responded.
+        Note: We allow updating BREACHED to MET if the response happens eventually (late but done).
+        """
+        result = await db.execute(select(TicketSLA).where(TicketSLA.ticket_id == ticket_id))
+        sla = result.scalars().first()
+        if sla and sla.response_status in ["IN_PROGRESS", "BREACHED"]:
+            # If it was BREACHED, it stays BREACHED in the history but 'responded' metadata 
+            # might be useful. For UI simplicity, MET means 'Done'.
+            # However, standard ITSM usually keeps BREACHED if it breached.
+            # We will use MET only if it wasn't BREACHED, or just mark it as 'Done' internal state.
+            if sla.response_status == "IN_PROGRESS":
+                sla.response_status = "MET"
+            await db.commit()
+
+    @staticmethod
+    async def mark_sla_resolved(db: AsyncSession, ticket_id: UUID):
+        """
+        Set resolution status to MET. Also ensures response is marked.
+        """
+        result = await db.execute(select(TicketSLA).where(TicketSLA.ticket_id == ticket_id))
+        sla = result.scalars().first()
+        if sla:
+            if sla.resolution_status == "IN_PROGRESS":
+                sla.resolution_status = "MET"
+            
+            # Ensure response is also closed out
+            if sla.response_status == "IN_PROGRESS":
+                sla.response_status = "MET"
+            
+            await db.commit()
+
+    @staticmethod
+    async def submit_change_approval(db: AsyncSession, entity_type: str, entity_id: UUID, stages: list) -> ChangeApproval:
         """
         Submit a new change approval request.
         """

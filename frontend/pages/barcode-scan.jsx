@@ -41,16 +41,16 @@ export default function BarcodeScanPage() {
             <Head><title>Barcode / QR Scan – Asset Manager Pro</title></Head>
             <div className="max-w-2xl mx-auto space-y-6">
                 <header className="text-center">
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white">📷 Barcode / QR Scan</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Look up any asset by its serial number or barcode</p>
+                    <h1 className="text-xl font-bold text-app-text">📷 Barcode / QR Scan</h1>
+                    <p className="text-app-text-muted mt-1">Look up any asset by its serial number or barcode</p>
                 </header>
 
                 {/* Camera scan placeholder */}
-                <div className="glass-card p-5 flex items-center gap-4 border border-dashed border-slate-300 dark:border-white/20">
+                <div className="glass-card p-5 flex items-center gap-4 border border-dashed border-app-border-soft">
                     <div className="text-xl">📷</div>
                     <div>
-                        <p className="text-slate-900 dark:text-white text-sm font-semibold">Camera Scan</p>
-                        <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">Use your device camera to scan a QR or barcode</p>
+                        <p className="text-app-text text-sm font-semibold">Camera Scan</p>
+                        <p className="text-app-text-muted text-xs mt-0.5">Use your device camera to scan a QR or barcode</p>
                     </div>
                     <button
                         className="ml-auto px-4 py-2 rounded-lg text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-not-allowed opacity-60"
@@ -60,14 +60,14 @@ export default function BarcodeScanPage() {
 
                 {/* Manual lookup */}
                 <div className="glass-card p-6 space-y-4">
-                    <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Manual Lookup</h2>
+                    <h2 className="text-sm font-semibold text-app-text-muted">Manual Lookup</h2>
                     <form onSubmit={search} className="flex gap-3">
                         <input
                             type="text"
                             placeholder="Enter serial number or barcode…"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            className="flex-1 bg-slate-100 dark:bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                            className="flex-1 bg-app-surface-soft border border-white/15 rounded-xl px-4 py-3 text-sm text-app-text placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
                         />
                         <button
                             type="submit"
@@ -87,8 +87,8 @@ export default function BarcodeScanPage() {
                     <div className="glass-card p-6 space-y-4">
                         <div className="flex justify-between items-start">
                             <div>
-                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">{result.name}</h2>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{result.type} · {result.model}</p>
+                                <h2 className="text-xl font-bold text-app-text">{result.name}</h2>
+                                <p className="text-app-text-muted text-sm mt-0.5">{result.type} · {result.model}</p>
                             </div>
                             <span style={{ background: sc.bg, color: sc.color, padding: '4px 12px', borderRadius: 99, fontSize: 12, fontWeight: 700 }}>{result.status}</span>
                         </div>
@@ -102,8 +102,8 @@ export default function BarcodeScanPage() {
                                 ['Segment', result.segment || '—'],
                             ].map(([k, v]) => (
                                 <div key={k} className="bg-white/4 rounded-lg p-3 border border-white/8">
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs mb-0.5">{k}</p>
-                                    <p className="text-slate-900 dark:text-white font-medium truncate">{v}</p>
+                                    <p className="text-app-text-muted text-xs mb-0.5">{k}</p>
+                                    <p className="text-app-text font-medium truncate">{v}</p>
                                 </div>
                             ))}
                         </div>

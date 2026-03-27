@@ -1,7 +1,7 @@
 """
 Alerts service: aggregate warranty expiries, pending asset requests, and recently procurement-approved requests into a unified alert list.
 """
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -14,11 +14,20 @@ from . import asset_request_service
 def _time_ago(dt: datetime) -> str:
     if not dt:
         return ""
-    now = datetime.utcnow()
-    if dt.tzinfo:
-        dt = dt.replace(tzinfo=None)  # naive for comparison
+    
+    # Ensure now is UTC aware
+    now = datetime.now(timezone.utc)
+    
+    # Ensure dt is UTC aware if it's naive, otherwise convert to UTC
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    elif dt.tzinfo != timezone.utc:
+        dt = dt.astimezone(timezone.utc)
+        
+    # Handle potentially negative delta (due to clock drift or timezone mismatch)
     delta = now - dt
     total_seconds = int(delta.total_seconds())
+    
     if total_seconds < 60:
         return "Just now"
     if total_seconds < 3600:
@@ -70,7 +79,7 @@ async def get_alerts(
                 "message": msg,
                 "time": _time_ago(asset.updated_at) if getattr(asset, "updated_at", None) else "",
                 "link": "/assets?risk=warranty",
-                "created_at": datetime.utcnow().isoformat() + "Z",
+                "created_at": datetime.now(timezone.utc).isoformat() + "Z",
             })
 
     # --- New / pending asset requests (SUBMITTED or early pending) ---
@@ -94,7 +103,7 @@ async def get_alerts(
 
     # --- Recently procurement-approved ---
     if requested_types is None or "procurement_approved" in requested_types:
-        cutoff_dt = datetime.utcnow() - timedelta(days=days_procurement)
+        cutoff_dt = datetime.now(timezone.utc) - timedelta(days=days_procurement)
         q = select(AssetRequest).where(
             and_(
                 AssetRequest.procurement_finance_status.isnot(None),

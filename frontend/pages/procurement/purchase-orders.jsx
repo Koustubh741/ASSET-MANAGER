@@ -44,9 +44,9 @@ function AuditPOModal({ po, onClose, onSave }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 border-b border-slate-200 dark:border-white/5 flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Audit PO Financials</h3>
+            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-app-border flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-app-text">Audit PO Financials</h3>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-500 transition-colors">✕</button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -56,7 +56,7 @@ function AuditPOModal({ po, onClose, onSave }) {
                             type="number"
                             value={data.total_cost}
                             onChange={e => setData({ ...data, total_cost: parseFloat(e.target.value) })}
-                            className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-4 text-sm"
+                            className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
                             required
                         />
                     </div>
@@ -67,7 +67,7 @@ function AuditPOModal({ po, onClose, onSave }) {
                                 type="number"
                                 value={data.tax_amount}
                                 onChange={e => setData({ ...data, tax_amount: parseFloat(e.target.value) })}
-                                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
                             />
                         </div>
                         <div>
@@ -76,14 +76,14 @@ function AuditPOModal({ po, onClose, onSave }) {
                                 type="number"
                                 value={data.shipping_handling}
                                 onChange={e => setData({ ...data, shipping_handling: parseFloat(e.target.value) })}
-                                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
                             />
                         </div>
                     </div>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-900 dark:text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-app-text font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
                     >
                         {saving ? 'Saving...' : 'Confirm Audit'}
                     </button>
@@ -120,25 +120,25 @@ export default function PurchaseOrdersPage() {
             <Head><title>Purchase Orders – Asset Manager Pro</title></Head>
             <div className="space-y-6">
                 <header>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <h1 className="text-xl font-bold text-app-text flex items-center gap-2">
                         📋 Purchase Orders
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Track and manage all purchase orders</p>
+                    <p className="text-app-text-muted mt-1">Track and manage all purchase orders</p>
                 </header>
 
                 {loading ? (
-                    <div className="glass-card p-8 text-center text-slate-500 dark:text-slate-400">Loading purchase orders…</div>
+                    <div className="glass-card p-8 text-center text-app-text-muted">Loading purchase orders…</div>
                 ) : orders.length === 0 ? (
                     <div className="glass-card p-12 text-center">
                         <div className="text-xl mb-4">📋</div>
-                        <p className="text-slate-500 dark:text-slate-400 text-lg">No purchase orders yet.</p>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">POs are created when procurement approves an asset request.</p>
+                        <p className="text-app-text-muted text-lg">No purchase orders yet.</p>
+                        <p className="text-app-text-muted text-sm mt-2">POs are created when procurement approves an asset request.</p>
                     </div>
                 ) : (
                     <div className="glass-card overflow-hidden">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-left">
+                                <tr className="border-b border-app-border text-app-text-muted text-left">
                                     <th className="px-4 py-3 font-semibold">Vendor</th>
                                     <th className="px-4 py-3 font-semibold">Total Cost</th>
                                     <th className="px-4 py-3 font-semibold">Qty</th>
@@ -150,17 +150,17 @@ export default function PurchaseOrdersPage() {
                             </thead>
                             <tbody>
                                 {orders.map(po => (
-                                    <tr key={po.id} className="border-b border-slate-200 dark:border-white/5 hover:bg-white/3 transition-colors">
-                                        <td className="px-4 py-3 text-slate-900 dark:text-white font-medium">{po.vendor_name || '—'}</td>
+                                    <tr key={po.id} className="border-b border-app-border hover:bg-white/3 transition-colors">
+                                        <td className="px-4 py-3 text-app-text font-medium">{po.vendor_name || '—'}</td>
                                         <td className="px-4 py-3 text-emerald-400 font-semibold">
                                             {po.total_cost != null ? `₹${Number(po.total_cost).toLocaleString()}` : '—'}
                                         </td>
-                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{po.quantity ?? '—'}</td>
-                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                        <td className="px-4 py-3 text-app-text-muted">{po.quantity ?? '—'}</td>
+                                        <td className="px-4 py-3 text-app-text-muted">
                                             {po.expected_delivery_date ? new Date(po.expected_delivery_date).toLocaleDateString() : '—'}
                                         </td>
                                         <td className="px-4 py-3"><StatusBadge status={po.status} /></td>
-                                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                                        <td className="px-4 py-3 text-app-text-muted text-xs">
                                             {po.created_at ? new Date(po.created_at).toLocaleDateString() : '—'}
                                         </td>
                                         <td className="px-4 py-3">

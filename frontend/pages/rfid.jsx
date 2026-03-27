@@ -54,8 +54,8 @@ export default function RFIDPage() {
             <Head><title>RFID Management – Asset Manager Pro</title></Head>
             <div className="space-y-6">
                 <header>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">📡 RFID Management</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Assign and manage RFID tags for physical asset tracking</p>
+                    <h1 className="text-xl font-bold text-app-text flex items-center gap-2">📡 RFID Management</h1>
+                    <p className="text-app-text-muted mt-1">Assign and manage RFID tags for physical asset tracking</p>
                 </header>
 
                 <div className="glass-card p-4 flex gap-4 items-center flex-wrap">
@@ -64,22 +64,22 @@ export default function RFIDPage() {
                         placeholder="Search assets by name or tag…"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="flex-1 bg-slate-100 dark:bg-white/5 border border-white/15 rounded-lg px-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 min-w-[200px]"
+                        className="flex-1 bg-app-surface-soft border border-white/15 rounded-lg px-4 py-2 text-sm text-app-text placeholder-slate-500 min-w-[200px]"
                     />
-                    <div className="flex gap-3 text-sm text-slate-500 dark:text-slate-400">
-                        <span><span className="text-slate-900 dark:text-white font-semibold">{assets.length}</span> total assets</span>
+                    <div className="flex gap-3 text-sm text-app-text-muted">
+                        <span><span className="text-app-text font-semibold">{assets.length}</span> total assets</span>
                         <span>•</span>
                         <span><span className="text-indigo-400 font-semibold">{assets.filter(a => a.serial_number).length}</span> tagged</span>
                     </div>
                 </div>
 
                 {loading ? (
-                    <div className="glass-card p-8 text-center text-slate-500 dark:text-slate-400">Loading assets…</div>
+                    <div className="glass-card p-8 text-center text-app-text-muted">Loading assets…</div>
                 ) : (
                     <div className="glass-card overflow-hidden">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-left">
+                                <tr className="border-b border-app-border text-app-text-muted text-left">
                                     <th className="px-4 py-3 font-semibold">Asset Name</th>
                                     <th className="px-4 py-3 font-semibold">Type</th>
                                     <th className="px-4 py-3 font-semibold">Status</th>
@@ -89,9 +89,9 @@ export default function RFIDPage() {
                             </thead>
                             <tbody>
                                 {filtered.map(asset => (
-                                    <tr key={asset.id} className="border-b border-slate-200 dark:border-white/5 hover:bg-white/3 transition-colors">
-                                        <td className="px-4 py-3 text-slate-900 dark:text-white font-medium">{asset.name}</td>
-                                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{asset.type}</td>
+                                    <tr key={asset.id} className="border-b border-app-border hover:bg-white/3 transition-colors">
+                                        <td className="px-4 py-3 text-app-text font-medium">{asset.name}</td>
+                                        <td className="px-4 py-3 text-app-text-muted">{asset.type}</td>
                                         <td className="px-4 py-3">
                                             <span style={{
                                                 background: asset.status === 'In Use' ? 'rgba(16,185,129,0.12)' : 'rgba(107,114,128,0.1)',
@@ -100,7 +100,7 @@ export default function RFIDPage() {
                                             }}>{asset.status}</span>
                                         </td>
                                         <td className="px-4 py-3 font-mono text-xs text-indigo-300">
-                                            {asset.serial_number || <span className="text-slate-500 dark:text-slate-400 italic">Not tagged</span>}
+                                            {asset.serial_number || <span className="text-app-text-muted italic">Not tagged</span>}
                                         </td>
                                         <td className="px-4 py-3">
                                             <div className="flex gap-2 items-center">
@@ -109,7 +109,7 @@ export default function RFIDPage() {
                                                     placeholder="Enter RFID tag…"
                                                     value={tagInputs[asset.id] || ''}
                                                     onChange={e => setTagInputs(p => ({ ...p, [asset.id]: e.target.value }))}
-                                                    className="bg-slate-100 dark:bg-white/5 border border-white/15 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white w-36"
+                                                    className="bg-app-surface-soft border border-white/15 rounded-lg px-3 py-1.5 text-xs text-app-text w-36"
                                                 />
                                                 <button
                                                     onClick={() => assignTag(asset)}
@@ -136,7 +136,7 @@ export default function RFIDPage() {
                             </tbody>
                         </table>
                         {filtered.length === 0 && (
-                            <div className="p-8 text-center text-slate-500 dark:text-slate-400">No assets match your search.</div>
+                            <div className="p-8 text-center text-app-text-muted">No assets match your search.</div>
                         )}
                     </div>
                 )}

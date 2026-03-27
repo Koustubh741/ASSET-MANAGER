@@ -43,8 +43,8 @@ export default function DeliveriesPage() {
             <Head><title>Deliveries – Asset Manager Pro</title></Head>
             <div className="space-y-6">
                 <header>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">🚚 Deliveries Tracking</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Monitor incoming asset deliveries and confirm receipts</p>
+                    <h1 className="text-xl font-bold text-app-text flex items-center gap-2">🚚 Deliveries Tracking</h1>
+                    <p className="text-app-text-muted mt-1">Monitor incoming asset deliveries and confirm receipts</p>
                 </header>
 
                 {/* Summary pills */}
@@ -56,23 +56,23 @@ export default function DeliveriesPage() {
                     ].map(s => (
                         <div key={s.label} className="glass-card px-5 py-3 flex items-center gap-3">
                             <span style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.count}</span>
-                            <span className="text-slate-500 dark:text-slate-400 text-sm">{s.label}</span>
+                            <span className="text-app-text-muted text-sm">{s.label}</span>
                         </div>
                     ))}
                 </div>
 
                 {loading ? (
-                    <div className="glass-card p-8 text-center text-slate-500 dark:text-slate-400">Loading deliveries…</div>
+                    <div className="glass-card p-8 text-center text-app-text-muted">Loading deliveries…</div>
                 ) : deliveries.length === 0 ? (
                     <div className="glass-card p-12 text-center">
                         <div className="text-xl mb-4">📦</div>
-                        <p className="text-slate-500 dark:text-slate-400">No deliveries to track yet.</p>
+                        <p className="text-app-text-muted">No deliveries to track yet.</p>
                     </div>
                 ) : (
                     <div className="glass-card overflow-hidden">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-left">
+                                <tr className="border-b border-app-border text-app-text-muted text-left">
                                     <th className="px-4 py-3 font-semibold">Vendor</th>
                                     <th className="px-4 py-3 font-semibold">Total Cost</th>
                                     <th className="px-4 py-3 font-semibold">Expected On</th>
@@ -82,12 +82,12 @@ export default function DeliveriesPage() {
                             </thead>
                             <tbody>
                                 {deliveries.map(d => (
-                                    <tr key={d.id} className="border-b border-slate-200 dark:border-white/5 hover:bg-white/3 transition-colors">
-                                        <td className="px-4 py-3 text-slate-900 dark:text-white font-medium">{d.vendor_name || '—'}</td>
+                                    <tr key={d.id} className="border-b border-app-border hover:bg-white/3 transition-colors">
+                                        <td className="px-4 py-3 text-app-text font-medium">{d.vendor_name || '—'}</td>
                                         <td className="px-4 py-3 text-emerald-400 font-semibold">
                                             {d.total_cost != null ? `₹${Number(d.total_cost).toLocaleString()}` : '—'}
                                         </td>
-                                        <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+                                        <td className="px-4 py-3 text-app-text-muted">
                                             {d.expected_delivery_date
                                                 ? new Date(d.expected_delivery_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
                                                 : '—'}

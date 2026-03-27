@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from ..models.models import AuditLog, Asset, User
 from typing import Optional, Dict, List, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import uuid
 import logging
 
@@ -42,7 +42,7 @@ class TimelineService:
                     "performed_by_name": performed_by_name,
                     "metadata": metadata or {}
                 },
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             db.add(audit)
             return audit

@@ -23,10 +23,11 @@ export default function AllTicketsPage() {
                 // Map API tickets to frontend format
                 const mappedTickets = apiTickets.map(t => ({
                     id: t.id,
+                    display_id: t.display_id || t.id.slice(0, 8),
                     subject: t.subject,
                     priority: t.priority || 'Medium',
                     status: t.status || 'Open',
-                    user: t.requestor_id || 'System',
+                    user: t.requestor_name || 'System',
                     created: t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A',
                     description: t.description
                 }));
@@ -42,10 +43,10 @@ export default function AllTicketsPage() {
     }, []);
 
     return (
-        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-app-text">
             <div className="max-w-7xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 text-slate-500 dark:text-slate-400 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                         <ArrowLeft size={24} />
                     </button>
 
@@ -54,9 +55,9 @@ export default function AllTicketsPage() {
                     </h1>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                <div className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border">
                     <table className="w-full text-left text-sm">
-                        <thead className="text-slate-500 dark:text-slate-400 uppercase font-medium text-xs border-b border-slate-200 dark:border-white/10">
+                        <thead className="text-app-text-muted uppercase font-medium text-xs border-b border-app-border">
                             <tr>
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Subject</th>
@@ -78,7 +79,7 @@ export default function AllTicketsPage() {
                                 })
                                 .map(t => (
                                     <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-                                        <td className="px-6 py-4 font-mono text-xs text-slate-400 truncate max-w-[100px]">{String(t.id).slice(0, 8)}…</td>
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-400 truncate max-w-[100px]">{t.display_id}</td>
                                         <td className="px-6 py-4 font-medium text-slate-800 dark:text-slate-200">{t.subject}</td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2 py-1 rounded text-xs font-semibold ${t.priority === 'High' || t.priority === 'CRITICAL' ? 'bg-red-500/10 text-red-500' :
@@ -95,7 +96,7 @@ export default function AllTicketsPage() {
                                                 'bg-slate-500/10 text-slate-500'
                                             }`}>{t.status}</span>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm truncate">{t.user}</td>
+                                        <td className="px-6 py-4 text-app-text-muted text-sm truncate">{t.user}</td>
                                         <td className="px-6 py-4 text-right">
                                             <Link href={`/tickets/${t.id}`} className="text-rose-500 hover:text-rose-400 font-medium text-sm">View →</Link>
                                         </td>

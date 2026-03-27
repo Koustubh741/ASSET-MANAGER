@@ -45,15 +45,15 @@ export default function BudgetQueuePage() {
             {rejectModal && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
                     <div className="glass-card w-full max-w-md p-6 space-y-4">
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Reject Finance Record</h2>
+                        <h2 className="text-lg font-bold text-app-text">Reject Finance Record</h2>
                         <textarea
-                            className="w-full bg-slate-100 dark:bg-white/5 border border-white/15 rounded-lg p-3 text-sm text-slate-900 dark:text-white resize-none h-24"
+                            className="w-full bg-app-surface-soft border border-white/15 rounded-lg p-3 text-sm text-app-text resize-none h-24"
                             placeholder="Reason for rejection (optional)"
                             value={reason}
                             onChange={e => setReason(e.target.value)}
                         />
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setRejModal(null)} className="px-4 py-2 rounded-lg text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white transition-colors">Cancel</button>
+                            <button onClick={() => setRejModal(null)} className="px-4 py-2 rounded-lg text-sm text-app-text-muted hover:text-app-text transition-colors">Cancel</button>
                             <button onClick={reject} className="px-4 py-2 rounded-lg text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30">Confirm Reject</button>
                         </div>
                     </div>
@@ -62,8 +62,8 @@ export default function BudgetQueuePage() {
 
             <div className="space-y-6">
                 <header>
-                    <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">💼 Budget Queue</h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">Finance approval queue for asset procurement requests</p>
+                    <h1 className="text-xl font-bold text-app-text flex items-center gap-2">💼 Budget Queue</h1>
+                    <p className="text-app-text-muted mt-1">Finance approval queue for asset procurement requests</p>
                 </header>
 
                 <div className="flex gap-4 flex-wrap">
@@ -73,23 +73,23 @@ export default function BudgetQueuePage() {
                     ].map(s => (
                         <div key={s.label} className="glass-card px-5 py-3 flex items-center gap-3">
                             <span style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{s.count}</span>
-                            <span className="text-slate-500 dark:text-slate-400 text-sm">{s.label}</span>
+                            <span className="text-app-text-muted text-sm">{s.label}</span>
                         </div>
                     ))}
                 </div>
 
                 {loading ? (
-                    <div className="glass-card p-8 text-center text-slate-500 dark:text-slate-400">Loading budget queue…</div>
+                    <div className="glass-card p-8 text-center text-app-text-muted">Loading budget queue…</div>
                 ) : records.length === 0 ? (
                     <div className="glass-card p-12 text-center">
                         <div className="text-xl mb-4">💼</div>
-                        <p className="text-slate-500 dark:text-slate-400">No finance records in queue.</p>
+                        <p className="text-app-text-muted">No finance records in queue.</p>
                     </div>
                 ) : (
                     <div className="glass-card overflow-hidden">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 text-left">
+                                <tr className="border-b border-app-border text-app-text-muted text-left">
                                     <th className="px-4 py-3 font-semibold">Record</th>
                                     <th className="px-4 py-3 font-semibold">Payment Ref</th>
                                     <th className="px-4 py-3 font-semibold">Approver</th>
@@ -103,14 +103,14 @@ export default function BudgetQueuePage() {
                                     const sc = STATUS_COLOR[r.finance_status] || STATUS_COLOR['FINANCE_REVIEW_PENDING'];
                                     const isPending = !r.finance_status || r.finance_status === 'FINANCE_REVIEW_PENDING';
                                     return (
-                                        <tr key={r.id} className="border-b border-slate-200 dark:border-white/5 hover:bg-white/3 transition-colors">
-                                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300 font-mono text-xs">{r.id?.slice(0, 8)}…</td>
-                                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{r.payment_reference || '—'}</td>
-                                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{r.finance_approver_name || '—'}</td>
+                                        <tr key={r.id} className="border-b border-app-border hover:bg-white/3 transition-colors">
+                                            <td className="px-4 py-3 text-app-text-muted font-mono text-xs">{r.id?.slice(0, 8)}…</td>
+                                            <td className="px-4 py-3 text-app-text-muted">{r.payment_reference || '—'}</td>
+                                            <td className="px-4 py-3 text-app-text-muted">{r.finance_approver_name || '—'}</td>
                                             <td className="px-4 py-3">
                                                 <span style={{ background: sc.bg, color: sc.color, padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>{sc.label}</span>
                                             </td>
-                                            <td className="px-4 py-3 text-slate-500 dark:text-slate-400 text-xs">
+                                            <td className="px-4 py-3 text-app-text-muted text-xs">
                                                 {r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}
                                             </td>
                                             <td className="px-4 py-3">

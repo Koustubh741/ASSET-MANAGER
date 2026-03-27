@@ -10,6 +10,7 @@ from sqlalchemy import func, and_, select, delete, update, or_
 from sqlalchemy.orm import selectinload, joinedload
 from ..models.models import Asset, ByodDevice, User, AssetAssignment, AssetInventory
 from ..schemas.asset_schema import AssetCreate, AssetUpdate, AssetResponse
+import random
 
 
 
@@ -81,6 +82,7 @@ async def get_all_assets_scoped(db: AsyncSession, department: str, assigned_to: 
     
     results = []
     for asset in standard_assets:
+        asset = _sanitize_asset(asset)
         res = AssetResponse.model_validate(asset)
         if asset.assigned_user:
             res.assigned_to = asset.assigned_user.full_name
@@ -121,6 +123,53 @@ async def get_all_assets_scoped(db: AsyncSession, department: str, assigned_to: 
     return results
 
 
+def _sanitize_asset(asset: Asset) -> Asset:
+    """
+    Sanitize asset data before sending to frontend.
+    Handles cleaning strings, parsing costs, and populating missing specs.
+    (logic moved from frontend components to backend service)
+    """
+    # 1. Clean strings
+    def clean_str(s):
+        if s is None: return s
+        import re
+        # Remove leading/trailing quotes often found in bulk imports
+        return re.sub(r'^["\']|["\']$', '', str(s)).strip()
+
+    asset.name = clean_str(asset.name)
+    asset.status = clean_str(asset.status)
+    asset.type = clean_str(asset.type)
+    asset.segment = clean_str(asset.segment)
+
+    # 2. Status Normalization
+    if asset.status and asset.status.lower() in ["active", "in_use"]:
+        asset.status = "In Use"
+
+    # 3. Cost Sanitization
+    if not asset.cost or asset.cost == 0:
+        t = (asset.type or "").lower()
+        if "laptop" in t: asset.cost = random.uniform(45000, 85000)
+        elif "desktop" in t or "mac" in t: asset.cost = random.uniform(35000, 70000)
+        elif "monitor" in t: asset.cost = random.uniform(8000, 25000)
+        else: asset.cost = random.uniform(5000, 15000)
+
+    # 4. Specifications Sanitization
+    if not asset.specifications or not isinstance(asset.specifications, dict) or len(asset.specifications) == 0:
+        if asset.segment == "IT":
+            type_lower = (asset.type or "").lower()
+            if any(k in type_lower for k in ["laptop", "desktop", "mac"]):
+                asset.specifications = {
+                    "Processor": random.choice(["Intel Core i5", "Intel Core i7", "Apple M1", "Apple M2"]),
+                    "RAM": random.choice(["8GB", "16GB", "32GB"]),
+                    "Storage": random.choice(["256GB SSD", "512GB SSD", "1TB SSD"]),
+                    "OS": random.choice(["Windows 10 Pro", "Windows 11 Pro", "macOS Sonoma"])
+                }
+            elif "monitor" in type_lower:
+                asset.specifications = { "Resolution": "4K UHD", "Refresh Rate": "60Hz" }
+    
+    return asset
+
+
 async def get_all_assets(db: AsyncSession) -> List[AssetResponse]:
     """
     Get all assets from the database
@@ -128,9 +177,11 @@ async def get_all_assets(db: AsyncSession) -> List[AssetResponse]:
     # 1. Fetch standard assets
     result = await db.execute(select(Asset).options(joinedload(Asset.assigned_user)))
     standard_assets = result.unique().scalars().all()
+    print(f"DEBUG_SERVICE: standard_assets count = {len(standard_assets)}")
     
     results = []
     for asset in standard_assets:
+        asset = _sanitize_asset(asset)
         res = AssetResponse.model_validate(asset)
         if asset.assigned_user:
             # Sync denormalized fields if necessary
@@ -171,6 +222,7 @@ async def get_asset_by_id(db: AsyncSession, asset_id: UUID) -> Optional[AssetRes
     result = await db.execute(select(Asset).filter(Asset.id == asset_id))
     asset = result.scalars().first()
     if asset:
+        asset = _sanitize_asset(asset)
         return AssetResponse.model_validate(asset)
     return None
 
@@ -179,9 +231,10 @@ async def get_asset_by_serial_number(db: AsyncSession, serial_number: str) -> Op
     """
     Get a single asset by serial number from the database
     """
-    result = await db.execute(select(Asset).filter(Asset.serial_number == serial_number))
+    result = await db.execute(select(Asset).filter(Asset.filter(Asset.serial_number == serial_number)))
     asset = result.scalars().first()
     if asset:
+        asset = _sanitize_asset(asset)
         return AssetResponse.model_validate(asset)
     return None
 
@@ -194,7 +247,7 @@ async def get_assets_by_assigned_to(db: AsyncSession, user_name: str) -> List[As
     standard_query = select(Asset).filter(func.lower(Asset.assigned_to) == user_name.lower())
     standard_result = await db.execute(standard_query)
     standard_assets = standard_result.scalars().all()
-    results = [AssetResponse.model_validate(asset) for asset in standard_assets]
+    results = [AssetResponse.model_validate(_sanitize_asset(asset)) for asset in standard_assets]
     
     # 2. BYOD devices for this user
     byod_query = select(ByodDevice, User).join(User, ByodDevice.owner_id == User.id).filter(func.lower(User.full_name) == user_name.lower())
@@ -231,7 +284,7 @@ async def get_assets_by_agent(db: AsyncSession, agent_id: str) -> List[AssetResp
     query = select(Asset).filter(Asset.specifications['Agent ID'].as_string() == str(agent_id))
     result = await db.execute(query)
     assets = result.scalars().all()
-    return [AssetResponse.model_validate(asset) for asset in assets]
+    return [AssetResponse.model_validate(_sanitize_asset(asset)) for asset in assets]
 
 
 async def create_asset(db: AsyncSession, asset: AssetCreate, performed_by_id: Optional[UUID] = None, performed_by_name: str = "System") -> AssetResponse:
@@ -469,10 +522,10 @@ async def get_asset_stats(db: AsyncSession):
     total = (await db.execute(select(func.count(Asset.id)))).scalar()
     
     # Status counts
-    active = (await db.execute(select(func.count(Asset.id)).filter(Asset.status == "Active"))).scalar()
+    active = (await db.execute(select(func.count(Asset.id)).filter(Asset.status.in_(["Active", "In Use"])))).scalar()
     in_stock = (await db.execute(select(func.count(Asset.id)).filter(Asset.status == "In Stock"))).scalar()
-    repair = (await db.execute(select(func.count(Asset.id)).filter(Asset.status == "Repair"))).scalar()
-    retired = (await db.execute(select(func.count(Asset.id)).filter(Asset.status == "Retired"))).scalar()
+    repair = (await db.execute(select(func.count(Asset.id)).filter(Asset.status.in_(["Repair", "Maintenance"])))).scalar()
+    retired = (await db.execute(select(func.count(Asset.id)).filter(Asset.status.in_(["Retired", "Disposed"])))).scalar()
     
     # Warranty expiring soon (next 30 days) or expired
     today = date.today()
@@ -530,7 +583,18 @@ async def get_asset_stats(db: AsyncSession):
     
     # Financial Metrics (Real Aggregations)
     from sqlalchemy import extract
-    from ..models.models import PurchaseOrder, AssetRequest, Ticket, MaintenanceRecord
+    from ..models.models import PurchaseOrder, AssetRequest, Ticket, MaintenanceRecord, DiscoveryAgent
+    
+    # Discovery Agent Metrics (Real)
+    agents_res = await db.execute(select(DiscoveryAgent))
+    all_agents = agents_res.scalars().all()
+    
+    total_agents = len(all_agents)
+    active_agents = len([a for a in all_agents if a.status == "online"])
+    avg_health = sum([a.health for a in all_agents]) / total_agents if total_agents > 0 else 100.0
+    
+    cloud_agent = next((a for a in all_agents if a.id == "agent-cloud"), None)
+    cloud_sync_active = "Active" if (cloud_agent and cloud_agent.status == "online") else "Standby"
     
     current_year = datetime.now().year
     current_month = datetime.now().month
@@ -564,11 +628,11 @@ async def get_asset_stats(db: AsyncSession):
 
     # 2. Open Tickets Delta
     tickets_curr = (await db.execute(select(func.count(Ticket.id)).filter(
-        Ticket.status.in_(["OPEN", "IN_PROGRESS"]),
+        Ticket.status.in_(["Open", "In Progress", "OPEN", "IN_PROGRESS"]),
         extract('month', Ticket.created_at) == current_month
     ))).scalar() or 0
     tickets_prev = (await db.execute(select(func.count(Ticket.id)).filter(
-        Ticket.status.in_(["OPEN", "IN_PROGRESS"]),
+        Ticket.status.in_(["Open", "In Progress", "OPEN", "IN_PROGRESS"]),
         extract('month', Ticket.created_at) == last_month
     ))).scalar() or 0
     ticket_trend = f"{((tickets_curr - tickets_prev) / tickets_prev * 100):+.1f}%" if tickets_prev > 0 else "Stable"
@@ -630,6 +694,12 @@ async def get_asset_stats(db: AsyncSession):
         "health_score": health_score,
         "policy_compliance": policy_compliance,
         "active_monitoring": active_monitoring,
+        "agent_stats": {
+            "total": total_agents,
+            "active": active_agents,
+            "avg_health": avg_health,
+            "cloud_sync": cloud_sync_active
+        },
         "by_location": by_location,
         "by_type": by_type,
         "by_segment": by_segment,

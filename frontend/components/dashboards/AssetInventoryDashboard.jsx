@@ -7,8 +7,7 @@ import { LayoutDashboard, UserSquare, PackageSearch, Truck } from 'lucide-react'
 import { useRole } from '@/contexts/RoleContext';
 
 export default function AssetInventoryDashboard() {
-    const { currentRole } = useRole();
-    const isAdmin = currentRole?.slug === 'ADMIN' || currentRole?.slug === 'SYSTEM_ADMIN';
+    const { currentRole, isAdmin } = useRole();
     const [activeTab, setActiveTab] = useState('inventory');
 
     const allTabs = [
@@ -22,16 +21,16 @@ export default function AssetInventoryDashboard() {
     const ActiveComponent = tabs.find(t => t.id === activeTab)?.component || (tabs[0]?.component || AssetOwnerDashboard);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 neural-compact">
             {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-1 bg-white/40 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-md w-fit shadow-sm">
+            <div className="flex flex-wrap gap-1 bg-white/40 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-app-border backdrop-blur-md w-fit shadow-sm">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-widest transition-all duration-300 ${activeTab === tab.id
-                            ? 'bg-blue-600 text-slate-900 dark:text-white shadow-lg shadow-blue-500/30 ring-2 ring-blue-500/20'
-                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-white/5'
+                            ? 'bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 ring-2 ring-blue-500/20'
+                            : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text hover:bg-slate-100 dark:hover:bg-app-surface-soft'
                             }`}
                     >
                         <tab.icon size={16} />

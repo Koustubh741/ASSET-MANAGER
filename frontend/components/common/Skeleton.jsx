@@ -26,7 +26,7 @@ export function SkeletonTable({ rows = 5, cols = 4 }) {
         <div className="glass-panel overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 bg-slate-100 text-slate-500 dark:text-slate-400 border-slate-200 border-b border-slate-200 dark:border-white/10">
+                    <thead className="bg-app-surface-soft text-app-text-muted bg-slate-100 text-app-text-muted border-slate-200 border-b border-app-border">
                         <tr>
                             {Array.from({ length: cols }).map((_, i) => (
                                 <th key={i} className="px-6 py-4">

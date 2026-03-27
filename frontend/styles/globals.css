@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,11 +8,44 @@
    CSS Custom Properties
    ============================================= */
 :root {
+  /* Brand Colors */
   --color-primary: #6366f1;
   --color-secondary: #0ea5e9;
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-danger: #f43f5e;
+
+  /* App Theme (Light - Default) */
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-soft: #f1f5f9;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-on-dark: #ffffff;
+  
+  --border-main: #e2e8f0;
+  --border-soft: #f1f5f9;
+
+  --glow-soft: 0 0 15px rgba(99, 102, 241, 0.1);
+  --glow-medium: 0 0 25px rgba(99, 102, 241, 0.15);
+  --glow-strong: 0 0 40px rgba(99, 102, 241, 0.25);
+}
+
+.dark {
+  /* App Theme (Dark) */
+  --bg-app: #020617;
+  --bg-surface: #0f172a;
+  --bg-surface-soft: rgba(255, 255, 255, 0.03);
+  --bg-glass: rgba(15, 23, 42, 0.7);
+  
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-on-dark: #ffffff;
+  
+  --border-main: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.04);
 
   --glow-soft: 0 0 15px rgba(99, 102, 241, 0.15);
   --glow-medium: 0 0 25px rgba(99, 102, 241, 0.25);
@@ -20,279 +53,28 @@
 }
 
 /* =============================================
-   Base Layer — Fonts Only (NO background colors)
-   Background is handled by _document.jsx body className
-   which already has: bg-slate-50 dark:bg-[#020617]
+   Base Layer
    ============================================= */
 @layer base {
   body {
-    @apply antialiased selection:bg-indigo-500/30;
+    @apply antialiased selection:bg-indigo-500/30 transition-colors duration-300;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-main);
   }
 
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
+  h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight;
     font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+    color: var(--text-main);
   }
-}
 
-/* =============================================
-   Light Mode Overrides
-   Dashboard components built dark-first use text-slate-300/200/white
-   and bg-white/[0.03] etc. which are invisible on a white background.
-   These rules remap such values when NOT in dark mode.
-   The html:not(.dark) selector means dark mode is unaffected.
-   ============================================= */
-
-/* --- Text --- */
-html:not(.dark) .text-slate-200 {
-  color: #334155 !important;
-}
-
-/* → slate-700 */
-html:not(.dark) .text-slate-300 {
-  color: #475569 !important;
-}
-
-/* → slate-600 */
-html:not(.dark) .text-slate-400 {
-  color: #64748b !important;
-}
-
-/* → slate-500 */
-html:not(.dark) .text-white {
-  color: #0f172a !important;
-}
-
-/* → slate-900 */
-html:not(.dark) .hover\:text-white:hover {
-  color: #4f46e5 !important;
-}
-
-/* → indigo */
-
-/* --- Dark-glass Backgrounds → light cards --- */
-html:not(.dark) .bg-white\/\[0\.03\] {
-  background-color: #f1f5f9 !important;
-}
-
-/* slate-100 */
-html:not(.dark) .bg-white\/\[0\.08\] {
-  background-color: #e2e8f0 !important;
-}
-
-/* slate-200 */
-html:not(.dark) .bg-white\/5 {
-  background-color: #f1f5f9 !important;
-}
-
-/* slate-100 */
-html:not(.dark) .bg-white\/10 {
-  background-color: #e2e8f0 !important;
-}
-
-/* slate-200 */
-html:not(.dark) .bg-white\/15 {
-  background-color: #cbd5e1 !important;
-}
-
-/* slate-300 */
-html:not(.dark) .bg-white\/20 {
-  background-color: #cbd5e1 !important;
-}
-
-/* slate-300 */
-
-html:not(.dark) .hover\:bg-white\/5:hover {
-  background-color: #e2e8f0 !important;
-}
-
-html:not(.dark) .hover\:bg-white\/10:hover {
-  background-color: #cbd5e1 !important;
-}
-
-/* --- Tiny-fraction white backgrounds (invisible on white) --- */
-html:not(.dark) .bg-white\/\[0\.01\] {
-  background-color: #f8fafc !important;
-}
-
-html:not(.dark) .bg-white\/\[0\.02\] {
-  background-color: #f1f5f9 !important;
-}
-
-html:not(.dark) .bg-white\/\[0\.05\] {
-  background-color: #f1f5f9 !important;
-}
-
-html:not(.dark) .bg-white\/\[0\.06\] {
-  background-color: #e2e8f0 !important;
-}
-
-/* hover variants */
-html:not(.dark) .hover\:bg-white\/\[0\.03\]:hover {
-  background-color: #e2e8f0 !important;
-}
-
-html:not(.dark) .hover\:bg-white\/\[0\.04\]:hover {
-  background-color: #e2e8f0 !important;
-}
-
-html:not(.dark) .hover\:bg-white\/\[0\.05\]:hover {
-  background-color: #e2e8f0 !important;
-}
-
-/* --- bg-black/* on light backgrounds → soft transparent grey --- */
-html:not(.dark) .bg-black\/20 {
-  background-color: rgba(241, 245, 249, 0.9) !important;
-}
-
-html:not(.dark) .bg-black\/40 {
-  background-color: rgba(241, 245, 249, 0.95) !important;
-}
-
-html:not(.dark) .bg-black\/60 {
-  background-color: rgba(241, 245, 249, 0.97) !important;
-}
-
-/* --- Ring utilities --- */
-html:not(.dark) .ring-white\/5 {
-  --tw-ring-color: #e2e8f0 !important;
-}
-
-html:not(.dark) .ring-white\/10 {
-  --tw-ring-color: #cbd5e1 !important;
-}
-
-html:not(.dark) .ring-white\/20 {
-  --tw-ring-color: #94a3b8 !important;
-}
-
-/* --- Dark-glass Borders → visible slate borders --- */
-html:not(.dark) .border-white\/5 {
-  border-color: #e2e8f0 !important;
-}
-
-/* slate-200 */
-html:not(.dark) .border-white\/10 {
-  border-color: #cbd5e1 !important;
-}
-
-/* slate-300 */
-html:not(.dark) .border-white\/15 {
-  border-color: #94a3b8 !important;
-}
-
-/* slate-400 */
-html:not(.dark) .border-white\/20 {
-  border-color: #94a3b8 !important;
-}
-
-/* slate-400 */
-
-/* --- Dark background surfaces in components --- */
-html:not(.dark) .bg-slate-800 {
-  background-color: #f8fafc !important;
-}
-
-/* slate-50  */
-html:not(.dark) .bg-slate-900 {
-  background-color: #f1f5f9 !important;
-}
-
-/* slate-100 */
-html:not(.dark) .bg-slate-700 {
-  background-color: #e2e8f0 !important;
-}
-
-/* slate-200 */
-html:not(.dark) .bg-slate-950 {
-  background-color: #e2e8f0 !important;
-}
-
-/* slate-200 */
-
-/* --- Opacity variants (bg-slate-NNN/OP) --- */
-html:not(.dark) .bg-slate-900\/40 {
-  background-color: rgba(241, 245, 249, 0.9) !important;
-}
-
-html:not(.dark) .bg-slate-900\/50 {
-  background-color: rgba(241, 245, 249, 0.95) !important;
-}
-
-html:not(.dark) .bg-slate-900\/60 {
-  background-color: rgba(241, 245, 249, 0.97) !important;
-}
-
-html:not(.dark) .bg-slate-900\/70 {
-  background-color: rgba(241, 245, 249, 1) !important;
-}
-
-html:not(.dark) .bg-slate-900\/80 {
-  background-color: rgba(241, 245, 249, 1) !important;
-}
-
-html:not(.dark) .bg-slate-900\/95 {
-  background-color: rgba(255, 255, 255, 0.98) !important;
-}
-
-html:not(.dark) .bg-slate-900\/98 {
-  background-color: rgba(255, 255, 255, 1) !important;
-}
-
-html:not(.dark) .bg-slate-800\/50 {
-  background-color: rgba(248, 250, 252, 0.9) !important;
-}
-
-html:not(.dark) .bg-slate-800\/60 {
-  background-color: rgba(248, 250, 252, 0.97) !important;
-}
-
-html:not(.dark) .bg-slate-950\/50 {
-  background-color: rgba(241, 245, 249, 0.9) !important;
-}
-
-/* --- Divide utilities --- */
-html:not(.dark) .divide-white\/5>*+* {
-  border-color: #e2e8f0 !important;
-}
-
-html:not(.dark) .divide-white\/10>*+* {
-  border-color: #cbd5e1 !important;
-}
-
-/* --- IT Staff Dashboard: Custom hex backgrounds --- */
-html:not(.dark) .bg-\[\#05060A\] {
-  background-color: #f8fafc !important;
-}
-
-/* --- Placeholder text: dark placeholders are invisible on white --- */
-html:not(.dark) input::placeholder,
-html:not(.dark) textarea::placeholder {
-  color: #94a3b8 !important;
-}
-
-/* --- Shadow inner on inputs: too dark in light mode --- */
-html:not(.dark) .shadow-\[inset_0_4px_30px_rgba\(0\,0\,0\,0\.8\)\] {
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.06) !important;
-}
-
-/* --- Large display headings forced white text --- */
-html:not(.dark) h1.text-white,
-html:not(.dark) h2.text-white,
-html:not(.dark) h3.text-white,
-html:not(.dark) h4.text-white {
-  color: #0f172a !important;
-}
-
-/* --- The futuristic search input dark background --- */
-html:not(.dark) .focus\:bg-white\/\[0\.04\]:focus {
-  background-color: #f1f5f9 !important;
+  /* Root fix for placeholders */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 0.5;
+  }
 }
 
 
@@ -302,45 +84,48 @@ html:not(.dark) .focus\:bg-white\/\[0\.04\]:focus {
 @layer components {
 
   /* ----- Glass Panel ----- */
-  /* Light: crisp white card with soft shadow */
   .glass-panel {
-    @apply bg-white/90 backdrop-blur-2xl border border-slate-200 shadow-lg rounded-2xl;
+    @apply backdrop-blur-2xl transition-all duration-300;
+    background-color: var(--bg-glass);
+    border: 1px solid var(--border-main);
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
   }
 
-  /* Dark: deep glass with glow border */
   .dark .glass-panel {
-    @apply bg-slate-900/70 border-white/10 shadow-2xl;
-    background-image: radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.05) 0px, transparent 50%);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+    background-image: radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.03) 0px, transparent 50%);
   }
 
   /* ----- Glass Card ----- */
-  /* Light: white card, subtle shadow */
   .glass-card {
-    @apply relative overflow-hidden bg-white border border-slate-200/80 rounded-2xl shadow-sm transition-all duration-500;
-  }
-
-  /* Dark: semi-transparent dark slate */
-  .dark .glass-card {
-    @apply bg-slate-900/40 border-white/5 shadow-none;
+    @apply relative overflow-hidden transition-all duration-500;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 1rem;
   }
 
   /* Hover states */
   .glass-card:hover {
-    @apply -translate-y-1 shadow-md border-indigo-200;
+    @apply -translate-y-1;
+    border-color: var(--color-primary);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1), var(--glow-soft);
   }
 
   .dark .glass-card:hover {
-    @apply border-white/15 bg-slate-900/60 shadow-none border-indigo-500/20;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), var(--glow-soft);
   }
 
   /* ----- Glass Interactive ----- */
   .glass-interactive {
-    @apply bg-slate-100 hover:bg-slate-200 border border-slate-200 hover:border-slate-300 transition-all duration-300;
+    @apply transition-all duration-300;
+    background-color: var(--bg-surface-soft);
+    border: 1px solid var(--border-soft);
   }
 
-  .dark .glass-interactive {
-    @apply bg-white/5 hover:bg-white/10 border-white/5 hover:border-white/10;
+  .glass-interactive:hover {
+    border-color: var(--color-primary);
+    background-color: var(--bg-surface);
   }
 
   /* ----- Text Gradient ----- */
@@ -368,6 +153,7 @@ html:not(.dark) .focus\:bg-white\/\[0\.04\]:focus {
     @apply relative overflow-hidden px-6 py-2.5 rounded-xl font-bold transition-all duration-300 flex items-center gap-2;
     background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
     box-shadow: 0 4px 15px -5px rgba(99, 102, 241, 0.4);
+    color: var(--text-on-dark);
   }
 
   .btn-premium:hover {
@@ -375,14 +161,34 @@ html:not(.dark) .focus\:bg-white\/\[0\.04\]:focus {
     box-shadow: 0 8px 25px -5px rgba(99, 102, 241, 0.5);
   }
 
-  .btn-premium::after {
-    content: '';
-    @apply absolute inset-0 bg-white/20 opacity-0 transition-opacity duration-300;
+  /* ----- Neural Compact Root Fix ----- */
+  /* ----- High-Fidelity Glass Utility ----- */
+  .glass {
+    @apply backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-500;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
   }
 
-  .btn-premium:active {
-    @apply scale-[0.98];
+  .dark .glass {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.2) 100%);
+    border-color: rgba(255, 255, 255, 0.05);
   }
+
+  .glass-hover:hover {
+    @apply -translate-y-1 brightness-110;
+    border-color: var(--color-primary);
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.3), var(--glow-soft);
+  }
+
+  .neural-compact {
+    --compact-padding-panel: 1.25rem;
+    --compact-padding-card: 1rem;
+    --compact-gap: 1rem;
+    --compact-margin: 1.25rem;
+  }
+
+  .neural-compact .grid { gap: var(--compact-gap) !important; }
+  .neural-compact .glass-panel { padding: var(--compact-padding-panel) !important; }
+  .neural-compact .glass-card { padding: var(--compact-padding-card) !important; }
 }
 
 /* =============================================

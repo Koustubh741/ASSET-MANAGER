@@ -6,6 +6,7 @@ from ..schemas.discovery_schema import DiscoveryPayload
 from datetime import datetime, timezone
 import uuid
 import logging
+from ..routers.notifications import create_notification # Real-time alerts
 
 logger = logging.getLogger(__name__)
 
@@ -301,10 +302,10 @@ async def process_discovery_payload(
                     break
 
         # 4c. Hostname-only fallback (handles agent reinstall / stub merging / SNMP updates)
-        #     Safe to merge when the candidate:
-        #       - is a stub (serial starts with 'STUB-'), OR
-        #       - has no Agent ID set in its specs (was imported / created without agent)
-        if not db_asset:
+        #     Skip this for Cloud Vendors to prevent ephemeral overlap
+        is_cloud = payload.hardware.vendor in ("AWS", "Azure", "GCP", "Oracle Cloud", "Alibaba Cloud")
+        
+        if not db_asset and not is_cloud:
             hostname_result = await db.execute(
                 select(Asset).filter(Asset.name == payload.hostname)
             )
@@ -323,7 +324,8 @@ async def process_discovery_payload(
                     break
 
         # 4d. IP Address last-resort dedup (catches reinstalled agents or SNMP host changes)
-        if not db_asset and payload.ip_address:
+        #     Skip this for Cloud Vendors to prevent ephemeral overlap
+        if not db_asset and payload.ip_address and not is_cloud:
             # Walk candidate assets that store this IP in their specifications JSONB
             ip_result = await db.execute(
                 select(Asset).filter(
@@ -432,7 +434,6 @@ async def process_discovery_payload(
             )
             db.add(db_asset)
             
-            # Record Audit Log for Creation
             audit = AuditLog(
                 id=uuid.uuid4(),
                 entity_type="Asset",
@@ -448,6 +449,22 @@ async def process_discovery_payload(
                 timestamp=_utcnow()
             )
             db.add(audit)
+
+            # Trigger real-time Notification for Discovery
+            # We use a background task or just await if we're already in an async context
+            try:
+                # Extract source for branding the notification
+                source_name = payload.metadata.get("source_provider") or payload.metadata.get("cloud_provider") or "Discovery Agent"
+                await create_notification(
+                    db=db,
+                    title="🚀 New Asset Discovered",
+                    message=f"{payload.hostname} ({payload.hardware.type}) detected via {source_name}.",
+                    notification_type="discovery",
+                    link=f"/assets/{db_asset.id}",
+                    source=str(payload.agent_id)
+                )
+            except Exception as e:
+                logger.error("Failed to trigger discovery notification: %s", e)
 
         # Flush so db_asset.id is available for software / diff FK references
         await db.flush()

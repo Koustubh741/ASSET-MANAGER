@@ -2,7 +2,7 @@ import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip
 
 export default function BarChart({ data, onBarClick }) {
     if (!data || data.length === 0) {
-        return <div className="flex items-center justify-center h-full text-slate-500 dark:text-slate-400">No data available</div>
+        return <div className="flex items-center justify-center h-full text-app-text-muted">No data available</div>
     }
 
     const CustomTooltip = ({ active, payload, label }) => {
@@ -11,7 +11,7 @@ export default function BarChart({ data, onBarClick }) {
                 <div className="glass-panel p-3 !bg-white dark:bg-slate-900/90 !border-slate-700">
                     <p className="text-slate-900 dark:text-slate-200 font-medium mb-1">{label}</p>
                     <p className="text-blue-400 font-bold text-lg">
-                        {payload[0].value} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">Assets</span>
+                        {payload[0].value} <span className="text-xs font-normal text-app-text-muted">Assets</span>
                     </p>
                 </div>
             )

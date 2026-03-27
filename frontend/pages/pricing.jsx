@@ -88,26 +88,26 @@ const PricingPage = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-transparent text-slate-900 dark:text-slate-100 p-4 md:p-8">
+        <div className="min-h-screen bg-transparent text-app-text p-4 md:p-8">
             <div className="max-w-6xl mx-auto">
                 <header className="text-center mb-16 animate-in fade-in slide-in-from-top-4 duration-1000">
                     <h1 className="text-2xl md:text-xl font-extrabold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-6">
                         Predictable Pricing, Enterprise Power
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl mx-auto mb-10">
+                    <p className="text-app-text-muted text-lg max-w-2xl mx-auto mb-10">
                         Scale your asset management with precision. Choose the plan that fits your growth trajectory.
                     </p>
 
                     {/* Billing Toggle */}
                     <div className="flex items-center justify-center gap-4 mb-12">
-                        <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>Monthly</span>
+                        <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-app-text' : 'text-app-text-muted'}`}>Monthly</span>
                         <button
                             onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
-                            className="relative w-14 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 p-1 transition-colors duration-300 pointer-events-auto cursor-pointer"
+                            className="relative w-14 h-7 rounded-full bg-slate-50 dark:bg-slate-800 border border-app-border p-1 transition-colors duration-300 pointer-events-auto cursor-pointer"
                         >
                             <div className={`w-5 h-5 rounded-full bg-blue-500 transition-transform duration-300 shadow-lg shadow-blue-500/50 ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'}`} />
                         </button>
-                        <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                        <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-app-text' : 'text-app-text-muted'}`}>
                             Yearly <span className="text-emerald-400 text-xs ml-1 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Save 20%</span>
                         </span>
                     </div>
@@ -129,7 +129,7 @@ const PricingPage = () => {
                                     </div>
                                 )}
 
-                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center mb-6 border border-slate-200 dark:border-white/10 group-hover:rotate-12 transition-transform duration-500`}>
+                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center mb-6 border border-app-border group-hover:rotate-12 transition-transform duration-500`}>
                                     <Icon size={24} className={tier.iconColor} />
                                 </div>
 
@@ -137,12 +137,12 @@ const PricingPage = () => {
                                 <div className="flex items-baseline gap-1 mb-4">
                                     <span className="text-xl font-bold">{price}</span>
                                     {tier.period && (
-                                        <span className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wider">
+                                        <span className="text-app-text-muted text-xs font-medium uppercase tracking-wider">
                                             {tier.period}
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs mb-8 leading-relaxed min-h-[40px]">
+                                <p className="text-app-text-muted text-xs mb-8 leading-relaxed min-h-[40px]">
                                     {tier.description}
                                 </p>
 
@@ -152,14 +152,14 @@ const PricingPage = () => {
                                             <div className="shrink-0 w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
                                                 <Check size={10} className="text-emerald-400" />
                                             </div>
-                                            <span className="text-slate-700 dark:text-slate-300">{feature}</span>
+                                            <span className="text-app-text-muted">{feature}</span>
                                         </div>
                                     ))}
                                 </div>
 
                                 <button className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-300 ${tier.highlight
                                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/40'
-                                    : 'bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10'
+                                    : 'bg-app-surface-soft border border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
                                     }`}>
                                     {tier.cta}
                                 </button>
@@ -168,8 +168,8 @@ const PricingPage = () => {
                     })}
                 </div>
 
-                <footer className="mt-16 p-8 rounded-3xl bg-white dark:bg-slate-900/20 border border-slate-200 dark:border-white/5 text-center animate-in fade-in duration-1000 delay-500">
-                    <p className="text-slate-500 dark:text-slate-400 mb-6">Need a custom plan for your non-profit or educational institution?</p>
+                <footer className="mt-16 p-8 rounded-3xl bg-white dark:bg-slate-900/20 border border-app-border text-center animate-in fade-in duration-1000 delay-500">
+                    <p className="text-app-text-muted mb-6">Need a custom plan for your non-profit or educational institution?</p>
                     <Link href="/contact" className="text-blue-400 font-semibold hover:text-blue-300 hover:underline transition-all">
                         Talk to our experts today →
                     </Link>

@@ -84,7 +84,8 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
     if request:
         request.status = "PO_UPLOADED"
         request.procurement_finance_status = "PO_UPLOADED"
-        request.updated_at = datetime.now()
+        from .asset_request_service import sync_request_state
+        sync_request_state(request)
     
     await db.commit()
     await db.refresh(po)
@@ -118,12 +119,16 @@ async def validate_po_completeness(db: AsyncSession, po_id: UUID, reviewer_id: U
         if request:
             request.status = "PO_VALIDATED"
             request.updated_at = datetime.now()
+            from .asset_request_service import sync_request_state
+            sync_request_state(request)
     else:
         po.status = "REJECTED"
         log_action = "PO_REJECTED"
         if request:
             request.status = "PO_REJECTED"
             request.updated_at = datetime.now()
+            from .asset_request_service import sync_request_state
+            sync_request_state(request)
         
     # Audit Log
     log = ProcurementLog(
@@ -172,12 +177,16 @@ async def validate_finance_budget(db: AsyncSession, po_id: UUID, reviewer_id: UU
             request.status = "FINANCE_APPROVED"
             request.procurement_finance_status = "APPROVED"
             request.updated_at = datetime.now()
+            from .asset_request_service import sync_request_state
+            sync_request_state(request)
     else:
         log_action = "FINANCE_REJECTED"
         if request:
             request.status = "FINANCE_REJECTED"
             request.procurement_finance_status = "REJECTED"
             request.updated_at = datetime.now()
+            from .asset_request_service import sync_request_state
+            sync_request_state(request)
         
     # Budget validation logic
     budget_pass = True

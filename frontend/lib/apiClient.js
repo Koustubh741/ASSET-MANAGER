@@ -148,7 +148,12 @@ class ApiClient {
                 data = await response.json();
             } else {
                 const text = await response.text();
-                data = text ? JSON.parse(text) : {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    // Not JSON (e.g. CSV or plain text)
+                    data = text;
+                }
             }
 
             if (!response.ok) {
@@ -283,6 +288,29 @@ class ApiClient {
     async updateMyPlan(plan) {
         return this.patch('/auth/me/plan', { plan });
     }
+
+    // --- ROOT FIX: Persistent Preferences & AI Data ---
+
+    async getUserPreferences() {
+        return this.get('/preferences/me');
+    }
+
+    async updateUserPreferences(data) {
+        return this.patch('/preferences/me', data);
+    }
+
+    async getAiConfigs() {
+        return this.get('/ai-configs');
+    }
+
+    async getChatHistory() {
+        return this.get('/chat/history');
+    }
+
+    async saveChatMessage(role, content, msg_metadata = {}) {
+        return this.post('/chat/message', { role, content, msg_metadata });
+    }
+
 
     // AI Assistant
     async getAIUsage() {
@@ -587,10 +615,11 @@ class ApiClient {
     }
 
     // Tickets
-    async getTickets(skip = 0, limit = 100, department = null, search = null) {
+    async getTickets(skip = 0, limit = 100, department = null, search = null, isInternal = null) {
         const queryParams = { skip, limit };
         if (department) queryParams.department = department;
         if (search) queryParams.search = search;
+        if (isInternal !== null) queryParams.is_internal = isInternal;
         const params = new URLSearchParams(queryParams);
         return this.request(`/tickets/?${params.toString()}`);
     }
@@ -654,8 +683,10 @@ class ApiClient {
         });
     }
 
-    async getTicketStatsByCategory(days = 30) {
-        return this.request(`/tickets/stats/category?range_days=${days}`);
+    async getTicketStatsByCategory(days = 30, isInternal = null) {
+        let url = `/tickets/stats/category?range_days=${days}`;
+        if (isInternal !== null) url += `&is_internal=${isInternal}`;
+        return this.request(url);
     }
 
     async getOEMMetrics() {
@@ -665,6 +696,27 @@ class ApiClient {
     async getTicketSolverStats(days = null) {
         const query = days ? `?range_days=${days}` : '';
         return this.request(`/tickets/stats/solvers${query}`);
+    }
+
+    async getTicketExecutiveSummary(days = 30, options = {}) {
+        let url = `/tickets/analytics/summary?range_days=${days}`;
+        if (options.periodStart) url += `&period_mode=calendar&period_start=${options.periodStart}&period_end=${options.periodEnd}`;
+        if (options.fiscal_year) url += `&fiscal_year=${options.fiscal_year}`;
+        return this.request(url);
+    }
+
+    async getTicketTrendSeries(granularity = 'monthly', year = new Date().getFullYear()) {
+        return this.request(`/tickets/analytics/trend?granularity=${granularity}&year=${year}`);
+    }
+
+    async getTicketComparison(periodAStart, periodAEnd, periodBStart, periodBEnd) {
+        const params = new URLSearchParams({
+            period_a_start: periodAStart,
+            period_a_end: periodAEnd,
+            period_b_start: periodBStart,
+            period_b_end: periodBEnd
+        });
+        return this.request(`/tickets/analytics/compare?${params.toString()}`);
     }
 
     async getSolverPortfolio(userId) {
@@ -867,6 +919,10 @@ class ApiClient {
         return this.request(`/assets/${assetId}/relationships`);
     }
 
+    async getAllRelationships() {
+        return this.request('/assets/relationships/all');
+    }
+
     async createAssetRelationship(sourceAssetId, targetAssetId, relationshipType, options = {}) {
         return this.request(`/assets/${sourceAssetId}/relationships`, {
             method: 'POST',
@@ -1032,6 +1088,13 @@ class ApiClient {
         });
     }
 
+    async updateAutomationRule(ruleId, ruleData) {
+        return this.request(`/tickets/automation/rules/${ruleId}`, {
+            method: 'PATCH',
+            body: ruleData,
+        });
+    }
+
     async deleteAutomationRule(ruleId) {
         return this.request(`/tickets/automation/rules/${ruleId}`, {
             method: 'DELETE',
@@ -1055,6 +1118,10 @@ class ApiClient {
         return this.request(`/tickets/sla-policies/${policyId}`, {
             method: 'DELETE',
         });
+    }
+
+    async updateSLAPolicy(policyId, policyData) {
+        return this.patch(`/tickets/sla-policies/${policyId}`, policyData);
     }
 
     // Assignment Groups
@@ -1093,6 +1160,104 @@ class ApiClient {
 
     async deleteTask(taskId) {
         return this.delete(`/tasks/${taskId}`);
+    }
+
+    // Patch Management
+    async getPatches() {
+        return this.get('/patch-management');
+    }
+
+    async getPatchCompliance() {
+        return this.get('/patch-management/compliance');
+    }
+
+    async getPatchDeployments(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.get(`/patch-management/deployments${query ? `?${query}` : ''}`);
+    }
+
+    async deployPatch(patchId, assetId) {
+        return this.post('/patch-management/deploy', { patch_id: patchId, asset_id: assetId });
+    }
+
+    async deployPatchBulk(patchId, targetGroup = "ALL") {
+        return this.post('/patch-management/deploy-bulk', { patch_id: patchId, target_group: targetGroup });
+    }
+
+    async schedulePatch(patchId, scheduledAt, targetGroup = "ALL") {
+        return this.post('/patch-management/schedule', {
+            patch_id: patchId,
+            scheduled_at: scheduledAt,
+            target_group: targetGroup
+        });
+    }
+
+    async retryPatch(deploymentId) {
+        return this.post(`/patch-management/retry/${deploymentId}`);
+    }
+
+    async rollbackPatch(deploymentId) {
+        return this.post(`/patch-management/rollback/${deploymentId}`);
+    }
+
+    async exportCompliance() {
+        // Since it's a StreamingResponse, we fetch as text (CSV) and return a blob URL
+        const data = await this.get('/patch-management/export/compliance');
+        // If the data is already a string (parsed text), wrap it
+        // Note: The request helper in apiClient might try to parse it as JSON if content-type is json.
+        // But StreamingResponse is set to text/csv.
+        const blob = new Blob([typeof data === 'string' ? data : JSON.stringify(data)], { type: 'text/csv' });
+        return URL.createObjectURL(blob);
+    }
+
+    async getPatchSyncStatus() {
+        return this.get('/patch-management/sync-status');
+    }
+
+    async triggerPatchSync() {
+        return this.post('/patch-management/sync');
+    }
+
+    async getPatchJobs() {
+        return this.get('/patch-management/jobs');
+    }
+
+    async getPatchJob(jobId) {
+        return this.get(`/patch-management/jobs/${jobId}`);
+    }
+
+    async getPatchJobLogs(jobId) {
+        return this.get(`/patch-management/jobs/${jobId}/logs`);
+    }
+
+    async approvePatchJob(jobId) {
+        return this.post(`/patch-management/jobs/${jobId}/approve`);
+    }
+
+    async uploadPatchBinary(patchId, file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.request(`/upload/patch/${patchId}`, {
+            method: 'POST',
+            body: formData,
+        });
+    }
+
+    // Notifications
+    async getNotifications(limit = 20) {
+        return this.get(`/notifications?limit=${limit}`);
+    }
+
+    async markNotificationRead(id) {
+        return this.patch(`/notifications/${id}/read`, {});
+    }
+
+    async markAllNotificationsRead() {
+        return this.post('/notifications/read-all', {});
+    }
+
+    async getExecutiveSummary() {
+        return this.get('/analytics/executive/summary');
     }
 }
 

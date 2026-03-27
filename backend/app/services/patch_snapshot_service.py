@@ -32,10 +32,12 @@ async def snapshot_daily_compliance() -> dict:
 
             for row in summaries:
                 # Check if snapshot already exists for today
+                # Root Fix: Use timezone-aware 'today_start' for comparison
+                today_start = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
                 existing = await db.execute(
                     select(PatchComplianceSnapshot).where(
                         PatchComplianceSnapshot.asset_id == row["asset_id"],
-                        PatchComplianceSnapshot.snapshot_date >= datetime.combine(today, datetime.min.time()),
+                        PatchComplianceSnapshot.snapshot_date >= today_start,
                     )
                 )
                 if existing.scalars().first():

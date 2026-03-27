@@ -16,6 +16,36 @@ from ..services.notification_service import NotificationService
 from ..utils.state_machine import validate_state_transition
 
 
+# Root Fix: Centralized status-to-owner mapping
+STATUS_MAP = {
+    "SUBMITTED": ("MANAGER", None),
+    "MANAGER_APPROVED": ("IT_MANAGEMENT", None),
+    "IT_APPROVED": ("MANAGER", None),
+    "MANAGER_CONFIRMED_IT": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
+    "PROCUREMENT_REQUESTED": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
+    "PO_UPLOADED": ("PROCUREMENT", "PO_UPLOADED"),
+    "PO_VALIDATED": ("FINANCE", "PO_VALIDATED"),
+    "FINANCE_APPROVED": ("MANAGER", "FINANCE_APPROVED"),
+    "MANAGER_CONFIRMED_BUDGET": ("ASSET_MANAGER", "QC_PENDING"),
+    "QC_PENDING": ("ASSET_MANAGER", "QC_PENDING"),
+    "QC_FAILED": ("PROCUREMENT", "QC_FAILED"),
+    "USER_ACCEPTANCE_PENDING": ("END_USER", "USER_ACCEPTANCE_PENDING"),
+    "USER_REJECTED": ("PROCUREMENT", "USER_REJECTED"),
+    "MANAGER_CONFIRMED_ASSIGNMENT": ("MANAGER", "ASSIGNMENT"),
+    "IN_USE": ("END_USER", "COMPLETED"),
+    "FULFILLED": ("END_USER", "COMPLETED"),
+    "MANAGER_REJECTED": ("SYSTEM", "REJECTED"),
+    "IT_REJECTED": ("SYSTEM", "REJECTED"),
+    "CLOSED": ("SYSTEM", "CLOSED")
+}
+
+def sync_request_state(db_request: AssetRequest):
+    """Update current_owner_role and procurement_stage based on unified STATUS_MAP"""
+    owner_role, stage = STATUS_MAP.get(db_request.status, (None, None))
+    db_request.current_owner_role = owner_role
+    db_request.procurement_stage = stage
+
+
 from sqlalchemy.orm import joinedload
 
 async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, user_role: str = None) -> AssetRequestResponse:
@@ -77,31 +107,9 @@ async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, u
                 "vendor_name": po.vendor_name
             }
             
-    # --- Virtual Field Enrichment for Finance Dashboard ---
-    status_map = {
-        "SUBMITTED": ("MANAGER", None),
-        "MANAGER_APPROVED": ("IT_MANAGEMENT", None),
-        "IT_APPROVED": ("MANAGER", None),
-        "MANAGER_CONFIRMED_IT": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
-        "PROCUREMENT_REQUESTED": ("PROCUREMENT", "PROCUREMENT_REQUESTED"),
-        "PO_UPLOADED": ("PROCUREMENT", "PO_UPLOADED"),
-        "PO_VALIDATED": ("FINANCE", "PO_VALIDATED"),
-        "FINANCE_APPROVED": ("MANAGER", "FINANCE_APPROVED"),
-        "MANAGER_CONFIRMED_BUDGET": ("ASSET_MANAGER", "QC_PENDING"),
-        "QC_PENDING": ("ASSET_MANAGER", "QC_PENDING"),
-        "QC_FAILED": ("PROCUREMENT", "QC_FAILED"),
-        "USER_ACCEPTANCE_PENDING": ("END_USER", "USER_ACCEPTANCE_PENDING"),
-        "USER_REJECTED": ("PROCUREMENT", "USER_REJECTED"),
-        "MANAGER_CONFIRMED_ASSIGNMENT": ("MANAGER", "ASSIGNMENT"),
-        "IN_USE": ("END_USER", "COMPLETED"),
-        "FULFILLED": ("END_USER", "COMPLETED"),
-        "MANAGER_REJECTED": ("SYSTEM", "REJECTED"),
-        "IT_REJECTED": ("SYSTEM", "REJECTED"),
-        "CLOSED": ("SYSTEM", "CLOSED")
-    }
-    owner_role, stage = status_map.get(db_request.status, (None, None))
-    res.current_owner_role = owner_role
-    res.procurement_stage = stage
+    # --- Virtual Field Enrichment from DB (or fallback to map) ---
+    res.current_owner_role = db_request.current_owner_role or STATUS_MAP.get(db_request.status, (None, None))[0]
+    res.procurement_stage = db_request.procurement_stage or STATUS_MAP.get(db_request.status, (None, None))[1]
             
     return res
 
@@ -190,6 +198,7 @@ async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate,
             status=initial_status,
             manager_approvals=[]
         )
+        sync_request_state(db_request)
         db.add(db_request)
         await db.commit()
         # Pre-fetch requester for the response
@@ -252,6 +261,7 @@ async def update_asset_request_status_with_validation(
             "type": "STATUS_CHANGE"
         })
     
+    sync_request_state(db_request)
     await db.commit()
     await db.refresh(db_request)
     return await _populate_requester_info(db, db_request, user_role=user_role)
@@ -314,6 +324,7 @@ async def update_it_review_status(
         "type": "IT_REVIEW",
     })
 
+    sync_request_state(db_request)
     await db.commit()
     await db.refresh(db_request)
     return await _populate_requester_info(db, db_request, user_role="IT_MANAGEMENT")
@@ -379,6 +390,7 @@ async def update_procurement_finance_status(
         "type": "PROCUREMENT_REVIEW"
     })
     
+    sync_request_state(db_request)
     log = ProcurementLog(
         id=uuid.uuid4(),
         reference_id=request_id,
@@ -428,6 +440,7 @@ async def perform_qc_check(
     else:
         db_request.status = "QC_FAILED"
     
+    sync_request_state(db_request)
     if db_request.manager_approvals is None:
         db_request.manager_approvals = []
     db_request.manager_approvals.append({
@@ -479,6 +492,7 @@ async def update_user_acceptance(
         # auto-fulfill it to IN_USE to avoid redundant manager approval.
         if db_request.asset_id:
             db_request.status = "IN_USE"
+            sync_request_state(db_request)
             from .asset_service import finalize_asset_assignment
             await finalize_asset_assignment(
                 db=db,
@@ -505,6 +519,7 @@ async def update_user_acceptance(
         "auto_fulfilled": True if (acceptance_status == "ACCEPTED" and db_request.asset_id) else False
     })
     
+    sync_request_state(db_request)
     await db.commit()
     await db.refresh(db_request)
     return await _populate_requester_info(db, db_request)
@@ -559,6 +574,7 @@ async def register_byod_device_service(
         "type": "BYOD_REGISTRATION"
     })
     
+    sync_request_state(db_request)
     await db.commit()
     await db.refresh(db_request)
     return await _populate_requester_info(db, db_request)
@@ -626,14 +642,21 @@ async def get_all_asset_requests(
 
 async def apply_root_fix(db: AsyncSession) -> dict:
     """
-    Sync Asset.assigned_to / assigned_to_id from AssetRequest requester for all
-    requests with an asset that are in USER_ACCEPTANCE_PENDING, MANAGER_CONFIRMED_ASSIGNMENT,
-    FULFILLED, or IN_USE. Fixes orphaned or misaligned asset-request links so
-    frontend "My Assets" shows correctly.
+    1. Sync current_owner_role and procurement_stage for ALL requests.
+    2. Sync Asset.assigned_to / assigned_to_id for applicable requests.
     Returns {"updated": count, "errors": list}.
     """
     updated = 0
     errors = []
+    
+    # 1. Sync ALL requests state
+    all_reqs_result = await db.execute(select(AssetRequest))
+    all_reqs = all_reqs_result.scalars().all()
+    for req in all_reqs:
+        sync_request_state(req)
+        updated += 1
+        
+    # 2. Sync Asset links (Existing logic)
     q = select(AssetRequest).filter(
         AssetRequest.asset_id.isnot(None),
         AssetRequest.status.in_([
@@ -647,28 +670,24 @@ async def apply_root_fix(db: AsyncSession) -> dict:
     requests = result.scalars().all()
 
     for req in requests:
-        u_result = await db.execute(select(User).filter(User.id == req.requester_id))
-        user = u_result.scalars().first()
-        if not user:
-            errors.append(f"User {req.requester_id} not found for request {req.id}")
-            continue
-        a_result = await db.execute(select(Asset).filter(Asset.id == req.asset_id))
-        asset = a_result.scalars().first()
-        if not asset:
-            errors.append(f"Asset {req.asset_id} not found for request {req.id}")
-            continue
-        asset.assigned_to = user.full_name
-        asset.assigned_to_id = user.id
-        
-        # Sync specifications if asset is missing them or they are empty
-        if not asset.specifications or asset.specifications == {}:
-            asset.specifications = req.specifications or {}
+        try:
+            u_result = await db.execute(select(User).filter(User.id == req.requester_id))
+            user = u_result.scalars().first()
+            if not user:
+                continue
+            a_result = await db.execute(select(Asset).filter(Asset.id == req.asset_id))
+            asset = a_result.scalars().first()
+            if not asset:
+                continue
+            asset.assigned_to = user.full_name
+            asset.assigned_to_id = user.id
             
-        if req.status in ("FULFILLED", "IN_USE"):
-            asset.status = "In Use"
-        else:
-            asset.status = "Reserved"
-        updated += 1
+            if req.status in ("FULFILLED", "IN_USE"):
+                asset.status = "In Use"
+            else:
+                asset.status = "Reserved"
+        except Exception as e:
+            errors.append(str(e))
 
     await db.commit()
     return {"updated": updated, "errors": errors}

@@ -1,27 +1,27 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import func, text, delete
+from sqlalchemy import func, text, delete, or_
 import logging
 from typing import List, Optional, Dict, Any, TypedDict, cast
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..database.database import get_db
 from ..schemas.ticket_schema import (
     TicketCreate, TicketUpdate, TicketResponse, 
     ITDiagnosisRequest, ResolutionUpdate, 
     TicketCategorySummaryResponse, TicketCategoryStat,
-    WorkflowRuleCreate, WorkflowRuleResponse,
-    SLAPolicyCreate, SLAPolicyResponse
+    WorkflowRuleCreate, WorkflowRuleUpdate, WorkflowRuleResponse,
+    SLAPolicyCreate, SLAPolicyResponse, SLAPolicyUpdate
 )
 from ..schemas.user_schema import UserResponse
-from ..models.models import User, Asset, ByodDevice, Ticket
+from ..models.models import User, Asset, ByodDevice, Ticket, AssignmentGroup, PatchDeployment, AgentCommand, SystemPatch
 from ..models.automation import WorkflowRule, SLAPolicy
 from ..services import ticket_service, asset_request_service
 from ..services.notification_service import send_notification
 from ..services.automation_service import AutomationService
-from ..utils.auth_utils import get_current_user
+from ..utils.auth_utils import get_current_user, STAFF_ROLES
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +49,7 @@ router = APIRouter(
 # HELPER DEPENDENCIES
 
 async def verify_it_management(user: UserResponse) -> UserResponse:
-    authorized_roles = ["IT_MANAGEMENT", "IT_SUPPORT", "ADMIN", "ASSET_MANAGER", "SUPPORT_SPECIALIST", "MANAGER"]
-    if user.role not in authorized_roles:
+    if user.role not in STAFF_ROLES and user.role != "MANAGER":
         raise HTTPException(
             status_code=403,
             detail=f"Unauthorized: Role {user.role} does not have IT access",
@@ -101,6 +100,28 @@ async def create_rule(
     await db.commit()
     await db.refresh(new_rule)
     return new_rule
+
+@router.patch("/automation/rules/{rule_id}", response_model=WorkflowRuleResponse, tags=["automation"])
+async def update_rule(
+    rule_id: UUID,
+    rule_update: WorkflowRuleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    await verify_it_allocation(current_user)
+    res = await db.execute(select(WorkflowRule).where(WorkflowRule.id == rule_id))
+    db_rule = res.scalar_one_or_none()
+    if not db_rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    
+    update_data = rule_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_rule, key, value)
+    
+    db_rule.updated_at = func.now()
+    await db.commit()
+    await db.refresh(db_rule)
+    return db_rule
 
 @router.delete("/automation/rules/{rule_id}", tags=["automation"])
 async def delete_rule(
@@ -156,16 +177,63 @@ async def delete_policy(
     await db.commit()
     return {"status": "deleted"}
 
+@router.patch("/sla-policies/{policy_id}", response_model=SLAPolicyResponse, tags=["automation"])
+async def update_policy(
+    policy_id: UUID,
+    policy_update: SLAPolicyUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    await verify_it_allocation(current_user)
+    res = await db.execute(select(SLAPolicy).where(SLAPolicy.id == policy_id))
+    db_policy = res.scalar_one_or_none()
+    if not db_policy:
+        raise HTTPException(status_code=404, detail="SLA Policy not found")
+    
+    update_data = policy_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_policy, key, value)
+    
+    await db.commit()
+    await db.refresh(db_policy)
+    return db_policy
+
 # --- Standard Ticket Endpoints ---
+
+from ..utils.category_utils import normalize_category
 
 @router.get("/stats/category", response_model=TicketCategorySummaryResponse)
 async def get_ticket_stats_by_category(
     range_days: int = 30,
+    is_internal: Optional[bool] = None,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    query = select(Ticket.category, Ticket.status, Ticket.created_at, Ticket.updated_at, User.department).outerjoin(User, Ticket.requestor_id == User.id)
+    # Base query for stats - joining User for department info
+    u_dept = func.trim(User.department)
+    g_dept = func.trim(AssignmentGroup.department)
+    
+    query = select(Ticket.category, Ticket.status, Ticket.created_at, Ticket.updated_at, Ticket.subject, Ticket.description, User.department, Ticket.requestor_id).outerjoin(User, Ticket.requestor_id == User.id).outerjoin(AssignmentGroup, Ticket.assignment_group_id == AssignmentGroup.id)
+    
+    # Apply Time Range
     query = query.where(Ticket.created_at >= func.now() - text(f"INTERVAL '{range_days} days'"))
+    
+    # ROOT FIX: Role-Based "Wall of Privacy"
+    # 1. End Users (non-managers) only see their own tickets
+    if current_user.role == "END_USER" and current_user.position != "MANAGER":
+        query = query.where(Ticket.requestor_id == current_user.id)
+    
+    # 2. Managers (except IT/Admins) only see their department
+    elif current_user.position == "MANAGER" and current_user.role not in STAFF_ROLES:
+        dept = current_user.department or "Unknown"
+        query = query.where(or_(func.lower(u_dept) == dept.lower(), func.lower(g_dept) == dept.lower()))
+
+    # Apply Internal/External Switcher Logic
+    if is_internal is not None:
+        if is_internal:
+            query = query.where(User.department != None, AssignmentGroup.department != None, func.lower(u_dept) == func.lower(g_dept))
+        else:
+            query = query.where(or_(func.lower(u_dept) != func.lower(g_dept), User.department == None, AssignmentGroup.department == None))
     result = await db.execute(query)
     tickets = result.all()
     
@@ -176,7 +244,12 @@ async def get_ticket_stats_by_category(
     stats_map: Dict[str, StatsEntry] = {}
     total_tickets = 0
     for t in tickets:
-        cat = str(t.category or "Uncategorized")
+        # ROOT FIX: Normalize category for clubbed stats (Subject-Aware)
+        cat_name = str(t.category or "Other")
+        subj = str(t.subject or "")
+        desc = str(t.description or "")
+        cat = normalize_category(cat_name, subj, desc)
+        
         status = str(t.status or "Open").upper()
         total_tickets += 1
         if cat not in stats_map:
@@ -208,27 +281,159 @@ async def get_ticket_stats_by_category(
 
 @router.get("/stats/solvers")
 async def get_ticket_solver_stats(range_days: Optional[int] = None, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
-    query = select(User.id.label("user_id"), User.full_name, User.role, User.position, Ticket.id, Ticket.category, Ticket.created_at, Ticket.updated_at).join(User, Ticket.assigned_to_id == User.id).filter(Ticket.status == "RESOLVED", User.role.in_(["IT_SUPPORT", "SUPPORT_SPECIALIST", "IT_MANAGEMENT", "ADMIN"]))
-    if range_days is not None: query = query.where(Ticket.updated_at >= func.now() - text(f"INTERVAL '{range_days} days'"))
+    from sqlalchemy import and_
+    IT_ROLES = ["IT_SUPPORT", "SUPPORT_SPECIALIST", "IT_MANAGEMENT", "ADMIN"]
+
+    # Build join conditions: only count RESOLVED tickets (+ optional date filter)
+    join_conditions = [Ticket.assigned_to_id == User.id, Ticket.status == "RESOLVED"]
+    if range_days is not None:
+        join_conditions.append(Ticket.updated_at >= func.now() - text(f"INTERVAL '{range_days} days'"))
+
+    # LEFT OUTER JOIN so ALL active IT staff appear, even those with 0 resolved tickets
+    query = (
+        select(
+            User.id.label("user_id"),
+            User.full_name,
+            User.role,
+            Ticket.id.label("ticket_id"),
+            Ticket.category,
+            Ticket.created_at.label("t_created"),
+            Ticket.updated_at.label("t_updated"),
+        )
+        .select_from(User)
+        .outerjoin(Ticket, and_(*join_conditions))
+        .where(User.role.in_(IT_ROLES), User.status != "DISABLED")
+    )
+
     result = await db.execute(query)
     rows = result.all()
+
     solvers: Dict[UUID, SolverStatsEntry] = {}
     for row in rows:
         uid = row.user_id
-        if uid not in solvers: solvers[uid] = cast(SolverStatsEntry, {"full_name": str(row.full_name), "count": 0, "categories": set(), "mttr_total_hours": 0.0})
-        sd = solvers[uid]
-        sd["count"] += 1
-        sd["categories"].add(str(row.category or "Other"))
-        if row.created_at and row.updated_at: sd["mttr_total_hours"] += (row.updated_at - row.created_at).total_seconds() / 3600.0
+        if uid not in solvers:
+            solvers[uid] = cast(SolverStatsEntry, {
+                "full_name": str(row.full_name or "Unknown"),
+                "role": str(row.role or "IT_SUPPORT"),
+                "count": 0,
+                "categories": set(),
+                "mttr_total_hours": 0.0
+            })
+        if row.ticket_id is not None:  # only count rows with a matched ticket
+            solvers[uid]["count"] += 1
+            solvers[uid]["categories"].add(str(row.category or "Other"))
+            if row.t_created and row.t_updated:
+                solvers[uid]["mttr_total_hours"] += (row.t_updated - row.t_created).total_seconds() / 3600.0
+
     output = []
     for uid, data in solvers.items():
+        count = data["count"]
         output.append({
-            "id": uid, "full_name": data["full_name"], "tickets_solved": data["count"],
-            "avg_resolve_time_hours": round(float(data["mttr_total_hours"] / data["count"]), 1) if data["count"] > 0 else 0.0,
-            "specialties": sorted(list(set(str(c).replace("_", " ").title() for c in data["categories"])))
+            "id": str(uid),
+            "full_name": data["full_name"],
+            "role": data["role"].replace("_", " ").title(),
+            "tickets_solved": count,
+            "avg_resolve_time_hours": round(float(data["mttr_total_hours"] / count), 1) if count > 0 else 0.0,
+            "specialties": sorted(list(set(str(c).replace("_", " ").title() for c in data["categories"]))),
         })
-    output.sort(key=lambda x: int(x["tickets_solved"]), reverse=True)
+
+    output.sort(key=lambda x: x["tickets_solved"], reverse=True)
     return output
+
+@router.get("/analytics/summary", tags=["analytics"])
+async def get_ticket_analytics_summary(
+    range_days: Optional[int] = 30,
+    period_mode: Optional[str] = "rolling",
+    period_start: Optional[str] = None,
+    period_end: Optional[str] = None,
+    fiscal_year: Optional[int] = None,
+    db: AsyncSession = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    """
+    High-level operational metrics for CEO/Managers.
+    Supports rolling (last N days) and calendar (explicit start/end) period modes.
+    """
+    if current_user.position != "MANAGER" and current_user.role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
+    
+    user_id = current_user.id
+    department = current_user.department
+    if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
+        user_id = None
+        department = None
+
+    # Parse optional explicit period dates (ISO format strings)
+    parsed_start = datetime.fromisoformat(period_start) if period_start else None
+    parsed_end = datetime.fromisoformat(period_end) if period_end else None
+        
+    return await ticket_service.get_ticket_executive_summary(
+        db, user_id=user_id, department=department,
+        range_days=range_days,
+        period_start=parsed_start,
+        period_end=parsed_end,
+        fiscal_year=fiscal_year
+    )
+
+
+@router.get("/analytics/trend", tags=["analytics"])
+async def get_ticket_trend(
+    granularity: Optional[str] = "monthly",
+    year: Optional[int] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Bucketed ticket volume and SLA compliance by week/month/quarter for a given year.
+    granularity: weekly | monthly | quarterly
+    """
+    if current_user.position != "MANAGER" and current_user.role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
+
+    target_year = year or datetime.now().year
+
+    user_id = current_user.id
+    department = current_user.department
+    if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
+        user_id = None
+        department = None
+
+    return await ticket_service.get_ticket_trend_series(
+        db, granularity=granularity, year=target_year,
+        user_id=user_id, department=department
+    )
+
+
+@router.get("/analytics/compare", tags=["analytics"])
+async def get_ticket_period_comparison(
+    period_a_start: str,
+    period_a_end: str,
+    period_b_start: str,
+    period_b_end: str,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Return two full executive summaries for side-by-side radar comparison.
+    All dates must be ISO format strings: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
+    """
+    if current_user.position != "MANAGER" and current_user.role not in STAFF_ROLES:
+        raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
+
+    user_id = current_user.id
+    department = current_user.department
+    if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
+        user_id = None
+        department = None
+
+    return await ticket_service.get_ticket_comparison(
+        db,
+        period_a_start=datetime.fromisoformat(period_a_start),
+        period_a_end=datetime.fromisoformat(period_a_end),
+        period_b_start=datetime.fromisoformat(period_b_start),
+        period_b_end=datetime.fromisoformat(period_b_end),
+        user_id=user_id, department=department
+    )
 
 @router.post("/", response_model=TicketResponse)
 async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
@@ -247,11 +452,11 @@ async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)
     return res
 
 @router.get("/", response_model=List[TicketResponse])
-async def read_tickets(skip: int = 0, limit: int = 100, department: Optional[str] = None, search: Optional[str] = None, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
+async def read_tickets(skip: int = 0, limit: int = 100, department: Optional[str] = None, search: Optional[str] = None, is_internal: Optional[bool] = None, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
     eff_id = current_user.id if current_user.role == "END_USER" and current_user.position != "MANAGER" else None
-    if current_user.position == "MANAGER" and current_user.role not in ["ADMIN", "IT_MANAGEMENT", "IT_SUPPORT", "SUPPORT_SPECIALIST", "ASSET_MANAGER"]:
+    if current_user.position == "MANAGER" and current_user.role not in STAFF_ROLES:
         department = department or current_user.department or current_user.domain
-    return await ticket_service.get_tickets(db, requestor_id=eff_id, department=department, skip=skip, limit=limit, search=search)
+    return await ticket_service.get_tickets(db, requestor_id=eff_id, department=department, skip=skip, limit=limit, search=search, is_internal=is_internal)
 
 @router.get("/{ticket_id}", response_model=TicketResponse)
 async def read_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
@@ -261,8 +466,7 @@ async def read_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db), curre
     
     # ROOT FIX: Security & Privacy Wall
     # 1. Admins and IT staff see everything
-    privileged_roles = ["ADMIN", "IT_MANAGEMENT", "IT_SUPPORT", "SUPPORT_SPECIALIST", "ASSET_MANAGER"]
-    if current_user.role in privileged_roles:
+    if current_user.role in STAFF_ROLES:
         return db_ticket
 
     # 2. Managers see their own tickets OR tickets within their department/domain
@@ -312,6 +516,9 @@ async def it_diagnose_ticket(ticket_id: UUID, payload: ITDiagnosisRequest, db: A
         if not byod: raise HTTPException(status_code=400, detail="linked asset invalid")
         if payload.outcome == "secure": byod.compliance_status, db_ticket.status = "MDM_ENFORCED", "RESOLVED"
         elif payload.outcome == "repair": byod.compliance_status, db_ticket.status = "NON_COMPLIANT", "IN_PROGRESS"
+    if db_ticket.status == "RESOLVED":
+        await AutomationService.mark_sla_resolved(db, db_ticket.id)
+    
     await db.commit()
     await db.refresh(db_ticket)
     return db_ticket
@@ -324,9 +531,12 @@ async def acknowledge_ticket(ticket_id: UUID, payload: ITDiagnosisRequest, db: A
     if db_ticket.status and db_ticket.status.upper() == "OPEN":
         db_ticket.status, db_ticket.assigned_to_id = "IN_PROGRESS", reviewer.id
         tm = list(db_ticket.timeline) if db_ticket.timeline else []
-        tm.append({"action": "ACKNOWLEDGED", "byRole": "IT_MANAGEMENT", "byUser": reviewer.full_name, "timestamp": datetime.utcnow().isoformat(), "comment": payload.notes or "Ticket acknowledged"})
+        tm.append({"action": "ACKNOWLEDGED", "byRole": "IT_MANAGEMENT", "byUser": reviewer.full_name, "timestamp": datetime.now(timezone.utc).isoformat(), "comment": payload.notes or "Ticket acknowledged"})
         db_ticket.timeline = tm
         if payload.notes: db_ticket.resolution_notes = payload.notes
+    if db_ticket.status == "IN_PROGRESS":
+        await AutomationService.mark_sla_responded(db, db_ticket.id)
+        
     await db.commit()
     await db.refresh(db_ticket)
     await send_notification(db, db_ticket.id, "ticket_updated", status="IN_PROGRESS", updated_by=reviewer.full_name, comment=payload.notes or "Acknowledged")
@@ -341,7 +551,7 @@ async def update_ticket_progress(ticket_id: UUID, payload: ResolutionUpdate, db:
     if db_ticket.status not in ["IN_PROGRESS", "RESOLVED"]: db_ticket.status = "IN_PROGRESS"
     tm = list(db_ticket.timeline) if db_ticket.timeline else []
     if not tm or tm[-1].get("comment") != f"Resolution progress updated to {payload.percentage}%":
-        tm.append({"action": "PROGRESS_UPDATE", "byRole": "IT_MANAGEMENT", "byUser": str(reviewer.full_name), "timestamp": datetime.utcnow().isoformat(), "comment": f"Resolution progress updated to {payload.percentage}%"})
+        tm.append({"action": "PROGRESS_UPDATE", "byRole": "IT_MANAGEMENT", "byUser": str(reviewer.full_name), "timestamp": datetime.now(timezone.utc).isoformat(), "comment": f"Resolution progress updated to {payload.percentage}%"})
         db_ticket.timeline = tm
     await db.commit()
     await db.refresh(db_ticket)
@@ -356,8 +566,11 @@ async def resolve_ticket(ticket_id: UUID, payload: ResolutionUpdate, db: AsyncSe
     db_ticket.resolution_notes, db_ticket.resolution_checklist, db_ticket.resolution_percentage, db_ticket.status = payload.notes, payload.checklist, 100.0, "RESOLVED"
     if not db_ticket.assigned_to_id: db_ticket.assigned_to_id = reviewer.id
     tm = list(db_ticket.timeline) if db_ticket.timeline else []
-    tm.append({"action": "RESOLVED", "byRole": "IT_MANAGEMENT", "byUser": reviewer.full_name, "timestamp": datetime.utcnow().isoformat(), "comment": payload.notes or "Resolved"})
+    tm.append({"action": "RESOLVED", "byRole": "IT_MANAGEMENT", "byUser": reviewer.full_name, "timestamp": datetime.now(timezone.utc).isoformat(), "comment": payload.notes or "Resolved"})
     db_ticket.timeline = tm
+    if db_ticket.status == "RESOLVED":
+        await AutomationService.mark_sla_resolved(db, db_ticket.id)
+
     await db.commit()
     await db.refresh(db_ticket)
     await send_notification(db, db_ticket.id, "ticket_resolved", resolution_notes=payload.notes or "Resolved")
@@ -370,7 +583,7 @@ async def get_solver_portfolio(user_id: UUID, db: AsyncSession = Depends(get_db)
     if not db_user: raise HTTPException(status_code=404, detail="Not found")
     lifetime_res = await db.execute(select(func.count(Ticket.id)).where(Ticket.assigned_to_id == user_id, Ticket.status == "RESOLVED"))
     lifetime_count = lifetime_res.scalar_one()
-    month_res = await db.execute(select(func.count(Ticket.id)).where(Ticket.assigned_to_id == user_id, Ticket.status == "RESOLVED", Ticket.updated_at >= datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)))
+    month_res = await db.execute(select(func.count(Ticket.id)).where(Ticket.assigned_to_id == user_id, Ticket.status == "RESOLVED", Ticket.updated_at >= datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)))
     month_count = month_res.scalar_one()
     mttr_res = await db.execute(select(Ticket.created_at, Ticket.updated_at).where(Ticket.assigned_to_id == user_id, Ticket.status == "RESOLVED"))
     total_h = sum((r.updated_at - r.created_at).total_seconds() / 3600.0 for r in mttr_res.all() if r.created_at and r.updated_at)
@@ -382,3 +595,72 @@ async def get_solver_portfolio(user_id: UUID, db: AsyncSession = Depends(get_db)
         "expertise": [{"category": r[0] or "General", "count": r[1]} for r in cat_res.all()],
         "recent_work": [{"id": str(t.id), "subject": t.subject, "category": t.category or "General", "resolved_at": t.updated_at.isoformat(), "priority": t.priority} for t in recent_res.scalars().all()]
     }
+
+@router.post("/{ticket_id}/approve-change", response_model=TicketResponse)
+async def approve_change_request(
+    ticket_id: UUID, 
+    payload: ITDiagnosisRequest,
+    db: AsyncSession = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    """
+    CAB Action: Approve a Change Request and automatically unblock the pending PatchDeployment.
+    """
+    await verify_it_management(current_user)
+    import uuid
+    db_ticket = await ticket_service.get_ticket(db, ticket_id)
+    if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    if db_ticket.category != "Change Request":
+        raise HTTPException(status_code=400, detail="Only Change Request tickets can be approved this way")
+    
+    # 1. Approve Ticket
+    db_ticket.status = "APPROVED"
+    tm = list(db_ticket.timeline) if db_ticket.timeline else []
+    tm.append({
+        "action": "CAB_APPROVED", 
+        "byRole": current_user.role, 
+        "byUser": current_user.full_name, 
+        "timestamp": datetime.now(timezone.utc).isoformat(), 
+        "comment": payload.notes or "Change Request Approved by CAB"
+    })
+    db_ticket.timeline = tm
+    
+    # 2. Find pending PatchDeployments for this asset (since related_asset_id ties it)
+    if db_ticket.related_asset_id:
+        deps_res = await db.execute(
+            select(PatchDeployment).where(
+                PatchDeployment.asset_id == db_ticket.related_asset_id,
+                PatchDeployment.status == "PENDING_APPROVAL"
+            )
+        )
+        deps = deps_res.scalars().all()
+        
+        for dep in deps:
+            # Get Patch Info
+            patch_res = await db.execute(select(SystemPatch).where(SystemPatch.id == dep.patch_id))
+            patch = patch_res.scalars().first()
+            if not patch: continue
+            
+            # Auto-Enqueue execution now that it's approved
+            cmd = AgentCommand(
+                id=uuid.uuid4(),
+                asset_id=dep.asset_id,
+                command="INSTALL_PATCH",
+                payload={
+                    "patch_id": str(patch.patch_id),
+                    "deployment_id": str(dep.id),
+                    "binary_url": patch.binary_url if patch.is_custom else None
+                },
+                status="PENDING",
+            )
+            db.add(cmd)
+            dep.status = "PENDING"
+            dep.last_check_at = func.now()
+
+    await db.commit()
+    await db.refresh(db_ticket)
+    # Add audit logging
+    from ..services.notification_service import send_notification
+    await send_notification(db, db_ticket.id, "ticket_updated", status="APPROVED", updated_by=current_user.full_name, comment=payload.notes or "CAB Approved")
+    return db_ticket

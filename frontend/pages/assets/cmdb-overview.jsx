@@ -99,38 +99,38 @@ export default function CMDBOverviewPage() {
                 <div className="p-4 rounded-full bg-blue-500/10 animate-pulse">
                     <Network size={48} className="text-blue-500" />
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 font-mono text-sm animate-pulse">Visualizing Enterprise Infrastructure...</p>
+                <p className="text-app-text-muted font-mono text-sm animate-pulse">Visualizing Enterprise Infrastructure...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col overflow-hidden font-sans">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-app-text flex flex-col overflow-hidden font-sans">
             {/* --- TOP BAR --- */}
-            <div className="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 backdrop-blur-md px-8 py-4 flex items-center justify-between z-20">
+            <div className="border-b border-app-border bg-white dark:bg-slate-900/50 backdrop-blur-md px-8 py-4 flex items-center justify-between z-20">
                 <div className="flex items-center gap-4">
-                    <Link href="/enterprise" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-200 dark:bg-white/10 rounded-lg transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white">
+                    <Link href="/enterprise" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg transition-colors text-app-text-muted hover:text-app-text">
                         <ArrowLeft size={20} />
                     </Link>
                     <div>
-                        <h1 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <h1 className="text-xl font-bold text-app-text flex items-center gap-2">
                             <Network className="text-pink-400" size={20} />
                             Global CMDB Topology
                         </h1>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-mono uppercase tracking-widest">Enterprise Core Infrastructure Map</p>
+                        <p className="text-xs text-app-text-muted font-mono uppercase tracking-widest">Enterprise Core Infrastructure Map</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-white/5 mr-4">
+                    <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-lg border border-app-border mr-4">
                         <button
                             onClick={() => setViewMode('topology')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-semibold ${viewMode === 'topology' ? 'bg-blue-600 text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white'}`}
+                            className={`px-4 py-1.5 rounded-md text-xs font-semibold ${viewMode === 'topology' ? 'bg-blue-600 text-app-text' : 'text-app-text-muted hover:text-app-text'}`}
                         >
                             Topology
                         </button>
                     </div>
-                    <Link href="/assets/search" className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-lg text-xs font-bold border border-slate-200 dark:border-white/10 transition-all">
+                    <Link href="/assets/search" className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-lg text-xs font-bold border border-app-border transition-all">
                         <Search size={14} />
                         Find Asset
                     </Link>
@@ -188,10 +188,10 @@ export default function CMDBOverviewPage() {
                                         )}
                                     </div>
                                     <div className="mt-3 text-center">
-                                        <span className="text-[10px] font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 px-2 py-0.5 rounded-full whitespace-nowrap opacity-100 group-hover:bg-blue-600 transition-colors">
+                                        <span className="text-[10px] font-bold text-app-text bg-white dark:bg-slate-900 border border-app-border px-2 py-0.5 rounded-full whitespace-nowrap opacity-100 group-hover:bg-blue-600 transition-colors">
                                             {node.name}
                                         </span>
-                                        <p className="text-[8px] text-slate-500 dark:text-slate-400 uppercase mt-0.5">{node.type}</p>
+                                        <p className="text-[8px] text-app-text-muted uppercase mt-0.5">{node.type}</p>
                                     </div>
                                 </div>
                             </Link>
@@ -200,21 +200,21 @@ export default function CMDBOverviewPage() {
                 </div>
 
                 {/* Info Panel */}
-                <div className="absolute bottom-8 left-8 p-6 bg-white dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-white/5 rounded-2xl max-w-xs z-30">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <div className="absolute bottom-8 left-8 p-6 bg-white dark:bg-slate-900/80 backdrop-blur-xl border border-app-border rounded-2xl max-w-xs z-30">
+                    <h3 className="text-sm font-bold text-app-text mb-2 flex items-center gap-2">
                         <Zap size={16} className="text-yellow-400" />
                         Infrastructure Insights
                     </h3>
                     <div className="space-y-3">
                         <div className="flex justify-between text-xs">
-                            <span className="text-slate-500 dark:text-slate-400">Connected Assets</span>
-                            <span className="text-slate-900 dark:text-white font-mono">{graph.nodes.length - 1}</span>
+                            <span className="text-app-text-muted">Connected Assets</span>
+                            <span className="text-app-text font-mono">{graph.nodes.length - 1}</span>
                         </div>
                         <div className="flex justify-between text-xs">
-                            <span className="text-slate-500 dark:text-slate-400">Core Services</span>
+                            <span className="text-app-text-muted">Core Services</span>
                             <span className="text-blue-400 font-mono">1 Active</span>
                         </div>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-4 border-t border-slate-200 dark:border-white/5 pt-4">
+                        <p className="text-[10px] text-app-text-muted mt-4 border-t border-app-border pt-4">
                             Click on any infrastructure node to drill down into its specific dependency and impact map.
                         </p>
                     </div>
@@ -222,13 +222,13 @@ export default function CMDBOverviewPage() {
 
                 {/* Legend */}
                 <div className="absolute top-24 left-8 space-y-2 z-30">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-white/5">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-lg border border-app-border">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Business Service</span>
+                        <span className="text-[10px] text-app-text-muted uppercase font-bold">Business Service</span>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-white/5">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-lg border border-app-border">
                         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">Critical Infra</span>
+                        <span className="text-[10px] text-app-text-muted uppercase font-bold">Critical Infra</span>
                     </div>
                 </div>
             </div>

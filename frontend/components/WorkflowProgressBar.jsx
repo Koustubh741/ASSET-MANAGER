@@ -70,9 +70,9 @@ const WorkflowProgressBar = ({ currentStatus, isByod = false, compact = false })
                     return (
                         <div key={step.id} className="relative z-10 flex flex-col items-center flex-1 min-w-0 group">
                             {/* Dot */}
-                            <div className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${compact ? 'w-6 h-6' : 'w-8 h-8'} ${isCompleted ? (isError ? 'bg-red-500 border-red-500 text-slate-900 dark:text-white' : 'bg-indigo-500 border-indigo-500 text-slate-900 dark:text-white') :
+                            <div className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${compact ? 'w-6 h-6' : 'w-8 h-8'} ${isCompleted ? (isError ? 'bg-red-500 border-red-500 text-app-text' : 'bg-indigo-500 border-indigo-500 text-app-text') :
                                 isActive ? (isError ? 'bg-white border-red-500 text-red-500 scale-125' : 'bg-white border-indigo-500 text-indigo-500 scale-125 shadow-lg shadow-indigo-200') :
-                                    'bg-white border-slate-200 text-slate-700 dark:text-slate-300 border-slate-300'
+                                    'bg-white border-slate-200 text-app-text-muted border-slate-300'
                                 }`}>
                                 {isCompleted ? (
                                     <Check className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
@@ -85,12 +85,12 @@ const WorkflowProgressBar = ({ currentStatus, isByod = false, compact = false })
 
                             {/* Per-step labels only in non-compact mode; they overlap in narrow cards so compact uses single line below */}
                             {!compact && (
-                                <div className={`absolute -bottom-8 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${isActive ? (isError ? 'text-red-500' : 'text-indigo-600') : 'text-slate-500 dark:text-slate-400'}`} title={step.label}>
+                                <div className={`absolute -bottom-8 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${isActive ? (isError ? 'text-red-500' : 'text-indigo-600') : 'text-app-text-muted'}`} title={step.label}>
                                     {step.label}
                                 </div>
                             )}
                             {!compact && (
-                                <div className="absolute -top-8 px-2 py-1 bg-slate-200 dark:bg-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium">
+                                <div className="absolute -top-8 px-2 py-1 bg-slate-200 dark:bg-slate-700 dark:bg-slate-800 text-app-text text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium">
                                     Action by: {step.roles.join(', ')}
                                 </div>
                             )}
@@ -100,7 +100,7 @@ const WorkflowProgressBar = ({ currentStatus, isByod = false, compact = false })
             </div>
             {/* Compact: single line below bar to avoid squashed/overlapping labels */}
             {compact && (
-                <p className="text-center text-[10px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400 mt-2 min-h-[1.25rem] truncate px-1" title={currentStepLabel}>
+                <p className="text-center text-[10px] font-medium uppercase tracking-wider text-app-text-muted mt-2 min-h-[1.25rem] truncate px-1" title={currentStepLabel}>
                     Step {currentIndex + 1}: {currentStepLabel}
                 </p>
             )}

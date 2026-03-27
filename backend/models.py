@@ -26,5 +26,10 @@ from app.models.models import (
     AgentConfiguration,
     AgentSchedule,
     DiscoveryScan,
-    DiscoveryDiff
+    DiscoveryDiff,
+    UserPreference,
+    AiAgentConfig,
+    ChatMessage,
+    Notification,
+    NotificationType
 )

@@ -324,7 +324,7 @@ async def _run_snmp_scan_background(
                                 version="Unknown",
                                 uptime_sec=0
                             ),
-                            neighbors=dev.get("neighbors", [])
+                            neighbors=dev.get("neighbors", []), metadata={"source_provider": "SNMP"}
                         )
                         db_asset = await discovery_service.process_discovery_payload(db, payload)
                         if db_asset is None:
@@ -794,7 +794,7 @@ async def trigger_server_scan(
                     hardware=DiscoveryHardware(**raw_data["hardware"]),
                     os=DiscoveryOS(**raw_data["os"]),
                     software=raw_data["software"],
-                    metadata=raw_data.get("metadata", {})
+                    metadata={**raw_data.get("metadata", {}), "source_provider": "Server Scan"}
                 )
                 
                 # 3. Process

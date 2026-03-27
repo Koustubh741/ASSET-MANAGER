@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, Request
 from pydantic import BaseModel
 from uuid import UUID
 import uuid
@@ -11,11 +11,12 @@ from ..schemas.user_schema import (
     RefreshTokenRequest, ForgotPasswordRequest, ResetPasswordRequest
 )
 from ..schemas.exit_schema import ExitRequestResponse
-from ..services import user_service, exit_service
+from ..schemas.discovery_schema import UserSyncPayload
+from ..services import user_service, exit_service, user_sync_service
 from ..utils import auth_utils
 from ..utils.auth_utils import get_current_user
 from ..models.models import AssetAssignment, ByodDevice, ExitRequest, Asset, PasswordResetToken, User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
 
 router = APIRouter(
@@ -96,11 +97,23 @@ async def get_users(
     Managers only see their department.
     """
     department = None
-    if current_user.role != "ADMIN" and current_user.position == "MANAGER":
-        department = current_user.department or current_user.domain
+    try:
+        # Improved attribute safety
+        is_admin = getattr(current_user, 'role', '') == 'ADMIN'
+        is_manager = getattr(current_user, 'position', '') == 'MANAGER'
         
-    users = await user_service.get_users(db, status=status, department=department)
-    return users
+        if not is_admin and is_manager:
+            department = getattr(current_user, 'department', None) or getattr(current_user, 'domain', None)
+            
+        users = await user_service.get_users(db, status=status, department=department)
+        return users
+    except Exception as e:
+        import logging
+        logging.error(f"Error in get_users: {str(e)}")
+        raise HTTPException(
+            status_code=501 if "Greenlet" in str(e) else 500,
+            detail=f"User service error: {str(e)}"
+        )
 
 
 @router.get("/users/{user_id}", response_model=UserResponse)
@@ -126,9 +139,10 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     db_user = await user_service.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    # All new sign-ups are PENDING until System Admin activates.
-    user.status = "PENDING"
+    # Auto-approve all new sign-ups
+    user.status = "ACTIVE"
     return await user_service.create_user(db=db, user=user)
+
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
@@ -233,6 +247,57 @@ async def get_current_user_info(current_user = Depends(get_current_user)):
     Returns the user object associated with the provided JWT token.
     """
     return current_user
+
+
+@router.api_route("/sync", methods=["GET", "POST"])
+async def sync_users_legacy_alias(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Legacy/Semantic Alias for User Synchronization.
+    Bridges the /api/auth/sync route (both GET and POST).
+    Security is checked manually to avoid middleware deadlocks during browser navigation.
+    """
+    # 1. Manual Admin Check
+    try:
+        # Extract token from header or query
+        token = request.headers.get("Authorization", "").replace("Bearer ", "") or request.query_params.get("token")
+        if not token:
+             raise HTTPException(status_code=401, detail="Authentication token required")
+             
+        user = await auth_utils.get_current_user(token=token)
+        if user.role != "ADMIN":
+             raise HTTPException(status_code=403, detail="Requires Admin privileges")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+
+    try:
+        # 2. Process Payload
+        if request.method == "POST":
+            data = await request.json()
+            payload = UserSyncPayload(**data)
+        else:
+            payload = UserSyncPayload(
+                source_domain="localhost-manual",
+                users=[]
+            )
+
+        # 3. Trigger Sync
+        results = await user_sync_service.sync_ad_users(db, payload)
+        return {
+            "status": "success",
+            "method": request.method,
+            "message": f"Successfully synced {results['created']} new and {results['updated']} existing users",
+            "results": results
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"User sync error: {str(e)}"
+        )
 
 
 class PlanUpdate(BaseModel):
@@ -675,7 +740,7 @@ async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Dep
     
     # Generate token
     token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(hours=24)
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
     
     # Check for existing valid tokens and mark them as used/inactive? 
     # For now, just create a new one.
@@ -706,7 +771,7 @@ async def reset_password(request: ResetPasswordRequest, db: AsyncSession = Depen
         select(PasswordResetToken).filter(
             PasswordResetToken.token == request.token,
             PasswordResetToken.is_used == False,
-            PasswordResetToken.expires_at > datetime.utcnow()
+            PasswordResetToken.expires_at > datetime.now(timezone.utc)
         )
     )
     db_token = result.scalars().first()

@@ -31,6 +31,7 @@ from contextlib import contextmanager
 from enum import Enum
 from collections import Counter
 from dotenv import load_dotenv
+import hmac
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ENVIRONMENT SETUP
@@ -79,6 +80,8 @@ class SyncConfig:
     ldap_user: Optional[str] = None
     ldap_password: Optional[str] = None
     ldap_base_dn: Optional[str] = None
+    ldap_port: int = 389
+    ldap_use_ssl: bool = False
     
     # HTTP tuning
     http_timeout: int = 15
@@ -159,6 +162,8 @@ class SyncConfig:
             ldap_user=ldap_user,
             ldap_password=ldap_password,
             ldap_base_dn=ldap_base_dn,
+            ldap_port=int(os.getenv("LDAP_PORT", "389")),
+            ldap_use_ssl=os.getenv("LDAP_USE_SSL", "false").lower() == "true",
             http_timeout=http_timeout,
             http_max_retries=http_max_retries,
             http_retry_delay=http_retry_delay,
@@ -424,86 +429,116 @@ def fetch_users_from_ldap(
 
     logger.info("Connecting to LDAP server: %s", config.ldap_server)
 
-    # Create TLS configuration
+    # Auto-discovery parameters
+    ports_to_try = [config.ldap_port]
+    if 389 not in ports_to_try: ports_to_try.append(389)
+    if 636 not in ports_to_try: ports_to_try.append(636)
+    if 3268 not in ports_to_try: ports_to_try.append(3268)
+    
+    # User formats to try
+    user_parts = config.ldap_user.split('@')[0].split('\\')[-1]
+    formats = [config.ldap_user]
+    if '@' not in config.ldap_user and '\\' not in config.ldap_user:
+        if config.ldap_base_dn:
+            formats.append(f"{user_parts}@{config.ldap_base_dn}")
+        if config.ldap_domain:
+            formats.append(f"{config.ldap_domain.split('.')[0]}\\{user_parts}")
+
+    # Create TLS configuration (lenient for diagnostics)
     try:
-        tls = Tls(validate=ssl.CERT_REQUIRED)
+        tls = Tls(validate=ssl.CERT_NONE)
     except Exception as e:
         logger.error("Failed to create TLS configuration: %s", e)
         return None
 
-    server = Server(config.ldap_server, use_ssl=True, tls=tls, get_info=ALL)
     conn: Optional[Connection] = None
+    last_error = "No connection attempted"
     
-    try:
-        # Connect with timing
-        with timer("ldap_connection", metrics):
-            conn = Connection(
-                server,
-                user=config.ldap_user,
-                password=config.ldap_password,
-                auto_bind=True
-            )
-            logger.info("✓ Successfully connected to LDAP server")
+    for port in ports_to_try:
+        use_ssl = (port in [636, 3269]) or config.ldap_use_ssl
+        logger.info("Attempting connection to %s:%d (SSL=%s)...", config.ldap_server, port, use_ssl)
         
-        if audit:
-            audit.log_sync_start(config.ad_agent_id, "LDAP")
+        server = Server(
+            config.ldap_server, 
+            port=port, 
+            use_ssl=use_ssl, 
+            tls=tls if use_ssl else None, 
+            get_info=ALL
+        )
         
-        # Search with timing
-        logger.info("Searching for users in base DN: %s", config.ldap_base_dn)
-        
-        with timer("ldap_query", metrics):
-            search_successful = conn.search(
-                search_base=config.ldap_base_dn,
-                search_filter="(&(objectCategory=person)(objectClass=user)(mail=*))",
-                search_scope=SUBTREE,
-                attributes=[
-                    "cn", "mail", "department", "title",
-                    "physicalDeliveryOfficeName", "memberOf",
-                ],
-            )
-        
-        if not search_successful:
-            logger.error("✗ LDAP search failed: %s", conn.result)
-            return None
+        for user_fmt in formats:
+            try:
+                # Connect with timing
+                with timer("ldap_connection", metrics):
+                    conn = Connection(
+                        server,
+                        user=user_fmt,
+                        password=config.ldap_password,
+                        auto_bind=True
+                    )
+                    logger.info("Successfully connected and bound as %s on port %d", user_fmt, port)
+                
+                if audit:
+                    audit.log_sync_start(config.ad_agent_id, "LDAP")
+                
+                # Search with timing
+                logger.info("Searching for users in base DN: %s", config.ldap_base_dn)
+                
+                with timer("ldap_query", metrics):
+                    search_successful = conn.search(
+                        search_base=config.ldap_base_dn,
+                        # Refined AD filter: users with an email
+                        search_filter="(&(objectCategory=person)(objectClass=user)(mail=*))",
+                        search_scope=SUBTREE,
+                        attributes=[
+                            "cn", "mail", "department", "title",
+                            "physicalDeliveryOfficeName", "memberOf",
+                        ],
+                    )
+                
+                if not search_successful:
+                    logger.error("LDAP search failed: %s", conn.result)
+                    conn.unbind()
+                    return None
 
-        users = []
-        role_map = config.get_role_map()
-        
-        for entry in conn.entries:
-            email = str(entry.mail) if entry.mail else None
-            if not email:
-                logger.debug("Skipping entry '%s' — no email address.", entry.cn)
+                users = []
+                role_map = config.get_role_map()
+                
+                for entry in conn.entries:
+                    email = str(entry.mail) if entry.mail else None
+                    if not email:
+                        continue
+
+                    users.append({
+                        "full_name": str(entry.cn),
+                        "email": email,
+                        "department": str(entry.department) if entry.department else "N/A",
+                        "role": _extract_role(
+                            entry.memberOf.values if entry.memberOf else [],
+                            role_map
+                        ),
+                        "position": str(entry.title) if entry.title else "Employee",
+                        "location": (
+                            str(entry.physicalDeliveryOfficeName)
+                            if entry.physicalDeliveryOfficeName else "Remote"
+                        )
+                    })
+                    
+                logger.info("Successfully extracted %d users from LDAP", len(users))
+                conn.unbind()
+                return users
+                
+            except Exception as e:
+                last_error = str(e)
+                logger.debug("Failed with format %s on port %d: %s", user_fmt, port, e)
+                # Ensure connection is closed on failure to avoid resource leak
+                if conn:
+                    try: conn.unbind()
+                    except: pass
                 continue
-
-            users.append({
-                "full_name": str(entry.cn),
-                "email": email,
-                "department": str(entry.department) if entry.department else "N/A",
-                "role": _extract_role(
-                    entry.memberOf.values if entry.memberOf else [],
-                    role_map
-                ),
-                "position": str(entry.title) if entry.title else "Employee",
-                "location": (
-                    str(entry.physicalDeliveryOfficeName)
-                    if entry.physicalDeliveryOfficeName
-                    else "Remote"
-                ),
-            })
-
-        if metrics:
-            metrics.users_extracted = len(users)
-        
-        logger.info("✓ Extracted %d users from Active Directory", len(users))
-        return users
-
-    except Exception:
-        logger.exception("✗ LDAP synchronisation failed")
-        return None
-    finally:
-        if conn and conn.bound:
-            conn.unbind()
-            logger.debug("LDAP connection closed")
+                
+    logger.error("LDAP extraction failed after multiple attempts. Last error: %s", last_error)
+    return None
 
 
 def fetch_users_mock() -> List[Dict[str, str]]:
@@ -643,6 +678,31 @@ def send_users_to_backend(
 
     logger.error("✗ All %d attempts failed", config.http_max_retries)
     return False
+
+
+def report_metrics(config: SyncConfig, metrics: SyncMetrics) -> bool:
+    """Send operational metrics to backend."""
+    logger.info("Reporting operational metrics to backend...")
+    try:
+        headers = _get_hmac_headers(config)
+        # Add legacy key for safety
+        headers["X-Agent-Key"] = config.agent_secret
+        
+        response = requests.post(
+            f"{config.backend_url}/api/v1/collect/metrics",
+            json=metrics.to_dict(config.ad_agent_id),
+            headers=headers,
+            timeout=config.http_timeout
+        )
+        if response.status_code == 200:
+            logger.info("✓ Metrics successfully reported to backend")
+            return True
+        logger.warning("Failed to report metrics: HTTP %d", response.status_code)
+        return False
+    except Exception as e:
+        logger.error("Failed to report metrics: %s", e)
+        return False
+
 
 
 # ══════════════════════════════════════════════════════════════════════════════

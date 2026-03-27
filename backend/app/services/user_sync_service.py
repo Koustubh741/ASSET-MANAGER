@@ -18,7 +18,7 @@ async def sync_ad_users(db: AsyncSession, payload: UserSyncPayload) -> dict:
     created_count = 0
     updated_count = 0
     
-    for user_data in payload.users:
+    for i, user_data in enumerate(payload.users):
         # Find user by email (case-insensitive)
         result = await db.execute(select(User).filter(User.email.ilike(user_data.email)))
         db_user = result.scalars().first()

@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import apiClient from '../lib/apiClient';
 
 const RoleContext = createContext();
 
@@ -10,6 +11,8 @@ export const ROLES = [
     { label: 'IT Management', slug: 'IT_MANAGEMENT', dept: 'IT Dept' },
     { label: 'IT Support', slug: 'IT_SUPPORT', dept: 'IT Dept' },
     { label: 'Manager', slug: 'MANAGER', dept: 'Management' },
+    { label: 'CEO', slug: 'CEO', dept: 'Executive' },
+    { label: 'CFO', slug: 'CFO', dept: 'Finance' },
     { label: 'End User', slug: 'END_USER', dept: 'Employee' },
 ];
 
@@ -28,9 +31,35 @@ export function RoleProvider({ children }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     // USER_REQUEST: User position (MANAGER or EMPLOYEE) is determined at login
     const [user, setUser] = useState(null);
+    const [preferences, setPreferences] = useState({
+        saved_views: {},
+        notification_settings: {
+            expiry: true,
+            approvals: true,
+            system: true,
+            reports: false
+        },
+        ui_theme: 'dark',
+        onboarding_dismissed: false
+    });
     const [isLoading, setIsLoading] = useState(true);
 
-    console.log('RoleContext: Provider mounting');
+    const applyTheme = useCallback((themeName) => {
+        if (typeof window === 'undefined') return;
+        const root = document.documentElement;
+        if (themeName === 'light') {
+            root.classList.remove('dark');
+        } else if (themeName === 'dark') {
+            root.classList.add('dark');
+        } else if (themeName === 'system') {
+            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (systemDark) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+        }
+    }, []);
 
     useEffect(() => {
         const initAuth = () => {
@@ -41,12 +70,7 @@ export function RoleProvider({ children }) {
                 if (session) {
                     try {
                         const parsed = JSON.parse(session);
-                        console.log('RoleContext: Parsed session:', parsed);
-
                         if (parsed && parsed.isAuthenticated) {
-                            // First, ensure apiClient has the token if it was stored separately
-                            // (ApiClient singleton already does this in its constructor, but we want to be sure)
-
                             setUser({
                                 id: parsed.id,
                                 name: parsed.userName,
@@ -55,6 +79,8 @@ export function RoleProvider({ children }) {
                                 position: parsed.position || 'EMPLOYEE',
                                 domain: parsed.domain,
                                 department: parsed.department,
+                                department_id: parsed.department_id,
+                                dept_obj: parsed.dept_obj,
                                 company: parsed.company,
                                 createdAt: parsed.createdAt,
                                 plan: parsed.plan || 'STARTER',
@@ -66,8 +92,6 @@ export function RoleProvider({ children }) {
                             setCurrentRole(savedRole);
                             setIsAuthenticated(true);
                             console.log('RoleContext: Auth restored successfully for', parsed.userName);
-                        } else {
-                            console.log('RoleContext: Session found but not authenticated');
                         }
                     } catch (e) {
                         console.error("RoleContext: Failed to parse auth session", e);
@@ -75,13 +99,72 @@ export function RoleProvider({ children }) {
                 }
             }
             setIsLoading(false);
-            console.log('RoleContext: Initialization complete, isLoading=false');
         };
 
         initAuth();
     }, []);
 
-    // Persist role changes to localStorage automatically to prevent reset on reload
+    // Fetch preferences when authenticated
+    useEffect(() => {
+        const syncUserWithBackend = async () => {
+            if (isAuthenticated) {
+                try {
+                    console.log('RoleContext: Syncing user metadata with backend...');
+                    const freshUser = await apiClient.getCurrentUser();
+                    
+                    // Update state if data has changed (e.g. department or role updated in DB)
+                    setUser(prev => ({
+                        ...prev,
+                        name: freshUser.full_name,
+                        email: freshUser.email,
+                        position: freshUser.position,
+                        department: freshUser.department,
+                        domain: freshUser.domain,
+                        persona: freshUser.persona,
+                        plan: freshUser.plan
+                    }));
+                    
+                    if (freshUser.role) {
+                        const normalizedSlug = normalizeBackendRole(freshUser.role);
+                        const roleObj = ROLES.find(r => r.slug === normalizedSlug);
+                        if (roleObj && roleObj.slug !== currentRole.slug) {
+                            setCurrentRole(roleObj);
+                        }
+                    }
+                    console.log('RoleContext: Metadata sync complete.');
+                } catch (e) {
+                    console.warn('RoleContext: Background sync failed', e);
+                }
+            }
+        };
+
+        const fetchPreferences = async () => {
+            if (isAuthenticated) {
+                try {
+                    const prefs = await apiClient.getUserPreferences();
+                    // Merge with defaults to ensure all keys exist
+                    const merged = {
+                        ...preferences,
+                        ...prefs,
+                        notification_settings: {
+                            ...preferences.notification_settings,
+                            ...(prefs.notification_settings || {})
+                        }
+                    };
+                    setPreferences(merged);
+                    applyTheme(merged.ui_theme);
+                    console.log('RoleContext: Preferences loaded and theme applied');
+                } catch (e) {
+                    console.error("RoleContext: Failed to fetch preferences", e);
+                }
+            }
+        };
+
+        syncUserWithBackend();
+        fetchPreferences();
+    }, [isAuthenticated, applyTheme]);
+
+    // Persist role changes to localStorage automatically - ONLY for session auth
     useEffect(() => {
         if (!isLoading && isAuthenticated && user && currentRole) {
             const session = {
@@ -93,6 +176,8 @@ export function RoleProvider({ children }) {
                 position: user.position,
                 domain: user.domain,
                 department: user.department,
+                department_id: user.department_id,
+                dept_obj: user.dept_obj,
                 company: user.company,
                 createdAt: user.createdAt,
                 plan: user.plan || 'STARTER',
@@ -114,6 +199,8 @@ export function RoleProvider({ children }) {
             position: userData.position || 'EMPLOYEE',
             domain: userData.domain,
             department: userData.department,
+            department_id: userData.department_id,
+            dept_obj: userData.dept_obj,
             company: userData.company,
             createdAt: userData.createdAt,
             persona: userData.persona
@@ -132,6 +219,8 @@ export function RoleProvider({ children }) {
             position: userData.position,
             domain: userData.domain,
             department: userData.department,
+            department_id: userData.department_id,
+            dept_obj: userData.dept_obj,
             company: userData.company,
             createdAt: userData.createdAt,
             plan: userData.plan || 'STARTER',
@@ -158,8 +247,75 @@ export function RoleProvider({ children }) {
         }
     };
 
+    const updatePreferences = async (newPrefs) => {
+        try {
+            const updated = await apiClient.updateUserPreferences(newPrefs);
+            setPreferences(updated);
+            return updated;
+        } catch (e) {
+            console.error("RoleContext: Failed to update preferences", e);
+            throw e;
+        }
+    };
+
+    const isAdmin = currentRole?.slug === 'ADMIN';
+    const isITStaff = ['ADMIN', 'IT_MANAGEMENT', 'IT_SUPPORT'].includes(currentRole?.slug);
+    const isAssetStaff = ['ADMIN', 'ASSET_MANAGER', 'IT_MANAGEMENT'].includes(currentRole?.slug);
+    const isFinanceStaff = ['ADMIN', 'FINANCE'].includes(currentRole?.slug);
+    const isProcurementStaff = ['ADMIN', 'PROCUREMENT'].includes(currentRole?.slug);
+    const isStaff = ['ADMIN', 'ASSET_MANAGER', 'IT_MANAGEMENT', 'IT_SUPPORT', 'PROCUREMENT', 'FINANCE'].includes(currentRole?.slug);
+    const isManagerial = isAdmin || currentRole?.slug === 'IT_MANAGEMENT' || currentRole?.slug === 'CEO' || currentRole?.slug === 'CFO' || user?.position === 'MANAGER';
+
+    // Permission aliases
+    const canManageAutomation = isManagerial;
+    const canManageSystem = isAdmin;
+    const canManageAssets = isAssetStaff;
+
+    const setTheme = async (newTheme) => {
+        applyTheme(newTheme);
+        try {
+            await updatePreferences({ ui_theme: newTheme });
+        } catch (e) {
+            console.error("Failed to sync theme to backend", e);
+        }
+    };
+
+    const setOnboardingDismissed = async (dismissed = true) => {
+        try {
+            await updatePreferences({ onboarding_dismissed: dismissed });
+        } catch (e) {
+            console.error("Failed to sync onboarding dismissal to backend", e);
+        }
+    };
+
     return (
-        <RoleContext.Provider value={{ currentRole, setCurrentRole, ROLES, isAuthenticated, user, login, logout, updatePlan, isLoading }}>
+        <RoleContext.Provider value={{ 
+            currentRole, 
+            setCurrentRole, 
+            ROLES, 
+            isAuthenticated, 
+            user, 
+            login, 
+            logout, 
+            updatePlan, 
+            preferences,
+            updatePreferences,
+            setTheme,
+            setOnboardingDismissed,
+            isLoading,
+            // Permission Flags
+            isAdmin,
+            isITStaff,
+            isAssetStaff,
+            isFinanceStaff,
+            isProcurementStaff,
+            isStaff,
+            isManagerial,
+            // Action Aliases
+            canManageAutomation,
+            canManageSystem,
+            canManageAssets
+        }}>
             {children}
         </RoleContext.Provider>
     );

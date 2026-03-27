@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from uuid import UUID
 
 from ..database.database import get_db
-from ..models.models import Asset, PurchaseOrder, User, AssetRequest
+from ..models.models import Asset, PurchaseOrder, User, AssetRequest, AuditLog
 from ..utils.auth_utils import get_current_user
 
 router = APIRouter(
@@ -84,24 +84,36 @@ async def get_renewal_workflow(
     today = date.today()
     renewal_list = []
     for a in assets:
-        urgency = "Low"
+        # 1. Calculate and update urgency if not set
+        urgency = a.renewal_urgency
         if a.warranty_expiry:
             days_left = (a.warranty_expiry - today).days
             if days_left <= 7: urgency = "Immediate"
             elif days_left <= 30: urgency = "High"
             elif days_left <= 60: urgency = "Medium"
+            elif not urgency: urgency = "Low"
         
+        # 2. Final sanitization for display
+        display_name = a.name
+        if "@" in display_name or ".com" in display_name:
+            # Attempt to hide email-based machine names
+            display_name = f"Node-{str(a.id)[:6].upper()}"
+
+        display_type = a.type or "Unknown"
+        if len(display_type) <= 1:
+            display_type = "Infrastructure" if display_type == "i" else "General Asset"
+
         renewal_list.append(
             WorkflowAssetResponse(
                 id=str(a.id),
-                name=a.name,
-                type=a.type or "Unknown",
+                name=display_name,
+                type=display_type,
                 status=a.status,
                 serial_number=a.serial_number,
                 warranty_expiry=a.warranty_expiry.isoformat() if a.warranty_expiry else None,
                 cost=a.cost,
-                renewal_cost=a.cost, # Estimation for renewal
-                renewal_urgency=urgency
+                renewal_cost=a.cost if (a.cost and a.cost > 0) else 15000.0, # Provide a base estimate if 0/null
+                renewal_urgency=urgency or "Low"
             )
         )
     return renewal_list
@@ -247,6 +259,22 @@ async def process_workflow_action(
             asset.status = "Disposed"
         
         await db.commit()
+        
+        # Add Audit Log
+        audit = AuditLog(
+            entity_type="Asset",
+            entity_id=str(action.asset_id),
+            action=f"WORKFLOW_{action.action}",
+            performed_by=current_user.id,
+            details={
+                "notes": action.notes,
+                "previous_status": "Reserved",
+                "new_status": asset.status
+            }
+        )
+        db.add(audit)
+        await db.commit()
+
         return {"status": "success", "message": f"Asset {action.asset_id} updated to {asset.status}"}
 
     # If not in Asset, check PurchaseOrder
@@ -268,6 +296,22 @@ async def process_workflow_action(
             po.status = "REJECTED"
         
         await db.commit()
+
+        # Add Audit Log
+        audit = AuditLog(
+            entity_type="PurchaseOrder",
+            entity_id=str(action.asset_id),
+            action=f"WORKFLOW_{action.action}",
+            performed_by=current_user.id,
+            details={
+                "notes": action.notes,
+                "previous_status": "UPLOADED",
+                "new_status": po.status
+            }
+        )
+        db.add(audit)
+        await db.commit()
+
         return {"status": "success", "message": f"PO {action.asset_id} updated to {po.status}"}
 
     raise HTTPException(status_code=404, detail="Resource not found")

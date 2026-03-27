@@ -60,7 +60,6 @@ app.add_api_route(
     name="get_procurement_summary_explicit",
 )
 
-
 def _log_registered_routes():
     """Log key routes at startup so we can verify procurement-summary etc. are registered."""
     try:

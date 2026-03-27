@@ -7,8 +7,8 @@ from typing import Dict, Any, List
 import uuid
 
 from app.database.database import get_db, AsyncSessionLocal
-from app.models.models import AgentConfiguration, AgentSchedule, DiscoveryScan, DiscoveryDiff, Asset
-from app.schemas.agent_schema import AgentConfigUpdate, AgentConfigResponse, AgentValidationResponse, AgentScheduleUpdate, AgentScheduleResponse
+from app.models.models import AgentConfiguration, AgentSchedule, DiscoveryScan, DiscoveryDiff, Asset, DiscoveryAgent
+from app.schemas.agent_schema import AgentConfigUpdate, AgentConfigResponse, AgentValidationResponse, AgentScheduleUpdate, AgentScheduleResponse, DiscoveryAgentResponse, DiscoveryAgentUpdate
 from app.services.encryption_service import encrypt_value, decrypt_value
 from app.scheduler import scheduler
 from .auth import check_ADMIN
@@ -31,7 +31,15 @@ router = APIRouter(
     tags=["agents"]
 )
 
-SENSITIVE_KEYS = ['communityString', 'password', 'apiKey', 'secretKey', 'token', 'authKey', 'privKey']
+SENSITIVE_KEYS = [
+    # Legacy agent keys
+    'communityString', 'password', 'apiKey', 'secretKey', 'token', 'authKey', 'privKey',
+    # Cloud provider secrets
+    'aws_secret_access_key',
+    'azure_client_secret',
+    'gcp_service_account_key',
+    'oci_private_key',
+]
 
 @router.get("/{agent_id}/config", response_model=Dict[str, Any])
 async def get_agent_config(
@@ -171,9 +179,39 @@ async def run_snmp_scan_job():
     except Exception as e:
         print(f"[!] Scheduled Scan Failed: {e}")
 
+async def run_cloud_sync_job():
+    """Scheduled job to trigger cloud provider discovery."""
+    print(f"[*] Starting Scheduled Cloud Sync: {datetime.now()}")
+    try:
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        script_path = os.path.join(base_dir, "scripts", "cloud_discovery_agent.py")
+        import sys as _sys
+        import subprocess as _subprocess
+        log_file = os.path.join(base_dir, "agent_execution.log")
+        with open(log_file, "a") as log_handle:
+            log_handle.write(f"\n--- [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Scheduled cloud sync ---\n")
+            _subprocess.Popen(
+                [_sys.executable, script_path],
+                stdout=log_handle,
+                stderr=log_handle,
+                cwd=base_dir,
+                creationflags=_subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0
+            )
+        # Update last_run
+        async with AsyncSessionLocal() as session:
+            stmt = select(AgentSchedule).where(AgentSchedule.agent_id == 'agent-cloud')
+            result = await session.execute(stmt)
+            schedule = result.scalars().first()
+            if schedule:
+                schedule.last_run = datetime.now()
+                await session.commit()
+    except Exception as e:
+        print(f"[!] Cloud Sync Job Failed: {e}")
+
 # FIX BUG 3: Map 'agent-snmp' (not 'agent-local') to the SNMP scan job
 JOB_MAPPINGS = {
-    'agent-snmp': run_snmp_scan_job
+    'agent-snmp': run_snmp_scan_job,
+    'agent-cloud': run_cloud_sync_job,
 }
 
 @router.get("/{agent_id}/schedule", response_model=AgentScheduleResponse)
@@ -356,5 +394,112 @@ async def get_asset_change_history(
             }
             for diff in diffs
         ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Discovery Agent Registry ---
+
+@router.get("/registry", response_model=List[DiscoveryAgentResponse])
+async def get_agent_registry(
+    db: AsyncSession = Depends(get_db)
+):
+    """Retrieve the list of all discovery agents from the registry"""
+    try:
+        result = await db.execute(select(DiscoveryAgent).order_by(DiscoveryAgent.name))
+        return result.scalars().all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/registry/{agent_id}", response_model=DiscoveryAgentResponse)
+async def update_agent_registry_status(
+    agent_id: str,
+    update_data: DiscoveryAgentUpdate,
+    db: AsyncSession = Depends(get_db),
+    admin_user = Depends(check_ADMIN)
+):
+    """Update an agent's status, health, or last sync time"""
+    try:
+        result = await db.execute(select(DiscoveryAgent).where(DiscoveryAgent.id == agent_id))
+        agent = result.scalars().first()
+        
+        if not agent:
+            raise HTTPException(status_code=404, detail="Agent not found in registry")
+            
+        update_dict = update_data.model_dump(exclude_unset=True)
+        for key, value in update_dict.items():
+            setattr(agent, key, value)
+            
+        await db.commit()
+        await db.refresh(agent)
+        return agent
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Internal endpoint for agent self-fetch of cloud credentials ──────────────
+from fastapi import Request as _Request
+import hmac as _hmac, hashlib as _hashlib, time as _time
+
+CLOUD_SENSITIVE_KEYS = {
+    'aws_secret_access_key', 'azure_client_secret', 'gcp_service_account_key', 'oci_private_key'
+}
+
+@router.get("/{agent_id}/config/internal", response_model=Dict[str, str])
+async def get_agent_config_internal(
+    agent_id: str,
+    request: _Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Internal endpoint called by the cloud discovery agent at startup to fetch
+    its stored credentials. Authenticated via HMAC-SHA256 using AGENT_SECRET.
+    """
+    agent_secret = os.getenv("AGENT_SECRET", "")
+
+    timestamp = request.headers.get("X-Agent-Timestamp", "")
+    signature = request.headers.get("X-Agent-Signature", "")
+    caller_id = request.headers.get("X-Agent-ID", "")
+
+    # Validate caller matches requested agent_id
+    if caller_id != agent_id:
+        raise HTTPException(status_code=403, detail="Agent ID mismatch")
+
+    # Validate timestamp is within ±60 seconds
+    try:
+        ts = int(timestamp)
+        if abs(_time.time() - ts) > 60:
+            raise HTTPException(status_code=403, detail="Timestamp expired")
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=403, detail="Invalid timestamp")
+
+    # Validate HMAC signature
+    path = f"/api/v1/agents/{agent_id}/config/internal"
+    expected_sig = _hmac.new(
+        agent_secret.encode(),
+        f"{timestamp}:{path}".encode(),
+        _hashlib.sha256
+    ).hexdigest()
+    if not _hmac.compare_digest(expected_sig, signature):
+        raise HTTPException(status_code=403, detail="Invalid signature")
+
+    # Fetch and decrypt config
+    try:
+        result = await db.execute(
+            select(AgentConfiguration).where(AgentConfiguration.agent_id == agent_id)
+        )
+        rows = result.scalars().all()
+        config: Dict[str, str] = {}
+        for row in rows:
+            if row.is_sensitive:
+                try:
+                    config[row.config_key] = decrypt_value(row.config_value)
+                except Exception:
+                    config[row.config_key] = row.config_value
+            else:
+                config[row.config_key] = row.config_value
+        return config
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -7,7 +7,10 @@ import apiClient from '@/lib/apiClient';
 import { formatId, copyToClipboard } from '@/lib/idHelper';
 import { useToast } from '@/components/common/Toast';
 
-export default function TicketDetailPage() {
+import { useRole } from '@/contexts/RoleContext';
+
+export default function TicketDetails() {
+    const { user } = useRole();
     const router = useRouter();
     const { id } = router.query;
     const toast = useToast();
@@ -52,8 +55,9 @@ export default function TicketDetailPage() {
 
     const handleAcknowledge = async () => {
         try {
-            const user = JSON.parse(localStorage.getItem('user')) || { id: 'admin', full_name: 'Admin' };
-            await apiClient.acknowledgeTicket(id, user.id || user.full_name, 'Ticket acknowledged from details page.');
+            const currentUserId = user?.id || 'admin';
+            const currentUserName = user?.full_name || user?.name || 'Admin';
+            await apiClient.acknowledgeTicket(id, currentUserId, 'Ticket acknowledged from details page.');
 
             // Reload ticket
             const updated = await apiClient.getTicket(id);
@@ -67,14 +71,15 @@ export default function TicketDetailPage() {
     const handleUpdate = async () => {
         if (!note) return;
         try {
-            const user = JSON.parse(localStorage.getItem('user')) || { id: 'admin', full_name: 'Admin' };
+            const currentUserId = user?.id || 'admin';
+            const currentUserName = user?.full_name || user?.name || 'Admin';
 
             // If status is being set to RESOLVED or CLOSED, use resolveTicket
             if (newStatus === 'RESOLVED' || newStatus === 'CLOSED') {
-                await apiClient.resolveTicket(id, user.id || user.full_name, note);
+                await apiClient.resolveTicket(id, currentUserId, note);
             } else {
                 // Otherwise acknowledge or just update
-                await apiClient.acknowledgeTicket(id, user.id || user.full_name, note);
+                await apiClient.acknowledgeTicket(id, currentUserId, note);
             }
 
             // Reload ticket
@@ -137,24 +142,24 @@ export default function TicketDetailPage() {
     }, []);
 
 
-    if (loading) return <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center text-slate-500 dark:text-slate-400">Loading...</div>;
+    if (loading) return <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center text-app-text-muted">Loading...</div>;
     if (!ticket) return <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center text-rose-500">Ticket not found or inaccessible.</div>;
 
     return (
-        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500">
+        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-app-text transition-colors duration-500">
             <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* --- HEADER LAYER --- */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-200 dark:border-white/5">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-app-border">
                     <div className="flex items-center space-x-5">
                         <button 
                             onClick={() => router.back()} 
-                            className="group p-3 rounded-2xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-white transition-all shadow-sm hover:shadow-indigo-500/10 active:scale-95"
+                            className="group p-3 rounded-2xl bg-white bg-app-surface-soft border border-app-border text-slate-500 hover:text-indigo-500 text-app-text-muted dark:hover:text-white transition-all shadow-sm hover:shadow-indigo-500/10 active:scale-95"
                         >
                             <ArrowLeft size={22} className="group-hover:-translate-x-1 transition-transform" />
                         </button>
                         <div>
                             <div className="flex flex-wrap items-center gap-3">
-                                <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white uppercase italic">
+                                <h1 className="text-2xl font-black tracking-tight text-app-text uppercase italic">
                                     {ticket.subject}
                                 </h1>
                                 <div className="flex items-center gap-2">
@@ -190,8 +195,8 @@ export default function TicketDetailPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-white/50 dark:bg-white/5 p-2 rounded-2xl border border-slate-200 dark:border-white/10 backdrop-blur-md">
-                        <div className="flex flex-col items-end px-3 border-r border-slate-200 dark:border-white/10">
+                    <div className="flex items-center gap-3 bg-white/50 bg-app-surface-soft p-2 rounded-2xl border border-app-border backdrop-blur-md">
+                        <div className="flex flex-col items-end px-3 border-r border-app-border">
                             <span className="text-[10px] uppercase font-black text-slate-400 tracking-tighter">System Scan</span>
                             <span className="text-xs font-mono text-emerald-400 font-bold">NOMINAL</span>
                         </div>
@@ -249,12 +254,12 @@ export default function TicketDetailPage() {
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                             {aiAnalysis ? (
                                 <div className="md:col-span-8 space-y-6">
-                                    <div className="p-6 rounded-3xl bg-white/50 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-sm">
+                                    <div className="p-6 rounded-3xl bg-white/50 bg-app-surface-soft border border-app-border backdrop-blur-sm">
                                         <div className="flex items-center gap-6 mb-6">
                                             <div className="flex-1">
                                                 <span className="text-[10px] uppercase font-black text-slate-400 dark:text-indigo-300/40 tracking-widest block mb-1">Confidence Rating</span>
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex-1 h-3 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                    <div className="flex-1 h-3 bg-slate-200 bg-app-surface-soft rounded-full overflow-hidden">
                                                         <div 
                                                             className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]" 
                                                             style={{ width: `${Math.round(aiAnalysis.confidence_score * 100)}%` }}
@@ -275,7 +280,7 @@ export default function TicketDetailPage() {
                                             </h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 {aiAnalysis.suggested_steps.map((step, i) => (
-                                                    <div key={i} className="group/step flex gap-4 p-4 rounded-2xl bg-white/40 dark:bg-white/5 border border-transparent hover:border-indigo-500/30 hover:bg-white/60 dark:hover:bg-indigo-500/10 transition-all duration-300">
+                                                    <div key={i} className="group/step flex gap-4 p-4 rounded-2xl bg-white/40 bg-app-surface-soft border border-transparent hover:border-indigo-500/30 hover:bg-white/60 dark:hover:bg-indigo-500/10 transition-all duration-300">
                                                         <span className="shrink-0 w-6 h-6 rounded-lg bg-indigo-500/20 flex items-center justify-center text-[10px] font-black text-indigo-400 border border-indigo-500/20 group-hover/step:bg-indigo-500 group-hover/step:text-white transition-colors">{i + 1}</span>
                                                         <span className="text-sm text-slate-700 dark:text-indigo-100/90 font-medium leading-tight">{step}</span>
                                                     </div>
@@ -326,35 +331,35 @@ export default function TicketDetailPage() {
                     {/* --- MAIN CORE CONTENT --- */}
                     <div className="lg:col-span-8 space-y-8">
                         {/* DESCRIPTION PANEL */}
-                        <div className="glass-panel group p-8 rounded-[2rem] bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xl">
+                        <div className="glass-panel group p-8 rounded-[2rem] bg-white bg-app-surface-soft border border-app-border shadow-xl">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-xl bg-slate-500/10 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                <div className="w-10 h-10 rounded-xl bg-slate-500/10 flex items-center justify-center text-app-text-muted group-hover:text-indigo-500 transition-colors">
                                     <Info size={20} />
                                 </div>
-                                <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic">Incident Narrative</h3>
+                                <h3 className="text-lg font-black text-app-text uppercase italic">Incident Narrative</h3>
                             </div>
-                            <div className="p-6 rounded-2xl bg-slate-100/50 dark:bg-black/20 border border-slate-200 dark:border-white/5">
-                                <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                            <div className="p-6 rounded-2xl bg-slate-100/50 dark:bg-black/20 border border-app-border">
+                                <p className="text-lg text-app-text-muted leading-relaxed font-medium">
                                     {ticket.description}
                                 </p>
                             </div>
                         </div>
 
                         {/* ACTIVITY LOG PANEL */}
-                        <div className="glass-panel group p-8 rounded-[2rem] bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden">
+                        <div className="glass-panel group p-8 rounded-[2rem] bg-white bg-app-surface-soft border border-app-border shadow-xl overflow-hidden">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-500/10 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:text-indigo-500 transition-colors">
+                                    <div className="w-10 h-10 rounded-xl bg-slate-500/10 flex items-center justify-center text-app-text-muted group-hover:text-indigo-500 transition-colors">
                                         <Activity size={20} />
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase italic">Activity Stream</h3>
+                                    <h3 className="text-lg font-black text-app-text uppercase italic">Activity Stream</h3>
                                 </div>
-                                <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest px-3 py-1 bg-slate-100 dark:bg-white/5 rounded-lg border border-slate-200 dark:border-white/5">
+                                <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest px-3 py-1 bg-app-surface-soft rounded-lg border border-app-border">
                                     {ticket.timeline?.length || 0} Events
                                 </span>
                             </div>
 
-                            <div className="relative space-y-10 pl-6 border-l-2 border-slate-200 dark:border-white/10 ml-2">
+                            <div className="relative space-y-10 pl-6 border-l-2 border-app-border ml-2">
                                 {(ticket.timeline || []).map((h, i) => (
                                     <div key={i} className="relative group/item animate-in fade-in slide-in-from-left-4" style={{ animationDelay: `${i * 100}ms` }}>
                                         {/* Timeline Node */}
@@ -366,18 +371,18 @@ export default function TicketDetailPage() {
                                                 : 'bg-slate-500 border-slate-500/20'
                                         }`} />
                                         
-                                        <div className="bg-slate-100/50 dark:bg-white/5 rounded-2xl p-5 border border-slate-200 dark:border-white/5 group-hover/item:border-indigo-500/30 transition-all shadow-sm">
+                                        <div className="bg-slate-100/50 bg-app-surface-soft rounded-2xl p-5 border border-app-border group-hover/item:border-indigo-500/30 transition-all shadow-sm">
                                             <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                                                 <div className={`text-sm font-black uppercase tracking-widest ${
                                                     h.action.includes('RESOLVED') ? 'text-emerald-400' : 'text-slate-900 dark:text-indigo-200'
                                                 }`}>
                                                     {h.action}
                                                 </div>
-                                                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-600 flex items-center gap-1.5 bg-white dark:bg-black/20 px-2 py-0.5 rounded-md border border-slate-200 dark:border-white/5">
+                                                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-600 flex items-center gap-1.5 bg-white dark:bg-black/20 px-2 py-0.5 rounded-md border border-app-border">
                                                     <Clock size={10} /> {new Date(h.timestamp).toLocaleString()}
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium italic mb-4">"{h.comment}"</p>
+                                            <p className="text-sm text-slate-600 text-app-text-muted font-medium italic mb-4">"{h.comment}"</p>
                                             
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/10">
@@ -397,9 +402,78 @@ export default function TicketDetailPage() {
 
                     {/* --- TACTICAL SIDEBAR --- */}
                     <div className="lg:col-span-4 space-y-6">
+                        {/* SLA STATUS MODULE - Root Fix for Visibility */}
+                        {(ticket.sla_response_deadline || ticket.sla_resolution_deadline) && (
+                            <div className={`glass-panel p-6 rounded-[2rem] border shadow-xl relative overflow-hidden transition-all duration-700 group hover:scale-[1.02] ${
+                                ticket.sla_response_status === 'BREACHED' || ticket.sla_resolution_status === 'BREACHED' 
+                                    ? 'bg-rose-500/5 border-rose-500/40 shadow-rose-500/10' 
+                                    : 'bg-indigo-600/[0.03] border-indigo-500/20 shadow-indigo-500/10'
+                            }`}>
+                                <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full blur-[80px] transition-colors duration-1000 ${
+                                    ticket.sla_response_status === 'BREACHED' || ticket.sla_resolution_status === 'BREACHED' ? 'bg-rose-500/20' : 'bg-indigo-500/10'
+                                }`} />
+                                
+                                <div className="flex items-center justify-between mb-6 relative z-10">
+                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-2 text-app-text-muted">
+                                        <Clock size={16} className={ticket.sla_response_status === 'BREACHED' || ticket.sla_resolution_status === 'BREACHED' ? 'text-rose-500' : 'text-indigo-500'} /> 
+                                        SLA Protocol
+                                    </h3>
+                                    {(ticket.sla_response_status === 'BREACHED' || ticket.sla_resolution_status === 'BREACHED') && (
+                                        <span className="px-3 py-1 rounded-lg bg-rose-500 text-[10px] font-black text-white uppercase tracking-widest animate-pulse flex items-center gap-1.5 shadow-lg shadow-rose-500/20">
+                                            <AlertTriangle size={12} /> Breach
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="space-y-6 relative z-10">
+                                    {/* Response SLA */}
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest">
+                                            <span className="text-slate-400">Response Target</span>
+                                            <span className={ticket.sla_response_status === 'BREACHED' ? 'text-rose-500 text-xs' : ticket.sla_response_status === 'MET' ? 'text-emerald-500' : 'text-amber-500'}>
+                                                {ticket.sla_response_status?.replace('_', ' ')}
+                                            </span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-200 bg-app-surface-soft rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full transition-all duration-1000 ${ticket.sla_response_status === 'BREACHED' ? 'bg-rose-500' : ticket.sla_response_status === 'MET' ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                                                style={{ width: ticket.sla_response_status === 'BREACHED' || ticket.sla_response_status === 'MET' ? '100%' : '50%' }}
+                                            />
+                                        </div>
+                                        {ticket.sla_response_deadline && (
+                                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter">
+                                                Target: <span className="font-bold text-slate-700 dark:text-indigo-200">{new Date(ticket.sla_response_deadline).toLocaleString()}</span>
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Resolution SLA */}
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest">
+                                            <span className="text-slate-400">Resolution Target</span>
+                                            <span className={ticket.sla_resolution_status === 'BREACHED' ? 'text-rose-500 text-xs' : ticket.sla_resolution_status === 'MET' ? 'text-emerald-500' : 'text-indigo-400'}>
+                                                {ticket.sla_resolution_status?.replace('_', ' ')}
+                                            </span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-200 bg-app-surface-soft rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full transition-all duration-1000 ${ticket.sla_resolution_status === 'BREACHED' ? 'bg-rose-500' : ticket.sla_resolution_status === 'MET' ? 'bg-emerald-500' : 'bg-indigo-500'}`}
+                                                style={{ width: ticket.sla_resolution_status === 'BREACHED' || ticket.sla_resolution_status === 'MET' ? '100%' : '30%' }}
+                                            />
+                                        </div>
+                                        {ticket.sla_resolution_deadline && (
+                                            <p className="text-[10px] text-slate-500 font-mono tracking-tighter">
+                                                Target: <span className="font-bold text-slate-700 dark:text-indigo-200">{new Date(ticket.sla_resolution_deadline).toLocaleString()}</span>
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* TICKET DETAILS CARD */}
-                        <div className="glass-panel p-8 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl group hover:border-indigo-500/20 transition-all">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-8 pb-3 border-b border-slate-200 dark:border-white/5 flex items-center gap-2">
+                        <div className="glass-panel p-8 rounded-[2rem] bg-white dark:bg-slate-900 border border-app-border shadow-xl group hover:border-indigo-500/20 transition-all">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-app-text-muted mb-8 pb-3 border-b border-app-border flex items-center gap-2">
                                 <Cpu size={14} className="text-indigo-500" /> System Metadata
                             </h3>
                             
@@ -410,7 +484,7 @@ export default function TicketDetailPage() {
                                     </div>
                                     <div>
                                         <span className="text-[10px] uppercase font-black text-slate-400 tracking-tighter block mb-0.5">Origin Requestor</span>
-                                        <div className="text-sm font-black text-slate-800 dark:text-white font-mono">{formatId(ticket.requestor_id, 'user')}</div>
+                                        <div className="text-sm font-black text-slate-800 text-app-text font-mono">{ticket.requestor_name || formatId(ticket.requestor_id, 'user')}</div>
                                     </div>
                                 </div>
 
@@ -420,11 +494,11 @@ export default function TicketDetailPage() {
                                     </div>
                                     <div>
                                         <span className="text-[10px] uppercase font-black text-slate-400 tracking-tighter block mb-0.5">Temporal Stamp</span>
-                                        <div className="text-sm font-black text-slate-800 dark:text-white font-mono">{new Date(ticket.created_at).toLocaleDateString()}</div>
+                                        <div className="text-sm font-black text-slate-800 text-app-text font-mono">{new Date(ticket.created_at).toLocaleDateString()}</div>
                                     </div>
                                 </div>
 
-                                <div className="pt-6 border-t border-slate-200 dark:border-white/5">
+                                <div className="pt-6 border-t border-app-border">
                                     <span className="text-[10px] uppercase font-black text-slate-400 tracking-tighter block mb-4">Neural Linked Asset</span>
                                     {ticket.related_asset_id ? (
                                         <Link
@@ -465,7 +539,7 @@ export default function TicketDetailPage() {
                                     <User size={18} className="text-slate-400 group-focus-within/select:text-indigo-400 transition-colors" />
                                 </div>
                                 <select
-                                    className="w-full bg-slate-100 dark:bg-slate-950/80 backdrop-blur-sm border border-slate-200 dark:border-white/10 rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-slate-700 dark:text-indigo-200/80 outline-none hover:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer appearance-none"
+                                    className="w-full bg-slate-100 dark:bg-slate-950/80 backdrop-blur-sm border border-app-border rounded-2xl pl-12 pr-4 py-4 text-sm font-bold text-slate-700 dark:text-indigo-200/80 outline-none hover:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer appearance-none"
                                     value={ticket.assigned_to_id || ''}
                                     onChange={(e) => handleAssignTicket(e.target.value)}
                                     disabled={isAssigning}
@@ -488,7 +562,7 @@ export default function TicketDetailPage() {
                         <div className="space-y-4">
                             <button
                                 onClick={() => setIsModalOpen(true)}
-                                className="group w-full py-4 bg-white dark:bg-white/5 hover:bg-indigo-600 dark:hover:bg-indigo-600 border border-slate-200 dark:border-white/10 rounded-2xl text-slate-700 dark:text-indigo-200/80 hover:text-white font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3"
+                                className="group w-full py-4 bg-white bg-app-surface-soft hover:bg-indigo-600 dark:hover:bg-indigo-600 border border-app-border rounded-2xl text-slate-700 dark:text-indigo-200/80 hover:text-white font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg active:scale-95 flex items-center justify-center gap-3"
                             >
                                 <MessageSquare size={16} /> Update Protocol
                             </button>
@@ -522,7 +596,7 @@ export default function TicketDetailPage() {
             {/* --- ACTION MODAL OVERHAUL --- */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-                    <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-[2.5rem] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.5)] border-indigo-500/20">
+                    <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-app-border rounded-[2.5rem] overflow-hidden shadow-[0_30px_100px_rgba(0,0,0,0.5)] border-indigo-500/20">
                         <div className="p-8 bg-gradient-to-br from-indigo-900/50 to-blue-900/50 border-b border-white/10">
                             <h3 className="text-2xl font-black text-white uppercase italic tracking-tight mb-2">Protocol <span className="text-indigo-400">Update</span></h3>
                             <p className="text-xs text-indigo-300/60 uppercase font-black tracking-widest">Incident Record Modulation</p>
@@ -539,7 +613,7 @@ export default function TicketDetailPage() {
                                             className={`py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${
                                                 newStatus === status 
                                                     ? 'bg-indigo-600 border-transparent text-white shadow-lg shadow-indigo-600/20 scale-105' 
-                                                    : 'bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:border-indigo-500/30'
+                                                    : 'bg-app-surface-soft border-app-border text-app-text-muted hover:border-indigo-500/30'
                                             }`}
                                         >
                                             {status.replace('_', ' ')}
@@ -551,7 +625,7 @@ export default function TicketDetailPage() {
                             <div>
                                 <label className="block text-[10px] font-black text-slate-400 dark:text-indigo-300/40 uppercase tracking-widest mb-3">Mission Narrative</label>
                                 <textarea
-                                    className="w-full bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-slate-700 dark:text-indigo-100 focus:ring-4 focus:ring-indigo-500/10 outline-none h-32 transition-all resize-none"
+                                    className="w-full bg-slate-100 dark:bg-black/40 border border-app-border rounded-2xl px-5 py-4 text-sm font-medium text-slate-700 dark:text-indigo-100 focus:ring-4 focus:ring-indigo-500/10 outline-none h-32 transition-all resize-none"
                                     placeholder="Enter technical details about the modulation..."
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
@@ -560,7 +634,7 @@ export default function TicketDetailPage() {
                             <div className="flex gap-4 pt-4">
                                 <button
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-4 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 transition-all border border-transparent active:scale-95"
+                                    className="flex-1 py-4 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 transition-all border border-transparent active:scale-95"
                                 >
                                     Abort
                                 </button>

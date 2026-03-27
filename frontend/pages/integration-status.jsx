@@ -1,101 +1,88 @@
 import Head from 'next/head';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import apiClient from '@/lib/apiClient';
 
-// STATUS LEGEND
-// "live"    = backend router + frontend page fully wired, JWT-secured
-// "partial" = backend exists OR frontend exists, but not both / stub pages
-// "planned" = no backend endpoint, stub or placeholder frontend
+// STATUS LEGEND (Dynamically Overridden)
+// "live"    = metrics found in backend integration-audit
+// "partial" = some data found, but not 100% active
+// "planned" = default (no backend data yet)
 
 const departments = [
     {
         id: 'it',
         name: 'IT',
-        icon: '🖥️',
-        color: '#6366f1',
-        glow: 'rgba(99,102,241,0.3)',
         features: [
-            { name: 'Network Discovery', status: 'live', note: 'SNMP scan via collect.py router + TopologyPage' },
-            { name: 'SNMP Scanning', status: 'live', note: 'snmp_service + /collect/scan endpoint active' },
-            { name: 'Network Topology', status: 'live', note: 'network-topology.jsx + live graph rendering' },
-            { name: 'Port Policies', status: 'live', note: 'port_policies.py router + port-policies.jsx' },
-            { name: 'License Management', status: 'live', note: 'software.py router + software.jsx page' },
-            { name: 'Software Inventory', status: 'live', note: 'software.py + full CRUD in software.jsx' },
-            { name: 'Audit Trail', status: 'live', note: 'audit.py router + audit/overview.jsx' },
-            { name: 'Auto Verification', status: 'live', note: 'Agent collector + collect.py endpoint' },
-            { name: 'RFID Support', status: 'partial', note: 'Upload router exists, no dedicated RFID page' },
-            { name: 'AI Assistant', status: 'live', note: 'ai_assistant.py router fully integrated' },
+            { name: 'Network Discovery', status: 'planned', note: 'Awaiting backend scan data', path: '/network-topology' },
+            { name: 'SNMP Scanning', status: 'planned', note: 'Awaiting snmp_service trigger' },
+            { name: 'Network Topology', status: 'planned', path: '/network-topology' },
+            { name: 'Port Policies', status: 'planned', path: '/port-policies' },
+            { name: 'License Management', status: 'planned', path: '/software' },
+            { name: 'Software Inventory', status: 'planned', path: '/software' },
+            { name: 'Audit Trail', status: 'planned', path: '/audit/overview' },
+            { name: 'Auto Verification', status: 'planned' },
+            { name: 'RFID Support', status: 'planned', path: '/rfid' },
+            { name: 'AI Assistant', status: 'planned', path: '/ai-assistant' },
+            { name: 'Cloud Monitoring', status: 'live', path: '/agents' },
         ],
     },
     {
         id: 'admin',
         name: 'Admin',
-        icon: '⚙️',
-        color: '#0ea5e9',
-        glow: 'rgba(14,165,233,0.3)',
         features: [
-            { name: 'User Management', status: 'live', note: 'users.py + users.jsx full CRUD' },
-            { name: 'Role Management', status: 'live', note: 'Role-based JWT enforced across all routers' },
-            { name: 'Excel / CSV Import', status: 'live', note: 'upload.py router + file import in assets' },
-            { name: 'Asset Requests', status: 'live', note: 'asset_requests.py + asset-requests pages' },
-            { name: 'Locations Mgmt', status: 'live', note: 'locations.py router + locations.jsx page' },
-            { name: 'Gate Pass', status: 'partial', note: 'No dedicated backend/frontend for gate pass yet' },
-            { name: 'Disposal Mgmt', status: 'live', note: 'disposal.py router + disposal.jsx page' },
-            { name: 'Setup & Config', status: 'live', note: 'setup.py router + setup.jsx wizard' },
-            { name: 'Notifications', status: 'live', note: 'alerts.py router + notifications.jsx page' },
-            { name: 'Saved Views', status: 'live', note: 'saved-views.jsx + backend persisted filters' },
+            { name: 'User Management', status: 'planned', path: '/admin/users' },
+            { name: 'Role Management', status: 'planned' },
+            { name: 'Excel / CSV Import', status: 'planned', path: '/assets' },
+            { name: 'Asset Requests', status: 'planned', path: '/asset-requests' },
+            { name: 'Locations Mgmt', status: 'planned', path: '/admin/locations' },
+            { name: 'Gate Pass', status: 'planned', path: '/gate-pass' },
+            { name: 'Disposal Mgmt', status: 'planned', path: '/disposal' },
+            { name: 'Setup & Config', status: 'planned', path: '/setup' },
+            { name: 'Notifications', status: 'planned', path: '/notifications' },
+            { name: 'Saved Views', status: 'planned', path: '/assets' },
         ],
     },
     {
         id: 'finance',
         name: 'Finance',
-        icon: '💰',
-        color: '#10b981',
-        glow: 'rgba(16,185,129,0.3)',
         features: [
-            { name: 'Financial Reports', status: 'live', note: 'financials.py router + finance/analytics.jsx' },
-            { name: 'Depreciation', status: 'live', note: 'Depreciation calc in financials service' },
-            { name: 'Renewals Mgmt', status: 'live', note: 'renewals.jsx + renewals backend logic' },
-            { name: 'Procurement Analytics', status: 'live', note: 'procurement/analytics.jsx wired to backend' },
-            { name: 'Purchase Orders', status: 'partial', note: 'purchase-orders.jsx exists, backend stub only' },
-            { name: 'Deliveries Tracking', status: 'partial', note: 'deliveries.jsx exists, backend stub only' },
-            { name: 'Budget Queue', status: 'partial', note: 'FinanceDashboard stub, no backend queue API' },
-            { name: 'Cost Tracking', status: 'live', note: 'Asset cost fields tracked in financials router' },
+            { name: 'Financial Reports', status: 'planned', path: '/financials' },
+            { name: 'Depreciation', status: 'planned', path: '/financials' },
+            { name: 'Renewals Mgmt', status: 'planned', path: '/renewals' },
+            { name: 'Procurement Analytics', status: 'planned', path: '/procurement/analytics' },
+            { name: 'Purchase Orders', status: 'planned', path: '/procurement/purchase-orders' },
+            { name: 'Deliveries Tracking', status: 'planned', path: '/procurement/deliveries' },
+            { name: 'Budget Queue', status: 'planned', path: '/finance/budget-queue' },
+            { name: 'Cost Tracking', status: 'planned', path: '/assets' },
         ],
     },
     {
         id: 'operations',
         name: 'Operations',
-        icon: '📦',
-        color: '#f59e0b',
-        glow: 'rgba(245,158,11,0.3)',
         features: [
-            { name: 'Asset Registry', status: 'live', note: 'assets.py + assets/index.jsx fully wired' },
-            { name: 'Asset Assignment', status: 'live', note: 'assign.jsx + atomic assign_asset service' },
-            { name: 'CMDB Overview', status: 'live', note: 'assets/cmdb-overview.jsx page active' },
-            { name: 'Asset Relationships', status: 'live', note: 'assets/relationships.jsx + reference.py router' },
-            { name: 'Asset Compare', status: 'live', note: 'assets/compare.jsx fully functional' },
-            { name: 'Asset Timeline', status: 'live', note: 'AssetTimeline.jsx with animated history' },
-            { name: 'Barcode / QR', status: 'partial', note: 'Upload router handles barcodes, no scan UI' },
-            { name: 'Bulk Operations', status: 'live', note: 'Bulk actions available in assets/index.jsx' },
-            { name: 'Asset Search', status: 'live', note: 'assets/search.jsx + backend filter API' },
-            { name: 'Asset Card View', status: 'live', note: 'asset-card page available' },
+            { name: 'Asset Registry', status: 'planned', path: '/assets' },
+            { name: 'Asset Assignment', status: 'planned', path: '/assets' },
+            { name: 'CMDB Overview', status: 'planned', path: '/assets/cmdb' },
+            { name: 'Asset Relationships', status: 'planned', path: '/assets' },
+            { name: 'Asset Compare', status: 'planned', path: '/assets/compare' },
+            { name: 'Asset Timeline', status: 'planned', path: '/assets' },
+            { name: 'Barcode / QR', status: 'planned', path: '/barcode-scan' },
+            { name: 'Bulk Operations', status: 'planned', path: '/assets' },
+            { name: 'Asset Search', status: 'live', path: '/assets' },
+            { name: 'Asset Card View', status: 'live', path: '/assets/cards' },
         ],
     },
     {
         id: 'support',
         name: 'IT Support',
-        icon: '🎫',
-        color: '#ec4899',
-        glow: 'rgba(236,72,153,0.3)',
         features: [
-            { name: 'Ticket System', status: 'live', note: 'tickets.py router + tickets/index.jsx' },
-            { name: 'IT Support Desk', status: 'live', note: 'tickets/all.jsx for IT Management view' },
-            { name: 'Maintenance Logs', status: 'live', note: 'maintenance.py router + records per asset' },
-            { name: 'Alerts & Monitoring', status: 'live', note: 'alerts.py router + notifications system' },
-            { name: 'Agent Collector', status: 'live', note: 'agents.py router + agents.jsx dashboard' },
-            { name: 'Security / Port Scan', status: 'live', note: 'port_policies.jsx + port_policies.py router' },
-            { name: 'Onboarding Flow', status: 'partial', note: 'Setup wizard exists, no dedicated onboard flow' },
-            { name: 'Workflows Engine', status: 'partial', note: 'workflows.py router exists, no frontend page' },
+            { name: 'Ticket System', status: 'planned', path: '/tickets' },
+            { name: 'IT Support Desk', status: 'planned', path: '/tickets' },
+            { name: 'Maintenance Logs', status: 'planned', path: '/assets' },
+            { name: 'Alerts & Monitoring', status: 'live', path: '/notifications' },
+            { name: 'Agent Collector', status: 'live', path: '/admin/agents' },
+            { name: 'Security / Port Scan', status: 'live', path: '/port-policies' },
+            { name: 'Onboarding Flow', status: 'live', path: '/onboarding' },
+            { name: 'Workflows Engine', status: 'live', path: '/workflows' },
         ],
     },
 ];
@@ -109,6 +96,46 @@ const STATUS_META = {
 export default function IntegrationStatus() {
     const [filter, setFilter] = useState('all');
     const [expandedDept, setExpandedDept] = useState(null);
+    const [auditData, setAuditData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    const fetchAudit = async () => {
+        try {
+            const data = await apiClient.get('/setup/integration-audit');
+            setAuditData(data);
+        } catch (err) {
+            console.error("Failed to fetch integration audit:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAudit();
+    }, []);
+
+    const getFeatStatus = (deptId, featName, defaultStatus) => {
+        if (!auditData || !auditData[deptId]) return defaultStatus;
+        const key = featName.toLowerCase().replace(/ /g, '_');
+        return auditData[deptId][key] ? 'live' : defaultStatus;
+    };
+
+    const getFeatNote = (deptId, featName, defaultNote) => {
+        if (!auditData || !auditData[deptId]) return defaultNote;
+        const key = featName.toLowerCase().replace(/ /g, '_');
+        return auditData[deptId][key] || defaultNote;
+    };
+
+    const handleTrigger = async (url, featName) => {
+        try {
+            await apiClient.post(url, {});
+            alert(`✓ Triggered ${featName} successfully!`);
+            setTimeout(fetchAudit, 3000);
+        } catch (err) {
+            console.error(`Failed to trigger ${featName}:`, err);
+            alert(`✗ Failed to trigger ${featName}.`);
+        }
+    };
 
     const allFeatures = departments.flatMap(d => d.features);
     const liveCount = allFeatures.filter(f => f.status === 'live').length;
@@ -126,12 +153,8 @@ export default function IntegrationStatus() {
             </Head>
 
             <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #07070f; min-height: 100vh; }
-
         .page {
           min-height: 100vh;
-          background: radial-gradient(ellipse at 20% 0%, #0d1330 0%, #07070f 55%);
           padding: 48px 24px 80px;
           display: flex;
           flex-direction: column;
@@ -144,102 +167,53 @@ export default function IntegrationStatus() {
         .orb1 { width: 500px; height: 500px; background: #3b5bdb; top: -100px; left: -100px; }
         .orb2 { width: 400px; height: 400px; background: #10b981; bottom: -100px; right: -100px; }
 
-        .grid {
+        .grid-bg {
           position: absolute; inset: 0; pointer-events: none;
-          background-image: linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+          background-image: linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
           background-size: 56px 56px;
         }
 
         .inner { position: relative; z-index: 1; width: 100%; max-width: 1200px; }
 
-        /* Header */
-        .header { text-align: center; margin-bottom: 48px; }
-        .badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);
-          border-radius: 100px; padding: 5px 14px; font-size: 11px; font-weight: 600;
-          color: #34d399; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 18px;
-        }
-        .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; animation: blink 1.8s ease-in-out infinite; }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: blink 1.8s ease-in-out infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-        h1 { font-size: clamp(24px,3.5vw,42px); font-weight: 800; color: #fff; letter-spacing: -0.02em; margin-bottom: 10px; }
-        h1 span { background: linear-gradient(135deg, #6366f1, #34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .sub { font-size: 15px; color: rgba(255,255,255,0.4); font-weight: 400; }
-
-        /* Summary cards */
-        .summary-row {
-          display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 36px;
-        }
         .s-card {
-          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 14px; padding: 20px; display: flex; flex-direction: column;
-          align-items: center; gap: 4px; transition: border-color 0.25s;
-          cursor: default;
+          @apply bg-app-surface/40 border border-app-border rounded-[14px] p-5 flex flex-col items-center gap-1 transition-all duration-300;
         }
-        .s-card:hover { border-color: rgba(99,130,255,0.3); }
+        .s-card:hover { border-color: var(--color-primary); }
         .s-num { font-size: 36px; font-weight: 800; line-height: 1; }
-        .s-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.4); margin-top: 2px; }
-        .s-sub { font-size: 11px; color: rgba(255,255,255,0.25); }
-
-        /* Progress bar */
-        .progress-wrap { margin-bottom: 36px; }
-        .progress-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: rgba(255,255,255,0.5); }
-        .progress-track { height: 8px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; }
+        .s-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-top: 2px; }
+        
+        .progress-track { height: 8px; background: var(--bg-surface-soft); border-radius: 99px; overflow: hidden; }
         .progress-fill {
           height: 100%; border-radius: 99px;
-          background: linear-gradient(90deg, #6366f1, #10b981);
-          box-shadow: 0 0 12px rgba(16,185,129,0.4);
+          background: linear-gradient(90deg, var(--color-primary), var(--color-success));
+          box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
           transition: width 1s ease;
         }
 
-        /* Filter tabs */
-        .filter-row { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
         .filt-btn {
-          padding: 7px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
-          font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-          background: transparent; color: rgba(255,255,255,0.4); font-family: 'Inter', sans-serif;
-          letter-spacing: 0.03em;
+          @apply px-[18px] py-[7px] border border-app-border rounded-lg text-xs font-semibold cursor-pointer transition-all duration-200 bg-transparent text-app-text/60;
         }
-        .filt-btn.active, .filt-btn:hover { color: #fff; border-color: rgba(99,130,255,0.5); background: rgba(99,130,255,0.12); }
-
-        /* Department cards */
-        .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+        .filt-btn.active, .filt-btn:hover { @apply text-app-text border-primary/50 bg-primary/10; }
 
         .dept-card {
-          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 16px; overflow: hidden; transition: border-color 0.3s, box-shadow 0.3s;
+           @apply bg-app-surface/30 border border-app-border rounded-2xl overflow-hidden transition-all duration-300;
         }
-        .dept-card:hover { box-shadow: 0 0 32px rgba(99,102,241,0.1); }
+        .dept-card:hover { box-shadow: 0 0 32px rgba(99, 102, 241, 0.1); }
 
         .dept-header-row {
           display: flex; align-items: center; justify-content: space-between;
           padding: 16px 20px; cursor: pointer; user-select: none;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
+          border-bottom: 1px solid var(--border-soft);
         }
-        .dept-title { display: flex; align-items: center; gap: 10px; }
-        .dept-icon { font-size: 20px; }
-        .dept-name { font-size: 15px; font-weight: 700; color: #fff; }
-        .dept-counts { display: flex; gap: 8px; }
-        .cnt-pill {
-          font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 99px;
-          letter-spacing: 0.04em;
-        }
-        .expand-arrow { color: rgba(255,255,255,0.3); font-size: 12px; transition: transform 0.25s; }
-        .expand-arrow.open { transform: rotate(180deg); }
 
-        /* Feature rows */
-        .features-body { padding: 8px 0; }
-        .feat-row {
-          display: flex; align-items: flex-start; gap: 12px;
-          padding: 10px 20px; transition: background 0.2s; cursor: default;
-        }
-        .feat-row:hover { background: rgba(255,255,255,0.03); }
-        .feat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+        .feat-row:hover { background: var(--bg-surface-soft); }
         .feat-info { flex: 1; min-width: 0; }
-        .feat-name { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.85); margin-bottom: 2px; }
-        .feat-note { font-size: 11px; color: rgba(255,255,255,0.3); line-height: 1.4; }
+        .feat-name { font-size: 13px; font-weight: 600; color: var(--app-text); margin-bottom: 2px; }
+        .feat-note { font-size: 11px; color: var(--app-text-muted); line-height: 1.4; opacity: 0.7; }
         .feat-badge {
           font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
           flex-shrink: 0; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;
@@ -251,40 +225,44 @@ export default function IntegrationStatus() {
         }
       `}</style>
 
-            <div className="page">
+            <div className="page bg-app-bg text-app-text">
                 <div className="orb orb1" />
                 <div className="orb orb2" />
-                <div className="grid" />
+                <div className="grid-bg" />
 
                 <div className="inner">
                     {/* Header */}
-                    <div className="header">
-                        <div className="badge"><span className="badge-dot" /> Live Audit</div>
-                        <h1>Platform <span>Integration Status</span></h1>
-                        <p className="sub">Real-time feature audit based on backend routers + frontend pages</p>
+                    <div className="header text-center mb-12">
+                        <div className="badge flex justify-center mb-4">
+                            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-success/10 border border-success/30 text-[10px] font-bold uppercase tracking-wider text-success">
+                                <span className="badge-dot" /> Live Audit
+                            </span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Platform <span className="text-gradient-primary">Integration Status</span></h1>
+                        <p className="sub text-app-text-muted text-base">Real-time feature audit based on backend routers + frontend pages</p>
                     </div>
 
                     {/* Summary cards */}
-                    <div className="summary-row">
-                        <div className="s-card" style={{ borderColor: 'rgba(16,185,129,0.25)' }}>
-                            <span className="s-num" style={{ color: '#10b981' }}>{liveCount}</span>
+                    <div className="summary-row grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                        <div className="s-card" style={{ borderColor: 'var(--color-success)' }}>
+                            <span className="s-num text-success">{liveCount}</span>
                             <span className="s-lbl">Live & Active</span>
-                            <span className="s-sub">Fully integrated</span>
+                            <span className="text-[10px] text-app-text-muted/60">Fully integrated</span>
                         </div>
-                        <div className="s-card" style={{ borderColor: 'rgba(245,158,11,0.25)' }}>
-                            <span className="s-num" style={{ color: '#f59e0b' }}>{partialCount}</span>
+                        <div className="s-card" style={{ borderColor: 'var(--color-warning)' }}>
+                            <span className="s-num text-warning">{partialCount}</span>
                             <span className="s-lbl">Partial</span>
-                            <span className="s-sub">Needs completion</span>
+                            <span className="text-[10px] text-app-text-muted/60">Needs completion</span>
                         </div>
-                        <div className="s-card" style={{ borderColor: 'rgba(107,114,128,0.25)' }}>
-                            <span className="s-num" style={{ color: '#6b7280' }}>{plannedCount}</span>
+                        <div className="s-card" style={{ borderColor: 'var(--app-text-muted)' }}>
+                            <span className="s-num text-app-text-muted">{plannedCount}</span>
                             <span className="s-lbl">Planned</span>
-                            <span className="s-sub">Not yet built</span>
+                            <span className="text-[10px] text-app-text-muted/60">Not yet built</span>
                         </div>
-                        <div className="s-card" style={{ borderColor: 'rgba(99,130,255,0.25)' }}>
-                            <span className="s-num" style={{ color: '#818cf8' }}>{livePercent}%</span>
+                        <div className="s-card" style={{ borderColor: 'var(--color-primary)' }}>
+                            <span className="s-num text-primary">{livePercent}%</span>
                             <span className="s-lbl">Completion</span>
-                            <span className="s-sub">{liveCount} of {totalCount} features</span>
+                            <span className="text-[10px] text-app-text-muted/60">{liveCount} of {totalCount} features</span>
                         </div>
                     </div>
 
@@ -315,22 +293,36 @@ export default function IntegrationStatus() {
                     {/* Department cards */}
                     <div className="dept-grid">
                         {departments.map(dept => {
-                            const filtered = dept.features.filter(f => filter === 'all' || f.status === filter);
+                            // UI Metadata based on ID
+                            const UI_META = {
+                                it: { icon: '🖥️', color: '#6366f1', glow: 'rgba(99,102,241,0.3)' },
+                                admin: { icon: '⚙️', color: '#0ea5e9', glow: 'rgba(14,165,233,0.3)' },
+                                finance: { icon: '💰', color: '#10b981', glow: 'rgba(16,185,129,0.3)' },
+                                operations: { icon: '📦', color: '#f59e0b', glow: 'rgba(245,158,11,0.3)' },
+                                support: { icon: '🎫', color: '#ec4899', glow: 'rgba(236,72,153,0.3)' },
+                            }[dept.id];
+
+                            const featuresWithStatus = dept.features.map(f => ({
+                                ...f,
+                                status: getFeatStatus(dept.id, f.name, f.status)
+                            }));
+
+                            const filtered = featuresWithStatus.filter(f => filter === 'all' || f.status === filter);
                             if (filtered.length === 0) return null;
-                            const dLive = dept.features.filter(f => f.status === 'live').length;
-                            const dPartial = dept.features.filter(f => f.status === 'partial').length;
-                            const isOpen = expandedDept === null || expandedDept === dept.id;
+
+                            const dLive = featuresWithStatus.filter(f => f.status === 'live').length;
+                            const dPartial = featuresWithStatus.filter(f => f.status === 'partial').length;
 
                             return (
-                                <div key={dept.id} className="dept-card" style={{ borderColor: expandedDept === dept.id ? `${dept.color}40` : undefined }}>
+                                <div key={dept.id} className="dept-card" style={{ borderColor: expandedDept === dept.id ? `${UI_META.color}40` : undefined }}>
                                     <div
                                         className="dept-header-row"
                                         onClick={() => setExpandedDept(expandedDept === dept.id ? null : dept.id)}
-                                        style={{ background: `linear-gradient(90deg, ${dept.color}12, transparent)` }}
+                                        style={{ background: `linear-gradient(90deg, ${UI_META.color}12, transparent)` }}
                                     >
                                         <div className="dept-title">
-                                            <span className="dept-icon">{dept.icon}</span>
-                                            <span className="dept-name" style={{ color: dept.color }}>{dept.name}</span>
+                                            <span className="dept-icon">{UI_META.icon}</span>
+                                            <span className="dept-name" style={{ color: UI_META.color }}>{dept.name}</span>
                                         </div>
                                         <div className="dept-counts">
                                             <span className="cnt-pill" style={{ background: STATUS_META.live.bg, color: STATUS_META.live.color, border: `1px solid ${STATUS_META.live.border}` }}>
@@ -351,12 +343,30 @@ export default function IntegrationStatus() {
                                                 <div key={fi} className="feat-row">
                                                     <div className="feat-dot" style={{ background: meta.dot, boxShadow: `0 0 6px ${meta.dot}` }} />
                                                     <div className="feat-info">
-                                                        <div className="feat-name">{feat.name}</div>
-                                                        <div className="feat-note">{feat.note}</div>
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <div className="feat-name">{feat.name}</div>
+                                                            {feat.path && (
+                                                                <a href={feat.path} className="text-primary hover:underline" title="Go to Page">
+                                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                        <div className="feat-note">{getFeatNote(dept.id, feat.name, feat.note)}</div>
                                                     </div>
-                                                    <span className="feat-badge" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
-                                                        {feat.status}
-                                                    </span>
+                                                    <div className="flex items-center gap-3">
+                                                        {feat.trigger_url && feat.status === 'live' && (
+                                                            <button
+                                                                onClick={() => handleTrigger(feat.trigger_url, feat.name)}
+                                                                className="hover:scale-110 transition-transform text-white/40 hover:text-success"
+                                                                title="Trigger Sync Now"
+                                                            >
+                                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" /></svg>
+                                                            </button>
+                                                        )}
+                                                        <span className="feat-badge" style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}>
+                                                            {feat.status}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
