@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from uuid import UUID
 
 from ..database.database import get_db
-from ..models.models import Asset, PurchaseOrder, User, AssetRequest, AuditLog
+from ..models.models import Asset, PurchaseOrder, User, AssetRequest, AuditLog, Department
 from ..utils.auth_utils import get_current_user
 
 router = APIRouter(
@@ -54,7 +54,7 @@ async def get_renewal_workflow(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = current_user.dept_obj.name if current_user.dept_obj else ""
 
     today = date.today()
     ninety_days = today + timedelta(days=90)
@@ -73,7 +73,7 @@ async def get_renewal_workflow(
                     Asset.warranty_expiry >= today,
                     or_(
                         Asset.assigned_to_id == None,
-                        or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+                        or_(User.domain.ilike(f"%{user_domain}%"), User.department_id.in_(select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))))
                     )
                 )
             )
@@ -133,7 +133,7 @@ async def get_procurement_workflow(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = current_user.dept_obj.name if current_user.dept_obj else ""
 
     if user_role == "ADMIN":
         query = select(PurchaseOrder).where(PurchaseOrder.status.in_(["UPLOADED", "PENDING"]))
@@ -146,7 +146,12 @@ async def get_procurement_workflow(
             .where(
                 and_(
                     PurchaseOrder.status.in_(["UPLOADED", "PENDING"]),
-                    or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+                    or_(
+                        User.domain.ilike(f"%{user_domain}%"),
+                        User.department_id.in_(
+                            select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))
+                        )
+                    )
                 )
             )
         )
@@ -183,7 +188,7 @@ async def get_disposal_workflow(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = current_user.dept_obj.name if current_user.dept_obj else ""
 
     if user_role == "ADMIN":
         query = select(Asset).where(Asset.status.in_(["Retired", "Disposed"]))
@@ -197,7 +202,7 @@ async def get_disposal_workflow(
                     Asset.status.in_(["Retired", "Disposed"]),
                     or_(
                         Asset.assigned_to_id == None,
-                        or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+                        or_(User.domain.ilike(f"%{user_domain}%"), User.department_id.in_(select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))))
                     )
                 )
             )
@@ -236,7 +241,7 @@ async def process_workflow_action(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = current_user.dept_obj.name if current_user.dept_obj else (current_user.department or "")
 
     # Check if asset/PO exists and is in scope
     # First check Asset table
@@ -248,7 +253,15 @@ async def process_workflow_action(
         if user_role != "ADMIN":
              # Use a subquery or join-based check for the single asset
              scope_check = await db.execute(
-                 select(User).where(and_(User.id == asset.assigned_to_id, or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))))
+                 select(User).where(and_(
+                     User.id == asset.assigned_to_id, 
+                     or_(
+                         User.domain.ilike(f"%{user_domain}%"),
+                         User.department_id.in_(
+                             select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))
+                         )
+                     )
+                 ))
              )
              if not scope_check.scalars().first():
                  raise HTTPException(status_code=404, detail="Asset not found or unauthorized")
@@ -285,7 +298,15 @@ async def process_workflow_action(
         if user_role != "ADMIN":
             scope_check = await db.execute(
                 select(User).join(AssetRequest, AssetRequest.requester_id == User.id)
-                .where(and_(AssetRequest.id == po.asset_request_id, or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))))
+                .where(and_(
+                    AssetRequest.id == po.asset_request_id,
+                    or_(
+                        User.domain.ilike(f"%{user_domain}%"),
+                        User.department_id.in_(
+                            select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))
+                        )
+                    )
+                ))
             )
             if not scope_check.scalars().first():
                  raise HTTPException(status_code=404, detail="PO not found or unauthorized")

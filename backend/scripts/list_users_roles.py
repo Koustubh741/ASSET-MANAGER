@@ -2,8 +2,13 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.future import select
-from app.models.models import User
 import os
+import sys
+
+# Add backend to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app.models.models import User
 
 DATABASE_URL = "postgresql+asyncpg://postgres:Koustubh%40123@localhost:5432/ITSM"
 

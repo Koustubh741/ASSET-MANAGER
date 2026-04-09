@@ -56,14 +56,14 @@ export default function AssignmentGroupsAdmin() {
             <div className="max-w-6xl mx-auto space-y-8">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => router.back()} className="p-2 bg-white bg-app-surface-soft border border-app-border rounded-xl">
+                        <button onClick={() => router.back()} className="p-2 bg-white bg-app-surface-soft border border-app-border rounded-none">
                             <ArrowLeft size={20} />
                         </button>
                         <h1 className="text-2xl font-black text-app-text uppercase italic">Assignment Groups</h1>
                     </div>
                     <button 
                         onClick={() => setIsAddModalOpen(true)}
-                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/20"
+                        className="px-6 py-3 bg-indigo-600 text-white rounded-none font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-600/20"
                     >
                         Create Group
                     </button>
@@ -71,7 +71,7 @@ export default function AssignmentGroupsAdmin() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {groups.map(group => (
-                        <div key={group.id} className="p-6 bg-white bg-app-surface-soft border border-app-border rounded-3xl space-y-4 relative group">
+                        <div key={group.id} className="p-6 bg-white bg-app-surface-soft border border-app-border rounded-none space-y-4 relative group">
                             <button 
                                 onClick={() => handleDeleteGroup(group.id)}
                                 className="absolute top-6 right-6 p-2 text-slate-300 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100"
@@ -79,7 +79,7 @@ export default function AssignmentGroupsAdmin() {
                                 <Trash2 size={16} />
                             </button>
                             <div className="flex items-center gap-3">
-                                <div className="p-3 bg-indigo-500/10 text-indigo-500 rounded-2xl">
+                                <div className="p-3 bg-indigo-500/10 text-indigo-500 rounded-none">
                                     <Users size={24} />
                                 </div>
                                 <div>
@@ -99,27 +99,27 @@ export default function AssignmentGroupsAdmin() {
                         <h2 className="text-xl font-black uppercase italic text-app-text">Create New Group</h2>
                         <form onSubmit={handleCreateGroup} className="space-y-4">
                             <input
-                                className="w-full bg-app-surface-soft border border-app-border rounded-2xl px-5 py-3 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none px-5 py-3 text-sm"
                                 placeholder="Group Name"
                                 value={newGroup.name}
                                 onChange={e => setNewGroup({...newGroup, name: e.target.value})}
                                 required
                             />
                             <input
-                                className="w-full bg-app-surface-soft border border-app-border rounded-2xl px-5 py-3 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none px-5 py-3 text-sm"
                                 placeholder="Department"
                                 value={newGroup.department}
                                 onChange={e => setNewGroup({...newGroup, department: e.target.value})}
                             />
                             <textarea
-                                className="w-full bg-app-surface-soft border border-app-border rounded-2xl px-5 py-3 text-sm h-32"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none px-5 py-3 text-sm h-32"
                                 placeholder="Description"
                                 value={newGroup.description}
                                 onChange={e => setNewGroup({...newGroup, description: e.target.value})}
                             />
                             <div className="flex gap-4">
                                 <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-3 text-slate-500 font-bold uppercase text-xs">Cancel</button>
-                                <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Create</button>
+                                <button type="submit" className="flex-1 py-3 bg-indigo-600 text-white rounded-none font-black uppercase text-xs tracking-widest">Create</button>
                             </div>
                         </form>
                     </div>

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import apiClient from '@/lib/apiClient'
 import { useRole } from '@/contexts/RoleContext'
+import QuickActionGrid from './QuickActionGrid'
 
 export default function BusinessOpsDashboard() {
     const { user } = useRole()
@@ -28,7 +29,7 @@ export default function BusinessOpsDashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const data = await apiClient.get('/api/v1/departments/stats')
+                const data = await apiClient.get('/departments/stats')
                 setStats(data)
                 setLoading(false)
             } catch (error) {
@@ -49,7 +50,7 @@ export default function BusinessOpsDashboard() {
         <div className="glass-card p-6 border border-app-border hover:border-purple-500/30 transition-all group overflow-hidden relative">
             <div className={`absolute -right-8 -top-8 w-24 h-24 rounded-full bg-${color}-500 opacity-5 blur-2xl group-hover:opacity-10 transition-opacity`}></div>
             <div className="relative z-10 flex items-center gap-4">
-                <div className={`p-3 rounded-xl bg-${color}-500/10 border border-${color}-500/20 text-${color}-500`}>
+                <div className={`p-3 rounded-none bg-${color}-500/10 border border-${color}-500/20 text-${color}-500`}>
                     <Icon size={24} />
                 </div>
                 <div>
@@ -81,6 +82,8 @@ export default function BusinessOpsDashboard() {
                 <BizStat label="Budget Spent" value={`₹${((stats?.total_value || 0) / 1000).toFixed(1)}k`} icon={TrendingUp} color="emerald" />
             </div>
 
+            <QuickActionGrid />
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Creative & Tooling Stack */}
                 <div className="lg:col-span-2 glass-panel p-8 border border-app-border shadow-2xl relative overflow-hidden group">
@@ -88,7 +91,7 @@ export default function BusinessOpsDashboard() {
                     
                     <div className="flex justify-between items-center mb-8 relative z-10">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-500">
+                            <div className="p-2 rounded-none bg-purple-500/10 text-purple-500">
                                 <Layers size={20} />
                             </div>
                             <h3 className="text-xl font-black text-app-text uppercase tracking-tight">Strategy Enablers</h3>
@@ -105,8 +108,8 @@ export default function BusinessOpsDashboard() {
                             { name: 'Salesforce CRM', user: 'Sales Team', status: 'Active', color: 'blue', icon: Monitor },
                             { name: 'HubSpot Marketing', user: 'Marketing Team', status: 'Active', color: 'orange', icon: BarChart },
                         ].map((tool, i) => (
-                            <div key={i} className="flex items-center gap-4 p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all group/tool">
-                                <div className={`p-3 rounded-2xl bg-${tool.color}-500/10 text-${tool.color}-500 group-hover/tool:scale-110 transition-transform`}>
+                            <div key={i} className="flex items-center gap-4 p-5 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all group/tool">
+                                <div className={`p-3 rounded-none bg-${tool.color}-500/10 text-${tool.color}-500 group-hover/tool:scale-110 transition-transform`}>
                                     <tool.icon size={20} />
                                 </div>
                                 <div>
@@ -155,11 +158,11 @@ export default function BusinessOpsDashboard() {
                     </div>
                     
                     <div className="mt-8 grid grid-cols-2 gap-3">
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-app-border text-center">
+                        <div className="p-4 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border text-center">
                             <div className="text-[8px] font-black text-slate-500 uppercase mb-1 tracking-widest">Team ROI</div>
                             <div className="text-lg font-black text-emerald-500">12.4x</div>
                         </div>
-                        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-app-border text-center">
+                        <div className="p-4 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border text-center">
                             <div className="text-[8px] font-black text-slate-500 uppercase mb-1 tracking-widest">Asset Health</div>
                             <div className="text-lg font-black text-blue-500">94.2%</div>
                         </div>
@@ -169,13 +172,13 @@ export default function BusinessOpsDashboard() {
 
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-4">
-                <button className="px-6 py-3 rounded-2xl bg-purple-600 text-app-text text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 hover:scale-105 active:scale-95 transition-all">
+                <button className="px-6 py-3 rounded-none bg-purple-600 text-app-text text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-600/30 hover:shadow-purple-600/50 hover:scale-105 active:scale-95 transition-all">
                     Request Creative SW
                 </button>
-                <button className="px-6 py-3 rounded-2xl bg-app-surface-soft text-app-text text-[10px] font-black uppercase tracking-widest border border-app-border hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
+                <button className="px-6 py-3 rounded-none bg-app-surface-soft text-app-text text-[10px] font-black uppercase tracking-widest border border-app-border hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
                     Asset Verification
                 </button>
-                <button className="px-6 py-3 rounded-2xl bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-all">
+                <button className="px-6 py-3 rounded-none bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 hover:bg-indigo-500/20 transition-all">
                     Project Allocation
                 </button>
             </div>

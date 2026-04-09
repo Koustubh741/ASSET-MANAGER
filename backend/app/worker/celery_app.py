@@ -1,5 +1,5 @@
 from celery import Celery
-from app.config.settings import settings
+from ..config.settings import settings
 
 # Initialize Celery
 # Enterprise Grade: Supports Redis/RabbitMQ via env config

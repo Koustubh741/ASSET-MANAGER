@@ -115,10 +115,10 @@ export default function SLAPage() {
     const getPriorityColor = (priority) => {
         const p = priority?.toLowerCase();
         if (p === 'critical') return 'rose';
-        if (p === 'high') return 'amber';
-        if (p === 'medium') return 'indigo';
-        if (p === 'low') return 'emerald';
-        return 'slate';
+        if (p === 'high') return 'gold';
+        if (p === 'medium') return 'primary';
+        if (p === 'low') return 'secondary';
+        return 'muted';
     };
 
     const calcWidth = (minutes) => {
@@ -153,17 +153,17 @@ export default function SLAPage() {
                         <span className="text-sm font-bold text-app-text">{record.name}</span>
                         <div className="flex gap-2 mt-1">
                             {record.priority && (
-                                <Tag className={`!bg-${color}-500/10 !border-${color}-500/20 !text-${color}-400 !text-[8px] !font-black !uppercase`}>
+                                <Tag className={`!bg-app-${color}/10 !border-app-${color}/20 !text-app-${color} !text-[8px] !font-black !uppercase !rounded-none`}>
                                     {record.priority}
                                 </Tag>
                             )}
                             {record.category && (
-                                <Tag className="!bg-blue-500/10 !border-blue-500/20 !text-blue-400 !text-[8px] !font-black !uppercase">
+                                <Tag className="!bg-app-primary/10 !border-app-primary/20 !text-app-primary !text-[8px] !font-black !uppercase !rounded-none">
                                     {record.category}
                                 </Tag>
                             )}
                             {!record.priority && !record.category && (
-                                <Tag className="!bg-slate-500/10 !border-slate-500/20 !text-slate-400 !text-[8px] !font-black !uppercase">
+                                <Tag className="!bg-app-void !border-app-border !text-app-text-muted !text-[8px] !font-black !uppercase !rounded-none">
                                     GLOBAL DEFAULT
                                 </Tag>
                             )}
@@ -177,10 +177,10 @@ export default function SLAPage() {
             dataIndex: 'response_time_limit',
             render: (val) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-24 bg-slate-200 bg-app-surface-soft h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-indigo-500 h-full transition-all duration-1000" style={{ width: calcWidth(val) }}></div>
+                    <div className="w-24 bg-app-surface-soft h-1.5 rounded-none overflow-hidden">
+                        <div className="bg-app-primary h-full transition-all duration-1000" style={{ width: calcWidth(val) }}></div>
                     </div>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{val} <span className="opacity-50 font-normal">min</span></span>
+                    <span className="text-xs font-bold text-app-text-muted">{val} <span className="opacity-50 font-normal">min</span></span>
                 </div>
             )
         },
@@ -189,10 +189,10 @@ export default function SLAPage() {
             dataIndex: 'resolution_time_limit',
             render: (val) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-24 bg-slate-200 bg-app-surface-soft h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-emerald-500 h-full transition-all duration-1000" style={{ width: calcWidth(val) }}></div>
+                    <div className="w-24 bg-app-surface-soft h-1.5 rounded-none overflow-hidden">
+                        <div className="bg-app-secondary h-full transition-all duration-1000" style={{ width: calcWidth(val) }}></div>
                     </div>
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{val} <span className="opacity-50 font-normal">min</span></span>
+                    <span className="text-xs font-bold text-app-text-muted">{val} <span className="opacity-50 font-normal">min</span></span>
                 </div>
             )
         },
@@ -202,7 +202,7 @@ export default function SLAPage() {
             render: (active) => (
                 <Badge
                     status={active ? "processing" : "default"}
-                    text={<span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-emerald-500' : 'text-slate-500'}`}>{active ? 'ACTIVE' : 'DISABLED'}</span>}
+                    text={<span className={`text-[10px] font-black uppercase tracking-widest ${active ? 'text-app-secondary' : 'text-app-text-muted'}`}>{active ? 'ACTIVE' : 'DISABLED'}</span>}
                 />
             )
         },
@@ -215,7 +215,7 @@ export default function SLAPage() {
                     <Tooltip title="Edit Policy">
                         <button
                             onClick={() => handleEditPolicy(record)}
-                            className="p-2 text-slate-500 hover:text-indigo-500 transition-colors"
+                            className="p-2 text-app-text-muted hover:text-app-primary transition-colors"
                         >
                             <Edit2 size={16} />
                         </button>
@@ -223,7 +223,7 @@ export default function SLAPage() {
                     <Tooltip title="Retire Policy">
                         <button
                             onClick={() => handleDeletePolicy(record.id)}
-                            className="p-2 text-slate-500 hover:text-rose-500 transition-colors"
+                            className="p-2 text-app-text-muted hover:text-app-rose transition-colors"
                         >
                             <Trash2 size={16} />
                         </button>
@@ -234,7 +234,7 @@ export default function SLAPage() {
     ];
 
     return (
-        <Layout className="min-h-screen bg-app-bg font-['Inter'] transition-colors duration-300">
+        <Layout className="min-h-screen bg-app-bg font-sans transition-colors duration-300">
             <Head>
                 <title>SLA Management | Scylla Ticket Center</title>
             </Head>
@@ -244,17 +244,17 @@ export default function SLAPage() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => router.push('/tickets')}
-                        className="group p-2.5 bg-app-surface-soft hover:bg-indigo-600 dark:hover:bg-indigo-600 rounded-2xl text-app-text-muted hover:text-app-text transition-all shadow-sm border border-app-border"
+                        className="group p-2.5 bg-app-surface-soft hover:bg-app-primary rounded-none text-app-text-muted hover:text-app-void transition-all shadow-sm border border-app-border"
                     >
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-black text-app-text tracking-tighter uppercase font-['Outfit']">
-                                Service Level <span className="text-indigo-600 dark:text-indigo-500 italic">Mgmt</span>
+                            <h1 className="text-2xl font-black text-app-text tracking-tighter uppercase italic">
+                                Service Level <span className="text-app-primary">Mgmt</span>
                             </h1>
-                            <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
-                                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Compliance Engine</span>
+                            <div className="px-3 py-1 bg-app-secondary/10 border border-app-secondary/30 rounded-none">
+                                <span className="text-[10px] font-black text-app-secondary uppercase tracking-widest">Compliance Engine</span>
                             </div>
                         </div>
                         <p className="text-[9px] text-app-text-muted font-black uppercase tracking-[0.3em] leading-none mt-1.5 flex items-center gap-2">
@@ -267,14 +267,14 @@ export default function SLAPage() {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setIsGuideOpen(true)}
-                                    className="px-6 py-3.5 bg-app-surface-soft text-app-text-muted font-black text-[10px] uppercase tracking-widest rounded-3xl border border-app-border transition-all flex items-center gap-2"
+                                    className="px-6 py-3.5 bg-app-surface-soft text-app-text-muted font-black text-[10px] uppercase tracking-widest rounded-none border border-app-border transition-all flex items-center gap-2"
                                 >
                                     <HelpCircle size={16} />
                                     View Guide
                                 </button>
                                 <button
                                     onClick={() => setIsModalOpen(true)}
-                                    className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-widest rounded-3xl border border-indigo-400/20 shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
+                                    className="px-6 py-3.5 bg-app-primary hover:bg-app-text text-app-void font-black text-[10px] uppercase tracking-widest rounded-none border border-app-primary/20 shadow-lg shadow-app-primary/20 transition-all flex items-center gap-2"
                                 >
                                     <Plus size={16} />
                                     Provision Policy
@@ -288,17 +288,17 @@ export default function SLAPage() {
                     {/* Header Info */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
-                            { label: 'Avg Compliance', value: '98.2%', icon: Trophy, color: 'emerald' },
-                            { label: 'Active Targets', value: policies.length, icon: BarChart3, color: 'indigo' },
+                            { label: 'Avg Compliance', value: '98.2%', icon: Trophy, color: 'secondary' },
+                            { label: 'Active Targets', value: policies.length, icon: BarChart3, color: 'primary' },
                             { label: 'Breach Alerts', value: '0', icon: Clock, color: 'rose' }
                         ].map((stat, i) => (
                             <div key={i} className="glass-card p-6 flex items-center gap-6">
-                                <div className={`p-4 rounded-2xl bg-${stat.color}-500/10 text-${stat.color}-400 border border-${stat.color}-500/20 shadow-lg shadow-${stat.color}-500/5`}>
+                                <div className={`p-4 rounded-none bg-app-${stat.color}/10 text-app-${stat.color} border border-app-${stat.color}/20 shadow-lg shadow-app-${stat.color}/5`}>
                                     <stat.icon size={24} />
                                 </div>
                                 <div>
                                     <div className="text-xl font-black text-app-text leading-none">{stat.value}</div>
-                                    <div className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-2">{stat.label}</div>
+                                    <div className="text-[10px] text-app-text-muted font-black uppercase tracking-widest mt-2">{stat.label}</div>
                                 </div>
                             </div>
                         ))}
@@ -308,7 +308,7 @@ export default function SLAPage() {
                     <div className="glass-card overflow-hidden">
                         <div className="px-8 py-6 border-b border-app-border flex items-center justify-between">
                             <h3 className="text-sm font-black text-app-text uppercase tracking-widest flex items-center gap-2">
-                                <Activity size={16} className="text-emerald-500" />
+                                <Activity size={16} className="text-app-secondary" />
                                 Policy Compliance Matrix
                             </h3>
                         </div>
@@ -316,16 +316,16 @@ export default function SLAPage() {
                         {loading ? (
                             <div className="p-20 text-center">
                                 <Spin size="large" />
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-4">Calibrating Performance Matrix...</p>
+                                <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mt-4">Calibrating Performance Matrix...</p>
                             </div>
                         ) : policies.length === 0 ? (
                             <div className="p-20 text-center">
                                 <Empty 
                                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                    description={<span className="text-slate-500 font-black uppercase tracking-widest text-[10px]">No service policies defined</span>}
+                                    description={<span className="text-app-text-muted font-black uppercase tracking-widest text-[10px]">No service policies defined</span>}
                                 />
                                 <Button 
-                                    className="mt-4 !h-10 !bg-white/5 !border-white/10 !text-slate-400 !font-black !text-[9px] !uppercase !tracking-widest !rounded-xl"
+                                    className="mt-4 !h-10 !bg-app-surface-soft !border-app-border !text-app-text-muted !font-black !text-[9px] !uppercase !tracking-widest !rounded-none"
                                     onClick={() => setIsModalOpen(true)}
                                 >
                                     Define Base Policy
@@ -346,7 +346,7 @@ export default function SLAPage() {
 
             {/* Create Modal */}
             <Modal
-                title={<div className="text-lg font-black uppercase tracking-tighter text-app-text">{editingPolicy ? 'Policy Modification Utility' : 'Policy Provisioning Utility'}</div>}
+                title={<div className="text-lg font-black uppercase tracking-tighter text-app-text font-['Space_Grotesk']">{editingPolicy ? 'Policy Modification Utility' : 'Policy Provisioning Utility'}</div>}
                 open={isModalOpen}
                 onCancel={() => {
                     setIsModalOpen(false);
@@ -366,78 +366,78 @@ export default function SLAPage() {
                 >
                     <div className="space-y-6 pt-4">
                         <Form.Item 
-                            label={<span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Policy Name</span>}
+                            label={<span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">Policy Name</span>}
                             name="name" 
                             rules={[{ required: true, message: 'Policy ID required' }]}
                         >
-                            <Input prefix={<Tag size={14} className="text-slate-400 mr-2" />} placeholder="e.g. MISSION_CRITICAL_HIGH_SLA" className="scylla-input" />
+                            <Input prefix={<Tag size={14} className="text-app-text-muted mr-2" />} placeholder="e.g. MISSION_CRITICAL_HIGH_SLA" className="scylla-input" />
                         </Form.Item>
 
                         <div className="grid grid-cols-2 gap-4">
                             <Form.Item 
-                                label={<span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Trigger Priority</span>}
+                                label={<span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">Trigger Priority</span>}
                                 name="priority"
                             >
                                 <Select 
                                     className="scylla-select" 
                                     placeholder="Select Priority" 
                                     allowClear
-                                    suffixIcon={<Shield size={14} className="text-slate-400" />}
+                                    suffixIcon={<Shield size={14} className="text-app-text-muted" />}
                                 >
-                                    <Option value="High"><span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-sm" /> High</span></Option>
-                                    <Option value="Medium"><span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" /> Medium</span></Option>
-                                    <Option value="Low"><span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-sm" /> Low</span></Option>
+                                    <Option value="High"><span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-none bg-app-rose" /> High</span></Option>
+                                    <Option value="Medium"><span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-none bg-app-gold" /> Medium</span></Option>
+                                    <Option value="Low"><span className="flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-none bg-app-secondary" /> Low</span></Option>
                                 </Select>
                             </Form.Item>
                             <Form.Item 
-                                label={<span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Trigger Category</span>}
+                                label={<span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">Trigger Category</span>}
                                 name="category"
                             >
-                                <Input prefix={<Filter size={14} className="text-slate-400 mr-2" />} placeholder="e.g. Hardware" className="scylla-input" />
+                                <Input prefix={<Filter size={14} className="text-app-text-muted mr-2" />} placeholder="e.g. Hardware" className="scylla-input" />
                             </Form.Item>
                         </div>
 
-                        <Divider className="!my-2 border-white/5">
-                            <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Temporal Limits</span>
+                        <Divider className="!my-2 border-app-primary/10">
+                            <span className="text-[9px] font-black text-app-primary uppercase tracking-widest font-mono">Temporal Limits</span>
                         </Divider>
 
                         <div className="grid grid-cols-2 gap-4">
                             <Form.Item 
                                 label={(
                                     <div className="flex justify-between items-center w-full">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Response</span>
-                                        <span className="text-[10px] font-black text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md italic">{formatDuration(resMin) || 'N/A'}</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">Response</span>
+                                        <span className="text-[10px] font-black text-app-primary bg-app-primary/10 px-2 py-0.5 rounded-none italic">{formatDuration(resMin) || 'N/A'}</span>
                                     </div>
                                 )}
                                 name="res_min"
                                 rules={[{ required: true }]}
                             >
-                                <InputNumber prefix={<Clock size={14} className="text-slate-400 mr-2" />} className="scylla-input !w-full" min={1} placeholder="Min" />
+                                <InputNumber prefix={<Clock size={14} className="text-app-text-muted mr-2" />} className="scylla-input !w-full" min={1} placeholder="Min" />
                             </Form.Item>
                             <Form.Item 
                                 label={(
                                     <div className="flex justify-between items-center w-full">
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Resolution</span>
-                                        <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md italic">{formatDuration(remMin) || 'N/A'}</span>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">Resolution</span>
+                                        <span className="text-[10px] font-black text-app-secondary bg-app-secondary/10 px-2 py-0.5 rounded-none italic">{formatDuration(remMin) || 'N/A'}</span>
                                     </div>
                                 )}
                                 name="rem_min"
                                 rules={[{ required: true }]}
                             >
-                                <InputNumber prefix={<Zap size={14} className="text-slate-400 mr-2" />} className="scylla-input !w-full" min={1} placeholder="Min" />
+                                <InputNumber prefix={<Zap size={14} className="text-app-text-muted mr-2" />} className="scylla-input !w-full" min={1} placeholder="Min" />
                             </Form.Item>
                         </div>
 
-                        <div className="bg-app-surface-soft p-4 rounded-2xl border border-app-border flex items-center justify-between">
+                        <div className="bg-app-surface-soft p-4 rounded-none border border-app-border flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <Activity size={18} className="text-indigo-500" />
+                                <Activity size={18} className="text-app-primary" />
                                 <div>
                                     <div className="text-[10px] font-black uppercase tracking-widest text-app-text">Policy Enforcement</div>
-                                    <div className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">Toggle activation status globally</div>
+                                    <div className="text-[8px] font-bold text-app-text-muted uppercase tracking-tighter">Toggle activation status globally</div>
                                 </div>
                             </div>
                             <Form.Item name="is_active" valuePropName="checked" className="!mb-0">
-                                <Switch className="bg-slate-300 bg-app-surface" />
+                                <Switch className="bg-app-surface" />
                             </Form.Item>
                         </div>
 
@@ -447,7 +447,7 @@ export default function SLAPage() {
                                 htmlType="submit" 
                                 block 
                                 loading={submitting}
-                                className="!h-14 !bg-indigo-600 !border-none !text-white !font-black !text-[11px] !uppercase !tracking-[0.2em] !rounded-2xl shadow-xl shadow-indigo-600/30"
+                                className="!h-14 !bg-app-primary hover:!bg-app-text !border-none !text-app-void !font-black !text-[11px] !uppercase !tracking-[0.2em] !rounded-none shadow-xl shadow-app-primary/30"
                             >
                                 {editingPolicy ? 'Update Compliance Parameters' : 'Synchronize Policy to Core'}
                             </Button>
@@ -458,105 +458,63 @@ export default function SLAPage() {
 
             <style jsx global>{`
                 .glass-card {
-                    background: rgba(255, 255, 255, 0.7);
-                    border: 1px solid rgba(0, 0, 0, 0.05);
-                    border-radius: 2rem;
+                    background: var(--bg-surface-obsidian) !important;
+                    border: 1px solid var(--border-main) !important;
+                    border-radius: 0px !important;
                     backdrop-filter: blur(20px);
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-                }
-
-                :global(.dark) .glass-card {
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(255, 255, 255, 0.05);
-                    box-shadow: none;
                 }
 
                 .scylla-table .ant-table {
                     background: transparent !important;
-                    color: #1e293b !important;
-                }
-
-                :global(.dark) .scylla-table .ant-table {
-                    color: #fff !important;
+                    color: var(--text-main) !important;
                 }
 
                 .scylla-table .ant-table-thead > tr > th {
-                    background: rgba(0, 0, 0, 0.02) !important;
-                    color: #64748b !important;
+                    background: var(--bg-app-void) !important;
+                    color: var(--text-muted) !important;
                     font-size: 10px !important;
                     font-weight: 900 !important;
                     text-transform: uppercase !important;
                     letter-spacing: 0.15em !important;
-                    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+                    border-bottom: 2px solid var(--border-main) !important;
                     padding: 24px !important;
-                }
-
-                :global(.dark) .scylla-table .ant-table-thead > tr > th {
-                    background: rgba(255, 255, 255, 0.02) !important;
-                    color: rgba(255, 255, 255, 0.4) !important;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
                 }
 
                 .scylla-table .ant-table-tbody > tr > td {
-                    border-bottom: 1px solid rgba(0, 0, 0, 0.02) !important;
+                    border-bottom: 1px solid var(--border-soft) !important;
                     padding: 24px !important;
-                }
-
-                :global(.dark) .scylla-table .ant-table-tbody > tr > td {
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.02) !important;
+                    color: var(--text-main) !important;
                 }
 
                 .scylla-table .ant-table-tbody > tr:hover > td {
-                    background: rgba(0, 0, 0, 0.01) !important;
-                }
-
-                :global(.dark) .scylla-table .ant-table-tbody > tr:hover > td {
-                    background: rgba(255, 255, 255, 0.01) !important;
+                    background: var(--bg-app-obsidian) !important;
                 }
 
                 .scylla-modal .ant-modal-content {
-                    background: #ffffff !important;
-                    border: 1px solid rgba(0, 0, 0, 0.05);
-                    border-radius: 2.5rem !important;
+                    background: var(--bg-surface-obsidian) !important;
+                    border: 1px solid var(--border-main) !important;
+                    border-radius: 0px !important;
                     padding: 32px !important;
-                    box-shadow: 0 40px 100px rgba(0,0,0,0.1) !important;
-                }
-
-                :global(.dark) .scylla-modal .ant-modal-content {
-                    background: var(--bg-surface) !important;
-                    border: 1px solid var(--border-main);
                     box-shadow: 0 40px 100px rgba(0,0,0,0.8) !important;
                 }
 
                 .scylla-input {
-                    background: #f8fafc !important;
-                    border: 1px solid #e2e8f0 !important;
-                    border-radius: 12px !important;
-                    color: #0f172a !important;
+                    background: var(--bg-app-void) !important;
+                    border: 1px solid var(--border-soft) !important;
+                    border-radius: 0px !important;
+                    color: var(--text-main) !important;
                     padding: 12px 16px !important;
                     font-weight: 600 !important;
                 }
 
-                :global(.dark) .scylla-input {
-                    background: rgba(255, 255, 255, 0.02) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                    color: #fff !important;
-                }
-
                 .scylla-select .ant-select-selector {
-                    background: #f8fafc !important;
-                    border: 1px solid #e2e8f0 !important;
-                    border-radius: 12px !important;
-                    color: #0f172a !important;
+                    background: var(--bg-app-void) !important;
+                    border: 1px solid var(--border-soft) !important;
+                    border-radius: 0px !important;
+                    color: var(--text-main) !important;
                     height: 48px !important;
                     display: flex !important;
                     align-items: center !important;
-                }
-
-                :global(.dark) .scylla-select .ant-select-selector {
-                    background: rgba(255, 255, 255, 0.02) !important;
-                    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-                    color: #fff !important;
                 }
             `}</style>
             <SLAGuideModal 

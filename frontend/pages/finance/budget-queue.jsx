@@ -47,14 +47,14 @@ export default function BudgetQueuePage() {
                     <div className="glass-card w-full max-w-md p-6 space-y-4">
                         <h2 className="text-lg font-bold text-app-text">Reject Finance Record</h2>
                         <textarea
-                            className="w-full bg-app-surface-soft border border-white/15 rounded-lg p-3 text-sm text-app-text resize-none h-24"
+                            className="w-full bg-app-surface-soft border border-white/15 rounded-none p-3 text-sm text-app-text resize-none h-24"
                             placeholder="Reason for rejection (optional)"
                             value={reason}
                             onChange={e => setReason(e.target.value)}
                         />
                         <div className="flex gap-3 justify-end">
-                            <button onClick={() => setRejModal(null)} className="px-4 py-2 rounded-lg text-sm text-app-text-muted hover:text-app-text transition-colors">Cancel</button>
-                            <button onClick={reject} className="px-4 py-2 rounded-lg text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30">Confirm Reject</button>
+                            <button onClick={() => setRejModal(null)} className="px-4 py-2 rounded-none text-sm text-app-text-muted hover:text-app-text transition-colors">Cancel</button>
+                            <button onClick={reject} className="px-4 py-2 rounded-none text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30">Confirm Reject</button>
                         </div>
                     </div>
                 </div>
@@ -116,8 +116,8 @@ export default function BudgetQueuePage() {
                                             <td className="px-4 py-3">
                                                 {isPending && (
                                                     <div className="flex gap-2">
-                                                        <button onClick={() => approve(r.id)} className="text-xs px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all">Approve</button>
-                                                        <button onClick={() => { setRejModal(r.id); setReason(''); }} className="text-xs px-3 py-1 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 transition-all">Reject</button>
+                                                        <button onClick={() => approve(r.id)} className="text-xs px-3 py-1 rounded-none bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all">Approve</button>
+                                                        <button onClick={() => { setRejModal(r.id); setReason(''); }} className="text-xs px-3 py-1 rounded-none bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 transition-all">Reject</button>
                                                     </div>
                                                 )}
                                             </td>

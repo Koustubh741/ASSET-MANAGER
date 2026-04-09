@@ -59,7 +59,7 @@ export default function ExecutiveDashboard() {
                 <div className="flex items-center gap-6">
                     <button 
                         onClick={refresh} 
-                        className="p-3 glass-interactive rounded-2xl text-app-text hover:text-primary transition-all group"
+                        className="p-3 glass-interactive rounded-none text-app-text hover:text-primary transition-all group"
                         title="Refresh Data"
                     >
                         <RefreshCw size={20} className={loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-700"} />
@@ -78,15 +78,15 @@ export default function ExecutiveDashboard() {
                 <section className="lg:col-span-1 flex flex-col items-center justify-center glass p-8">
                     <HealthGauge score={data.health_index} />
                     <div className="mt-8 grid grid-cols-3 gap-4 w-full text-center">
-                        <div className="p-3 glass-interactive rounded-2xl">
+                        <div className="p-3 glass-interactive rounded-none">
                             <span className="block text-[9px] font-black text-app-text-muted uppercase tracking-tighter mb-1">Security</span>
                             <span className="font-bold text-emerald-500 text-sm">{data.scores.security}%</span>
                         </div>
-                        <div className="p-3 glass-interactive rounded-2xl">
+                        <div className="p-3 glass-interactive rounded-none">
                             <span className="block text-[9px] font-black text-app-text-muted uppercase tracking-tighter mb-1">Ops</span>
                             <span className="font-bold text-primary text-sm">{data.scores.operations}%</span>
                         </div>
-                        <div className="p-3 glass-interactive rounded-2xl">
+                        <div className="p-3 glass-interactive rounded-none">
                             <span className="block text-[9px] font-black text-app-text-muted uppercase tracking-tighter mb-1">Finance</span>
                             <span className="font-bold text-amber-500 text-sm">{data.scores.financial}%</span>
                         </div>

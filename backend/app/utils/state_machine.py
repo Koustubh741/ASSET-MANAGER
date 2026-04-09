@@ -162,6 +162,9 @@ def validate_state_transition(
         elif required_role == "MANAGER":
             if user_role not in ["END_USER", "MANAGER"]:  # Will be checked separately for position
                 return False, f"Transition from {current_status} requires MANAGER role"
+        elif required_role in ["IT_MANAGEMENT", "ASSET_MANAGER", "PROCUREMENT", "FINANCE"]:
+            if user_role not in ["SUPPORT", "ADMIN", required_role]: # Keep required_role for backwards compatibility testing
+                return False, f"Transition from {current_status} requires {required_role} functional scope (SUPPORT role)"
         elif user_role != required_role:
             return False, f"Transition from {current_status} requires {required_role} role"
     

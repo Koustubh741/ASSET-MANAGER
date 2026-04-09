@@ -161,7 +161,7 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                 {/* Header */}
                 <div className="p-4 border-b border-app-border bg-gradient-to-r from-blue-900/20 to-purple-900/20 from-blue-50 to-purple-50 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-200 dark:border-blue-500/30">
+                        <div className="p-2 bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-none border border-blue-200 dark:border-blue-500/30">
                             <Bot size={20} />
                         </div>
                         <div>
@@ -172,7 +172,7 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 rounded-lg">
+                    <button onClick={onClose} className="p-2 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 rounded-none">
                         <X size={20} />
                     </button>
                 </div>
@@ -201,7 +201,7 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                                 </p>
                                 <Link
                                     href="/pricing"
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-app-text font-semibold text-sm hover:opacity-90 transition-opacity"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-none bg-gradient-to-r from-blue-600 to-cyan-600 text-app-text font-semibold text-sm hover:opacity-90 transition-opacity"
                                 >
                                     <Zap size={16} /> View Plans
                                 </Link>
@@ -217,7 +217,7 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                                 </p>
                                 <Link
                                     href="/pricing"
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-app-text font-semibold text-sm hover:opacity-90 transition-opacity"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-none bg-gradient-to-r from-blue-600 to-cyan-600 text-app-text font-semibold text-sm hover:opacity-90 transition-opacity"
                                 >
                                     <Zap size={16} /> Upgrade
                                 </Link>
@@ -231,7 +231,7 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
                     {messages.map((m, i) => (
                         <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[85%] rounded-2xl p-4 ${m.role === 'user'
+                            <div className={`max-w-[85%] rounded-none p-4 ${m.role === 'user'
                                 ? 'bg-blue-600 text-app-text rounded-br-none'
                                 : 'bg-app-surface-soft border border-app-border bg-slate-100 border-slate-200 text-slate-900 dark:text-slate-200 rounded-bl-none'
                                 }`}>
@@ -241,7 +241,7 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                     ))}
                     {isTyping && (
                         <div className="flex justify-start">
-                            <div className="bg-app-surface-soft border border-app-border bg-slate-100 border-slate-200 rounded-2xl rounded-bl-none p-4 flex gap-1">
+                            <div className="bg-app-surface-soft border border-app-border bg-slate-100 border-slate-200 rounded-none rounded-bl-none p-4 flex gap-1">
                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -261,12 +261,12 @@ export default function AIAssistantSidebar({ isOpen, onClose }) {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Ask about assets, warranties..."
-                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-xl pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none text-app-text shadow-sm dark:shadow-inner"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none pl-4 pr-12 py-3 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none text-app-text shadow-sm dark:shadow-inner"
                         />
                         <button
                             type="submit"
                             disabled={!input.trim() || isTyping}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-app-text rounded-lg hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 text-app-text rounded-none hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
                         >
                             <Send size={16} />
                         </button>

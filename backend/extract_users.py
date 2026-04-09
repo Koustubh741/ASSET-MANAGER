@@ -35,7 +35,7 @@ def extract_users():
         # Group by department
         dept_groups = defaultdict(list)
         for u in users:
-            dept = u.department or u.domain or "Unassigned"
+            dept = (u.dept_obj.name if u.dept_obj else None) or u.domain or "Unassigned"
             dept_groups[dept].append(u)
             
         print("USER LIST BY DEPARTMENT WITH RESPONSIBILITIES")

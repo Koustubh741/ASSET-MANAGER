@@ -52,7 +52,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-none shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
 
                 {/* Header */}
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
@@ -67,7 +67,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
 
                 {/* Body */}
                 <div className="p-6 space-y-4">
-                    <div className="bg-emerald-50 text-emerald-800 text-sm p-3 rounded-lg border border-emerald-100 flex gap-2">
+                    <div className="bg-emerald-50 text-emerald-800 text-sm p-3 rounded-none border border-emerald-100 flex gap-2">
                         <AlertTriangle className="w-5 h-5 shrink-0" />
                         <p>
                             Review request for <strong>{request.asset_name}</strong>.
@@ -76,7 +76,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
                     </div>
 
                     {/* Requester Info */}
-                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <div className="bg-slate-50 p-3 rounded-none border border-slate-200">
                         <label className="text-[10px] uppercase font-bold text-app-text-muted block mb-2">Requester Details</label>
                         <div className="space-y-1">
                             <div className="flex justify-between text-xs">
@@ -95,7 +95,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
+                        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-none border border-red-100">
                             {error}
                         </div>
                     )}
@@ -107,7 +107,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
                         <textarea
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 min-h-[100px] resize-none"
+                            className="w-full px-3 py-2 border border-slate-300 rounded-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 min-h-[100px] resize-none"
                             placeholder="Enter technical validation notes..."
                         />
                     </div>
@@ -118,7 +118,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
                     <button
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-none transition-colors"
                     >
                         Cancel
                     </button>
@@ -126,7 +126,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
                     <button
                         onClick={() => handleAction('REJECT')}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-none transition-colors"
                     >
                         Reject
                     </button>
@@ -134,7 +134,7 @@ const ITApprovalModal = ({ isOpen, onClose, request, onUpdate }) => {
                     <button
                         onClick={() => handleAction('APPROVE')}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-medium text-app-text bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2"
+                        className="px-4 py-2 text-sm font-medium text-app-text bg-emerald-600 hover:bg-emerald-700 rounded-none shadow-sm hover:shadow transition-all flex items-center gap-2"
                     >
                         {isSubmitting ? 'Processing...' : 'Approve Request'}
                     </button>

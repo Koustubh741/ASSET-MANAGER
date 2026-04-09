@@ -57,7 +57,7 @@ export default function ProcurementAnalyticsPage() {
                 </div>
                 <button
                     onClick={exportCsv}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2 rounded-none bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
                 >
                     <Download size={18} /> Export
                 </button>
@@ -66,7 +66,7 @@ export default function ProcurementAnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="glass-card p-5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-blue-500/20 text-blue-400">
+                        <div className="p-3 rounded-none bg-blue-500/20 text-blue-400">
                             <FileText size={24} />
                         </div>
                         <div>
@@ -77,7 +77,7 @@ export default function ProcurementAnalyticsPage() {
                 </div>
                 <div className="glass-card p-5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-emerald-500/20 text-emerald-400">
+                        <div className="p-3 rounded-none bg-emerald-500/20 text-emerald-400">
                             <DollarSign size={24} />
                         </div>
                         <div>
@@ -90,7 +90,7 @@ export default function ProcurementAnalyticsPage() {
                 </div>
                 <div className="glass-card p-5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-purple-500/20 text-purple-400">
+                        <div className="p-3 rounded-none bg-purple-500/20 text-purple-400">
                             <PieIcon size={24} />
                         </div>
                         <div>

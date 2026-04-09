@@ -7,16 +7,30 @@ from sqlalchemy import text
 from .database.database import get_db, test_connection, get_connection_info
 from .models.models import AuditLog, Asset
 import traceback
+import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from .routers import upload, workflows, disposal, audit, assets, auth, tickets, asset_requests, users, reference, financials
-import os
-from dotenv import load_dotenv
+from .scheduler import scheduler, setup_patch_scheduler_jobs
+from .config.settings import settings
 from contextlib import asynccontextmanager
 import asyncio
-from .scheduler import scheduler, setup_patch_scheduler_jobs
 
-# Load environment variables from .env file
-load_dotenv()
+
+# ── Rotating Exception Logger (5 MB max, 3 backups) ──────────────────────────
+_exc_file_handler = RotatingFileHandler(
+    "exception.log",
+    maxBytes=5 * 1024 * 1024,   # 5 MB
+    backupCount=3,
+    encoding="utf-8"
+)
+_exc_file_handler.setLevel(logging.ERROR)
+_exc_file_handler.setFormatter(logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(name)s:\n%(message)s\n"
+))
+logging.getLogger("app.exceptions").addHandler(_exc_file_handler)
+logging.getLogger("app.exceptions").setLevel(logging.ERROR)
+_exc_logger = logging.getLogger("app.exceptions")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -77,19 +91,28 @@ def _log_registered_routes():
 async def favicon():
     return JSONResponse(content={})
 
+# Suppress Chrome DevTools 404s
+@app.get("/.well-known/appspecific/com.chrome.devtools.json", include_in_schema=False)
+async def chrome_devtools():
+    return JSONResponse(content={})
+
 # Configure CORS
+# In production, we should only allow specific origins.
+# For development, we keep common localhost ports.
+origins = [
+    settings.FRONTEND_URL,
+    settings.BACKEND_URL,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+# Add any additional origins from environment if provided (comma-separated)
+if settings.ADDITIONAL_CORS_ORIGINS:
+    origins.extend([o.strip() for o in settings.ADDITIONAL_CORS_ORIGINS.split(",")])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        "http://localhost:3002",
-        "http://127.0.0.1:3002",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,21 +127,23 @@ async def debug_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, FastAPIHTTPException):
         raise exc
     
-    print(f"ERROR: {exc}")
-    traceback.print_exc()
-    with open("exception.log", "a") as f:
-        f.write(f"\n--- {datetime.now()} ---\n")
-        f.write(traceback.format_exc())
+    # Log to rotating file handler (max 5MB, 3 backups)
+    _exc_logger.exception(f"Unhandled exception on {request.method} {request.url}: {exc}")
     
-    is_debug = os.getenv("DEBUG", "false").lower() == "true"
-    content = {"detail": "Internal Server Error"}
-    if is_debug:
-        content["detail"] = str(exc)
-        content["traceback"] = traceback.format_exc()
+    if settings.DEBUG:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": str(exc),
+                "traceback": traceback.format_exc(),
+                "type": type(exc).__name__
+            },
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
         
     return JSONResponse(
         status_code=500,
-        content=content,
+        content={"detail": "Internal Server Error"},
         headers={"Access-Control-Allow-Origin": "*"}
     )
 
@@ -126,13 +151,15 @@ from fastapi.exceptions import ResponseValidationError
 
 @app.exception_handler(ResponseValidationError)
 async def validation_exception_handler(request: Request, exc: ResponseValidationError):
-    print(f"Response Validation Error: {exc}")
-    traceback.print_exc()
+    with open("serialization_errors.log", "a", encoding="utf-8") as f:
+        f.write(f"--- FAILED ON {request.method} {request.url} ---\n")
+        f.write(str(exc) + "\n")
     return JSONResponse(
         status_code=500,
         content={"detail": "Response Serialization Error", "errors": str(exc)},
         headers={"Access-Control-Allow-Origin": "*"}
     )
+
 
 # All routers are now registered through the versioned api_router above
 
@@ -150,7 +177,41 @@ async def root():
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": app.version,
+        "checks": {
+            "api": "ok"
+        }
+    }
+    
+    # Check Database
+    try:
+        if test_connection():
+            health_status["checks"]["database"] = "connected"
+        else:
+            health_status["checks"]["database"] = "error"
+            health_status["status"] = "degraded"
+    except Exception:
+        health_status["checks"]["database"] = "exception"
+        health_status["status"] = "degraded"
+        
+    # Check Redis (Optional dependency but good for prod)
+    try:
+        from .utils.cache import dashboard_cache
+        client = await dashboard_cache.get_client()
+        if await client.ping():
+            health_status["checks"]["redis"] = "connected"
+        else:
+             health_status["checks"]["redis"] = "disconnected"
+             health_status["status"] = "degraded"
+    except Exception:
+        health_status["checks"]["redis"] = "unavailable"
+        # Don't fail the whole health check if Redis is down, but mark as degraded
+        health_status["status"] = "degraded"
+        
+    return health_status
 
 @app.get("/api/v1/collect-status")
 async def collect_status():

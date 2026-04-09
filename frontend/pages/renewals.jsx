@@ -42,14 +42,14 @@ const RenewalDetailsModal = ({ renewal, onClose }) => {
 
                     {/* Key Info Grid */}
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-app-border">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-none border border-app-border">
                             <div className="flex items-center gap-2 text-app-text-muted mb-2">
                                 <DollarSign size={16} />
                                 <span className="text-xs font-medium uppercase">Cost</span>
                             </div>
                             <div className="text-lg font-mono text-app-text">₹{renewal.renewal_cost?.toLocaleString()}</div>
                         </div>
-                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-app-border">
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-none border border-app-border">
                             <div className="flex items-center gap-2 text-app-text-muted mb-2">
                                 <Calendar size={16} />
                                 <span className="text-xs font-medium uppercase">Period</span>
@@ -140,14 +140,14 @@ const RejectModal = ({ isOpen, onClose, onConfirm }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onClick={onClose} />
-            <div className="relative bg-[#1e293b] rounded-2xl w-full max-w-md border border-app-border p-6 shadow-2xl">
+            <div className="relative bg-[#1e293b] rounded-none w-full max-w-md border border-app-border p-6 shadow-2xl">
                 <h3 className="text-xl font-bold text-app-text mb-2">Reject Renewal Request</h3>
                 <p className="text-app-text-muted text-sm mb-4">Please provide a reason for rejecting this renewal. This will be logged in the audit trail.</p>
 
                 <textarea
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    className="w-full bg-black/30 border border-app-border rounded-lg p-3 text-app-text text-sm focus:outline-none focus:border-red-500/50 h-32 resize-none"
+                    className="w-full bg-black/30 border border-app-border rounded-none p-3 text-app-text text-sm focus:outline-none focus:border-red-500/50 h-32 resize-none"
                     placeholder="Enter rejection reason..."
                     autoFocus
                 />
@@ -157,7 +157,7 @@ const RejectModal = ({ isOpen, onClose, onConfirm }) => {
                     <button
                         onClick={() => onConfirm(reason)}
                         disabled={!reason.trim()}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-app-text text-sm font-medium rounded-lg transition-colors"
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-app-text text-sm font-medium rounded-none transition-colors"
                     >
                         Confirm Rejection
                     </button>
@@ -184,7 +184,8 @@ export default function Renewals() {
         const loadRenewals = async () => {
             try {
                 // Load assets from backend API
-                const assets = await apiClient.getAssets();
+                const assetResponse = await apiClient.getAssets();
+                const assets = assetResponse.data || [];
 
                 const generatedRenewals = assets
                     .filter(asset => {
@@ -288,7 +289,7 @@ export default function Renewals() {
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => setSelectedRenewal(asset)}
-                    className="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-700/50 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="p-1.5 rounded-none bg-slate-200 dark:bg-slate-700/50 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
                     title="View Details"
                 >
                     <Eye size={16} />
@@ -298,13 +299,13 @@ export default function Renewals() {
 
                 <button
                     onClick={() => handleApprove(asset.id)}
-                    className="flex items-center px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all text-xs font-medium"
+                    className="flex items-center px-3 py-1.5 rounded-none bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all text-xs font-medium"
                 >
                     <CheckCircle size={14} className="mr-1.5" /> Approve
                 </button>
                 <button
                     onClick={() => initiateReject(asset.id)}
-                    className="flex items-center px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all text-xs font-medium"
+                    className="flex items-center px-3 py-1.5 rounded-none bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all text-xs font-medium"
                 >
                     <XCircle size={14} className="mr-1.5" /> Reject
                 </button>
@@ -324,7 +325,7 @@ export default function Renewals() {
                         Enterprise Workflow: <span className="text-yellow-400">IT</span> <ChevronRight size={14} /> <span className="text-blue-400">Finance</span> <ChevronRight size={14} /> <span className="text-purple-400">Commercial</span>
                     </p>
                 </div>
-                <Link href="/" className="px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-lg flex items-center transition-colors border border-app-border">
+                <Link href="/" className="px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-200 rounded-none flex items-center transition-colors border border-app-border">
                     <ArrowLeft size={16} className="mr-2" /> Back to Dashboard
                 </Link>
             </div>
@@ -342,7 +343,7 @@ export default function Renewals() {
                         </div>
                         <h3 className="text-2xl font-bold text-app-text">{stats.requested}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${filter === 'Requested' ? 'bg-yellow-500 text-black' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
+                    <div className={`p-4 rounded-none ${filter === 'Requested' ? 'bg-yellow-500 text-black' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                         <AlertCircle size={28} />
                     </div>
                 </div>
@@ -358,7 +359,7 @@ export default function Renewals() {
                         </div>
                         <h3 className="text-2xl font-bold text-app-text">{stats.it_approved}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${filter === 'IT_Approved' ? 'bg-blue-500 text-app-text' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
+                    <div className={`p-4 rounded-none ${filter === 'IT_Approved' ? 'bg-blue-500 text-app-text' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                         <DollarSign size={28} />
                     </div>
                 </div>
@@ -374,7 +375,7 @@ export default function Renewals() {
                         </div>
                         <h3 className="text-2xl font-bold text-app-text">{stats.finance_approved}</h3>
                     </div>
-                    <div className={`p-4 rounded-2xl ${filter === 'Finance_Approved' ? 'bg-purple-500 text-app-text' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
+                    <div className={`p-4 rounded-none ${filter === 'Finance_Approved' ? 'bg-purple-500 text-app-text' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                         <Clock size={28} />
                     </div>
                 </div>
@@ -392,7 +393,7 @@ export default function Renewals() {
             )}
 
             {/* Data Table */}
-            <div className="bg-white dark:bg-slate-900/50 backdrop-blur border border-app-border rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-white dark:bg-slate-900/50 backdrop-blur border border-app-border rounded-none overflow-hidden shadow-xl">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-app-border bg-app-surface-soft">

@@ -41,53 +41,57 @@ const StrategicEvidenceModal = ({ isOpen, onClose, focus, data }) => {
     return (
         <div className="fixed inset-0 z-[120] flex justify-end animate-in fade-in duration-300">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-app-obsidian/80 backdrop-blur-md" onClick={onClose} />
             
             {/* Drawer */}
-            <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 border-l border-white/10">
+            <div className="relative w-full max-w-2xl bg-app-void h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-500 border-l border-app-border relative overflow-hidden font-['Space_Grotesk']">
+                <div className="kinetic-scan-line" />
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                     style={{ backgroundImage: 'radial-gradient(circle, var(--color-app-primary) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
                 
                 {/* Header */}
-                <div className="p-8 border-b border-app-border/40 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-primary/10 text-primary">
-                            <Database size={24} />
+                <div className="p-10 border-b border-app-border/40 flex items-center justify-between relative z-10 bg-app-void/80 backdrop-blur-md">
+                    <div className="flex items-center gap-6">
+                        <div className="p-4 rounded-none bg-app-primary/10 text-app-primary border border-app-primary/20 shadow-[0_0_20px_rgba(var(--color-app-primary-rgb),0.2)]">
+                            <Database size={28} />
                         </div>
                         <div>
-                            <h3 className="text-2xl font-black tracking-tighter uppercase italic text-app-text">Deep Audit <span className="text-primary tracking-normal not-italic lowercase">Evidence</span></h3>
-                            <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.3em] mt-1">Source Focus: {focus || 'Root Telemetry'}</p>
+                            <h3 className="text-3xl font-black tracking-tighter uppercase italic text-app-text leading-none">Deep Audit <span className="text-app-primary not-italic">Evidence</span></h3>
+                            <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.5em] mt-3 opacity-40 italic">Source_Focus: {focus || 'Root_Telemetry'} // v6.8</p>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-3 hover:bg-rose-500/10 hover:text-rose-500 rounded-xl transition-all text-app-text-muted">
-                        <X size={24} />
+                    <button onClick={onClose} className="p-4 hover:bg-app-rose/10 hover:text-app-rose rounded-none transition-all text-app-text-muted border border-transparent hover:border-app-rose/30">
+                        <X size={28} />
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-grow overflow-y-auto p-8 custom-scrollbar space-y-8">
+                <div className="flex-grow overflow-y-auto p-10 custom-scrollbar space-y-12 relative z-10">
                     {sections.map(section => (
-                        <div key={section.id} className="space-y-4">
-                            <div className="flex items-center gap-2 text-app-text-muted mb-4 border-b border-app-border/20 pb-2">
+                        <div key={section.id} className="space-y-6">
+                            <div className="flex items-center gap-3 text-app-primary mb-6 border-b border-app-border/20 pb-3 italic">
                                 {section.icon}
-                                <span className="text-[11px] font-black uppercase tracking-widest">{section.label}</span>
+                                <span className="text-[12px] font-black uppercase tracking-[0.3em]">{section.label}</span>
                             </div>
                             
-                            <div className="grid gap-2">
+                            <div className="grid gap-3">
                                 {section.rows.map((row, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-slate-500/5 border border-app-border/30 hover:border-primary/20 transition-all group">
+                                    <div key={idx} className="flex items-center justify-between p-6 rounded-none bg-app-obsidian/40 border border-app-border/40 hover:border-app-primary/30 hover:bg-app-surface/40 transition-all group relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-app-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-1">{row.key}</span>
-                                            <span className="text-xl font-black text-app-text tabular-nums">{row.val}</span>
+                                            <span className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-2 opacity-50 italic">{row.key}</span>
+                                            <span className="text-2xl font-black text-app-text tabular-nums italic tracking-tighter">{row.val}</span>
                                         </div>
                                         <div className="flex flex-col items-end">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                                                row.status === 'good' ? 'bg-emerald-500/10 text-emerald-500' : 
-                                                row.status === 'warning' ? 'bg-amber-500/10 text-amber-500' :
-                                                row.status === 'error' ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-500/10 text-app-text-muted'
+                                            <span className={`text-[10px] font-black px-3 py-1 rounded-none uppercase tracking-[0.1em] italic shadow-lg border ${
+                                                row.status === 'good' ? 'bg-app-secondary/10 text-app-secondary border-app-secondary/30' : 
+                                                row.status === 'warning' ? 'bg-app-gold/10 text-app-gold border-app-gold/30' :
+                                                row.status === 'error' ? 'bg-app-rose/10 text-app-rose border-app-rose/30' : 'bg-app-void text-app-text-muted border-app-border'
                                             }`}>
                                                 {row.delta}
                                             </span>
-                                            <button className="text-[9px] font-black uppercase text-primary tracking-widest mt-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                                                Raw logs <ExternalLink size={10} />
+                                            <button className="text-[10px] font-black uppercase text-app-primary tracking-[0.2em] mt-3 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0 flex items-center gap-2 italic">
+                                                Fetch_Raw_Logs <ExternalLink size={12} />
                                             </button>
                                         </div>
                                     </div>
@@ -98,12 +102,12 @@ const StrategicEvidenceModal = ({ isOpen, onClose, focus, data }) => {
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-8 border-t border-app-border/40 bg-slate-500/5 flex items-center justify-between">
-                    <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-app-text-muted hover:text-primary transition-colors">
-                        <List size={14} /> View SQL Query
+                <div className="p-10 border-t border-app-border/40 bg-app-obsidian/90 flex items-center justify-between relative z-10">
+                    <button className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] text-app-text-muted hover:text-app-primary transition-colors italic">
+                        <List size={16} /> SQL_QUERY_VIEW
                     </button>
-                    <button className="btn btn-primary py-3 px-8 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                        <Download size={14} /> Export Evidence (PDF)
+                    <button className="bg-app-primary text-app-obsidian py-4 px-10 text-[11px] font-black uppercase tracking-[0.3em] flex items-center gap-3 hover:bg-app-primary/90 transition-all shadow-[0_0_30px_rgba(var(--color-app-primary-rgb),0.3)] italic">
+                        <Download size={18} /> EXPORT_EVIDENCE_PDF
                     </button>
                 </div>
             </div>

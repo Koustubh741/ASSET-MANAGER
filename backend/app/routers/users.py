@@ -1,11 +1,12 @@
 """
 User management endpoints for admin operations (Asynchronous)
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.database import get_db
 from ..schemas.user_schema import UserCreate, UserResponse, UserUpdate
+from ..schemas.common_schema import PaginatedResponse
 from ..services import user_service
 from typing import List, Optional
 from ..utils import auth_utils
@@ -73,23 +74,31 @@ async def create_user(
     return await user_service.create_user(db=db, user=user)
 
 
-@router.get("", response_model=list[UserResponse])
+@router.get("", response_model=PaginatedResponse[UserResponse])
 async def list_users(
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=100),
     status: Optional[str] = None,
     role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     admin_user = Depends(check_admin_access)
 ):
     """
-    List all users with optional filters (Admin only).
+    List all users with pagination and filters (Admin only).
+    Root Fix: Implemented SQL-level pagination and filtering.
     """
-    users = await user_service.get_users(db, status=status)
+    skip = (page - 1) * size
     
-    # Additional role filter if provided
-    if role:
-        users = [u for u in users if u.role == role]
+    users, total = await user_service.get_users(
+        db, status=status, role=role, skip=skip, limit=size
+    )
     
-    return users
+    return PaginatedResponse(
+        total=total,
+        page=page,
+        size=size,
+        data=users
+    )
 
 
 @router.get("/hierarchy")

@@ -15,9 +15,10 @@ ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440)) # Default to 24 hours
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))  # Default to 7 days
 
-# Centralized Role-Based Access Control Constants
-STAFF_ROLES = {"ADMIN", "IT_SUPPORT", "IT_MANAGEMENT", "ASSET_MANAGER", "SUPPORT_SPECIALIST", "FINANCE", "PROCUREMENT", "CEO", "CFO"}
-MANAGEMENT_ROLES = {"ADMIN", "IT_MANAGEMENT", "ASSET_MANAGER", "CEO", "CFO"}
+# Centralized Role-Based Access Control Constants (ROOT FIX PHASE 2)
+# We now use base roles. Contextual access (e.g. Finance) is handled via department filters.
+STAFF_ROLES = {"ADMIN", "SUPPORT", "MANAGER"}
+MANAGEMENT_ROLES = {"ADMIN", "MANAGER"}
 
 # OAuth2 scheme for token extraction - auto_error=False to handle query params manually
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)

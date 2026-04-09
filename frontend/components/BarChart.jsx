@@ -8,10 +8,10 @@ export default function BarChart({ data, onBarClick }) {
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
-                <div className="glass-panel p-3 !bg-white dark:bg-slate-900/90 !border-slate-700">
-                    <p className="text-slate-900 dark:text-slate-200 font-medium mb-1">{label}</p>
-                    <p className="text-blue-400 font-bold text-lg">
-                        {payload[0].value} <span className="text-xs font-normal text-app-text-muted">Assets</span>
+                <div className="bg-app-obsidian p-4 border border-app-border shadow-2xl rounded-none min-w-[160px] backdrop-blur-md">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-app-primary mb-3 border-b border-app-border pb-2">{label}</p>
+                    <p className="text-xl font-black text-app-text font-mono flex items-baseline gap-2">
+                        {payload[0].value} <span className="text-[10px] uppercase font-black text-app-text-muted tracking-widest">Units</span>
                     </p>
                 </div>
             )
@@ -22,23 +22,29 @@ export default function BarChart({ data, onBarClick }) {
     return (
         <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.5} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-main)" opacity={0.4} />
                 <XAxis
                     dataKey="name"
-                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 10, fontWeight: 900, letterSpacing: '0.1em' }}
                     axisLine={false}
                     tickLine={false}
                     dy={10}
                 />
                 <YAxis
-                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 10, fontWeight: 900 }}
                     axisLine={false}
                     tickLine={false}
                 />
-                <Tooltip cursor={{ fill: '#334155', opacity: 0.2 }} content={<CustomTooltip />} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]} onClick={data => data && onBarClick && onBarClick(data)}>
+                <Tooltip cursor={{ fill: 'var(--bg-app-obsidian)', opacity: 0.2 }} content={<CustomTooltip />} />
+                <Bar dataKey="value" radius={[0, 0, 0, 0]} onClick={data => data && onBarClick && onBarClick(data)}>
                     {data.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={['#60a5fa', '#818cf8', '#a78bfa', '#f472b6', '#34d399'][index % 5]} cursor="pointer" />
+                        <Cell key={`cell-${index}`} fill={[
+                            'var(--color-kinetic-primary)',
+                            'var(--color-kinetic-secondary)',
+                            'var(--color-kinetic-gold)',
+                            'var(--color-kinetic-rose)',
+                            'var(--color-kinetic-cyan)'
+                        ][index % 5]} cursor="pointer" />
                     ))}
                 </Bar>
             </RechartsBarChart>

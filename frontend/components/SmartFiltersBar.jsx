@@ -48,7 +48,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
                     </div>
                     <input
                         type="text"
-                        className="block w-full pl-10 pr-3 py-2.5 border border-app-border rounded-xl leading-5 bg-app-surface-soft text-app-text placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 sm:text-sm backdrop-blur-sm transition-all"
+                        className="block w-full pl-10 pr-3 py-2.5 border border-app-border rounded-none leading-5 bg-app-surface-soft text-app-text placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 sm:text-sm backdrop-blur-sm transition-all"
                         placeholder="Search assets by name, ID, or serial..."
                         value={filters.search}
                         onChange={(e) => handleChange('search', e.target.value)}
@@ -60,7 +60,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
                     <select
                         value={filters.status}
                         onChange={(e) => handleChange('status', e.target.value)}
-                        className="appearance-none bg-white dark:bg-slate-900/50 border border-app-border bg-white border-slate-300 text-slate-700 py-2.5 px-4 pr-8 rounded-xl text-sm text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        className="appearance-none bg-white dark:bg-slate-900/50 border border-app-border bg-white border-slate-300 text-slate-700 py-2.5 px-4 pr-8 rounded-none text-sm text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                     >
                         <option value="All">All Status</option>
                         <option value="In Use">In Use</option>
@@ -71,7 +71,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
 
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl border transition-all ${isExpanded
+                        className={`flex items-center space-x-2 px-4 py-2.5 rounded-none border transition-all ${isExpanded
                             ? 'bg-blue-600/20 border-blue-500/30 text-blue-300'
                             : 'bg-app-surface-soft border-app-border text-app-text-muted hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
                             }`}
@@ -82,7 +82,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
 
                     <button
                         onClick={() => onSaveView && onSaveView(filters)}
-                        className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 transition-all"
+                        className="flex items-center space-x-2 px-4 py-2.5 rounded-none bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 transition-all"
                     >
                         <Save size={16} />
                         <span className="text-sm font-medium hidden sm:inline">Save View</span>
@@ -102,7 +102,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
 
             {/* Expanded Filters */}
             {isExpanded && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-app-border animate-in slide-in-from-top-2 duration-200">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-900/40 rounded-none border border-app-border animate-in slide-in-from-top-2 duration-200">
                     <div className="space-y-1">
                         <label className="text-xs font-medium text-app-text-muted text-app-text-muted flex items-center space-x-2">
                             <Tag size={12} /> <span>Category</span>
@@ -110,7 +110,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
                         <select
                             value={filters.category}
                             onChange={(e) => handleChange('category', e.target.value)}
-                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-lg py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
                         >
                             <option value="All">All Categories</option>
                             <option value="Laptop">Laptops</option>
@@ -129,7 +129,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
                         <select
                             value={filters.department}
                             onChange={(e) => handleChange('department', e.target.value)}
-                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-lg py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
                         >
                             <option value="All">All Departments</option>
                             <option value="IT">IT Support</option>
@@ -148,7 +148,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
                         <select
                             value={filters.warranty}
                             onChange={(e) => handleChange('warranty', e.target.value)}
-                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-lg py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
                         >
                             <option value="All">Any Status</option>
                             <option value="Active">Active Warranty</option>
@@ -164,7 +164,7 @@ export default function SmartFiltersBar({ onFilterChange, onSaveView, className 
                         <select
                             value={filters.assignment || 'All'}
                             onChange={(e) => handleChange('assignment', e.target.value)}
-                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-lg py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
+                            className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none py-2 px-3 text-sm text-app-text-muted focus:ring-2 focus:ring-blue-500/50"
                         >
                             <option value="All">All Assets</option>
                             <option value="Assigned">Assigned Only</option>

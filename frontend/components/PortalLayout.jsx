@@ -9,7 +9,7 @@ import NotificationDrawer from '@/components/NotificationDrawer';
 
 const FINANCE_NAV = [
     { label: 'Dashboard', href: '/finance', icon: LayoutDashboard, exactMatch: true },
-    { label: 'Budget queue', href: '/finance/budget-queue', icon: DollarSign },
+    { label: 'Budget Queue', href: '/finance/budget-queue', icon: DollarSign },
     { label: 'Analytics', href: '/finance/analytics', icon: PieChart },
     { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
     // Root fix: keep Finance users inside the Finance hub for settings
@@ -18,7 +18,7 @@ const FINANCE_NAV = [
 
 const PROCUREMENT_NAV = [
     { label: 'Dashboard', href: '/procurement', icon: LayoutDashboard, exactMatch: true },
-    { label: 'Purchase orders', href: '/procurement/purchase-orders', icon: FileText },
+    { label: 'Purchase Orders', href: '/procurement/purchase-orders', icon: FileText },
     { label: 'Deliveries', href: '/procurement/deliveries', icon: Truck },
     { label: 'Analytics', href: '/procurement/analytics', icon: PieChart },
     { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
@@ -42,7 +42,7 @@ export default function PortalLayout({ children, variant }) {
 
     return (
         <div className="app-shell min-h-screen flex text-app-text font-sans font-normal bg-app-bg">
-            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg bg-primary text-white focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:outline-none">
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-none bg-primary text-white focus:ring-2 focus:ring-offset-2 focus:ring-primary focus:outline-none">
                 Skip to main content
             </a>
 
@@ -54,7 +54,7 @@ export default function PortalLayout({ children, variant }) {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setIsNotificationOpen(true)}
-                        className="p-2.5 rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-surface-soft min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors relative"
+                        className="p-2.5 rounded-none text-app-text-muted hover:text-app-text hover:bg-app-surface-soft min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors relative"
                     >
                         <Bell size={22} className={unreadCount > 0 ? "animate-swing" : ""} />
                         {unreadCount > 0 && (
@@ -65,7 +65,7 @@ export default function PortalLayout({ children, variant }) {
                     </button>
                     <button
                         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="p-2.5 rounded-lg text-app-text-muted hover:text-app-text hover:bg-app-surface-soft min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                        className="p-2.5 rounded-none text-app-text-muted hover:text-app-text hover:bg-app-surface-soft min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
                         aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
                     >
                         {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -88,7 +88,7 @@ export default function PortalLayout({ children, variant }) {
                                     key={item.label}
                                     href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-xl min-h-[44px] transition-all ${isActive ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' : 'text-app-text-muted hover:bg-app-surface-soft hover:text-app-text'}`}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-none min-h-[44px] transition-all ${isActive ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' : 'text-app-text-muted hover:bg-app-surface-soft hover:text-app-text'}`}
                                 >
                                     <Icon size={20} />
                                     <span className="font-medium">{item.label}</span>
@@ -98,7 +98,7 @@ export default function PortalLayout({ children, variant }) {
                         <div className="mt-6 pt-4 border-t border-app-border">
                             <button
                                 onClick={() => { logout(); window.location.href = '/login'; }}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl min-h-[44px] border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 border-rose-200 text-rose-600 hover:bg-rose-50 font-medium"
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-none min-h-[44px] border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 border-rose-200 text-rose-600 hover:bg-rose-50 font-medium"
                             >
                                 Log Out
                             </button>
@@ -116,7 +116,7 @@ export default function PortalLayout({ children, variant }) {
                     <div className={`absolute -bottom-24 -right-24 w-48 h-48 ${isFinance ? 'bg-teal-500/10' : 'bg-indigo-500/10'} blur-[80px] rounded-full pointer-events-none`}></div>
 
                     <div className="absolute inset-0 flex flex-col items-center pt-10 opacity-100 group-hover:opacity-0 transition-all duration-300 pointer-events-none z-10 scale-100 group-hover:scale-90">
-                        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-r ${accentClass} opacity-90 flex items-center justify-center mb-6 animate-float shadow-lg`}>
+                        <div className={`w-12 h-12 rounded-none bg-gradient-to-r ${accentClass} opacity-90 flex items-center justify-center mb-6 animate-float shadow-lg`}>
                             {isFinance ? <DollarSign size={22} className="text-white" /> : <ShoppingBag size={22} className="text-white" />}
                         </div>
                         <div className="flex flex-col gap-5 mt-4 flex-1">
@@ -126,7 +126,7 @@ export default function PortalLayout({ children, variant }) {
                                     ? (router.asPath === item.href || router.asPath === item.href + '/')
                                     : (router.asPath === item.href || (item.href !== '/' && router.asPath.startsWith(item.href)));
                                 return (
-                                    <div key={item.label} className={`p-2.5 rounded-xl ${isActive ? (isFinance ? 'text-emerald-500 bg-emerald-500/10' : 'text-blue-500 bg-blue-500/10') : 'text-app-text-muted'}`}>
+                                    <div key={item.label} className={`p-2.5 rounded-none ${isActive ? (isFinance ? 'text-emerald-500 bg-emerald-500/10' : 'text-blue-500 bg-blue-500/10') : 'text-app-text-muted'}`}>
                                         <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                                     </div>
                                 );
@@ -137,7 +137,7 @@ export default function PortalLayout({ children, variant }) {
                         <div className="pb-8 mt-auto flex flex-col items-center">
                             <button 
                                 onClick={() => setIsNotificationOpen(true)}
-                                className={`p-2.5 rounded-xl transition-all relative pointer-events-auto ${isFinance ? 'hover:bg-emerald-500/10 hover:text-emerald-500' : 'hover:bg-blue-500/10 hover:text-blue-500'} text-app-text-muted`}
+                                className={`p-2.5 rounded-none transition-all relative pointer-events-auto ${isFinance ? 'hover:bg-emerald-500/10 hover:text-emerald-500' : 'hover:bg-blue-500/10 hover:text-blue-500'} text-app-text-muted`}
                             >
                                 <Bell size={22} className={unreadCount > 0 ? "animate-swing" : ""} />
                                 {unreadCount > 0 && (
@@ -166,11 +166,11 @@ export default function PortalLayout({ children, variant }) {
                                     <Link
                                         key={item.label}
                                         href={item.href}
-                                        className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 whitespace-nowrap group/nav ${isActive
+                                        className={`flex items-center gap-3 px-4 py-3.5 rounded-none transition-all duration-300 whitespace-nowrap group/nav ${isActive
                                             ? `${isFinance ? 'bg-emerald-500/15 text-emerald-600 border-emerald-400/30' : 'bg-blue-500/15 text-blue-600 border-blue-400/30'} border shadow-lg`
                                             : 'text-app-text-muted hover:bg-app-surface-soft hover:text-app-text hover:pl-6'}`}
                                     >
-                                        <div className={`p-1.5 rounded-lg transition-colors ${isActive ? (isFinance ? 'bg-emerald-500/20' : 'bg-blue-500/20') : 'group-hover/nav:bg-app-surface'}`}>
+                                        <div className={`p-1.5 rounded-none transition-colors ${isActive ? (isFinance ? 'bg-emerald-500/20' : 'bg-blue-500/20') : 'group-hover/nav:bg-app-surface'}`}>
                                             <Icon size={20} className={isActive ? (isFinance ? 'text-emerald-600' : 'text-blue-600') : 'text-app-text-muted group-hover/nav:text-app-text'} />
                                         </div>
                                         <span className={`font-medium tracking-tight ${isActive ? (isFinance ? 'text-emerald-700' : 'text-blue-700') : 'text-app-text-muted group-hover/nav:text-app-text'}`}>{item.label}</span>
@@ -179,7 +179,7 @@ export default function PortalLayout({ children, variant }) {
                             })}
                         </nav>
                         <div className="p-4 mt-auto">
-                            <div className="p-4 rounded-2xl bg-app-surface-soft border border-app-border backdrop-blur-md">
+                            <div className="p-4 rounded-none bg-app-surface-soft border border-app-border backdrop-blur-md">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center border-2 border-primary/20 shrink-0 shadow-lg">
                                         <User size={20} className="text-white" />
@@ -190,7 +190,7 @@ export default function PortalLayout({ children, variant }) {
                                     </div>
                                     <button 
                                         onClick={() => setIsNotificationOpen(true)}
-                                        className="p-2 rounded-xl text-app-text-muted hover:text-primary hover:bg-primary/10 transition-all relative"
+                                        className="p-2 rounded-none text-app-text-muted hover:text-primary hover:bg-primary/10 transition-all relative"
                                     >
                                         <Bell size={20} className={unreadCount > 0 ? "animate-swing" : ""} />
                                         {unreadCount > 0 && (
@@ -202,7 +202,7 @@ export default function PortalLayout({ children, variant }) {
                                 </div>
                                 <button
                                     onClick={() => { logout(); window.location.href = '/login'; }}
-                                    className="mt-4 w-full py-2.5 rounded-xl bg-app-surface border border-app-border hover:bg-danger/10 text-app-text-muted hover:text-danger text-[11px] font-bold uppercase tracking-wider transition-all"
+                                    className="mt-4 w-full py-2.5 rounded-none bg-app-surface border border-app-border hover:bg-danger/10 text-app-text-muted hover:text-danger text-[11px] font-bold uppercase tracking-wider transition-all"
                                 >
                                     Sign Out
                                 </button>

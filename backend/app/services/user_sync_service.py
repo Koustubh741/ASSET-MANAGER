@@ -27,7 +27,13 @@ async def sync_ad_users(db: AsyncSession, payload: UserSyncPayload) -> dict:
             # Update existing user
             logger.info(f"Updating user {user_data.email} via AD Sync")
             db_user.full_name = user_data.full_name
-            db_user.department = user_data.department or db_user.department
+            # Phase 5.3: sync both legacy string and FK
+            if user_data.department:
+                from ..models.models import Department
+                from sqlalchemy import select
+                dept_res = await db.execute(select(Department).filter(Department.name.ilike(user_data.department)))
+                dept_obj = dept_res.scalars().first()
+                db_user.department_id = dept_obj.id if dept_obj else db_user.department_id
             db_user.role = user_data.role or db_user.role
             db_user.position = user_data.position or db_user.position
             db_user.location = user_data.location or db_user.location
@@ -37,12 +43,23 @@ async def sync_ad_users(db: AsyncSession, payload: UserSyncPayload) -> dict:
         else:
             # Create new user
             logger.info(f"Creating new user {user_data.email} via AD Sync")
+            # Phase 5.3: resolve department string to FK
+            dept_id = None
+            dept_name = user_data.department
+            if user_data.department:
+                from ..models.models import Department
+                from sqlalchemy import select as _select
+                dept_res = await db.execute(_select(Department).filter(Department.name.ilike(user_data.department)))
+                dept_obj = dept_res.scalars().first()
+                if dept_obj:
+                    dept_id = dept_obj.id
+                    dept_name = dept_obj.name
             db_user = User(
                 id=uuid.uuid4(),
                 email=user_data.email.lower(),
                 full_name=user_data.full_name,
                 password_hash=get_password_hash(str(uuid.uuid4())), # Random secure password
-                department=user_data.department,
+                department_id=dept_id,
                 role=user_data.role or "END_USER",
                 position=user_data.position,
                 location=user_data.location,

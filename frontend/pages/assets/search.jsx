@@ -18,7 +18,8 @@ export default function SmartSearchPage() {
     useEffect(() => {
         const loadAssets = async () => {
             try {
-                const apiAssets = await apiClient.getAssets();
+                const res = await apiClient.getAssets();
+                const apiAssets = res.data || [];
                 setAssets(apiAssets);
                 setFilteredAssets(apiAssets);
             } catch (error) {
@@ -119,7 +120,7 @@ export default function SmartSearchPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-none hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
@@ -133,7 +134,7 @@ export default function SmartSearchPage() {
             </div>
 
             {/* Filters */}
-            <div className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border shadow-xl backdrop-blur-md">
+            <div className="glass-panel p-6 rounded-none bg-app-surface-soft border border-app-border shadow-xl backdrop-blur-md">
                 <SmartFiltersBar
                     onFilterChange={handleFilterChange}
                     onSaveView={handleSaveView}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import QuickActionGrid from './QuickActionGrid';
 import { Laptop, Ticket, RefreshCw, User, Briefcase, MapPin, Calendar, Building2, Cpu, X, CheckCircle, AlertCircle, Settings, Sparkles, Quote, ChevronUp, Smartphone, LogOut, Eye, Server, Database, Info, Shield, FileText, ShieldCheck, Globe, ArrowUpRight, Zap, Printer, Monitor, HardDrive, ShoppingCart, Wifi, Hand, VideoOff, Terminal, MousePointer, Keyboard, Headphones, Speaker, Camera, Battery, Bluetooth, Router, Trash2, Edit, BatteryCharging, BatteryWarning, BatteryLow, FileX, Droplet, WifiOff, Clock, Wind, Hash, Scan, List, Copy, MonitorOff, Search, Cable, Palette, ShieldAlert, CloudOff, UserCheck, Box, Chrome, Type, MicOff, Layout, PenTool, Signal, ArrowUpCircle, UserX, Settings2 } from 'lucide-react';
 import { useRole } from '@/contexts/RoleContext';
 import { useAssetContext, ASSET_STATUS, OWNER_ROLE, REQUEST_STATUS } from '@/contexts/AssetContext';
@@ -45,13 +46,13 @@ export default function EndUserDashboard() {
     const { currentRole, setCurrentRole, ROLES, logout, user, isManagerial } = useRole();
     const { assets, requests, tickets, createRequest, managerApproveRequest, managerRejectRequest, managerConfirmIT, userAcceptAsset, refreshData } = useAssetContext();
     const displayProfile = {
-        name: user?.name || "Alex Johnson",
-        role: isManagerial ? 'Manager' : (currentRole?.label || "Senior Software Engineer"),
-        empId: user?.employee_id || "EMP-2024-8821",
-        company: user?.company || "Acme Corp Global",
+        name: user?.name || "",
+        role: isManagerial ? 'Manager' : (currentRole?.label || ""),
+        empId: user?.employee_id || "",
+        company: user?.company || "",
         doj: user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : "Recently Joined",
-        location: user?.location || "New York HQ, Floor 4",
-        email: user?.email || "alex.j@acmecorp.com",
+        location: user?.location || "",
+        email: user?.email || "",
         domain: user?.domain || "General",
         department: user?.department || "General"
     };
@@ -75,7 +76,8 @@ export default function EndUserDashboard() {
 
     const assignedAssets = assets
         .filter(a => {
-            const matches = (a.assigned_to?.toLowerCase() === (user?.name || 'Alex Johnson').toLowerCase()) &&
+            if (!user?.name) return false;
+            const matches = (a.assigned_to?.toLowerCase() === user.name.toLowerCase()) &&
                 (a.status === ASSET_STATUS.IN_USE || a.status === 'Active' || a.status === 'Reserved');
             return matches;
         })
@@ -88,17 +90,6 @@ export default function EndUserDashboard() {
     const [selectedRequest, setSelectedRequest] = useState(null); // For viewing details
     const [requestFilter, setRequestFilter] = useState('active'); // 'active' | 'history'
 
-    const handleQuickAction = (action) => {
-        const routeMap = {
-            'profile': '/dashboard/profile',
-            'byod': '/dashboard/register-byod',
-            'asset': '/dashboard/request-asset',
-            'ticket': '/tickets'
-        };
-        if (routeMap[action]) {
-            router.push(routeMap[action]);
-        }
-    };
 
     const pendingAcceptance = requests.filter(r => r.status === REQUEST_STATUS.USER_ACCEPTANCE_PENDING).length;
     const managerApprovalsNeeded = isManagerial
@@ -110,9 +101,9 @@ export default function EndUserDashboard() {
         <div className="space-y-6 relative neural-compact">
             {/* Offboarding Banner */}
             {user?.status === 'EXITING' && (
-                <div className="bg-orange-500/10 border border-orange-500/20 backdrop-blur-md p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-top duration-500 shadow-xl shadow-orange-500/10 mb-6">
+                <div className="bg-orange-500/10 border border-orange-500/20 backdrop-blur-md p-6 rounded-none flex flex-col md:flex-row items-center justify-between gap-6 animate-in slide-in-from-top duration-500 shadow-xl shadow-orange-500/10 mb-6">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 border border-orange-500/20 shadow-sm dark:shadow-inner">
+                        <div className="w-14 h-14 rounded-none bg-orange-500/20 flex items-center justify-center text-orange-400 border border-orange-500/20 shadow-sm dark:shadow-inner">
                             <LogOut size={28} />
                         </div>
                         <div>
@@ -147,13 +138,13 @@ export default function EndUserDashboard() {
                                     {displayProfile.name.split(' ').map(n => n[0]).join('')}
                                 </span>
                             </div>
-                            <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-emerald-500 rounded-2xl border-4 border-[#0F172A] flex items-center justify-center shadow-lg animate-pulse">
+                            <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-emerald-500 rounded-none border-4 border-[#0F172A] flex items-center justify-center shadow-lg animate-pulse">
                                 <Shield size={20} className="text-app-text" />
                             </div>
                         </div>
                         <div className="mt-8 text-center lg:text-left">
                             <h1 className="text-2xl font-['Outfit'] font-black text-app-text tracking-tight mb-2 uppercase">{displayProfile.name}</h1>
-                            <div className="flex items-center justify-center lg:justify-start gap-3 bg-indigo-500/10 px-4 py-1.5 rounded-xl border border-indigo-500/20 w-fit backdrop-blur-sm">
+                            <div className="flex items-center justify-center lg:justify-start gap-3 bg-indigo-500/10 px-4 py-1.5 rounded-none border border-indigo-500/20 w-fit backdrop-blur-sm">
                                 <Sparkles size={14} className="text-indigo-600 dark:text-indigo-400" />
                                 <p className="text-indigo-600 dark:text-indigo-400 font-black text-[10px] uppercase tracking-[0.2em]">{displayProfile.role}</p>
                             </div>
@@ -188,27 +179,7 @@ export default function EndUserDashboard() {
                             </div>
                         </div>
 
-                        {/* Quick Action Grid - Premium Cards */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                            {[
-                                { id: 'profile', icon: User, label: 'Manage Profile', color: 'indigo', action: () => handleQuickAction('profile') },
-                                { id: 'byod', icon: Smartphone, label: 'Register BYOD', color: 'sky', action: () => handleQuickAction('byod') },
-                                { id: 'asset', icon: Laptop, label: 'Request Asset', color: 'blue', action: () => handleQuickAction('asset') },
-                                { id: 'ticket', icon: Ticket, label: 'Get Support', color: 'rose', action: () => handleQuickAction('ticket') }
-                            ].map((item) => (
-                                <button
-                                    key={item.id}
-                                    onClick={item.action}
-                                    className="p-5 rounded-2xl bg-slate-100 dark:bg-white/[0.03] border border-app-border hover:border-slate-300 dark:hover:border-app-border-soft hover:bg-slate-200 dark:hover:bg-white/[0.06] transition-all group/btn flex flex-col items-center text-center gap-3 relative overflow-hidden active:scale-95"
-                                >
-                                    <div className={`absolute inset-0 bg-gradient-to-br from-${item.color}-500/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity`}></div>
-                                    <div className={`w-12 h-12 rounded-xl bg-${item.color}-500/10 flex items-center justify-center border border-${item.color}-500/20 group-hover/btn:scale-110 transition-transform duration-500 relative z-10 shadow-lg shadow-${item.color}-500/5`}>
-                                        <item.icon size={22} className={`text-${item.color}-600 dark:text-${item.color}-400 group-hover/btn:text-${item.color}-500 dark:group-hover/btn:text-${item.color}-300`} />
-                                    </div>
-                                    <span className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] relative z-10 group-hover/btn:text-indigo-600 dark:group-hover/btn:text-app-text transition-colors">{item.label}</span>
-                                </button>
-                            ))}
-                        </div>
+                        <QuickActionGrid />
                     </div>
                 </div>
 
@@ -217,7 +188,7 @@ export default function EndUserDashboard() {
                     <div className="lg:col-span-2 space-y-8">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-lg shadow-blue-500/5">
+                                <div className="w-12 h-12 rounded-none bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-lg shadow-blue-500/5">
                                     <Laptop className="text-blue-400" size={24} />
                                 </div>
                                 <div>
@@ -225,7 +196,7 @@ export default function EndUserDashboard() {
                                     <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-1">Managed Enterprise Devices</p>
                                 </div>
                             </div>
-                            <span className="px-3 py-1 bg-app-surface-soft rounded-lg border border-app-border text-[10px] font-black text-app-text-muted uppercase tracking-widest">{assignedAssets.length} Active Units</span>
+                            <span className="px-3 py-1 bg-app-surface-soft rounded-none border border-app-border text-[10px] font-black text-app-text-muted uppercase tracking-widest">{assignedAssets.length} Active Units</span>
                         </div>
 
                         {assignedAssets.length === 0 ? (
@@ -252,11 +223,11 @@ export default function EndUserDashboard() {
                                                 {asset.model && asset.model !== asset.name && <span className="text-app-text-muted font-bold text-xs ml-3 lowercase">[{asset.model}]</span>}
                                             </h4>
                                             <div className="flex items-center gap-4 mt-2.5">
-                                                <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                                                <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-500/10 rounded-none border border-blue-500/20">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                                                     <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">{asset.vendor || 'Standard OEM'}</span>
                                                 </div>
-                                                <span className="text-[10px] font-mono text-app-text-muted bg-app-surface-soft px-2.5 py-1 rounded-lg border border-app-border">SRL: {asset.serial_number || 'ST-2024-XXXX'}</span>
+                                                <span className="text-[10px] font-mono text-app-text-muted bg-app-surface-soft px-2.5 py-1 rounded-none border border-app-border">SRL: {asset.serial_number || 'ST-2024-XXXX'}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -288,7 +259,7 @@ export default function EndUserDashboard() {
                                                     else if (k.includes('ip') || k.includes('mac') || k.includes('network')) SpecIcon = Server;
 
                                                     return (
-                                                        <div key={key} className="flex items-center justify-between p-4 rounded-xl bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200/50 border-app-border hover:bg-slate-200/50 dark:hover:bg-slate-100 dark:bg-white/[0.05] transition-all group/spec">
+                                                        <div key={key} className="flex items-center justify-between p-4 rounded-none bg-slate-100/50 dark:bg-white/[0.02] border border-slate-200/50 border-app-border hover:bg-slate-200/50 dark:hover:bg-slate-100 dark:bg-white/[0.05] transition-all group/spec">
                                                             <div className="flex items-center gap-4">
                                                                 <SpecIcon size={14} className="text-app-text-muted group-hover/spec:text-blue-400 transition-colors" />
                                                                 <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest group-hover/spec:text-app-text-muted">{key}</span>
@@ -303,14 +274,14 @@ export default function EndUserDashboard() {
                                             <div className="space-y-4">
                                                 <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em]">Deployment Intelligence</p>
                                                 <div className="space-y-2">
-                                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/10">
+                                                    <div className="flex items-center gap-3 p-3 rounded-none bg-indigo-500/5 border border-indigo-500/10">
                                                         <MapPin size={16} className="text-amber-500" />
                                                         <div>
                                                             <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Work Zone</p>
                                                             <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{asset.location || 'Remote HQ'}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                                                    <div className="flex items-center gap-3 p-3 rounded-none bg-blue-500/5 border border-blue-500/10">
                                                         <Calendar size={16} className="text-blue-400" />
                                                         <div>
                                                             <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Compliance Audit</p>
@@ -323,13 +294,13 @@ export default function EndUserDashboard() {
                                             <div className="flex gap-4 pt-2">
                                                 <button
                                                     onClick={() => handleQuickAction('ticket')}
-                                                    className="flex-1 py-2.5 rounded-xl border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 text-[11px] font-black uppercase tracking-widest transition-all"
+                                                    className="flex-1 py-2.5 rounded-none border border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 text-[11px] font-black uppercase tracking-widest transition-all"
                                                 >
                                                     Report Issue
                                                 </button>
                                                 <button
                                                     onClick={() => handleQuickAction('asset')}
-                                                    className="flex-1 py-2.5 rounded-xl border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 text-[11px] font-black uppercase tracking-widest transition-all"
+                                                    className="flex-1 py-2.5 rounded-none border border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 text-[11px] font-black uppercase tracking-widest transition-all"
                                                 >
                                                     Upgrade Request
                                                 </button>
@@ -348,16 +319,16 @@ export default function EndUserDashboard() {
                             <div className="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/5 blur-[60px] rounded-full"></div>
 
                             {/* Filter Toggle */}
-                            <div className="flex bg-slate-100 dark:bg-slate-950/60 rounded-xl p-1 border border-app-border h-11 relative z-10">
+                            <div className="flex bg-slate-100 dark:bg-slate-950/60 rounded-none p-1 border border-app-border h-11 relative z-10">
                                 <button
                                     onClick={() => setRequestFilter('active')}
-                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg transition-all ${requestFilter === 'active' ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20' : 'text-app-text-muted hover:text-app-text-muted'}`}
+                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-none transition-all ${requestFilter === 'active' ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20' : 'text-app-text-muted hover:text-app-text-muted'}`}
                                 >
                                     Active Trace
                                 </button>
                                 <button
                                     onClick={() => setRequestFilter('history')}
-                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg transition-all ${requestFilter === 'history' ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20' : 'text-app-text-muted hover:text-app-text-muted'}`}
+                                    className={`flex-1 text-[10px] font-black uppercase tracking-[0.2em] rounded-none transition-all ${requestFilter === 'history' ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20' : 'text-app-text-muted hover:text-app-text-muted'}`}
                                 >
                                     Audit Logs
                                 </button>
@@ -370,7 +341,7 @@ export default function EndUserDashboard() {
                                         <Briefcase size={18} className="text-blue-400" />
                                         <h3 className="text-[11px] font-black text-app-text uppercase tracking-[0.3em]">Procurement</h3>
                                     </div>
-                                    <button onClick={() => refreshData?.()} className="p-1.5 hover:bg-black/5 dark:hover:bg-app-surface-soft rounded-lg transition-colors group">
+                                    <button onClick={() => refreshData?.()} className="p-1.5 hover:bg-black/5 dark:hover:bg-app-surface-soft rounded-none transition-colors group">
                                         <RefreshCw size={14} className="text-app-text-muted group-hover:rotate-180 transition-transform duration-700" />
                                     </button>
                                 </div>
@@ -380,7 +351,7 @@ export default function EndUserDashboard() {
                                         const isCompleted = ['FULFILLED', 'REJECTED', 'CLOSED', 'CANCELLED'].includes(req.status);
                                         return requestFilter === 'active' ? !isCompleted : isCompleted;
                                     }).length === 0 ? (
-                                        <div className="text-center py-12 opacity-50 bg-slate-50 dark:bg-white/[0.01] rounded-2xl border border-dashed border-app-border">
+                                        <div className="text-center py-12 opacity-50 bg-slate-50 dark:bg-white/[0.01] rounded-none border border-dashed border-app-border">
                                             <p className="text-[10px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest">No Signals Detected</p>
                                         </div>
                                     ) : requests.filter(req => {
@@ -389,9 +360,9 @@ export default function EndUserDashboard() {
                                     })
                                         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                                         .map(req => (
-                                            <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-4 rounded-xl glass-interactive border border-app-border group">
+                                            <div key={req.id} onClick={() => setSelectedRequest(req)} className="p-4 rounded-none glass-interactive border border-app-border group">
                                                 <div className="flex justify-between items-start mb-3">
-                                                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-lg border 
+                                                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-none border 
                                         ${req.status === 'FULFILLED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                             req.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
                                                                 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'}`}>
@@ -409,7 +380,7 @@ export default function EndUserDashboard() {
                                                                 userAcceptAsset(req.id);
                                                             }
                                                         }}
-                                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-app-text text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-3"
+                                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-app-text text-[10px] font-black uppercase tracking-widest rounded-none shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 mt-3"
                                                     >
                                                         <CheckCircle size={14} /> Confirm Receipt
                                                     </button>
@@ -435,7 +406,7 @@ export default function EndUserDashboard() {
                                         const isCompleted = ['CLOSED', 'RESOLVED', 'REJECTED', 'CANCELLED'].includes(t.status?.toUpperCase());
                                         return requestFilter === 'active' ? !isCompleted : isCompleted;
                                     }).length === 0 ? (
-                                        <div className="text-center py-12 opacity-50 bg-white dark:bg-white/[0.01] rounded-2xl border border-dashed border-app-border">
+                                        <div className="text-center py-12 opacity-50 bg-white dark:bg-white/[0.01] rounded-none border border-dashed border-app-border">
                                             <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em]">All Clear</p>
                                         </div>
                                     ) : tickets.filter(t => {
@@ -444,9 +415,9 @@ export default function EndUserDashboard() {
                                     })
                                         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                                         .map(ticket => (
-                                            <div key={ticket.id} onClick={() => setSelectedRequest(ticket)} className="p-4 rounded-xl glass-interactive border border-app-border group">
+                                            <div key={ticket.id} onClick={() => setSelectedRequest(ticket)} className="p-4 rounded-none glass-interactive border border-app-border group">
                                                 <div className="flex justify-between items-start mb-3">
-                                                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-lg border 
+                                                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-none border 
                                         ${ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                             ticket.priority === 'HIGH' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
                                                                 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
@@ -458,7 +429,7 @@ export default function EndUserDashboard() {
                                                 <div className="flex items-center justify-between mb-4">
                                                     <p className="text-[9px] text-app-text-muted font-black uppercase tracking-[0.2em]">{ticket.category}</p>
                                                     {ticket.related_asset_id && (
-                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/5 rounded-lg border border-blue-500/10">
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/5 rounded-none border border-blue-500/10">
                                                             <Laptop size={10} className="text-blue-400" />
                                                             <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">
                                                                 {assignedAssets.find(a => a.id === ticket.related_asset_id)?.name || 'Linked Asset'}
@@ -490,7 +461,7 @@ export default function EndUserDashboard() {
                                         { label: 'Multi-Factor Validation', icon: Database, color: 'text-indigo-500 dark:text-indigo-400' },
                                         { label: 'Asset Custody Standards', icon: Briefcase, color: 'text-emerald-500 dark:text-emerald-400' }
                                     ].map((policy, i) => (
-                                        <div key={i} className="flex items-center gap-4 group cursor-pointer p-2 hover:bg-black/[0.02] dark:hover:bg-slate-50 dark:bg-white/[0.02] rounded-lg transition-all">
+                                        <div key={i} className="flex items-center gap-4 group cursor-pointer p-2 hover:bg-black/[0.02] dark:hover:bg-slate-50 dark:bg-white/[0.02] rounded-none transition-all">
                                             <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 transition-all group-hover:bg-indigo-500 group-hover:scale-125"></div>
                                             <span className="text-[10px] font-black text-app-text-muted group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors uppercase tracking-[0.15em]">{policy.label}</span>
                                             <policy.icon size={12} className={`ml-auto opacity-0 group-hover:opacity-100 transition-opacity ${policy.color}`} />
@@ -514,7 +485,7 @@ export default function EndUserDashboard() {
                             { label: 'Data Security Standards', icon: ShieldCheck },
                             { label: 'Remote Connectivity Guidelines', icon: Globe }
                         ].map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/30 transition-all cursor-pointer group/policy">
+                            <div key={i} className="flex items-center justify-between p-4 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/30 transition-all cursor-pointer group/policy">
                                 <div className="flex items-center gap-4">
                                     <item.icon size={14} className="text-app-text-muted group-hover/policy:text-indigo-600 dark:group-hover/policy:text-indigo-400 transition-colors" />
                                     <span className="text-[10px] font-black text-app-text-muted group-hover/policy:text-slate-800 dark:group-hover/policy:text-slate-200 uppercase tracking-widest">{item.label}</span>
@@ -535,7 +506,7 @@ export default function EndUserDashboard() {
 
                         <div className="flex items-center justify-between mb-10 relative z-10">
                             <div className="flex items-center gap-5">
-                                <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+                                <div className="w-14 h-14 rounded-none bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
                                     <Briefcase className="text-indigo-400" size={32} />
                                 </div>
                                 <div>
@@ -546,13 +517,13 @@ export default function EndUserDashboard() {
                                     </p>
                                 </div>
                             </div>
-                            <span className="px-5 py-2 bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] border border-indigo-500/20 rounded-xl">
+                            <span className="px-5 py-2 bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] border border-indigo-500/20 rounded-none">
                                 {requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).length} Pending
                             </span>
                         </div>
 
                         {requests.filter(r => r.currentOwnerRole === OWNER_ROLE.MANAGER).length === 0 ? (
-                            <div className="text-center py-16 bg-slate-50 dark:bg-white/[0.01] rounded-3xl border border-dashed border-app-border relative z-10">
+                            <div className="text-center py-16 bg-slate-50 dark:bg-white/[0.01] rounded-none border border-dashed border-app-border relative z-10">
                                 <CheckCircle className="text-app-text-muted mx-auto mb-4" size={48} />
                                 <p className="text-sm font-black text-app-text-muted uppercase tracking-widest">Queue Synchronized</p>
                             </div>
@@ -564,19 +535,19 @@ export default function EndUserDashboard() {
                                             <div className="flex items-center justify-between gap-4 mb-6">
                                                 <div className="flex items-center gap-4">
                                                     <h4 className="text-lg font-['Outfit'] font-black text-app-text uppercase tracking-tight ">{req.assetType} Request</h4>
-                                                    {req.assetType === 'BYOD' && <span className="text-[10px] font-black bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-lg border border-sky-500/20 uppercase tracking-widest">BYOD</span>}
+                                                    {req.assetType === 'BYOD' && <span className="text-[10px] font-black bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded-none border border-sky-500/20 uppercase tracking-widest">BYOD</span>}
                                                 </div>
                                                 <span className="text-[10px] font-mono text-app-text-muted lowercase">{new Date(req.createdAt).toLocaleDateString()}</span>
                                             </div>
                                             <div className="space-y-4 mb-8">
-                                                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-black/20 border border-app-border">
+                                                <div className="p-4 rounded-none bg-slate-100 dark:bg-black/20 border border-app-border">
                                                     <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-1">Requester Signature</p>
                                                     <p className="text-sm font-black text-slate-900 dark:text-slate-200 uppercase">{req.requestedBy?.name || req.requester_name}</p>
                                                     <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold italic mt-0.5">{req.requestedBy?.email || req.requester_email || 'SECURE_CHANNEL_NO_MAIL'}</p>
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-2">Justification Trace</p>
-                                                    <p className="text-xs text-app-text-muted italic bg-app-surface-soft p-4 rounded-2xl border border-app-border leading-relaxed">
+                                                    <p className="text-xs text-app-text-muted italic bg-app-surface-soft p-4 rounded-none border border-app-border leading-relaxed">
                                                         "{req.justification || req.reason || 'No mission objective provided'}"
                                                     </p>
                                                 </div>
@@ -585,7 +556,7 @@ export default function EndUserDashboard() {
                                         <div className="flex gap-4 pt-6 border-t border-app-border">
                                             <button
                                                 onClick={() => setSelectedRequest(req)}
-                                                className="flex-1 py-3 bg-app-surface-soft hover:bg-app-surface text-app-text-muted hover:text-app-text rounded-xl transition-all flex items-center justify-center gap-2 border border-slate-300 border-app-border active:scale-95"
+                                                className="flex-1 py-3 bg-app-surface-soft hover:bg-app-surface text-app-text-muted hover:text-app-text rounded-none transition-all flex items-center justify-center gap-2 border border-slate-300 border-app-border active:scale-95"
                                             >
                                                 <Eye size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">Inspect</span>
                                             </button>
@@ -594,13 +565,13 @@ export default function EndUserDashboard() {
                                                     const reason = prompt("Reason for rejection:");
                                                     if (reason) managerRejectRequest(req.id, reason, user.id, user.name);
                                                 }}
-                                                className="flex-1 py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl border border-rose-500/20 transition-all flex items-center justify-center gap-2 active:scale-95"
+                                                className="flex-1 py-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-none border border-rose-500/20 transition-all flex items-center justify-center gap-2 active:scale-95"
                                             >
                                                 <X size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">Deny</span>
                                             </button>
                                             <button
                                                 onClick={() => managerApproveRequest(req.id, user.id, user.name)}
-                                                className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-105"
+                                                className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-none shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 active:scale-105"
                                             >
                                                 <CheckCircle size={18} /> <span className="text-[10px] font-black uppercase tracking-widest">Authorize</span>
                                             </button>
@@ -618,7 +589,7 @@ export default function EndUserDashboard() {
                     {requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).length === 0 ? (
                         <p className="text-app-text-muted text-xs italic">No history available.</p>
                     ) : requests.filter(r => r.currentOwnerRole !== OWNER_ROLE.MANAGER).map(req => (
-                        <div key={req.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-lg border border-app-border opacity-75 hover:opacity-100 transition-opacity">
+                        <div key={req.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-none border border-app-border opacity-75 hover:opacity-100 transition-opacity">
                             <div className="flex items-center gap-3">
                                 <div className={`w-2 h-2 rounded-full ${req.status === 'REJECTED' ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
                                 <div>
@@ -638,7 +609,7 @@ export default function EndUserDashboard() {
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => setSelectedRequest(req)}
-                                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 bg-app-surface hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-app-text text-xs font-medium rounded-lg border border-app-border transition-colors"
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 bg-app-surface hover:bg-slate-200 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-app-text text-xs font-medium rounded-none border border-app-border transition-colors"
                                 >
                                     <Eye size={14} />
                                     View
@@ -672,18 +643,18 @@ export default function EndUserDashboard() {
                             <div className="p-8 border-b border-black/5 border-app-border bg-gradient-to-r from-indigo-500/5 dark:from-indigo-500/10 via-transparent to-transparent flex justify-between items-center relative overflow-hidden">
                                 <div className="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/5 dark:bg-indigo-500/10 blur-[60px] rounded-full"></div>
                                 <div className="flex items-center gap-6 relative z-10">
-                                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+                                    <div className="w-16 h-16 rounded-none bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
                                         {selectedRequest.priority ? <Ticket size={32} className="text-rose-600 dark:text-rose-400" /> : <Briefcase size={32} className="text-blue-600 dark:text-blue-400" />}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-3 mb-1.5">
-                                            <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg border 
+                                            <span className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-widest rounded-none border 
                                 ${selectedRequest.status === 'FULFILLED' || selectedRequest.status === 'RESOLVED' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' :
                                                     selectedRequest.status === 'REJECTED' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20' :
                                                         'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'}`}>
                                                 {selectedRequest.status}
                                             </span>
-                                            <span className="text-[10px] font-mono text-app-text-muted bg-app-surface-soft px-2 py-1 rounded-lg border border-app-border">ID: {selectedRequest.id?.slice(-8).toUpperCase() || 'SYS-TRACE'}</span>
+                                            <span className="text-[10px] font-mono text-app-text-muted bg-app-surface-soft px-2 py-1 rounded-none border border-app-border">ID: {selectedRequest.id?.slice(-8).toUpperCase() || 'SYS-TRACE'}</span>
                                         </div>
                                         <h2 className="text-2xl font-['Outfit'] font-black text-app-text uppercase tracking-tight">
                                             {selectedRequest.assetType ? `${selectedRequest.assetType} Provisioning` : (selectedRequest.subject || 'Incident Briefing')}
@@ -692,7 +663,7 @@ export default function EndUserDashboard() {
                                 </div>
                                 <button
                                     onClick={() => setSelectedRequest(null)}
-                                    className="p-3 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface rounded-2xl border border-app-border text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all active:scale-90"
+                                    className="p-3 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface rounded-none border border-app-border text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all active:scale-90"
                                 >
                                     <X size={24} />
                                 </button>
@@ -717,16 +688,16 @@ export default function EndUserDashboard() {
                                         <section>
                                             <h4 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-6">Object Parameters</h4>
                                             <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border">
+                                                <div className="p-4 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border">
                                                     <p className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest mb-1">Category</p>
                                                     <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{selectedRequest.category || selectedRequest.assetType || 'GENERAL'}</p>
                                                 </div>
-                                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border">
+                                                <div className="p-4 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border">
                                                     <p className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest mb-1">Established</p>
                                                     <p className="text-xs font-black text-slate-700 dark:text-slate-200 uppercase">{new Date(selectedRequest.createdAt || selectedRequest.created_at).toLocaleDateString()}</p>
                                                 </div>
                                                 {selectedRequest.related_asset_id && (
-                                                    <div className="p-4 rounded-xl bg-blue-500/5 dark:bg-blue-500/5 border border-blue-500/10 col-span-2">
+                                                    <div className="p-4 rounded-none bg-blue-500/5 dark:bg-blue-500/5 border border-blue-500/10 col-span-2">
                                                         <p className="text-[9px] font-black text-blue-600 dark:text-blue-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                                                             <Laptop size={10} /> Target Asset
                                                         </p>
@@ -737,7 +708,7 @@ export default function EndUserDashboard() {
                                                     </div>
                                                 )}
                                                 {selectedRequest.priority && (
-                                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-app-border">
+                                                    <div className="p-4 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border">
                                                         <p className="text-[9px] font-black text-app-text-muted dark:text-slate-600 uppercase tracking-widest mb-1">Priority</p>
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
@@ -745,7 +716,7 @@ export default function EndUserDashboard() {
                                                         </div>
                                                     </div>
                                                 )}
-                                                <div className="p-4 rounded-xl bg-indigo-500/5 dark:bg-indigo-500/5 border border-indigo-500/10 dark:border-indigo-500/10">
+                                                <div className="p-4 rounded-none bg-indigo-500/5 dark:bg-indigo-500/5 border border-indigo-500/10 dark:border-indigo-500/10">
                                                     <p className="text-[9px] font-black text-indigo-600 dark:text-indigo-500 uppercase tracking-widest mb-1">Custody</p>
                                                     <p className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase">{selectedRequest.currentOwnerRole || 'RESOLVED'}</p>
                                                 </div>
@@ -801,7 +772,7 @@ export default function EndUserDashboard() {
                                             <div className="space-y-8 relative before:absolute before:left-3.5 before:top-4 before:bottom-0 before:w-px before:bg-slate-200 dark:before:bg-app-surface-soft">
                                                 {(selectedRequest.auditTrail || selectedRequest.timeline || []).map((log, idx) => (
                                                     <div key={idx} className="relative pl-12 group">
-                                                        <div className={`absolute left-1 top-0.5 w-5 h-5 rounded-lg border border-app-border flex items-center justify-center z-10 transition-transform group-hover:scale-110 shadow-lg
+                                                        <div className={`absolute left-1 top-0.5 w-5 h-5 rounded-none border border-app-border flex items-center justify-center z-10 transition-transform group-hover:scale-110 shadow-lg
                                             ${(log.action || '').includes('CREATED') ? 'bg-blue-600/20 text-blue-600 dark:text-blue-400 border-blue-500/30' :
                                                                 (log.action || '').includes('APPROVE') || (log.action || '').includes('RESOLVE') ? 'bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
                                                                     (log.action || '').includes('REJECT') ? 'bg-rose-600/20 text-rose-600 dark:text-rose-400 border-rose-500/30' :
@@ -817,7 +788,7 @@ export default function EndUserDashboard() {
                                                                 <User size={10} className="text-indigo-600 dark:text-indigo-400 opacity-50" /> {log.byRole || log.role || 'CORE_SYNC'} : {log.byUser || log.user || 'SYSTEM'}
                                                             </p>
                                                             {(log.comment || log.notes) && (
-                                                                <div className="text-xs text-app-text-muted italic bg-slate-50 dark:bg-white/[0.03] p-4 rounded-2xl border border-app-border relative">
+                                                                <div className="text-xs text-app-text-muted italic bg-slate-50 dark:bg-white/[0.03] p-4 rounded-none border border-app-border relative">
                                                                     <div className="absolute top-2 left-2 text-indigo-600 dark:text-indigo-500/20"><Quote size={8} /></div>
                                                                     {log.comment || log.notes}
                                                                 </div>
@@ -841,14 +812,14 @@ export default function EndUserDashboard() {
                                                 setSelectedRequest(null);
                                             }
                                         }}
-                                        className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-app-text text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-3 animate-pulse"
+                                        className="px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-app-text text-[11px] font-black uppercase tracking-[0.2em] rounded-none shadow-xl shadow-emerald-500/20 transition-all active:scale-95 flex items-center gap-3 animate-pulse"
                                     >
                                         <CheckCircle size={20} /> Authorize Receipt
                                     </button>
                                 )}
                                 <button
                                     onClick={() => setSelectedRequest(null)}
-                                    className="px-8 py-4 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl border border-app-border transition-all active:scale-95"
+                                    className="px-8 py-4 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text text-[11px] font-black uppercase tracking-[0.2em] rounded-none border border-app-border transition-all active:scale-95"
                                 >
                                     Seal Briefing
                                 </button>

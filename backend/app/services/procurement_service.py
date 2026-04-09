@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import joinedload
 from sqlalchemy import desc
 from ..models.models import PurchaseOrder, PurchaseInvoice, ProcurementLog, AssetRequest
 from ..services import pdf_extraction_service
@@ -23,7 +24,7 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
     extracted = await asyncio.to_thread(pdf_extraction_service.extract_po_details, file_path)
     
     # Create PurchaseOrder record with fallbacks to AssetRequest data
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == asset_request_id))
+    result = await db.execute(select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == asset_request_id))
     request = result.scalars().first()
     
     vendor_name = extracted.get("vendor_name")
@@ -79,7 +80,7 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
     db.add(log)
     
     # Update AssetRequest status to PO_UPLOADED
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == asset_request_id))
+    result = await db.execute(select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == asset_request_id))
     request = result.scalars().first()
     if request:
         request.status = "PO_UPLOADED"
@@ -110,7 +111,7 @@ async def validate_po_completeness(db: AsyncSession, po_id: UUID, reviewer_id: U
     if po.status == "VALIDATED" and action != "REJECT":
         return po
 
-    req_result = await db.execute(select(AssetRequest).filter(AssetRequest.id == po.asset_request_id))
+    req_result = await db.execute(select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == po.asset_request_id))
     request = req_result.scalars().first()
     
     if action == "VALIDATE":
@@ -168,7 +169,7 @@ async def validate_finance_budget(db: AsyncSession, po_id: UUID, reviewer_id: UU
     if po.status not in ["VALIDATED", "UPLOADED"]:
         raise ValueError("PO must be uploaded and optionally validated by PROCUREMENT before FINANCE review")
 
-    req_result = await db.execute(select(AssetRequest).filter(AssetRequest.id == po.asset_request_id))
+    req_result = await db.execute(select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == po.asset_request_id))
     request = req_result.scalars().first()
     
     if action == "APPROVE":

@@ -20,7 +20,7 @@ function StatBadge({ label, value, delta, icon: Icon, color = 'indigo' }) {
                             color === 'blue' ? 'border-blue-500' : 'border-purple-500'}`}>
             <div className={`absolute -right-6 -top-6 w-20 h-20 opacity-0 group-hover:opacity-15 blur-[30px] transition-opacity bg-${color}-500`} />
             <div className="flex items-start justify-between mb-3">
-                <div className={`p-2.5 rounded-xl bg-${color}-500/10 border border-${color}-500/20`}>
+                <div className={`p-2.5 rounded-none bg-${color}-500/10 border border-${color}-500/20`}>
                     <Icon size={18} className={`text-${color}-400`} />
                 </div>
                 {delta && (
@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                     <div>
                         <div className="flex items-center gap-4 mb-3">
-                            <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                            <div className="p-3 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                                 <BarChart2 size={28} />
                             </div>
                             <div>
@@ -130,12 +130,12 @@ export default function AnalyticsPage() {
 
                     <div className="flex items-center gap-3 flex-wrap">
                         {/* Time Range Selector */}
-                        <div className="flex bg-app-surface-soft rounded-xl border border-app-border p-1">
+                        <div className="flex bg-app-surface-soft rounded-none border border-app-border p-1">
                             {['7d', '30d', '90d'].map(range => (
                                 <button
                                     key={range}
                                     onClick={() => setTimeRange(range)}
-                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
+                                    className={`px-4 py-1.5 rounded-none text-[10px] font-black uppercase tracking-widest transition-all
                                             ${timeRange === range
                                             ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/20'
                                             : 'text-app-text-muted hover:text-slate-700 dark:hover:text-app-text-muted'}`}
@@ -147,14 +147,14 @@ export default function AnalyticsPage() {
 
                         <div className="flex gap-4">
                             <Link href="/analytics/oem">
-                                <button className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-950 text-sm font-black transition-all hover:scale-105 active:scale-95 group">
+                                <button className="flex items-center gap-2 px-6 py-2.5 rounded-none bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-950 text-sm font-black transition-all hover:scale-105 active:scale-95 group">
                                     <Zap size={14} className="group-hover:text-indigo-400" />
                                     Manage Intelligence
                                 </button>
                             </Link>
                             <button
                                 onClick={fetchAll}
-                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-app-surface-soft text-app-text-muted text-sm font-black transition-all hover:bg-slate-200 dark:hover:bg-app-surface active:scale-95"
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-none bg-app-surface-soft text-app-text-muted text-sm font-black transition-all hover:bg-slate-200 dark:hover:bg-app-surface active:scale-95"
                             >
                                 <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                                 Refresh
@@ -233,7 +233,7 @@ export default function AnalyticsPage() {
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                            <div className="p-3 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                                 <PieChart size={22} />
                             </div>
                             <div>
@@ -243,7 +243,7 @@ export default function AnalyticsPage() {
                                 <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-0.5">Neural Classification</p>
                             </div>
                         </div>
-                        <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl">
+                        <span className="text-[10px] font-black text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-none">
                             {categoryStats.length} Active
                         </span>
                     </div>
@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/3 to-transparent pointer-events-none" />
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                            <div className="p-3 rounded-none bg-purple-500/10 border border-purple-500/20 text-purple-400">
                                 <BarChart2 size={22} />
                             </div>
                             <div>
@@ -283,7 +283,7 @@ export default function AnalyticsPage() {
                                         <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest w-36 shrink-0 truncate">
                                             {stat.category}
                                         </span>
-                                        <div className="flex-1 h-7 bg-app-surface-soft rounded-lg overflow-hidden flex border border-app-border">
+                                        <div className="flex-1 h-7 bg-app-surface-soft rounded-none overflow-hidden flex border border-app-border">
                                             <div
                                                 style={{ width: `${(stat.open / stat.total) * barWidth}%` }}
                                                 className="h-full bg-gradient-to-r from-rose-500 to-orange-400 transition-all duration-700"
@@ -314,7 +314,7 @@ export default function AnalyticsPage() {
                                 <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Resolved</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-none">
                             <Zap size={14} className="text-indigo-400" />
                             <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Neural Volume Sync Active</span>
                         </div>
@@ -328,7 +328,7 @@ export default function AnalyticsPage() {
                 <section className="glass-panel p-8 relative overflow-hidden border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent pointer-events-none" />
                     <div className="flex items-center gap-4 mb-8">
-                        <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                        <div className="p-3 rounded-none bg-rose-500/10 border border-rose-500/20 text-rose-400">
                             <Target size={22} />
                         </div>
                         <div>
@@ -342,7 +342,7 @@ export default function AnalyticsPage() {
                             .sort((a, b) => b.reliability_score - a.reliability_score)
                             .slice(0, 4)
                             .map((stat) => (
-                                <div key={stat.category} className="flex items-center justify-between p-4 bg-app-surface-soft rounded-2xl border border-slate-200/50 border-app-border">
+                                <div key={stat.category} className="flex items-center justify-between p-4 bg-app-surface-soft rounded-none border border-slate-200/50 border-app-border">
                                     <div className="flex items-center gap-4">
                                         <div className={`w-2 h-2 rounded-full ${stat.reliability_score > 7 ? 'bg-rose-500' : 'bg-amber-500'}`} />
                                         <span className="text-sm font-bold text-app-text uppercase tracking-tight">{stat.category}</span>
@@ -366,7 +366,7 @@ export default function AnalyticsPage() {
                 <section className="glass-panel p-8 relative overflow-hidden border border-app-border">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
                     <div className="flex items-center gap-4 mb-8">
-                        <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                        <div className="p-3 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                             <Target size={22} />
                         </div>
                         <div>

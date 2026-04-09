@@ -40,10 +40,10 @@ function LogMaintenanceModal({ assetId, onClose, onSave }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
-            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
                 <div className="p-6 border-b border-app-border flex items-center justify-between">
                     <h3 className="text-xl font-bold text-app-text">Log Maintenance Event</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-500 transition-colors">✕</button>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-none text-slate-500 transition-colors">✕</button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
@@ -51,7 +51,7 @@ function LogMaintenanceModal({ assetId, onClose, onSave }) {
                         <select
                             value={data.maintenance_type}
                             onChange={e => setData({ ...data, maintenance_type: e.target.value })}
-                            className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                            className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                         >
                             <option value="Repair">Repair</option>
                             <option value="Upgrade">Upgrade</option>
@@ -64,7 +64,7 @@ function LogMaintenanceModal({ assetId, onClose, onSave }) {
                         <textarea
                             value={data.description}
                             onChange={e => setData({ ...data, description: e.target.value })}
-                            className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                            className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                             rows="3"
                             placeholder="Describe the work performed..."
                             required
@@ -76,13 +76,13 @@ function LogMaintenanceModal({ assetId, onClose, onSave }) {
                             type="number"
                             value={data.cost}
                             onChange={e => setData({ ...data, cost: parseFloat(e.target.value) })}
-                            className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm font-mono"
+                            className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm font-mono"
                         />
                     </div>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-app-text font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20"
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-app-text font-bold rounded-none transition-all shadow-lg shadow-blue-500/20"
                     >
                         {saving ? 'Logging...' : 'Save Maintenance Log'}
                     </button>
@@ -201,7 +201,7 @@ export default function AssetDetail() {
     return (
         <div className="space-y-6">
             <div className="flex items-center space-x-4">
-                <Link href="/assets" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-full text-slate-700 dark:text-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors">
+                <Link href="/assets" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none text-slate-700 dark:text-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors">
                     <ArrowLeft size={24} />
                 </Link>
                 <div>
@@ -214,12 +214,12 @@ export default function AssetDetail() {
                 <div className="ml-auto flex items-center space-x-3">
                     <Link
                         href={`/assets/${asset.id}/cmdb`}
-                        className="flex items-center space-x-2 px-4 py-1.5 rounded-full text-sm font-semibold bg-blue-500/10 text-blue-400 ring-1 ring-inset ring-blue-500/20 hover:bg-blue-500/20 transition-all"
+                        className="flex items-center space-x-2 px-4 py-1.5 rounded-none text-sm font-semibold bg-blue-500/10 text-blue-400 ring-1 ring-inset ring-blue-500/20 hover:bg-blue-500/20 transition-all"
                     >
                         <Activity size={16} />
                         <span>View CMDB</span>
                     </Link>
-                    <span className={`px-4 py-1.5 rounded-full text-sm font-semibold ring-1 ring-inset ${asset.status === 'In Use' ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20' :
+                    <span className={`px-4 py-1.5 rounded-none text-sm font-semibold ring-1 ring-inset ${asset.status === 'In Use' ? 'bg-emerald-500/10 text-emerald-400 ring-emerald-500/20' :
                         asset.status === 'In Stock' ? 'bg-blue-500/10 text-blue-400 ring-blue-500/20' :
                             'bg-slate-500/10 text-app-text-muted ring-slate-500/20'
                         }`}>
@@ -231,7 +231,7 @@ export default function AssetDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Info */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
+                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-6">
                         <h3 className="text-xl font-bold text-app-text mb-6 flex items-center">
                             <Server className="mr-3 text-blue-400" size={20} />
                             Specifications
@@ -280,7 +280,7 @@ export default function AssetDetail() {
                                 </p>
                             </div>
                             {(asset.specifications?.['IP Address'] || asset.specifications?.ip_address || asset.specifications?.IP_Address || asset.specifications?.['Management IP']) && (
-                                <div className="col-span-2 md:col-span-3 bg-blue-500/5 rounded-lg p-3 border border-blue-500/10 mb-2">
+                                <div className="col-span-2 md:col-span-3 bg-blue-500/5 rounded-none p-3 border border-blue-500/10 mb-2">
                                     <p className="text-sm text-app-text-muted mb-1 flex items-center">
                                         <Activity size={14} className="mr-2 text-blue-400" />
                                         Management IP Address
@@ -313,7 +313,7 @@ export default function AssetDetail() {
                         <div className="mt-8 pt-6 border-t border-app-border">
                             <button
                                 onClick={() => setShowLogMaintenance(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-xl border border-blue-500/20 transition-all font-semibold"
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-none border border-blue-500/20 transition-all font-semibold"
                             >
                                 <Activity size={16} />
                                 <span>Log Maintenance Event</span>
@@ -362,7 +362,7 @@ export default function AssetDetail() {
                         </div>
                     )}
 
-                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 relative overflow-hidden">
+                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-6 relative overflow-hidden">
                         {/* Background Animation for entire card */}
                         <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent pointer-events-none"></div>
 
@@ -372,13 +372,13 @@ export default function AssetDetail() {
                         </h3>
 
                         {/* Dynamic Timeline Container */}
-                        <div className="z-10 bg-app-surface rounded-xl border border-app-border mt-4">
+                        <div className="z-10 bg-app-surface rounded-none border border-app-border mt-4">
                             <AssetTimeline assetId={asset.id} />
                         </div>
                     </div>
 
                     {/* Configuration Change History */}
-                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
+                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-6">
                         <h3 className="text-xl font-bold text-app-text mb-6 flex items-center">
                             <Activity className="mr-3 text-cyan-400" size={20} />
                             Configuration Change History
@@ -388,7 +388,7 @@ export default function AssetDetail() {
 
                     {/* Renewal & Service Request Section - Conditions: Retired, Repair, Maintenance OR Warranty Expired */}
                     {['Retired', 'Repair', 'Maintenance'].includes(asset.status) || (asset.warranty_expiry && new Date(asset.warranty_expiry) <= new Date()) ? (
-                        <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 border-l-4 border-l-orange-500">
+                        <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-6 border-l-4 border-l-orange-500">
                             <h3 className="text-xl font-bold text-app-text mb-4 flex items-center">
                                 <AlertCircle className="mr-3 text-orange-400" size={24} />
                                 Renewal & Service Request
@@ -399,7 +399,7 @@ export default function AssetDetail() {
                             </p>
 
                             {asset.renewal_status ? (
-                                <div className="p-4 bg-app-surface-soft rounded-lg border border-app-border">
+                                <div className="p-4 bg-app-surface-soft rounded-none border border-app-border">
                                     <p className="text-sm text-app-text-muted">Current Status</p>
                                     <p className="text-lg font-bold text-blue-400 mt-1">{asset.renewal_status.replace(/_/g, ' ')}</p>
                                     {asset.renewal_reason && (
@@ -436,7 +436,7 @@ export default function AssetDetail() {
                                         <textarea
                                             name="reason"
                                             required
-                                            className="w-full bg-app-surface-soft border border-app-border rounded-lg p-3 text-app-text text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                            className="w-full bg-app-surface-soft border border-app-border rounded-none p-3 text-app-text text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                                             rows="3"
                                             placeholder="e.g., Device failing in field, license expired..."
                                         />
@@ -444,7 +444,7 @@ export default function AssetDetail() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-app-text-muted mb-1">Urgency</label>
-                                            <select name="urgency" className="w-full bg-app-surface-soft border border-app-border rounded-lg p-2.5 text-app-text text-sm outline-none">
+                                            <select name="urgency" className="w-full bg-app-surface-soft border border-app-border rounded-none p-2.5 text-app-text text-sm outline-none">
                                                 <option value="Low">Low</option>
                                                 <option value="Medium">Medium</option>
                                                 <option value="High">High</option>
@@ -455,12 +455,12 @@ export default function AssetDetail() {
                                             <input
                                                 type="number"
                                                 name="cost"
-                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2.5 text-slate-900 dark:text-slate-200 text-sm outline-none"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none p-2.5 text-slate-900 dark:text-slate-200 text-sm outline-none"
                                                 placeholder="0.00"
                                             />
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 backdrop-blur-sm py-2.5 mt-2">
+                                    <button type="submit" className="w-full px-4 py-2 rounded-none font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 backdrop-blur-sm py-2.5 mt-2">
                                         Send Request to Department
                                     </button>
                                 </form>
@@ -471,7 +471,7 @@ export default function AssetDetail() {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6">
+                    <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-6">
                         <h3 className="text-xl font-bold text-app-text mb-6 flex items-center">
                             <User className="mr-3 text-purple-400" size={20} />
                             Ownership
@@ -488,14 +488,14 @@ export default function AssetDetail() {
                                     <p className="font-medium">{asset.location || "Unknown"}</p>
                                 </div>
                             </div>
-                            <Link href={`/assets/assign?id=${asset.id}`} className="block w-full text-center py-2 px-4 rounded-lg bg-app-surface hover:bg-white/20 text-app-text border border-app-border transition-all backdrop-blur-sm mb-3">
+                            <Link href={`/assets/assign?id=${asset.id}`} className="block w-full text-center py-2 px-4 rounded-none bg-app-surface hover:bg-white/20 text-app-text border border-app-border transition-all backdrop-blur-sm mb-3">
                                 Change Assignment
                             </Link>
 
                             <button
                                 onClick={handleRemoteAssist}
                                 disabled={isRemoteRequested}
-                                className={`w-full py-2.5 flex items-center justify-center gap-2 rounded-lg border border-blue-500/20 font-medium transition-all ${isRemoteRequested ? 'bg-blue-500/10 text-blue-400 cursor-default' : 'bg-blue-600/10 text-blue-300 hover:bg-blue-600/20 hover:text-app-text disabled:opacity-50 disabled:cursor-not-allowed'}`}
+                                className={`w-full py-2.5 flex items-center justify-center gap-2 rounded-none border border-blue-500/20 font-medium transition-all ${isRemoteRequested ? 'bg-blue-500/10 text-blue-400 cursor-default' : 'bg-blue-600/10 text-blue-300 hover:bg-blue-600/20 hover:text-app-text disabled:opacity-50 disabled:cursor-not-allowed'}`}
                             >
                                 <Monitor size={18} />
                                 {isRemoteRequested ? 'Remote Request Sent' : 'Remote Assist (RDP)'}
@@ -512,7 +512,7 @@ export default function AssetDetail() {
                             {canEditWarranty && !isEditingWarranty && (
                                 <button
                                     onClick={handleEditWarranty}
-                                    className="flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 transition-all text-sm"
+                                    className="flex items-center space-x-1 px-3 py-1.5 rounded-none bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 transition-all text-sm"
                                 >
                                     <Edit2 size={14} />
                                     <span>Edit</span>
@@ -529,7 +529,7 @@ export default function AssetDetail() {
                                             type="date"
                                             value={warrantyFormData.purchase_date}
                                             onChange={(e) => setWarrantyFormData({ ...warrantyFormData, purchase_date: e.target.value })}
-                                            className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2 text-slate-900 dark:text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
+                                            className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none p-2 text-slate-900 dark:text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
                                         />
                                     </div>
                                 </div>
@@ -541,7 +541,7 @@ export default function AssetDetail() {
                                             type="date"
                                             value={warrantyFormData.warranty_expiry}
                                             onChange={(e) => setWarrantyFormData({ ...warrantyFormData, warranty_expiry: e.target.value })}
-                                            className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2 text-slate-900 dark:text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
+                                            className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none p-2 text-slate-900 dark:text-slate-200 text-sm focus:ring-1 focus:ring-orange-500 outline-none"
                                         />
                                     </div>
                                 </div>
@@ -549,7 +549,7 @@ export default function AssetDetail() {
                                     <button
                                         onClick={handleSaveWarranty}
                                         disabled={savingWarranty}
-                                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-none bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <Save size={16} />
                                         <span>{savingWarranty ? 'Saving...' : 'Save'}</span>
@@ -557,7 +557,7 @@ export default function AssetDetail() {
                                     <button
                                         onClick={handleCancelEditWarranty}
                                         disabled={savingWarranty}
-                                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-lg bg-slate-500/20 hover:bg-slate-500/30 text-app-text-muted border border-slate-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 rounded-none bg-slate-500/20 hover:bg-slate-500/30 text-app-text-muted border border-slate-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <X size={16} />
                                         <span>Cancel</span>
@@ -623,13 +623,13 @@ export default function AssetDetail() {
                                         }
                                     }, 500);
                                 }}
-                                className="w-full py-2 px-4 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 transition-all flex items-center justify-center font-medium mb-4"
+                                className="w-full py-2 px-4 rounded-none bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 transition-all flex items-center justify-center font-medium mb-4"
                             >
                                 <Download size={18} className="mr-2" />
                                 Export to PDF
                             </button>
 
-                            <div id="digital-identity-card" className="space-y-4 p-4 bg-app-surface-soft rounded-lg border border-app-border">
+                            <div id="digital-identity-card" className="space-y-4 p-4 bg-app-surface-soft rounded-none border border-app-border">
                                 <h4 className="text-sm font-semibold text-app-text-muted text-center mb-2">Digital Asset Card</h4>
                                 <div className="text-center mb-4">
                                     <p className="text-lg font-bold text-app-text">{asset.name}</p>
@@ -637,7 +637,7 @@ export default function AssetDetail() {
                                 </div>
 
                                 {showQR && (
-                                    <div className="bg-white p-4 rounded-lg flex justify-center animate-in fade-in zoom-in duration-300">
+                                    <div className="bg-white p-4 rounded-none flex justify-center animate-in fade-in zoom-in duration-300">
                                         <QRCode
                                             value={`ASSET IDENTITY CARD
 -------------------
@@ -661,7 +661,7 @@ Property of AssetMgr`}
                                 )}
 
                                 {showBarcode && (
-                                    <div className="bg-white p-4 rounded-lg flex justify-center overflow-hidden animate-in fade-in zoom-in duration-300">
+                                    <div className="bg-white p-4 rounded-none flex justify-center overflow-hidden animate-in fade-in zoom-in duration-300">
                                         <Barcode
                                             value={asset.serial_number}
                                             width={1.5}
@@ -678,7 +678,7 @@ Property of AssetMgr`}
 
                             <button
                                 onClick={() => setShowQR(!showQR)}
-                                className="w-full py-2 px-4 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-all flex items-center justify-center font-medium"
+                                className="w-full py-2 px-4 rounded-none bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 transition-all flex items-center justify-center font-medium"
                             >
                                 <QrCode size={18} className="mr-2" />
                                 {showQR ? 'Hide QR Code' : 'Show Asset QR'}
@@ -686,7 +686,7 @@ Property of AssetMgr`}
 
                             <button
                                 onClick={() => setShowBarcode(!showBarcode)}
-                                className="w-full py-2 px-4 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-all flex items-center justify-center font-medium"
+                                className="w-full py-2 px-4 rounded-none bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 transition-all flex items-center justify-center font-medium"
                             >
                                 <ScanBarcode size={18} className="mr-2" />
                                 {showBarcode ? 'Hide Barcode' : 'Show Barcode'}

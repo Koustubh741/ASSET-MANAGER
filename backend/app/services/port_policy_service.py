@@ -8,14 +8,14 @@ from uuid import UUID
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.port_policies import (
+from ..models.port_policies import (
     PortPolicy,
     PolicyTarget,
     PortPolicyAssignment,
     PortPolicyEnforcementState,
 )
-from app.models.models import Asset, User
-from app.schemas.port_policy_schema import (
+from ..models.models import Asset, User
+from ..schemas.port_policy_schema import (
     PortPolicyCreate,
     PortPolicyUpdate,
     PortPolicyAssignmentCreate,

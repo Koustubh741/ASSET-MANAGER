@@ -30,10 +30,12 @@ export default function CMDBMapPage() {
                 const mainAsset = await apiClient.getAsset(id);
 
                 // Fetch some context (other assets and users)
-                const [allAssets, allUsers] = await Promise.all([
+                const [assetResponse, userResponse] = await Promise.all([
                     apiClient.getAssets({ limit: 10 }),
-                    apiClient.getUsers().catch(() => []) // Fallback if 403
+                    apiClient.getUsers().catch(() => ({ data: [] }))
                 ]);
+                const allAssets = assetResponse?.data || [];
+                const allUsers = userResponse?.data || [];
 
                 const baseNodes = [];
                 const baseEdges = [];

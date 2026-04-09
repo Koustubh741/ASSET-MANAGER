@@ -91,3 +91,25 @@ def setup_patch_scheduler_jobs():
         replace_existing=True,
     )
     logger.info("[Scheduler] Registered: notification_cleanup @ 03:00 daily")
+
+    # EVOLUTION V4: Periodic Concurrent Refresh of Dashboard Materialized View
+    from sqlalchemy import text
+    
+    async def refresh_dashboard_mv():
+        async with AsyncSessionLocal() as db:
+            try:
+                # Concurrent refresh allows SELECTs to continue while refreshing
+                await db.execute(text("REFRESH MATERIALIZED VIEW CONCURRENTLY asset.dashboard_stats_mv"))
+                await db.commit()
+                logger.info("[Scheduler] Dashboard Materialized View Refreshed (CONCURRENTLY)")
+            except Exception as e:
+                logger.error(f"[Scheduler] Failed to refresh Dashboard MV: {e}")
+
+    scheduler.add_job(
+        refresh_dashboard_mv,
+        trigger="interval",
+        minutes=15,
+        id="dashboard_mv_refresh",
+        replace_existing=True,
+    )
+    logger.info("[Scheduler] Registered: dashboard_mv_refresh @ every 15 mins")

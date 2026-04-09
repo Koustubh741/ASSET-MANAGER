@@ -99,7 +99,7 @@ export default function DeliveriesPage() {
                                             {d.status !== 'RECEIVED' && (
                                                 <button
                                                     onClick={() => markReceived(d.id)}
-                                                    className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all font-semibold"
+                                                    className="text-xs px-3 py-1.5 rounded-none bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all font-semibold"
                                                 >✓ Mark Received</button>
                                             )}
                                         </td>

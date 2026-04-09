@@ -21,7 +21,7 @@ export default function ActionsNeededBanner({ items = [], title = 'Actions neede
     };
 
     return (
-        <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-app-border bg-slate-100 border-slate-200 backdrop-blur-sm flex flex-wrap items-center gap-3">
+        <div className="mb-6 p-4 rounded-none bg-slate-50 dark:bg-slate-800/60 border border-app-border bg-slate-100 border-slate-200 backdrop-blur-sm flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 text-slate-700 dark:text-slate-700 font-semibold text-sm shrink-0">
                 <AlertCircle size={18} className="text-amber-400" />
                 {title}
@@ -31,7 +31,7 @@ export default function ActionsNeededBanner({ items = [], title = 'Actions neede
                     const Icon = item.icon;
                     const style = variantStyles[item.variant || 'primary'];
                     const content = (
-                        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${style}`}>
+                        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-none border text-sm font-medium transition-colors ${style}`}>
                             {Icon && <Icon size={14} />}
                             <span>{item.label}</span>
                             <span className="font-bold opacity-90">{item.count}</span>
@@ -40,7 +40,7 @@ export default function ActionsNeededBanner({ items = [], title = 'Actions neede
                     );
                     if (item.href) {
                         return (
-                            <Link key={idx} href={item.href} className="focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded-lg">
+                            <Link key={idx} href={item.href} className="focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded-none">
                                 {content}
                             </Link>
                         );
@@ -51,7 +51,7 @@ export default function ActionsNeededBanner({ items = [], title = 'Actions neede
                                 key={idx}
                                 type="button"
                                 onClick={item.onClick}
-                                className="focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded-lg"
+                                className="focus:outline-none focus:ring-2 focus:ring-indigo-500/50 rounded-none"
                             >
                                 {content}
                             </button>

@@ -111,15 +111,19 @@ export function AssetProvider({ children }) {
                 if (isAdmin || isAssetStaff || isFinanceStaff || isProcurementStaff || isITStaff) {
                     // Admin-level/Centralized roles see EVERYTHING (higher limit so pending requests aren't cut off)
                     apiAssetRequests = await apiClient.getAssetRequests({ limit: 300 });
-                    apiAssets = await apiClient.getAssets();
-                    apiTickets = await apiClient.getTickets(0, 300);
+                    const assetResponse = await apiClient.getAssets();
+                    apiAssets = assetResponse.data || [];
+                    const ticketResponse = await apiClient.getTickets(0, 300);
+                    apiTickets = ticketResponse.data || [];
                     console.log(`[AssetContext] Admin fetch: ${apiAssetRequests.length} requests, ${apiAssets.length} assets, ${apiTickets.length} tickets`);
                 } else if (isManagerial) {
                     if (!user.department && !user.domain) {
                         console.warn(`[AssetContext] Manager ${user.name} has no department or domain assigned. Falling back to personal requests only.`);
                         apiAssetRequests = await apiClient.getAssetRequests({ mine: true });
-                        apiAssets = await apiClient.getMyAssets();
-                        apiTickets = await apiClient.getTickets();
+                        const assetResponse = await apiClient.getAssets();
+                        apiAssets = assetResponse.data || [];
+                        const ticketResponse = await apiClient.getTickets();
+                        apiTickets = ticketResponse.data || [];
                     } else {
                         console.log(`[AssetContext] Fetching for manager: Dept=${user.department}, Domain=${user.domain}`);
                         
@@ -139,11 +143,11 @@ export function AssetProvider({ children }) {
                             user.department ? apiClient.getAssetRequests({ department: user.department }) : Promise.resolve([]),
                             shouldFetchDomain ? apiClient.getAssetRequests({ domain: user.domain }) : Promise.resolve([]),
                             apiClient.getAssetRequests({ mine: true }),
-                            user.department ? apiClient.getAssets({ department: user.department }) : Promise.resolve([]),
-                            shouldFetchDomain ? apiClient.getAssets({ domain: user.domain }) : Promise.resolve([]),
+                            user.department ? apiClient.getAssets({ department: user.department }).then(r => r.data || []) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getAssets({ domain: user.domain }).then(r => r.data || []) : Promise.resolve([]),
                             apiClient.getMyAssets(),
-                            user.department ? apiClient.getTickets(0, 100, user.department) : Promise.resolve([]),
-                            shouldFetchDomain ? apiClient.getTickets(0, 100, user.domain) : Promise.resolve([])
+                            user.department ? apiClient.getTickets(0, 100, user.department).then(r => r.data || []) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getTickets(0, 100, user.domain).then(r => r.data || []) : Promise.resolve([])
                         ]);
 
                         console.log(`[AssetContext] Dept fetches: reqs=${deptReqs.length}, assets=${deptAssets.length}, tickets=${deptTickets.length}`);
@@ -185,7 +189,8 @@ export function AssetProvider({ children }) {
                     console.log(`[AssetContext] Fetching for regular employee: ${user?.id}`);
                     apiAssetRequests = await apiClient.getAssetRequests({ mine: true });
                     apiAssets = await apiClient.getMyAssets();
-                    apiTickets = await apiClient.getTickets();
+                    const ticketResponse = await apiClient.getTickets();
+                    apiTickets = ticketResponse.data || [];
                 }
 
                 const mappedAssetRequests = apiAssetRequests.map(r => {
@@ -297,45 +302,67 @@ export function AssetProvider({ children }) {
     // --- WORKFLOW FUNCTIONS ---
 
     // 1. Create Request (End User)
-    const createRequest = async (data) => {
+    const createAssetRequest = async (data) => {
         try {
-            // Frontend 'justification' -> Backend 'reason'
-            // Frontend 'assetType' -> Backend 'type'
+            // Map frontend fields to backend AssetRequestCreate schema
             const payload = {
-                asset_name: data.assetName || `${data.assetType} Asset`,
-                asset_type: (data.assetType || 'Laptop').toUpperCase(),
-                asset_ownership_type: data.assetOwnershipType || data.ownershipType || 'COMPANY_OWNED',
-                asset_model: data.deviceDetails?.model || data.assetModel || null,
-                serial_number: data.deviceDetails?.serial || data.serialNumber || null,
-                os_version: data.deviceDetails?.os || data.osVersion || null,
-                justification: data.justification,
-                business_justification: data.deviceDetails
-                    ? `${data.justification || 'BYOD Registration'}\n\nDevice Details:\n- Model: ${data.deviceDetails.model}\n- OS: ${data.deviceDetails.os}\n- Serial: ${data.deviceDetails.serial}`
-                    : (data.businessJustification || data.justification),
-                cost_estimate: data.costEstimate || null
+                asset_name: data.assetName || data.asset_name || `${data.assetType || 'Standard'} Asset`,
+                asset_type: (data.assetType || data.asset_type || 'Laptop').toUpperCase(),
+                asset_ownership_type: data.assetOwnershipType || data.asset_ownership_type || 'COMPANY_OWNED',
+                business_justification: data.business_justification || data.justification || data.reason || 'Standard Provisioning Request',
+                asset_model: data.assetModel || data.asset_model || null,
+                asset_vendor: data.assetVendor || data.asset_vendor || null,
+                serial_number: data.serial_number || data.serialNumber || null,
+                os_version: data.os_version || data.osVersion || null,
+                cost_estimate: data.cost_estimate || data.costEstimate || null,
+                specifications: data.specifications || {}
             };
 
             const newReq = await apiClient.createAssetRequest(payload);
-
-            // Optimistic update
-            const mappedReq = {
-                ...newReq,
-                assetType: newReq.type || newReq.asset_type,
-                justification: newReq.justification || newReq.reason || newReq.business_justification,
-                requestedBy: {
-                    name: user?.name || 'Employee',
-                    email: user?.email || ''
-                },
-                currentOwnerRole: OWNER_ROLE.MANAGER,
-                createdAt: new Date().toISOString()
-            };
-
-            setRequests(prev => [mappedReq, ...prev]);
-            return mappedReq;
+            toast.success("Asset request successfully transmitted.");
+            await loadData(); // Refresh all state
+            return newReq;
         } catch (e) {
-            console.warn("API Create Request Failed - Using Local Fallback", e);
+            console.error("Asset Request Creation Failed:", e);
+            toast.error(`Request Failed: ${e.message}`);
+            throw e;
+        }
+    };
 
-            // No local fallback - throw error
+    // 1.2 Create Ticket (Support)
+    const createTicket = async (ticketData) => {
+        try {
+            const newTicket = await apiClient.createTicket(ticketData);
+            toast.success("Support ticket created successfully.");
+            await loadData();
+            return newTicket;
+        } catch (e) {
+            console.error("Ticket Creation Failed:", e);
+            toast.error(`Ticket Failed: ${e.message}`);
+            throw e;
+        }
+    };
+
+    // 1.3 Register BYOD (End User)
+    const submitByodRequest = async (byodData) => {
+        try {
+            const payload = {
+                asset_name: byodData.device_model || 'BYOD Device',
+                asset_type: 'MOBILE', // Default to mobile for BYOD if not specified
+                asset_ownership_type: 'BYOD',
+                business_justification: byodData.reason || 'BYOD Registration',
+                asset_model: byodData.device_model,
+                os_version: byodData.os_version,
+                serial_number: byodData.serial_number
+            };
+            
+            const newReq = await apiClient.createAssetRequest(payload);
+            toast.success("BYOD registration request submitted for approval.");
+            await loadData();
+            return newReq;
+        } catch (e) {
+            console.error("BYOD Registration Failed:", e);
+            toast.error(`Registration Failed: ${e.message}`);
             throw e;
         }
     };
@@ -515,7 +542,8 @@ export function AssetProvider({ children }) {
 
             // Refresh asset list so the new BYOD device appears in "My Assets"
             try {
-                const refreshedAssets = await apiClient.getAssets();
+                const assetResponse = await apiClient.getAssets();
+                const refreshedAssets = assetResponse.data || [];
                 setAssets(refreshedAssets);
             } catch (assetErr) {
                 console.warn("Could not refresh assets after BYOD registration:", assetErr);
@@ -628,7 +656,8 @@ export function AssetProvider({ children }) {
 
             // Refresh assets list to show newly assigned asset
             try {
-                const refreshedAssets = await apiClient.getAssets();
+                const assetResponse = await apiClient.getAssets();
+                const refreshedAssets = assetResponse.data || [];
                 setAssets(refreshedAssets);
             } catch (assetErr) {
                 console.warn("[Inventory] Could not refresh assets after allocation:", assetErr);
@@ -910,7 +939,8 @@ export function AssetProvider({ children }) {
 
             // Refresh assets list so the new asset appears in "In Stock" for Inventory Manager
             try {
-                const refreshedAssets = await apiClient.getAssets();
+                const assetResponse = await apiClient.getAssets();
+                const refreshedAssets = assetResponse.data || [];
                 setAssets(refreshedAssets);
             } catch (assetErr) {
                 console.warn("[Procurement] Could not refresh assets after delivery confirmation:", assetErr);
@@ -1019,7 +1049,8 @@ export function AssetProvider({ children }) {
 
             // Refresh assets list to show newly assigned asset
             try {
-                const refreshedAssets = await apiClient.getAssets();
+                const assetResponse = await apiClient.getAssets();
+                const refreshedAssets = assetResponse.data || [];
                 setAssets(refreshedAssets);
             } catch (assetErr) {
                 console.warn("[Inventory] Could not refresh assets after final allocation:", assetErr);
@@ -1040,7 +1071,8 @@ export function AssetProvider({ children }) {
                 req.id === requestId ? { ...req, status: 'ASSETS_PROCESSED' } : req
             ));
             // Refresh assets because they were returned to stock
-            const refreshedAssets = await apiClient.getAssets();
+            const assetResponse = await apiClient.getAssets();
+            const refreshedAssets = assetResponse.data || [];
             setAssets(refreshedAssets);
         } catch (e) {
             console.error("Failed to process exit assets:", e);
@@ -1105,7 +1137,9 @@ export function AssetProvider({ children }) {
             requests,
             incomingRequests,
             activeTickets,
-            createRequest,
+            submitByodRequest,
+            createAssetRequest,
+            createTicket,
             itApproveRequest,
             itRejectRequest,
             registerByod,

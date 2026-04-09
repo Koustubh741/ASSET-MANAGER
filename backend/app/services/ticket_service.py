@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, List, Optional, Union, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy import cast, String, or_, func, extract
+from sqlalchemy import cast, String, or_, and_, func, extract
 from ..models.models import Ticket, User, Task, AssignmentGroup
 from ..schemas.ticket_schema import TicketCreate, TicketUpdate
 import uuid
@@ -18,80 +18,137 @@ if TYPE_CHECKING:
     from ..models.models import Ticket, User, Task, AssignmentGroup
     from ..schemas.ticket_schema import TicketCreate, TicketUpdate
 
-def _sanitize_ticket(t: Ticket) -> Ticket:
+def _populate_ticket_data(t: Ticket) -> Dict:
     """
-    Sanitize ticket data before sending to frontend.
-    Handles field mapping, status normalization, and display_id generation.
+    Populate ticket data as a dictionary for safe async serialization.
+    Decouples the response generation from the SQLAlchemy session.
     """
-    if not t: return t
+    if not t: return {}
     
-    # 1. Map relationships to flat fields
+    # Base fields from model
+    data = {
+        "id": t.id,
+        "display_id": t.display_id or str(t.id)[:8].upper(),
+        "subject": t.subject,
+        "description": t.description,
+        "status": (t.status or "Open").title(),
+        "priority": (t.priority or "Medium").title(),
+        "category": t.category,
+        "subcategory": t.subcategory,
+        "requestor_id": t.requestor_id,
+        "assigned_to_id": t.assigned_to_id,
+        "assignment_group_id": t.assignment_group_id,
+        "target_department_id": t.target_department_id,
+        "related_asset_id": t.related_asset_id,
+        "resolution_notes": t.resolution_notes,
+        "resolution_checklist": t.resolution_checklist,
+        "resolution_percentage": t.resolution_percentage,
+        "timeline": t.timeline,
+        "created_at": t.created_at,
+        "updated_at": t.updated_at
+    }
+    
+    # 1. Map relationships to flat fields (Safe access via selectin)
     if t.requestor:
-        t.requestor_name = t.requestor.full_name
-        t.requestor_department = t.requestor.department
-        t.requestor_email = t.requestor.email
+        data["requestor_name"] = t.requestor.full_name
+        data["requestor_email"] = t.requestor.email
+        data["requestor_department"] = t.requestor.dept_obj.name if t.requestor.dept_obj else getattr(t.requestor, 'department', "N/A")
+    else:
+        data["requestor_name"] = "System"
+        data["requestor_department"] = "N/A"
     
     if t.assigned_to:
-        t.assigned_to_name = t.assigned_to.full_name
-        t.assigned_to_email = t.assigned_to.email
+        data["assigned_to_name"] = t.assigned_to.full_name
+        data["assigned_to_email"] = t.assigned_to.email
+        data["assigned_to_role"] = t.assigned_to.role
     
     if t.assignment_group:
-        t.assignment_group_name = t.assignment_group.name
-        t.assignment_group_department = t.assignment_group.department
+        data["assignment_group_name"] = t.assignment_group.name
+        data["assignment_group_department"] = t.assignment_group.dept_obj.name if getattr(t.assignment_group, 'dept_obj', None) else None
+
+    if t.target_department:
+        data["target_department_name"] = t.target_department.name
 
     if t.sla:
-        t.sla_deadline = t.sla.resolution_deadline
-        t.sla_response_deadline = t.sla.response_deadline
-        t.sla_resolution_deadline = t.sla.resolution_deadline
-        t.sla_response_status = t.sla.response_status
-        t.sla_resolution_status = t.sla.resolution_status
-
-    # 2. Field Normalization
-    t.priority = (t.priority or "Medium").title()
-    t.status = (t.status or "Open").title()
-    
-    # 3. Display ID Fallback
-    if not t.display_id:
-        t.display_id = str(t.id)[:8].upper()
+        data["sla_deadline"] = t.sla.resolution_deadline
+        data["sla_response_deadline"] = t.sla.response_deadline
+        data["sla_resolution_deadline"] = t.sla.resolution_deadline
+        data["sla_response_status"] = t.sla.response_status
+        data["sla_resolution_status"] = t.sla.resolution_status
         
-    # 4. Requestor Name Fallback
-    if not getattr(t, 'requestor_name', None):
-        t.requestor_name = "System"
-        t.requestor_department = "N/A"
+    # Task population (nested)
+    if t.tasks:
+        data["tasks"] = []
+        for task in t.tasks:
+            task_data = {
+                "id": task.id,
+                "ticket_id": task.ticket_id,
+                "subject": task.subject,
+                "description": task.description,
+                "status": task.status,
+                "priority": task.priority,
+                "assigned_to_id": task.assigned_to_id,
+                "group_id": task.group_id,
+                "due_date": task.due_date,
+                "completed_at": task.completed_at,
+                "created_at": task.created_at,
+                "updated_at": task.updated_at,
+                "assigned_to_name": task.assigned_to.full_name if task.assigned_to else None,
+                "group_name": task.group.name if task.group else None
+            }
+            data["tasks"].append(task_data)
 
-    return t
+    return data
 
-async def get_tickets(db: AsyncSession, requestor_id: Optional[UUID] = None, department: Optional[str] = None, skip: int = 0, limit: int = 100, search: Optional[str] = None, is_internal: Optional[bool] = None) -> List[Ticket]:
+async def get_tickets(
+    db: AsyncSession, 
+    requestor_id: Optional[UUID] = None, 
+    department: Optional[str] = None, 
+    skip: int = 0, 
+    limit: int = 100, 
+    search: Optional[str] = None, 
+    is_internal: Optional[bool] = None
+) -> tuple[List[Ticket], int]:
     """
-    Get all tickets with user names, departments, and emails using ORM relationships.
+    Get all tickets with pagination and total count (Asynchronous).
+    Root Fix: Supports 100k user scalability.
     """
-    # Use selectinload or joinedload for relationships
+    # 1. Base Query with relationships
     query = select(Ticket).options(
         joinedload(Ticket.requestor),
         joinedload(Ticket.assigned_to),
         joinedload(Ticket.assignment_group),
+        joinedload(Ticket.requestor).joinedload(User.dept_obj),
         selectinload(Ticket.tasks).selectinload(Task.assigned_to),
         selectinload(Ticket.tasks).selectinload(Task.group),
-        joinedload(Ticket.sla)
+        joinedload(Ticket.sla),
+        joinedload(Ticket.target_department)
     ).order_by(Ticket.created_at.desc())
     
     # Ensure core tables are joined for filtering
     query = query.outerjoin(User, Ticket.requestor_id == User.id).outerjoin(AssignmentGroup, Ticket.assignment_group_id == AssignmentGroup.id)
 
+    # 2. Filtering Logic
+    filter_clauses = []
     if requestor_id:
-        query = query.filter(Ticket.requestor_id == requestor_id)
+        filter_clauses.append(Ticket.requestor_id == requestor_id)
     
     if department:
-        query = query.filter(
+        from ..models.models import Department
+        filter_clauses.append(
             or_(
-                User.department.ilike(f"%{department}%"),
+                User.department_id.in_(
+                    select(Department.id).filter(Department.name.ilike(f"%{department}%"))
+                ),
                 User.domain.ilike(f"%{department}%"),
-                AssignmentGroup.department.ilike(f"%{department}%")
+                AssignmentGroup.department_id.in_(
+                    select(Department.id).filter(Department.name.ilike(f"%{department}%"))
+                )
             )
         )
         
     if search:
-        query = query.filter(
+        filter_clauses.append(
             or_(
                 Ticket.subject.ilike(f"%{search}%"),
                 Ticket.description.ilike(f"%{search}%"),
@@ -100,17 +157,23 @@ async def get_tickets(db: AsyncSession, requestor_id: Optional[UUID] = None, dep
             )
         )
     
-    # NEW: Internal vs Inter-departmental Filtering
     if is_internal is not None:
-        u_dept = func.trim(User.department)
-        g_dept = func.trim(AssignmentGroup.department)
         if is_internal:
-            # Match where trimmed/lowered departments are equal and not null
-            query = query.filter(User.department != None, AssignmentGroup.department != None, func.lower(u_dept) == func.lower(g_dept))
+            filter_clauses.append(and_(User.department_id != None, AssignmentGroup.department_id != None, User.department_id == AssignmentGroup.department_id))
         else:
-            # Different departments OR one/both are null
-            query = query.filter(or_(func.lower(u_dept) != func.lower(g_dept), User.department == None, AssignmentGroup.department == None))
+            filter_clauses.append(or_(User.department_id != AssignmentGroup.department_id, User.department_id == None, AssignmentGroup.department_id == None))
 
+    if filter_clauses:
+        query = query.filter(*filter_clauses)
+
+    # 3. Total Count Query (Optimized)
+    count_query = select(func.count(Ticket.id)).outerjoin(User, Ticket.requestor_id == User.id).outerjoin(AssignmentGroup, Ticket.assignment_group_id == AssignmentGroup.id)
+    if filter_clauses:
+        count_query = count_query.filter(*filter_clauses)
+    
+    total = (await db.execute(count_query)).scalar() or 0
+
+    # 4. Pagination
     query = query.offset(skip)
     if limit > 0:
         query = query.limit(limit)
@@ -118,7 +181,7 @@ async def get_tickets(db: AsyncSession, requestor_id: Optional[UUID] = None, dep
     result = await db.execute(query)
     tickets = result.unique().scalars().all()
         
-    return [_sanitize_ticket(t) for t in tickets]
+    return [_populate_ticket_data(t) for t in tickets], total
 
 
 async def get_ticket(db: AsyncSession, ticket_id: UUID) -> Optional[Ticket]:
@@ -129,13 +192,14 @@ async def get_ticket(db: AsyncSession, ticket_id: UUID) -> Optional[Ticket]:
         joinedload(Ticket.assignment_group),
         selectinload(Ticket.tasks).selectinload(Task.assigned_to),
         selectinload(Ticket.tasks).selectinload(Task.group),
-        joinedload(Ticket.sla)
+        joinedload(Ticket.sla),
+        joinedload(Ticket.target_department)
     ).filter(Ticket.id == ticket_id)
     
     result = await db.execute(query)
     t = result.unique().scalar_one_or_none()
     
-    return _sanitize_ticket(t) if t else None
+    return _populate_ticket_data(t) if t else None
             
     return t
 
@@ -193,7 +257,7 @@ async def create_ticket_v2(db: AsyncSession, ticket: TicketCreate, requestor_id:
 
         ticket_uuid = uuid.uuid4()
         display_id = SmartIDService.generate(
-            dept=user.department if user else "GEN",
+            dept=(user.dept_obj.name if user.dept_obj else user.department) if user else "GEN",
             priority=ticket.priority,
             category=ticket.category,
             asset_type=asset.type if asset else None,
@@ -210,7 +274,9 @@ async def create_ticket_v2(db: AsyncSession, ticket: TicketCreate, requestor_id:
             description=ticket.description,
             priority=ticket.priority,
             category=normalize_category(ticket.category, ticket.subject, ticket.description),
+            subcategory=ticket.subcategory,
             assignment_group_id=ticket.assignment_group_id,
+            target_department_id=ticket.target_department_id,
             related_asset_id=ticket.related_asset_id,
             tasks=[],
             timeline=[{
@@ -223,6 +289,15 @@ async def create_ticket_v2(db: AsyncSession, ticket: TicketCreate, requestor_id:
         )
         db.add(db_ticket)
         await db.commit()
+
+        # 4. Trigger Automation & SLA Initialization
+        try:
+            from .automation_service import AutomationService
+            await AutomationService.initialize_ticket_sla(db, db_ticket.id)
+            await db.commit() # Commit the new SLA record
+        except Exception as e:
+            print(f"[ERROR] SLA Initialization failed for {db_ticket.id}: {e}")
+
         return await get_ticket(db, db_ticket.id)
 
 async def update_ticket(db: AsyncSession, ticket_id: UUID, ticket_update: TicketUpdate) -> Optional[Ticket]:
@@ -306,7 +381,10 @@ async def get_ticket_executive_summary(
             
         if department:
             # Manager sees their department's tickets
-            return query.join(User, Ticket.requestor_id == User.id).filter(func.lower(func.trim(User.department)) == department.lower())
+            from ..models.models import Department as DeptModel
+            return query.join(User, Ticket.requestor_id == User.id)\
+                        .outerjoin(DeptModel, User.department_id == DeptModel.id)\
+                        .filter(func.lower(func.trim(DeptModel.name)) == department.lower())
         elif user_id:
             # Personal scoping
             return query.filter(Ticket.requestor_id == user_id)
@@ -334,9 +412,19 @@ async def get_ticket_executive_summary(
     compliance_rate = (effective_met / total_sla * 100) if total_sla > 0 else 100.0
 
     # 2. Departmental Ticket Load
-    dept_load_query = select(User.department, func.count(Ticket.id)).join(User, Ticket.requestor_id == User.id).filter(Ticket.created_at >= range_start, Ticket.created_at <= range_end).group_by(User.department)
+    from ..models.models import Department as DeptModel
+    dept_load_query = select(
+        DeptModel.name.label("dept_name"), 
+        func.count(Ticket.id)
+    ).join(User, Ticket.requestor_id == User.id)\
+     .outerjoin(DeptModel, User.department_id == DeptModel.id)\
+     .filter(Ticket.created_at >= range_start, Ticket.created_at <= range_end)\
+     .group_by(DeptModel.name)
+    
     if department:
-        dept_load_query = dept_load_query.filter(func.lower(func.trim(User.department)) == department.lower())
+        dept_load_query = dept_load_query.filter(
+            func.lower(func.trim(DeptModel.name)) == department.lower()
+        )
     elif user_id:
         dept_load_query = dept_load_query.filter(Ticket.requestor_id == user_id)
         
@@ -457,7 +545,10 @@ async def get_ticket_trend_series(
 
     def apply_scope(q):
         if department:
-            return q.join(User, Ticket.requestor_id == User.id).filter(func.lower(func.trim(User.department)) == department.lower())
+            from ..models.models import Department as DeptModel
+            return q.join(User, Ticket.requestor_id == User.id)\
+                    .outerjoin(DeptModel, User.department_id == DeptModel.id)\
+                    .filter(func.lower(func.trim(DeptModel.name)) == department.lower())
         elif user_id:
             return q.filter(Ticket.requestor_id == user_id)
         return q

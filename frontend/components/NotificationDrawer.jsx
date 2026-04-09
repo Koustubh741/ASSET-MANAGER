@@ -12,10 +12,10 @@ export default function NotificationDrawer({ isOpen, onClose }) {
 
     const getIcon = (type) => {
         switch (type) {
-            case 'discovery': return <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20"><Cpu size={18} /></div>;
-            case 'alert': return <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20"><AlertTriangle size={18} /></div>;
-            case 'workflow': return <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500 border border-indigo-500/20"><Info size={18} /></div>;
-            default: return <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20"><Bell size={18} /></div>;
+            case 'discovery': return <div className="p-2 rounded-none bg-blue-500/10 text-blue-500 border border-blue-500/20"><Cpu size={18} /></div>;
+            case 'alert': return <div className="p-2 rounded-none bg-amber-500/10 text-amber-500 border border-amber-500/20"><AlertTriangle size={18} /></div>;
+            case 'workflow': return <div className="p-2 rounded-none bg-indigo-500/10 text-indigo-500 border border-indigo-500/20"><Info size={18} /></div>;
+            default: return <div className="p-2 rounded-none bg-primary/10 text-primary border border-primary/20"><Bell size={18} /></div>;
         }
     };
 
@@ -42,7 +42,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                 {/* Header */}
                 <div className="p-6 border-b border-app-border flex items-center justify-between bg-app-surface/50 backdrop-blur-md sticky top-0 z-20">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-2xl bg-primary/10 text-primary shadow-[0_0_20px_rgba(99,102,241,0.1)]">
+                        <div className="p-2.5 rounded-none bg-primary/10 text-primary shadow-[0_0_20px_rgba(99,102,241,0.1)]">
                             <Bell size={24} />
                         </div>
                         <div>
@@ -54,7 +54,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                         {unreadCount > 0 && (
                             <button 
                                 onClick={markAllAsRead}
-                                className="p-2 rounded-xl text-app-text-muted hover:text-primary hover:bg-primary/10 transition-all"
+                                className="p-2 rounded-none text-app-text-muted hover:text-primary hover:bg-primary/10 transition-all"
                                 title="Mark all as read"
                             >
                                 <CheckCircle2 size={20} />
@@ -62,7 +62,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                         )}
                         <button 
                             onClick={onClose}
-                            className="p-2 rounded-xl text-app-text-muted hover:text-app-text hover:bg-app-surface-soft transition-all"
+                            className="p-2 rounded-none text-app-text-muted hover:text-app-text hover:bg-app-surface-soft transition-all"
                         >
                             <X size={20} />
                         </button>
@@ -87,7 +87,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                                     handleNotificationClick(notif, router);
                                     onClose();
                                 }}
-                                className={`group p-4 rounded-2xl border transition-all duration-300 cursor-pointer hover:shadow-md ${notif.is_read 
+                                className={`group p-4 rounded-none border transition-all duration-300 cursor-pointer hover:shadow-md ${notif.is_read 
                                     ? 'bg-app-surface border-app-border hover:bg-app-surface-soft' 
                                     : 'bg-primary/5 border-primary/20 shadow-sm relative overflow-hidden hover:bg-primary/10'}`}
                             >
@@ -125,7 +125,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                                             {!notif.is_read && (
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                                                    className="p-1 px-2 rounded-lg text-[10px] font-bold bg-app-surface-soft text-app-text-muted hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all uppercase tracking-widest border border-app-border"
+                                                    className="p-1 px-2 rounded-none text-[10px] font-bold bg-app-surface-soft text-app-text-muted hover:text-primary hover:bg-primary/10 opacity-0 group-hover:opacity-100 transition-all uppercase tracking-widest border border-app-border"
                                                 >
                                                     Mark Read
                                                 </button>
@@ -140,7 +140,7 @@ export default function NotificationDrawer({ isOpen, onClose }) {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-app-border bg-app-surface/50 backdrop-blur-md">
-                    <Link href="/notifications" onClick={onClose} className="w-full py-3 rounded-xl bg-app-surface-soft border border-app-border text-app-text-muted text-xs font-bold hover:text-app-text hover:bg-app-surface transition-all flex items-center justify-center gap-2 group/hist">
+                    <Link href="/notifications" onClick={onClose} className="w-full py-3 rounded-none bg-app-surface-soft border border-app-border text-app-text-muted text-xs font-bold hover:text-app-text hover:bg-app-surface transition-all flex items-center justify-center gap-2 group/hist">
                         <History size={14} className="group-hover/hist:rotate-[-45deg] transition-transform" />
                         View Notification History
                     </Link>

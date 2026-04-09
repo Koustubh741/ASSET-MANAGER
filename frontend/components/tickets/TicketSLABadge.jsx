@@ -29,7 +29,7 @@ const TicketSLABadge = ({ sla }) => {
   };
 
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] font-bold uppercase ${getStatusColor()}`}>
+    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-none border text-[11px] font-bold uppercase ${getStatusColor()}`}>
       {sla.resolution_status === 'BREACHED' ? (
         <AlertTriangle className="w-3 h-3" />
       ) : sla.resolution_status === 'MET' ? (

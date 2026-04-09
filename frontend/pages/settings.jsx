@@ -5,10 +5,10 @@ import apiClient from '@/lib/apiClient'
 
 // Simple Toast Component
 const Toast = ({ message, type, onClose }) => (
-    <div className={`fixed bottom-4 right-4 z-50 px-6 py-4 rounded-xl shadow-2xl backdrop-blur-md border animate-in slide-in-from-right fade-in duration-300 flex items-center gap-3 ${type === 'success' ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-100' : 'bg-rose-500/20 border-rose-500/30 text-rose-100'
+    <div className={`fixed bottom-4 right-4 z-50 px-6 py-4 rounded-none shadow-2xl backdrop-blur-md border animate-in slide-in-from-right fade-in duration-300 flex items-center gap-3 ${type === 'success' ? 'bg-app-secondary/20 border-app-secondary/30 text-app-secondary' : 'bg-app-rose/20 border-app-rose/30 text-app-rose'
         }`}>
         {type === 'success' ? <Check size={20} /> : <AlertTriangle size={20} />}
-        <span className="font-medium">{message}</span>
+        <span className="font-medium uppercase tracking-widest text-[10px]">{message}</span>
     </div>
 )
 
@@ -17,14 +17,14 @@ const Modal = ({ isOpen, title, children, onClose, onConfirm, confirmText = "Con
     if (!isOpen) return null
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="glass-panel w-full max-w-md p-6 relative animate-in zoom-in-95 duration-200">
-                <h3 className="text-xl font-bold text-app-text mb-4">{title}</h3>
-                <div className="mb-6 text-slate-700 dark:text-slate-700">{children}</div>
+            <div className="glass-panel w-full max-w-md p-6 relative animate-in zoom-in-95 duration-200 border-l border-app-primary">
+                <h3 className="text-xl font-black text-app-text mb-4 uppercase italic tracking-tight">{title}</h3>
+                <div className="mb-6 text-app-text-muted text-sm uppercase tracking-tight">{children}</div>
                 <div className="flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-slate-700 dark:text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft transition-colors">Cancel</button>
+                    <button onClick={onClose} className="px-4 py-2 rounded-none text-app-text-muted hover:bg-app-surface-soft hover:text-app-text transition-colors uppercase text-[10px] font-black tracking-widest">Cancel</button>
                     <button
                         onClick={onConfirm}
-                        className={`px-4 py-2 rounded-lg font-medium text-app-text shadow-lg transition-all ${type === 'danger' ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'}`}
+                        className={`px-4 py-2 rounded-none font-black text-[10px] uppercase tracking-widest text-app-void shadow-lg transition-all ${type === 'danger' ? 'bg-app-rose hover:bg-app-rose/80 shadow-app-rose/20' : 'bg-app-primary hover:bg-app-primary/80 shadow-app-primary/20'}`}
                     >
                         {confirmText}
                     </button>
@@ -185,7 +185,7 @@ export default function Settings() {
                         <label className="text-sm text-app-text-muted text-app-text-muted block mb-1">Confirm Password</label>
                         <input type="password" placeholder="Confirm new password" className="input-field" />
                     </div>
-                    <div className="flex items-center gap-2 text-emerald-400 text-xs">
+                    <div className="flex items-center gap-2 text-app-secondary text-[10px] font-black uppercase tracking-widest">
                         <Check size={12} /> Strong password
                     </div>
                 </div>
@@ -210,9 +210,9 @@ export default function Settings() {
                 confirmText="Reset Everything"
                 type="danger"
             >
-                <div className="flex items-start gap-4 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg mb-4">
-                    <AlertTriangle className="text-rose-500 shrink-0" size={24} />
-                    <p className="text-sm text-rose-200">Warning: This action cannot be undone. All custom assets, history, and metrics will be permanently deleted and reset to factory defaults.</p>
+                <div className="flex items-start gap-4 p-4 bg-app-rose/10 border border-app-rose/20 rounded-none mb-4">
+                    <AlertTriangle className="text-app-rose shrink-0" size={24} />
+                    <p className="text-[10px] font-black uppercase tracking-tight text-app-rose">Warning: This action cannot be undone. All custom assets, history, and metrics will be permanently deleted and reset to factory defaults.</p>
                 </div>
             </Modal>
 
@@ -237,18 +237,18 @@ export default function Settings() {
                 <div className="lg:col-span-1">
                     <div className="glass-panel p-6">
                         <div className="flex items-center gap-2 mb-4">
-                            <Zap size={20} className="text-amber-400" />
-                            <h3 className="text-lg font-bold text-app-text">AI Assistant Plan (Demo)</h3>
+                            <Zap size={20} className="text-app-gold" />
+                            <h3 className="text-lg font-black text-app-text uppercase italic tracking-tight">AI Assistant Plan (Demo)</h3>
                         </div>
                         <p className="text-sm text-app-text-muted text-app-text-muted mb-4">Switch plans for testing. Affects AI Assistant access.</p>
                         <select
                             value={user?.plan || 'STARTER'}
                             onChange={handlePlanChange}
                             disabled={planLoading}
-                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-xl px-4 py-3 text-app-text focus:ring-2 focus:ring-blue-500/50 outline-none"
+                            className="w-full bg-app-void border border-app-border rounded-none px-4 py-3 text-app-text focus:ring-2 focus:ring-app-primary/50 outline-none uppercase font-black text-[10px] tracking-widest italic"
                         >
                             {PLANS.map(p => (
-                                <option key={p.value} value={p.value}>{p.label}</option>
+                                <option key={p.value} value={p.value} className="bg-app-obsidian">{p.label}</option>
                             ))}
                         </select>
                         {planLoading && <span className="text-xs text-app-text-muted mt-2 block">Updating...</span>}
@@ -258,8 +258,8 @@ export default function Settings() {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="glass-panel p-6">
                         <div className="flex flex-col items-center text-center">
-                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-1 mb-4 shadow-lg shadow-blue-500/20">
-                                <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center border-4 border-transparent">
+                            <div className="w-24 h-24 rounded-none bg-app-primary p-1 mb-4 shadow-lg shadow-app-primary/20">
+                                <div className="w-full h-full rounded-none bg-app-void flex items-center justify-center border-4 border-transparent">
                                     <User size={40} className="text-app-text" />
                                 </div>
                             </div>
@@ -270,19 +270,19 @@ export default function Settings() {
                                         type="text"
                                         value={tempProfile.name}
                                         onChange={e => setTempProfile(prev => ({ ...prev, name: e.target.value }))}
-                                        className="input-field text-center py-1"
+                                        className="input-field text-center py-1 font-black uppercase tracking-widest text-xs"
                                     />
                                     <input
                                         type="text"
                                         value={tempProfile.role}
                                         onChange={e => setTempProfile(prev => ({ ...prev, role: e.target.value }))}
-                                        className="input-field text-center py-1 text-blue-400 font-bold"
+                                        className="input-field text-center py-1 text-app-primary font-black uppercase tracking-[0.2em] text-[10px]"
                                     />
                                     <input
                                         type="email"
                                         value={tempProfile.email}
                                         onChange={e => setTempProfile(prev => ({ ...prev, email: e.target.value }))}
-                                        className="input-field text-center py-1 text-sm"
+                                        className="input-field text-center py-1 text-[10px] font-mono"
                                     />
                                 </div>
                             ) : (
@@ -304,13 +304,13 @@ export default function Settings() {
                                             setIsEditingProfile(true)
                                         }
                                     }}
-                                    className={`w-full py-2 px-4 rounded-lg transition-colors text-sm font-medium border ${isEditingProfile ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-slate-700 dark:text-slate-700 border-app-border'}`}
+                                    className={`w-full py-2 px-4 rounded-none transition-colors text-[10px] font-black uppercase tracking-widest border ${isEditingProfile ? 'bg-app-secondary/20 text-app-secondary border-app-secondary/30' : 'bg-app-surface-soft hover:bg-app-primary hover:text-app-void text-app-text-muted border-app-border'}`}
                                 >
                                     {isEditingProfile ? 'Save Profile' : 'Edit Profile'}
                                 </button>
                                 <button
                                     onClick={() => setModal({ type: 'password', isOpen: true })}
-                                    className="w-full py-2 px-4 rounded-lg bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-slate-700 dark:text-slate-700 transition-colors text-sm font-medium border border-app-border"
+                                    className="w-full py-2 px-4 rounded-none bg-app-surface-soft hover:bg-app-primary hover:text-app-void text-app-text-muted transition-colors text-[10px] font-black uppercase tracking-widest border border-app-border"
                                 >
                                     Change Password
                                 </button>
@@ -319,24 +319,24 @@ export default function Settings() {
                     </div>
 
                     <div className="glass-panel p-6">
-                        <h3 className="text-lg font-bold text-app-text mb-4 flex items-center">
-                            <Shield className="mr-3 text-emerald-400" size={20} />
+                        <h3 className="text-lg font-black text-app-text mb-4 flex items-center uppercase italic tracking-tight">
+                            <Shield className="mr-3 text-app-secondary" size={20} />
                             Security Status
                         </h3>
                         <div className="space-y-3">
-                            <div className="flex justify-between items-center cursor-pointer hover:bg-slate-100 dark:hover:bg-white/5 p-2 rounded-lg transition-colors" onClick={() => setModal({ type: '2fa', isOpen: true })}>
-                                <span className="text-app-text-muted text-sm">2FA Enabled</span>
-                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${security.twoFactor ? 'text-emerald-400 bg-emerald-500/10' : 'text-rose-400 bg-rose-500/10'}`}>
+                            <div className="flex justify-between items-center cursor-pointer hover:bg-app-primary/10 p-2 rounded-none transition-colors group" onClick={() => setModal({ type: '2fa', isOpen: true })}>
+                                <span className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">2FA Enabled</span>
+                                <span className={`text-[10px] font-black px-2 py-1 rounded-none border uppercase tracking-widest ${security.twoFactor ? 'text-app-secondary bg-app-secondary/10 border-app-secondary/20' : 'text-app-rose bg-app-rose/10 border-app-rose/20'}`}>
                                     {security.twoFactor ? 'ACTIVE' : 'DISABLED'}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center p-2">
-                                <span className="text-app-text-muted text-sm">Last Login</span>
-                                <span className="text-slate-900 dark:text-slate-200 text-sm">{new Date(security.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <span className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">Last Login</span>
+                                <span className="text-app-text text-[10px] font-black uppercase tracking-widest">{new Date(security.lastLogin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <div className="flex justify-between items-center p-2">
-                                <span className="text-app-text-muted text-sm">Password Strength</span>
-                                <span className="text-emerald-400 text-sm">Strong</span>
+                                <span className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">Password Strength</span>
+                                <span className="text-app-secondary text-[10px] font-black uppercase tracking-widest">Strong</span>
                             </div>
                         </div>
                     </div>
@@ -353,48 +353,48 @@ export default function Settings() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <button
                                 onClick={() => handleThemeChange('dark')}
-                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${currentTheme === 'dark' ? 'border-blue-500 bg-blue-500/10' : 'border-app-border bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
+                                className={`p-4 rounded-none border transition-all flex flex-col items-center space-y-3 ${currentTheme === 'dark' ? 'border-app-primary bg-app-primary/10' : 'border-app-border bg-app-surface-soft hover:bg-app-primary/5 hover:border-app-primary/40'
                                     }`}
                             >
-                                <div className="w-full h-24 bg-white dark:bg-slate-900 rounded-lg border border-app-border flex items-center justify-center overflow-hidden relative">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-950"></div>
-                                    <Moon size={24} className="relative z-10 text-blue-400" />
+                                <div className="w-full h-24 bg-app-void rounded-none border border-app-border flex items-center justify-center overflow-hidden relative">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-app-obsidian to-app-void"></div>
+                                    <Moon size={24} className="relative z-10 text-app-primary" />
                                 </div>
-                                <span className="text-app-text-muted font-medium">Dark Mode</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">Dark Mode</span>
                             </button>
 
                             <button
                                 onClick={() => handleThemeChange('light')}
-                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${currentTheme === 'light' ? 'border-blue-500 bg-blue-500/10' : 'border-app-border bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
+                                className={`p-4 rounded-none border transition-all flex flex-col items-center space-y-3 ${currentTheme === 'light' ? 'border-app-primary bg-app-primary/10' : 'border-app-border bg-app-surface-soft hover:bg-app-primary/5 hover:border-app-primary/40'
                                     }`}
                             >
-                                <div className="w-full h-24 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden relative">
-                                    <Sun size={24} className="relative z-10 text-orange-500" />
+                                <div className="w-full h-24 bg-white rounded-none flex items-center justify-center overflow-hidden relative border border-app-border">
+                                    <Sun size={24} className="relative z-10 text-app-gold" />
                                 </div>
-                                <span className="text-app-text-muted font-medium">Light Mode</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">Light Mode</span>
                             </button>
 
                             <button
                                 onClick={() => handleThemeChange('system')}
-                                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center space-y-3 ${currentTheme === 'system' ? 'border-blue-500 bg-blue-500/10' : 'border-app-border bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
+                                className={`p-4 rounded-none border transition-all flex flex-col items-center space-y-3 ${currentTheme === 'system' ? 'border-app-primary bg-app-primary/10' : 'border-app-border bg-app-surface-soft hover:bg-app-primary/5 hover:border-app-primary/40'
                                     }`}
                             >
-                                <div className="w-full h-24 bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center overflow-hidden relative border border-app-border">
+                                <div className="w-full h-24 bg-app-void rounded-none flex items-center justify-center overflow-hidden relative border border-app-border">
                                     <div className="absolute inset-0 flex">
-                                        <div className="w-1/2 h-full bg-white dark:bg-slate-900"></div>
-                                        <div className="w-1/2 h-full bg-slate-100"></div>
+                                        <div className="w-1/2 h-full bg-app-obsidian"></div>
+                                        <div className="w-1/2 h-full bg-white"></div>
                                     </div>
-                                    <Monitor size={24} className="relative z-10 text-app-text-muted text-app-text-muted mix-blend-difference" />
+                                    <Monitor size={24} className="relative z-10 text-app-text-muted mix-blend-difference" />
                                 </div>
-                                <span className="text-app-text-muted font-medium">System</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">System</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Notifications */}
                     <div className="glass-panel p-6">
-                        <h3 className="text-xl font-bold text-app-text mb-6 flex items-center">
-                            <Bell className="mr-3 text-yellow-400" size={24} />
+                        <h3 className="text-xl font-black text-app-text mb-6 flex items-center uppercase italic tracking-tight">
+                            <Bell className="mr-3 text-app-gold" size={24} />
                             Notifications
                         </h3>
                         <div className="space-y-4">
@@ -404,10 +404,10 @@ export default function Settings() {
                                 { id: 'system', title: 'System Updates', desc: 'Notifications about system maintenance' },
                                 { id: 'reports', title: 'Weekly Reports', desc: 'Receive weekly asset summary reports' }
                             ].map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-4 rounded-lg bg-app-surface-soft border border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors">
+                                <div key={item.id} className="flex items-center justify-between p-4 rounded-none bg-app-void border border-app-border hover:bg-app-primary/[0.03] transition-colors">
                                     <div>
-                                        <p className="text-slate-900 dark:text-slate-200 font-medium">{item.title}</p>
-                                        <p className="text-app-text-muted text-sm">{item.desc}</p>
+                                        <p className="text-app-text font-black uppercase tracking-widest text-[10px]">{item.title}</p>
+                                        <p className="text-app-text-muted text-[9px] uppercase tracking-tighter opacity-40">{item.desc}</p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
                                         <input
@@ -424,7 +424,7 @@ export default function Settings() {
                                             }}
                                             className="sr-only peer"
                                         />
-                                        <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div className="w-11 h-6 bg-app-obsidian peer-focus:outline-none rounded-none peer peer-checked:after:translate-x-full peer-checked:after:border-app-void after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-app-text-muted after:border-app-void after:border after:rounded-none after:h-5 after:w-5 after:transition-all peer-checked:bg-app-primary"></div>
                                     </label>
                                 </div>
                             ))}

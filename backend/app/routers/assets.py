@@ -7,6 +7,7 @@ from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from ..schemas.asset_schema import AssetCreate, AssetUpdate, AssetResponse, AssetAssignmentRequest, AssetStatusUpdate, AssetVerificationRequest
+from ..schemas.common_schema import PaginatedResponse
 from ..services import asset_service
 from ..services import asset_request_service
 from ..database.database import get_db
@@ -20,42 +21,49 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=List[AssetResponse])
+@router.get("", response_model=PaginatedResponse[AssetResponse])
 async def get_all_assets(
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """
-    Get all assets (Asynchronous).
+    Get all assets with pagination (Asynchronous).
+    Root Fix: Implemented for 100k user scalability.
     """
     privileged_roles = STAFF_ROLES
-    print(f"DEBUG: User={current_user.full_name}, Role={current_user.role}, Position={current_user.position}")
     if current_user.role not in privileged_roles and current_user.position != "MANAGER":
         raise HTTPException(
             status_code=403, 
-            detail=f"Unauthorized: You can only view your own assets via /my-assets. Your Role: {current_user.role}, Position: {current_user.position}"
+            detail=f"Unauthorized: You can only view your own assets via /my-assets."
         )
     
     # Enforce department scoping for managers
     department = None
     assigned_to = None
     if current_user.role not in privileged_roles and current_user.position == "MANAGER":
-        department = current_user.department or current_user.domain
-        assigned_to = current_user.full_name # Unified scoping: Dept OR Mine
+        department = (current_user.dept_obj.name if current_user.dept_obj else current_user.department) or current_user.domain
+        assigned_to = current_user.full_name
         
+    skip = (page - 1) * size
+    
     try:
         if department:
-            return await asset_service.get_all_assets_scoped(db, department=department, assigned_to=assigned_to)
-        return await asset_service.get_all_assets(db)
+            data, total = await asset_service.get_all_assets_scoped(db, department=department, assigned_to=assigned_to, skip=skip, limit=size)
+        else:
+            data, total = await asset_service.get_all_assets(db, skip=skip, limit=size)
+            
+        return PaginatedResponse(
+            total=total,
+            page=page,
+            size=size,
+            data=data
+        )
     except Exception as e:
         import traceback
         traceback.print_exc()
-        from fastapi.responses import JSONResponse
-        return JSONResponse(
-            status_code=500,
-            content={"detail": f"Internal server error: {str(e)}"},
-            headers={"Access-Control-Allow-Origin": "http://localhost:3000"}
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/my-assets", response_model=List[AssetResponse])
@@ -91,41 +99,43 @@ async def get_assets_for_renewal(
     Get assets with upcoming expiry dates for renewal calendar.
     expiry_type can be: warranty, contract, license, or None for all.
     """
-    from datetime import date as dt_date, timedelta
+    from sqlalchemy import or_, and_
     from ..models.models import Asset
     
     today = dt_date.today()
     cutoff_date = today + timedelta(days=days_ahead)
     
-    result = await db.execute(select(Asset))
+    filters = []
+    if not expiry_type or expiry_type == "warranty":
+        filters.append(and_(Asset.warranty_expiry >= today, Asset.warranty_expiry <= cutoff_date))
+    if not expiry_type or expiry_type == "contract":
+        filters.append(and_(Asset.contract_expiry >= today, Asset.contract_expiry <= cutoff_date))
+    if not expiry_type or expiry_type == "license":
+        filters.append(and_(Asset.license_expiry >= today, Asset.license_expiry <= cutoff_date))
+        
+    query = select(Asset).filter(or_(*filters))
+    result = await db.execute(query)
     all_assets = result.scalars().all()
     
     renewals = []
     for asset in all_assets:
         expiry_dates = []
-        
-        if (not expiry_type or expiry_type == "warranty") and asset.warranty_expiry:
-            if today <= asset.warranty_expiry <= cutoff_date:
-                expiry_dates.append({"type": "warranty", "date": asset.warranty_expiry.isoformat()})
-        
-        if (not expiry_type or expiry_type == "contract") and asset.contract_expiry:
-            if today <= asset.contract_expiry <= cutoff_date:
-                expiry_dates.append({"type": "contract", "date": asset.contract_expiry.isoformat()})
-        
-        if (not expiry_type or expiry_type == "license") and asset.license_expiry:
-            if today <= asset.license_expiry <= cutoff_date:
-                expiry_dates.append({"type": "license", "date": asset.license_expiry.isoformat()})
-        
-        if expiry_dates:
-            renewals.append({
-                "asset_id": str(asset.id),
-                "asset_name": asset.name,
-                "asset_type": asset.type,
-                "serial_number": asset.serial_number,
-                "status": asset.status,
-                "cost": asset.cost,
-                "expiry_dates": expiry_dates
-            })
+        if asset.warranty_expiry and today <= asset.warranty_expiry <= cutoff_date:
+            expiry_dates.append({"type": "warranty", "date": asset.warranty_expiry.isoformat()})
+        if asset.contract_expiry and today <= asset.contract_expiry <= cutoff_date:
+            expiry_dates.append({"type": "contract", "date": asset.contract_expiry.isoformat()})
+        if asset.license_expiry and today <= asset.license_expiry <= cutoff_date:
+            expiry_dates.append({"type": "license", "date": asset.license_expiry.isoformat()})
+            
+        renewals.append({
+            "asset_id": str(asset.id),
+            "asset_name": asset.name,
+            "asset_type": asset.type,
+            "serial_number": asset.serial_number,
+            "status": asset.status,
+            "cost": asset.cost,
+            "expiry_dates": expiry_dates
+        })
     
     renewals.sort(key=lambda x: min(e["date"] for e in x["expiry_dates"]))
     return {"total_count": len(renewals), "renewals": renewals}

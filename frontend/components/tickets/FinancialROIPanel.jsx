@@ -40,22 +40,26 @@ const FinancialROIPanel = ({ stats, deflection, horizon = 30 }) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {cards.map((card, i) => {
                 const Icon = card.icon;
+                const tokenColor = card.color === 'blue' ? 'app-primary' : card.color === 'rose' ? 'app-rose' : 'app-secondary';
                 return (
-                    <div key={card.title} className="glass glass-hover p-6 relative overflow-hidden group h-full">
-                        <div className={`absolute -right-4 -bottom-4 w-24 h-24 bg-${card.color}-500/5 blur-3xl rounded-full group-hover:bg-${card.color}-500/15 transition-all duration-700`} />
+                    <div key={card.title} className="bg-app-surface ring-1 ring-black/5 dark:ring-white/5 rounded-2xl p-8 relative overflow-hidden group h-full hover:bg-app-surface/60 transition-all duration-500 shadow-sm">
+                        <div className="kinetic-scan-line" />
+                        <div className={`absolute -right-8 -bottom-8 w-32 h-32 blur-3xl opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none`} 
+                             style={{ backgroundColor: `var(--color-kinetic-${card.color === 'blue' ? 'primary' : card.color === 'rose' ? 'rose' : 'secondary'})` }} />
                         
-                        <div className="flex items-center gap-4 relative z-10">
-                            <div className={`p-3 rounded-xl bg-${card.color}-500/10 text-${card.color}-500 border border-${card.color}-500/20 shadow-inner group-hover:scale-110 transition-transform`}>
-                                <Icon size={20} />
+                        <div className="flex items-center gap-6 relative z-10">
+                            <div className="p-4 rounded-full transition-all duration-500 group-hover:scale-110 flex items-center justify-center"
+                                 style={{ backgroundColor: `rgba(var(--color-kinetic-${card.color === 'blue' ? 'primary-rgb' : card.color === 'rose' ? 'rose-rgb' : 'secondary-rgb'}), 0.1)` }}>
+                                <Icon size={24} style={{ color: `var(--color-kinetic-${card.color === 'blue' ? 'primary' : card.color === 'rose' ? 'rose' : 'secondary'})` }} />
                             </div>
                             <div>
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-app-text-muted opacity-60 mb-1">{card.title}</p>
-                                <h3 className="text-2xl font-['Outfit'] font-black tracking-tighter text-app-text group-hover:translate-x-1 transition-transform">{card.value}</h3>
+                                <p className="text-[10px] font-semibold uppercase tracking-widest text-app-text-muted mb-2">{card.title}</p>
+                                <h3 className="text-3xl font-bold tracking-tight text-app-text group-hover:translate-x-1 transition-transform leading-none">{card.value}</h3>
                             </div>
                         </div>
                         
-                        <p className="mt-4 text-[9px] font-black uppercase tracking-widest text-app-text-muted opacity-40 italic">
-                            {card.sub}
+                        <p className="mt-6 text-xs font-medium text-app-text-muted">
+                            {card.sub} &middot; Telemetry Sync
                         </p>
                     </div>
                 );

@@ -30,7 +30,7 @@ export default function CustodianDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="glass-card p-6 border border-app-border hover:shadow-lg transition-all group">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500 group-hover:scale-110 transition-transform">
+                        <div className="p-3 rounded-none bg-indigo-500/10 text-indigo-500 group-hover:scale-110 transition-transform">
                             <Box size={24} />
                         </div>
                         <div>
@@ -41,7 +41,7 @@ export default function CustodianDashboard() {
                 </div>
                 <div className="glass-card p-6 border border-app-border hover:shadow-lg transition-all group">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform">
+                        <div className="p-3 rounded-none bg-amber-500/10 text-amber-500 group-hover:scale-110 transition-transform">
                             <ClipboardCheck size={24} />
                         </div>
                         <div>
@@ -52,7 +52,7 @@ export default function CustodianDashboard() {
                 </div>
                 <div className="glass-card p-6 border border-app-border hover:shadow-lg transition-all group">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
+                        <div className="p-3 rounded-none bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
                             <Truck size={24} />
                         </div>
                         <div>
@@ -63,7 +63,7 @@ export default function CustodianDashboard() {
                 </div>
                 <div className="glass-card p-6 border border-app-border hover:shadow-lg transition-all group">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
+                        <div className="p-3 rounded-none bg-rose-500/10 text-rose-500 group-hover:scale-110 transition-transform">
                             <MapPin size={24} />
                         </div>
                         <div>
@@ -83,9 +83,9 @@ export default function CustodianDashboard() {
                     </h3>
                     <div className="space-y-4">
                         {deliveryQueue.map(order => (
-                            <div key={order.id} className="bg-app-surface-soft p-5 rounded-2xl border border-app-border flex items-center justify-between hover:shadow-md transition-all group">
+                            <div key={order.id} className="bg-app-surface-soft p-5 rounded-none border border-app-border flex items-center justify-between hover:shadow-md transition-all group">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-xs shadow-sm dark:shadow-inner">PO</div>
+                                    <div className="w-12 h-12 rounded-none bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 font-black text-xs shadow-sm dark:shadow-inner">PO</div>
                                     <div>
                                         <p className="text-app-text font-black text-sm uppercase tracking-tight">{order.vendor}</p>
                                         <p className="text-[10px] font-mono font-bold text-app-text-muted mt-0.5">{order.items} Units • REF: {order.id}</p>
@@ -124,10 +124,10 @@ export default function CustodianDashboard() {
                                         </td>
                                         <td className="p-3 font-mono text-[10px] font-black text-app-text-muted uppercase">{item.serial}</td>
                                         <td className="p-3">
-                                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg text-app-text-muted font-black text-[10px] uppercase tracking-widest">{item.location}</span>
+                                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-none text-app-text-muted font-black text-[10px] uppercase tracking-widest">{item.location}</span>
                                         </td>
                                         <td className="p-3 text-right">
-                                            <button className="bg-indigo-600 hover:bg-indigo-500 text-app-text text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+                                            <button className="bg-indigo-600 hover:bg-indigo-500 text-app-text text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-none shadow-lg shadow-indigo-500/20 transition-all">
                                                 Inspect
                                             </button>
                                         </td>

@@ -59,18 +59,23 @@ export default function Login() {
 
     // Departments aligned with roles: IT (System Admin, IT Management), Finance, Procurement, Asset Management (Asset & Inventory Manager), rest for End Users
     const DEPT_DOMAIN_MAP = {
-        'IT': ['Infrastructure', 'Security', 'Network', 'Support', 'Admin'],
-        'Finance': ['Accounting', 'Audit', 'Budget', 'Treasury'],
-        'Procurement': ['Sourcing', 'Vendor Management', 'Purchasing'],
-        'Asset Management': ['Inventory', 'Lifecycle', 'Facilities', 'Stock'],
-        'Engineering': ['Development', 'DATA_AI', 'Cloud', 'Cyber', 'DevOps', 'QA'],
-        'Operations': ['Logistics', 'Supply Chain', 'Facilities'],
-        'HR': ['Recruitment', 'Payroll', 'Benefits'],
-        'Sales': ['Inside Sales', 'Field Sales', 'Customer Success'],
-        'Marketing': ['Content', 'Growth', 'Brand'],
-        'Legal': ['Compliance', 'Contracts', 'IP'],
-        'Product': ['Management', 'Design', 'Research'],
-        'Cloud': ['Cloud Infrastructure', 'Managed Services']
+        'IT': ['Infrastructure', 'Network', 'System Admin', 'Hardware', 'Software'],
+        'Finance': ['Accounting', 'Audit', 'Budget', 'Treasury', 'Payroll'],
+        'Procurement': ['Sourcing', 'Vendor Management', 'Purchasing', 'Contracting'],
+        'Engineering': ['Software Development', 'DevOps', 'Quality Assurance', 'Research'],
+        'Operations': ['Logistics', 'Supply Chain', 'Facilities', 'Fleet Management'],
+        'HR': ['Recruitment', 'Benefits', 'Employee Relations', 'Training'],
+        'Sales': ['Inside Sales', 'Field Sales', 'Account Management'],
+        'Marketing': ['Content', 'Growth', 'Brand Strategy', 'Digital Marketing'],
+        'Legal': ['Compliance', 'Contracts', 'IP Management', 'Litigation'],
+        'Product': ['Management', 'Design', 'Research', 'Strategy'],
+        'Cloud': ['Cloud Architecture', 'Managed Services', 'Hybrid Cloud'],
+        'Architecture': ['System Design', 'Enterprise Standards', 'Governance'],
+        'Data & AI': ['Machine Learning', 'Data Engineering', 'Analytics', 'AI Research'],
+        'Security': ['Cyber Security', 'Physical Security', 'Compliance', 'Identity'],
+        'Executive': ['Strategy', 'Leadership', 'Board Relations'],
+        'Customer Success': ['Support', 'Retention', 'Onboarding'],
+        'Asset Management': ['Inventory', 'Lifecycle', 'Warehouse', 'Stock Control']
     };
 
     const DEPARTMENTS = Object.keys(DEPT_DOMAIN_MAP);
@@ -78,10 +83,8 @@ export default function Login() {
     // Role Slider Mapping → default department
     const ROLE_DEFAULT_DEPARTMENT = {
         'ADMIN': 'IT',
-        'IT_MANAGEMENT': 'IT',
-        'FINANCE': 'Finance',
-        'PROCUREMENT': 'Procurement',
-        'ASSET_MANAGER': 'Asset Management',
+        'MANAGER': 'Executive',
+        'SUPPORT': 'IT',
         'END_USER': 'Engineering'
     };
 
@@ -93,25 +96,16 @@ export default function Login() {
         password: '',
         confirmPassword: '',
         role: 'End User',
-        domain: 'Development', // First domain of default department
+        domain: 'Software Development', // First domain of default department
         department: 'Engineering', // Default; use IT/Finance/Procurement/Asset Management for corresponding roles
         location: 'New York HQ',
         phone: '',
-        isManager: false // NEW: Manager toggle
+        isManager: false,
+        support_id: '' // NEW: Support ID field for staff registration
     });
 
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
-
-    const toggleMode = () => {
-        if (isAnimating) return;
-        setIsAnimating(true);
-        // Animate the cord pull
-        setTimeout(() => {
-            setIsLoginMode(!isLoginMode);
-            setIsAnimating(false);
-        }, 300); // Wait for half animation
-    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -123,6 +117,8 @@ export default function Login() {
                 const domains = DEPT_DOMAIN_MAP[next.department];
                 next.domain = domains && domains[0] ? domains[0] : next.domain;
             }
+            // Auto-sync isManager based on role selection
+            next.isManager = value === 'Department Manager' || value === 'System Admin';
         }
         if (name === 'department') {
             const domains = DEPT_DOMAIN_MAP[value];
@@ -167,7 +163,8 @@ export default function Login() {
                     domain: formData.domain || null,
                     department: formData.department,
                     location: formData.location,
-                    position: formData.isManager ? 'MANAGER' : 'TEAM_MEMBER'
+                    position: (formData.role === 'Department Manager' || formData.role === 'System Admin') ? 'MANAGER' : 'TEAM_MEMBER',
+                    persona: formData.support_id // Store Support ID in persona field
                 };
 
                 try {
@@ -251,417 +248,406 @@ export default function Login() {
         }
     };
 
-    // Lamp Glow Text Color based on mode
-    const glowColor = isLoginMode ? 'text-emerald-400' : 'text-purple-400';
-    const glowBg = isLoginMode ? 'bg-emerald-500' : 'bg-purple-500';
-    const glowShadow = isLoginMode ? 'shadow-emerald-500/50' : 'shadow-purple-500/50';
+    // NEW: Tactical Redesign
+    const toggleMode = () => {
+        if (isAnimating) return;
+        setIsAnimating(true);
+        // Play scan "sound" or visual feedback
+        setTimeout(() => {
+            setIsLoginMode(!isLoginMode);
+            setIsAnimating(false);
+        }, 600); // Slightly longer for the biometric scan feel
+    };
+
+    const ScanningOverlay = () => (
+        <div className={`absolute inset-0 z-[100] pointer-events-none transition-opacity duration-300 ${isAnimating ? 'opacity-100' : 'opacity-0'}`}>
+            <div className="absolute inset-0 bg-primary/5 backdrop-blur-[2px]"></div>
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-primary shadow-[0_0_15px_var(--color-primary)] animate-scan-fast"></div>
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
+                <div className="text-[10px] font-mono text-primary tracking-[0.5em] uppercase animate-pulse">
+                    &gt; RECALIBRATING_INTERFACES...
+                </div>
+            </div>
+        </div>
+    );
+
 
     return (
-        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-6 overflow-hidden relative">
+        <div className="min-h-screen bg-app-bg text-app-text font-['Space_Grotesk'] flex items-center justify-center p-4 md:p-8 overflow-hidden relative selection:bg-primary/30 transition-colors duration-500">
+            
+            {/* Background Telemetry Layers */}
+            <div className="absolute inset-0 pointer-events-none opacity-20 dark:opacity-20">
+                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--color-primary)_0%,_transparent_70%)] opacity-10 dark:opacity-40"></div>
+                <div className="absolute top-10 left-10 text-[10px] space-y-1 text-primary/50 uppercase tracking-tight font-mono">
+                    <div>LAT: 40.7128° N</div>
+                    <div>LNG: 74.0060° W</div>
+                    <div>ALT: 42.0m</div>
+                </div>
+                <div className="absolute top-10 right-10 text-[10px] text-success/50 uppercase tracking-tight font-mono text-right">
+                    <div>SYSTEM: AEGIS-V4</div>
+                    <div>ENCRYPTION: AES-256-GCM</div>
+                    <div>STATUS: OPERATIONAL</div>
+                </div>
+                <div className="absolute bottom-10 left-10 w-32 h-[1px] bg-gradient-to-r from-primary/50 to-transparent"></div>
+                <div className="absolute bottom-10 right-10 flex gap-2">
+                    <div className="w-1 h-1 bg-success animate-pulse"></div>
+                    <div className="text-[10px] text-success/50 font-mono uppercase tracking-widest">{new Date().toISOString().split('T')[1].slice(0, 8)} UTC</div>
+                </div>
+            </div>
 
-            {/* Background Effects */}
-            <div className={`absolute top-0 left-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 opacity-40 ${isLoginMode ? 'bg-emerald-900/20' : 'bg-purple-900/20'}`}></div>
-            <div className={`absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-[128px] transition-colors duration-1000 opacity-30 ${isLoginMode ? 'bg-emerald-900/10' : 'bg-purple-900/10'}`}></div>
+            {/* SCANNING LINE */}
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-primary/20 shadow-[0_0_15px_rgba(var(--color-primary),0.3)] animate-scan z-50 pointer-events-none"></div>
 
-            <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-12 items-center z-10">
-
-                {/* LAMP SECTION (LEFT) */}
-                <div className="relative h-[500px] flex items-center justify-center hidden md:flex">
-                    {/* The Light Beam */}
-                    <div className={`absolute top-[180px] left-1/2 -translate-x-1/2 w-[280px] h-[400px] bg-gradient-to-b ${isLoginMode ? 'from-emerald-500/10 via-emerald-500/5' : 'from-purple-500/10 via-purple-500/5'} to-transparent blur-md transition-colors duration-700 pointer-events-none transform origin-top skew-x-[-12deg]`}></div>
-
-                    {/* Cute Lamp SVG */}
-                    <div className="relative z-20 transform -translate-y-12">
-                        {/* SVG Lamp */}
-                        <svg width="240" height="320" viewBox="0 0 200 300" className="drop-shadow-2xl">
-                            {/* Stand */}
-                            <rect x="95" y="140" width="10" height="120" fill="#cbd5e1" rx="5" />
-                            {/* Base */}
-                            <ellipse cx="100" cy="260" rx="40" ry="10" fill="#94a3b8" />
-                            <ellipse cx="100" cy="258" rx="40" ry="10" fill="#e2e8f0" />
-
-                            {/* Shade */}
-                            <path d="M40 140 L 160 140 L 140 60 L 60 60 Z" fill={isLoginMode ? "#10b981" : "#a855f7"} className="transition-all duration-700 ease-in-out" />
-
-                            {/* Shade Inner Top (for 3D look) */}
-                            <ellipse cx="100" cy="60" rx="40" ry="8" fill={isLoginMode ? "#34d399" : "#c084fc"} className="transition-all duration-700" />
-
-                            {/* Face (Cute) */}
-                            <g transform="translate(100, 110)">
-                                <circle cx="-15" cy="-5" r="3" fill="#1e293b" className="animate-pulse" />
-                                <circle cx="15" cy="-5" r="3" fill="#1e293b" className="animate-pulse" />
-                                <path d="M-8 5 Q 0 12 8 5" stroke="#1e293b" strokeWidth="2" fill="none" strokeLinecap="round" />
-                                {isLoginMode ? (
-                                    <path d="M-12 8 Q0 2 12 8" fill="#fda4af" opacity="0.6" />
-                                ) : (
-                                    <circle cx="0" cy="5" r="4" fill="#fda4af" opacity="0" />
-                                )}
-                            </g>
-
-                            {/* Pull Cord */}
-                            <g onClick={toggleMode} className={`cursor-pointer group hover:scale-105 transition-transform ${isAnimating ? 'animate-cord-pull' : 'animate-cord-sway'}`} style={{ transformOrigin: '100px 140px' }}>
-                                <line x1="100" y1="140" x2="100" y2="190" stroke="#e2e8f0" strokeWidth="2" />
-                                <circle cx="100" cy="195" r="6" fill={isLoginMode ? "#10b981" : "#a855f7"} className="transition-colors duration-700 shadow-lg" stroke="white" strokeWidth="2" />
-                            </g>
-                        </svg>
+            <div className={`w-full max-w-5xl flex flex-col items-center z-10 transition-all duration-700 ${isAnimating ? 'opacity-0 scale-95 blur-sm' : 'opacity-100 scale-100 blur-0'}`}>
+                
+                {/* BRAND HEADER */}
+                <div className="mb-12 text-center relative group">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                        <div className="w-10 h-10 border-2 border-primary flex items-center justify-center relative overflow-hidden">
+                            <Disc className="text-primary animate-spin-slow" size={24} />
+                            <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-app-text"></div>
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] uppercase text-primary">
+                            Aegis Command
+                        </h1>
                     </div>
+                    <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
+                    <p className="mt-3 text-app-text-muted text-xs tracking-widest uppercase font-medium">Strategic Asset Intelligence & Control</p>
                 </div>
 
-                {/* FORM SECTION (RIGHT) */}
-                <div className="relative">
-                    <div className={`glass-panel p-8 md:p-10 border transition-all duration-500 ${isLoginMode ? 'border-emerald-500/20 shadow-[0_0_50px_-12px_rgba(16,185,129,0.2)]' : 'border-purple-500/20 shadow-[0_0_50px_-12px_rgba(168,85,247,0.2)]'}`}>
+                {/* MAIN AUTH CONTAINER */}
+                <div className={`w-full max-w-2xl glass-panel !rounded-none !bg-app-surface/80 backdrop-blur-xl border border-app-border/30 shadow-2xl relative overflow-hidden ${isAnimating ? 'animate-glitch' : ''}`}>
+                    
+                    {/* TRANSITION OVERLAY */}
+                    <ScanningOverlay />
+                    {/* TABS */}
+                    <div className="flex border-b border-app-border/30">
+                        <button 
+                            onClick={() => !isLoginMode && toggleMode()}
+                            className={`flex-1 py-5 text-sm font-bold tracking-widest uppercase transition-all relative overflow-hidden ${isLoginMode ? 'text-primary bg-app-surface-soft' : 'text-app-text-muted hover:text-app-text'}`}
+                        >
+                            Command Login
+                            {isLoginMode && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary shadow-[0_0_10px_var(--color-primary)]"></div>}
+                        </button>
+                        <button 
+                            onClick={() => isLoginMode && toggleMode()}
+                            className={`flex-1 py-5 text-sm font-bold tracking-widest uppercase transition-all relative overflow-hidden ${!isLoginMode ? 'text-success bg-app-surface-soft' : 'text-app-text-muted hover:text-app-text'}`}
+                        >
+                            Agent Registration
+                            {!isLoginMode && <div className="absolute bottom-0 left-0 w-full h-1 bg-success shadow-[0_0_10px_var(--color-success)]"></div>}
+                        </button>
+                    </div>
 
-                        {/* Header */}
-                        <div className="text-center mb-8">
-                            <h1 className={`text-xl font-bold mb-2 transition-colors duration-500 ${glowColor}`}>
-                                {isLoginMode ? 'Welcome Back' : 'Create Account'}
-                            </h1>
-                            <p className="text-app-text-muted text-app-text-muted dark:text-sm">
-                                {isLoginMode ? 'Enter your details to access your workspace' : 'Join the team and start managing assets'}
-                            </p>
+                    <div className="p-8 md:p-12">
+                        {/* Status Label */}
+                        <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-left-4 duration-500">
+                            <div className={`w-2 h-2 rounded-full ${isLoginMode ? 'bg-primary shadow-[0_0_8px_var(--color-primary)]' : 'bg-success shadow-[0_0_8px_var(--color-success)]'}`}></div>
+                            <span className="text-[10px] font-bold tracking-widest uppercase text-app-text-muted">
+                                {isLoginMode ? 'Sector: Authentication Gateway' : 'Sector: Agent Onboarding'}
+                            </span>
                         </div>
 
-                        {/* Form Inputs */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
-
-                            {/* Register Only Fields */}
-                            {!isLoginMode && (
-                                <div className="space-y-6 animate-in slide-in-from-left-4 fade-in duration-500">
-                                    {/* Section: Personal Identity */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
-                                            <h3 className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest text-app-text-muted">Personal Identity</h3>
+                        <form onSubmit={handleSubmit} className="space-y-8">
+                            {!isLoginMode ? (
+                                <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    {/* Personal Identity */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                                        <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-success/20"></div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-success uppercase tracking-widest">Full Name</label>
+                                            <div className="relative group">
+                                                <input
+                                                    type="text"
+                                                    name="name"
+                                                    value={formData.name}
+                                                    onChange={handleInputChange}
+                                                    placeholder="AGENT_IDENTIFIER"
+                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-success focus:ring-1 focus:ring-success/20 transition-all font-mono placeholder:text-app-text-muted/30"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">Full Name</label>
-                                                <div className="relative group">
-                                                    <User size={16} className="absolute left-3 top-3 text-app-text-muted group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
-                                                    <input
-                                                        type="text"
-                                                        name="name"
-                                                        value={formData.name}
-                                                        onChange={handleInputChange}
-                                                        placeholder="John Doe"
-                                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">Phone</label>
-                                                <div className="relative group">
-                                                    <Phone size={16} className="absolute left-3 top-3 text-app-text-muted group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
-                                                    <input
-                                                        type="tel"
-                                                        name="phone"
-                                                        value={formData.phone}
-                                                        onChange={handleInputChange}
-                                                        placeholder="+1 555-0000"
-                                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
-                                                    />
-                                                </div>
-                                            </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-success uppercase tracking-widest">Network / Phone</label>
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={formData.phone}
+                                                onChange={handleInputChange}
+                                                placeholder="+X 000-0000"
+                                                className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-success transition-all font-mono placeholder:text-app-text-muted/30"
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* Section: Organizational Context */}
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-1 h-3 bg-purple-500 rounded-full"></div>
-                                            <h3 className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest text-app-text-muted">Professional Scoping</h3>
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">Company</label>
-                                            <div className="relative group">
-                                                <Building2 size={16} className="absolute left-3 top-3 text-app-text-muted group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+                                    {/* Professional Scoping */}
+                                    <div className="space-y-6 relative">
+                                        <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-primary/20"></div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Operation / Company</label>
                                                 <input
                                                     type="text"
                                                     name="company"
                                                     value={formData.company}
                                                     onChange={handleInputChange}
-                                                    placeholder="Organization Name"
-                                                    className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    placeholder="ORG_NAME"
+                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono"
                                                 />
                                             </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Clearance Level</label>
+                                                <select
+                                                    name="role"
+                                                    value={formData.role}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer font-mono"
+                                                >
+                                                    {Array.from(new Set(ROLES.map(r => r.label))).map(label => {
+                                                        const role = ROLES.find(r => r.label === label);
+                                                        return <option key={role.slug} value={role.label}>{role.label}</option>;
+                                                    })}
+                                                </select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                 <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Command Position / Unit Level</label>
+                                                 <div className="flex gap-2 p-[2px] bg-app-surface-soft border border-app-border/40">
+                                                     <div className={`flex-1 py-2.5 text-center text-[10px] font-bold tracking-widest transition-all ${!formData.isManager ? 'bg-primary/20 text-primary border border-primary/30' : 'text-app-text-muted opacity-40'}`}>
+                                                         STAFF_UNIT
+                                                     </div>
+                                                     <div className={`flex-1 py-2.5 text-center text-[10px] font-bold tracking-widest transition-all ${formData.isManager ? 'bg-primary text-white dark:text-[#003138]' : 'text-app-text-muted opacity-40'}`}>
+                                                         COMMANDER
+                                                     </div>
+                                                 </div>
+                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">System Access Level</label>
-                                                <div className="relative group">
-                                                    <Briefcase size={16} className="absolute left-3 top-3 text-app-text-muted group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
-                                                    <select
-                                                        name="role"
-                                                        value={formData.role}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-10 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
-                                                    >
-                                                        {ROLES.map(role => (
-                                                            <option key={role.slug} value={role.label} className="bg-white dark:bg-slate-900 text-slate-900">{role.label}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-4 top-3 pointer-events-none text-app-text-muted">▼</div>
-                                                </div>
-                                                <p className="text-[9px] text-app-text-muted mt-1 italic pl-1 text-app-text-muted">Determines system permissions</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Department</label>
+                                                <select
+                                                    name="department"
+                                                    value={formData.department}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer font-mono"
+                                                >
+                                                    {DEPARTMENTS.map(dept => (
+                                                        <option key={dept} value={dept}>{dept}</option>
+                                                    ))}
+                                                </select>
                                             </div>
-
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">Position / Hierarchy</label>
-                                                <div className="flex gap-2">
-                                                    <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${!formData.isManager
-                                                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                                                        : 'border-app-border bg-white dark:bg-slate-900/50 text-app-text-muted hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft border-slate-200 bg-slate-100 text-app-text-muted hover:bg-slate-200'
-                                                        }`}>
-                                                        <input
-                                                            type="radio"
-                                                            name="isManager"
-                                                            checked={!formData.isManager}
-                                                            onChange={() => setFormData({ ...formData, isManager: false })}
-                                                            className="sr-only"
-                                                        />
-                                                        <span className="font-bold text-[10px]">STAFF</span>
-                                                    </label>
-                                                    <label className={`flex-1 flex items-center justify-center gap-1.5 p-2 rounded-xl border cursor-pointer transition-all ${formData.isManager
-                                                        ? 'border-purple-500/40 bg-purple-500/15 text-purple-400'
-                                                        : 'border-app-border bg-white dark:bg-slate-900/50 text-app-text-muted hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft border-slate-200 bg-slate-100 text-app-text-muted hover:bg-slate-200'
-                                                        }`}>
-                                                        <input
-                                                            type="radio"
-                                                            name="isManager"
-                                                            checked={formData.isManager}
-                                                            onChange={() => setFormData({ ...formData, isManager: true })}
-                                                            className="sr-only"
-                                                        />
-                                                        <span className="font-bold text-[10px]">MGR</span>
-                                                    </label>
-                                                </div>
-                                                <p className="text-[9px] text-app-text-muted mt-1 italic pl-1 text-app-text-muted">Determines data scoping</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">Department</label>
-                                                <div className="relative group">
-                                                    <Building2 size={16} className="absolute left-3 top-3 text-app-text-muted group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
-                                                    <select
-                                                        name="department"
-                                                        value={formData.department}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-10 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
-                                                    >
-                                                        {DEPARTMENTS.map(dept => (
-                                                            <option key={dept} value={dept} className="bg-white dark:bg-slate-900 text-slate-900">{dept}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-4 top-3 pointer-events-none text-app-text-muted">▼</div>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-1">
-                                                <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">Domain / Team</label>
-                                                <div className="relative group">
-                                                    <Disc size={16} className="absolute left-3 top-3 text-app-text-muted group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
-                                                    <select
-                                                        name="domain"
-                                                        value={formData.domain}
-                                                        onChange={handleInputChange}
-                                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-10 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer"
-                                                    >
-                                                        {(DEPT_DOMAIN_MAP[formData.department] || []).map(domain => (
-                                                            <option key={domain} value={domain} className="bg-white dark:bg-slate-900 text-slate-900">{domain}</option>
-                                                        ))}
-                                                    </select>
-                                                    <div className="absolute right-4 top-3 pointer-events-none text-app-text-muted">▼</div>
-                                                </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Task Domain</label>
+                                                <select
+                                                    name="domain"
+                                                    value={formData.domain}
+                                                    onChange={handleInputChange}
+                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer font-mono"
+                                                >
+                                                    {(DEPT_DOMAIN_MAP[formData.department] || []).map(domain => (
+                                                        <option key={domain} value={domain}>{domain}</option>
+                                                    ))}
+                                                </select>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-semibold text-app-text-muted uppercase ml-1 text-app-text-muted">Physical Location</label>
-                                            <div className="relative group">
-                                                <MapPin size={16} className="absolute left-3 top-3 text-app-text-muted group-focus-within:text-purple-400 group-focus-within:text-purple-600 transition-colors" />
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Physical Sector / Location</label>
+                                            <input
+                                                type="text"
+                                                name="location"
+                                                value={formData.location}
+                                                onChange={handleInputChange}
+                                                placeholder="COMMAND_POST_LOC"
+                                                className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono"
+                                            />
+                                        </div>
+
+                                        {/* Support ID for Staff Roles */}
+                                        {ROLES.find(r => r.label === formData.role)?.slug === 'SUPPORT' && (
+                                            <div className="space-y-2 animate-in zoom-in-95 duration-300">
+                                                <label className="text-[10px] font-bold text-warning uppercase tracking-widest">Support Protocol ID</label>
                                                 <input
                                                     type="text"
-                                                    name="location"
-                                                    value={formData.location}
+                                                    name="support_id"
+                                                    value={formData.support_id}
                                                     onChange={handleInputChange}
-                                                    placeholder="Office/Site Location"
-                                                    className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                                                    placeholder="AEGIS-STF-XXXX"
+                                                    className="w-full bg-app-surface-soft border border-warning/30 rounded-none py-3 px-4 text-sm text-warning focus:outline-none focus:border-warning transition-all font-mono placeholder:text-warning/20"
                                                 />
                                             </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            {/* Credentials Section (Always visible) */}
+                            <div className="space-y-6 relative">
+                                <div className={`absolute -left-4 top-0 bottom-0 w-[2px] ${isLoginMode ? 'bg-primary/20' : 'bg-indigo-500/20'}`}></div>
+                                <div className="space-y-2">
+                                    <label className={`text-[10px] font-bold uppercase tracking-widest ${isLoginMode ? 'text-primary' : 'text-indigo-500'}`}>Email Address</label>
+                                    <div className="relative">
+                                        <Mail size={16} className={`absolute left-4 top-3.5 ${isLoginMode ? 'text-primary' : 'text-indigo-500'} opacity-40`} />
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleInputChange}
+                                            placeholder="USER@AEGIS.CMD"
+                                            className={`w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 pl-12 pr-4 text-sm focus:outline-none transition-all font-mono ${isLoginMode ? 'focus:border-primary' : 'focus:border-indigo-500'}`}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className={`text-[10px] font-bold uppercase tracking-widest ${isLoginMode ? 'text-primary' : 'text-indigo-500'}`}>Secure Credential</label>
+                                        <div className="relative">
+                                            <Lock size={16} className={`absolute left-4 top-3.5 ${isLoginMode ? 'text-primary' : 'text-indigo-500'} opacity-40`} />
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                placeholder="••••••••"
+                                                className={`w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 pl-12 pr-12 text-sm focus:outline-none transition-all font-mono ${isLoginMode ? 'focus:border-primary' : 'focus:border-indigo-500'}`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-4 top-3.5 text-app-text-muted/50 hover:text-app-text transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                            )}
 
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-app-text-muted uppercase text-app-text-muted">Email Address</label>
-                                <div className="relative">
-                                    <Mail size={16} className="absolute left-3 top-3 text-app-text-muted" />
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                        placeholder="name@company.com"
-                                        className={`w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
-                                    />
+                                    {!isLoginMode && (
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Verify Secure Credential</label>
+                                            <div className="relative">
+                                                <Check size={16} className="absolute left-4 top-3.5 text-indigo-500 opacity-40" />
+                                                <input
+                                                    type={showConfirmPassword ? "text" : "password"}
+                                                    name="confirmPassword"
+                                                    value={formData.confirmPassword}
+                                                    onChange={handleInputChange}
+                                                    placeholder="••••••••"
+                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 pl-12 pr-12 text-sm focus:outline-none focus:border-indigo-500 transition-all font-mono"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                    className="absolute right-4 top-3.5 text-app-text-muted/50 hover:text-app-text transition-colors"
+                                                >
+                                                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-
-                            <div className="space-y-1">
-                                <label className="text-xs font-semibold text-app-text-muted uppercase text-app-text-muted">Password</label>
-                                <div className="relative">
-                                    <Lock size={16} className="absolute left-3 top-3 text-app-text-muted" />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleInputChange}
-                                        placeholder="••••••••"
-                                        className={`w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-10 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none transition-colors ${isLoginMode ? 'focus:border-emerald-500' : 'focus:border-purple-500'}`}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-2.5 text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
-                                    >
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {!isLoginMode && ( // Confirm Password
-                                <div className="space-y-1 animate-in slide-in-from-left-4 fade-in duration-300">
-                                    <label className="text-xs font-semibold text-app-text-muted uppercase text-app-text-muted">Confirm Password</label>
-                                    <div className="relative">
-                                        <Check size={16} className="absolute left-3 top-3 text-app-text-muted" />
-                                        <input
-                                            type={showConfirmPassword ? "text" : "password"}
-                                            name="confirmPassword"
-                                            value={formData.confirmPassword}
-                                            onChange={handleInputChange}
-                                            placeholder="••••••••"
-                                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 pl-10 pr-10 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-purple-500 transition-colors"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute right-3 top-2.5 text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
-                                        >
-                                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
 
                             {error && (
-                                <p className="text-rose-400 text-xs mt-2 text-center animate-pulse">{error}</p>
+                                <div className="p-3 bg-danger/10 border-l-2 border-danger text-danger text-[10px] uppercase font-bold tracking-widest animate-shake">
+                                    ERROR: {error}
+                                </div>
                             )}
 
                             {successMsg && (
-                                <p className="text-emerald-400 text-xs mt-2 text-center animate-bounce">{successMsg}</p>
+                                <div className="p-3 bg-success/10 border-l-2 border-success text-success text-[10px] uppercase font-bold tracking-widest animate-pulse">
+                                    SYSTEM: {successMsg}
+                                </div>
                             )}
 
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className={`w-full py-3 rounded-xl font-bold text-app-text shadow-lg transition-all transform active:scale-95 hover:brightness-110 flex justify-center items-center gap-2 ${glowBg} ${glowShadow} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                {isLoading ? 'Processing...' : (isLoginMode ? 'Login' : 'Create Account')} <ArrowRight size={18} />
-                            </button>
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className={`w-full py-4 rounded-none font-bold text-sm tracking-[0.3em] uppercase transition-all transform active:scale-[0.98] relative overflow-hidden group ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} ${isLoginMode ? 'bg-primary text-white dark:text-[#122f5f] hover:bg-app-text hover:text-app-bg shadow-[0_0_20px_var(--color-primary)/30]' : 'bg-success text-white dark:text-[#003824] hover:bg-app-text hover:text-app-bg shadow-[0_0_20px_var(--color-success)/30]'}`}
+                                >
+                                    <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                                    {isLoading ? 'Processing Signal...' : (isLoginMode ? 'Initiate Sequence' : 'Enlist Agent')}
+                                    {!isLoading && <ArrowRight size={18} className="inline ml-2 transition-transform group-hover:translate-x-1" />}
+                                </button>
+                            </div>
                         </form>
 
                         {/* SSO Section */}
                         {isLoginMode && (
-                            <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+                            <div className="mt-12 space-y-6">
                                 <div className="relative flex items-center">
-                                    <div className="flex-grow border-t border-app-border"></div>
-                                    <span className="flex-shrink mx-4 text-xs font-semibold text-app-text-muted uppercase text-app-text-muted">Or continue with SSO</span>
-                                    <div className="flex-grow border-t border-app-border"></div>
+                                    <div className="flex-grow border-t border-app-border/40"></div>
+                                    <span className="flex-shrink mx-4 text-[10px] font-bold text-app-text-muted uppercase tracking-[0.2em]">External Access Gateways</span>
+                                    <div className="flex-grow border-t border-app-border/40"></div>
                                 </div>
-                                <div className="grid grid-cols-3 gap-3">
-                                    <button
-                                        onClick={() => handleSSOLogin('google')}
-                                        className="flex items-center justify-center p-2.5 rounded-xl border border-app-border bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft border-slate-200 bg-white hover:bg-slate-100 transition-all group"
-                                    >
-                                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Google" />
+                                <div className="grid grid-cols-3 gap-4">
+                                    <button onClick={() => handleSSOLogin('google')} className="flex items-center justify-center py-3 border border-app-border/40 bg-app-surface-soft hover:bg-app-surface hover:border-primary/50 transition-all grayscale opacity-50 hover:grayscale-0 hover:opacity-100">
+                                        <img src="https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png" className="w-5 h-5" alt="Google" />
                                     </button>
-                                    <button
-                                        onClick={() => handleSSOLogin('azure')}
-                                        className="flex items-center justify-center p-2.5 rounded-xl border border-app-border bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft border-slate-200 bg-white hover:bg-slate-100 transition-all group"
-                                    >
-                                        <img src="https://authjs.dev/img/providers/azure.svg" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Azure" />
+                                    <button onClick={() => handleSSOLogin('azure')} className="flex items-center justify-center py-3 border border-app-border/40 bg-app-surface-soft hover:bg-app-surface hover:border-primary/50 transition-all grayscale opacity-50 hover:grayscale-0 hover:opacity-100">
+                                        <img src="https://authjs.dev/img/providers/azure.svg" className="w-5 h-5" alt="Azure" />
                                     </button>
-                                    <button
-                                        onClick={() => handleSSOLogin('okta')}
-                                        className="flex items-center justify-center p-2.5 rounded-xl border border-app-border bg-white dark:bg-slate-900/50 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft border-slate-200 bg-white hover:bg-slate-100 transition-all group"
-                                    >
-                                        <img src="https://authjs.dev/img/providers/okta.svg" className="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" alt="Okta" />
+                                    <button onClick={() => handleSSOLogin('okta')} className="flex items-center justify-center py-3 border border-app-border/40 bg-app-surface-soft hover:bg-app-surface hover:border-primary/50 transition-all grayscale opacity-50 hover:grayscale-0 hover:opacity-100">
+                                        <img src="https://authjs.dev/img/providers/okta.svg" className="w-5 h-5" alt="Okta" />
                                     </button>
-
+                                </div>
+                                <div className="text-center pt-4">
+                                    <Link href="/forgot-password">
+                                        <span className="text-[10px] font-bold text-app-text-muted hover:text-primary uppercase tracking-widest cursor-pointer transition-colors border-b border-transparent hover:border-primary">LOST_PROTOCOL? / PWD_RECOVERY</span>
+                                    </Link>
                                 </div>
                             </div>
                         )}
-
-                        {isLoginMode && (
-                            <div className="mt-4 text-center">
-                                <Link href="/forgot-password" title="Recover your password">
-                                    <span className="text-xs text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">Forgot Password?</span>
-                                </Link>
-                            </div>
-                        )}
-
-                        <div className="mt-6 pt-6 border-t border-app-border text-center md:hidden">
-                            <p className="text-sm text-app-text-muted text-app-text-muted mb-2">
-                                {isLoginMode ? "Don't have an account?" : "Already have an account?"}
-                            </p>
-                            <button
-                                onClick={toggleMode}
-                                className={`font-semibold ${glowColor}`}
-                            >
-                                {isLoginMode ? 'Register Now' : 'Login Here'}
-                            </button>
-                        </div>
                     </div>
 
-                    {/* Instructional Arrow purely visual */}
-                    <div className="absolute -left-32 top-1/2 hidden md:block opacity-60 pointer-events-none">
-                        <div className="flex flex-col items-center gap-2">
-                            <span className="text-app-text-muted text-xs font-handwriting rotate-[-12deg]">Pull to switch!</span>
-                            <svg width="60" height="40" viewBox="0 0 60 40">
-                                <path d="M10 10 Q 30 5 50 20" stroke="#64748b" strokeWidth="2" fill="none" markerEnd="url(#arrowhead)" strokeDasharray="4 2" />
-                                <defs>
-                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                                        <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
-                                    </marker>
-                                </defs>
-                            </svg>
-                        </div>
+                    {/* DECORATIVE CORNER ACCENTS */}
+                    <div className="absolute top-0 right-0 w-8 h-8 pointer-events-none">
+                        <div className="absolute top-2 right-2 w-4 h-[1px] bg-app-text/20"></div>
+                        <div className="absolute top-2 right-2 w-[1px] h-4 bg-app-text/20"></div>
                     </div>
                 </div>
-            </div >
+            </div>
 
             <style jsx>{`
-                @keyframes cord-sway {
-                    0%, 100% { transform: rotate(-2deg); }
-                    50% { transform: rotate(2deg); }
+                @keyframes scan {
+                    0% { transform: translateY(-100%); opacity: 0; }
+                    10% { opacity: 1; }
+                    90% { opacity: 1; }
+                    100% { transform: translateY(100vh); opacity: 0; }
                 }
-                .animate-cord-sway {
-                    animation: cord-sway 3s ease-in-out infinite;
+                .animate-scan {
+                    animation: scan 4s linear infinite;
                 }
-                @keyframes cord-pull {
-                    0% { transform: translateY(0); }
-                    50% { transform: translateY(15px); }
-                    100% { transform: translateY(0); }
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-4px); }
+                    75% { transform: translateX(4px); }
                 }
-                .animate-cord-pull {
-                    animation: cord-pull 0.3s ease-in-out;
+                .animate-shake {
+                    animation: shake 0.2s ease-in-out 2;
+                }
+                @keyframes scan-fast {
+                    0% { transform: translateY(-100%); opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { transform: translateY(600px); opacity: 0; }
+                }
+                .animate-scan-fast {
+                    animation: scan-fast 0.6s ease-in-out infinite;
+                }
+                @keyframes glitch {
+                    0% { opacity: 0.9; filter: contrast(1.1) brightness(1.2); }
+                    50% { opacity: 1; filter: contrast(1) brightness(1); }
+                    100% { opacity: 0.9; filter: contrast(1.1) brightness(1.2); }
+                }
+                .animate-glitch {
+                    animation: glitch 0.1s linear infinite;
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
                 }
             `}</style>
-        </div >
+        </div>
     );
 }
 

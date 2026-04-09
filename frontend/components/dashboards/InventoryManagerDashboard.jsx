@@ -78,7 +78,7 @@ export default function InventoryManagerDashboard() {
                             <p className="text-app-text-muted text-[10px] uppercase font-black tracking-widest">Total SKUs</p>
                             <h3 className="text-xl font-black text-app-text mt-1">{totalSKUs}</h3>
                         </div>
-                        <div className="p-3 bg-blue-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                        <div className="p-3 bg-blue-500/10 rounded-none group-hover:scale-110 transition-transform">
                             <Archive size={20} className="text-blue-500" />
                         </div>
                     </div>
@@ -89,7 +89,7 @@ export default function InventoryManagerDashboard() {
                             <p className="text-app-text-muted text-[10px] uppercase font-black tracking-widest">Critical Shortages</p>
                             <h3 className="text-xl font-black text-rose-500 mt-1">{criticalShortages}</h3>
                         </div>
-                        <div className="p-3 bg-rose-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                        <div className="p-3 bg-rose-500/10 rounded-none group-hover:scale-110 transition-transform">
                             <AlertOctagon size={20} className="text-rose-500" />
                         </div>
                     </div>
@@ -100,7 +100,7 @@ export default function InventoryManagerDashboard() {
                             <p className="text-app-text-muted text-[10px] uppercase font-black tracking-widest">To Reorder</p>
                             <h3 className="text-xl font-black text-amber-500 mt-1">{requests.filter(r => r.status === 'PROCUREMENT_REQUIRED').length}</h3>
                         </div>
-                        <div className="p-3 bg-amber-500/10 rounded-xl group-hover:scale-110 transition-transform">
+                        <div className="p-3 bg-amber-500/10 rounded-none group-hover:scale-110 transition-transform">
                             <TrendingDown size={20} className="text-amber-500" />
                         </div>
                     </div>
@@ -118,7 +118,7 @@ export default function InventoryManagerDashboard() {
                 </div>
 
                 {awaitingStockCheck.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-app-border shadow-sm dark:shadow-inner">
+                    <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/40 rounded-none border border-dashed border-app-border shadow-sm dark:shadow-inner">
                         <p className="text-app-text font-black text-lg">Inventory Clear</p>
                         <p className="text-sm text-app-text-muted mt-1 italic">IT-approved requests will be routed here for inventory verification.</p>
                     </div>
@@ -154,7 +154,7 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedRequest(req)}
-                                                    className="bg-app-surface-soft hover:bg-slate-100 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text p-2 rounded-xl transition-all border border-app-border flex items-center justify-center shadow-sm"
+                                                    className="bg-app-surface-soft hover:bg-slate-100 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text p-2 rounded-none transition-all border border-app-border flex items-center justify-center shadow-sm"
                                                     title="View Details"
                                                 >
                                                     <Eye size={16} />
@@ -164,13 +164,13 @@ export default function InventoryManagerDashboard() {
                                                         const assetId = prompt(`Enter available asset ID for ${req.assetType}:`, "AST-" + Math.floor(Math.random() * 1000));
                                                         if (assetId) await inventoryCheckAvailable(req.id, assetId, user.name || 'Inventory Manager');
                                                     }}
-                                                    className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
+                                                    className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-none shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
                                                 >
                                                     <CheckCircle size={14} /> Asset Available
                                                 </button>
                                                 <button
                                                     onClick={async () => await inventoryCheckNotAvailable(req.id, user.name || 'Inventory Manager')}
-                                                    className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-slate-900/20 transition-all"
+                                                    className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-none shadow-lg shadow-slate-900/20 transition-all"
                                                 >
                                                     Procure New
                                                 </button>
@@ -225,7 +225,7 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedRequest(req)}
-                                                    className="bg-app-surface-soft hover:bg-slate-100 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text p-2 rounded-xl transition-all border border-app-border flex items-center justify-center shadow-sm"
+                                                    className="bg-app-surface-soft hover:bg-slate-100 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text p-2 rounded-none transition-all border border-app-border flex items-center justify-center shadow-sm"
                                                     title="View Details"
                                                 >
                                                     <Eye size={16} />
@@ -234,7 +234,7 @@ export default function InventoryManagerDashboard() {
                                                 {req.status === 'QC_PENDING' ? (
                                                     <button
                                                         onClick={() => setSelectedForQC(req)}
-                                                        className="bg-indigo-600 hover:bg-indigo-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
+                                                        className="bg-indigo-600 hover:bg-indigo-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-none shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2"
                                                     >
                                                         <ShieldCheck size={14} /> Perform QC Check
                                                     </button>
@@ -244,7 +244,7 @@ export default function InventoryManagerDashboard() {
                                                             const assetId = prompt(`Enter asset ID to allocate for ${req.assetType}:`, req.assetId || ("AST-" + Math.floor(Math.random() * 1000)));
                                                             if (assetId) await inventoryAllocateDelivered(req.id, assetId, user.name || 'Inventory Manager');
                                                         }}
-                                                        className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
+                                                        className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-none shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
                                                     >
                                                         <CheckCircle size={14} /> Allocate Asset
                                                     </button>
@@ -306,7 +306,7 @@ export default function InventoryManagerDashboard() {
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     onClick={() => setSelectedExitRequest(req)}
-                                                    className="bg-app-surface-soft hover:bg-slate-100 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text p-2 rounded-xl transition-all border border-app-border flex items-center gap-1.5 shadow-sm"
+                                                    className="bg-app-surface-soft hover:bg-slate-100 dark:hover:bg-app-surface text-app-text-muted hover:text-slate-900 dark:hover:text-app-text p-2 rounded-none transition-all border border-app-border flex items-center gap-1.5 shadow-sm"
                                                     title="View Details"
                                                 >
                                                     <Eye size={16} />
@@ -318,7 +318,7 @@ export default function InventoryManagerDashboard() {
                                                             await processExitAssets(req.id);
                                                         }
                                                     }}
-                                                    className="bg-orange-600 hover:bg-orange-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-orange-500/20 transition-all"
+                                                    className="bg-orange-600 hover:bg-orange-500 text-app-text text-[10px] uppercase font-black tracking-widest px-4 py-2 rounded-none shadow-lg shadow-orange-500/20 transition-all"
                                                 >
                                                     Process Returns
                                                 </button>
@@ -354,7 +354,7 @@ export default function InventoryManagerDashboard() {
                     <h3 className="text-lg font-bold text-app-text mb-4">Stock Alerts</h3>
                     <div className="space-y-4">
                         {displayStockData.filter(i => i.stock < i.min).map(item => (
-                            <div key={item.name} className="p-4 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/10 dark:border-rose-500/20 rounded-xl">
+                            <div key={item.name} className="p-4 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/10 dark:border-rose-500/20 rounded-none">
                                 <div className="flex justify-between items-center mb-2">
                                     <span className="font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest text-[10px]">{item.name}</span>
                                     <span className="text-[10px] font-black uppercase tracking-widest bg-rose-500 text-app-text px-2 py-0.5 rounded-full shadow-sm">Critical</span>
@@ -366,12 +366,12 @@ export default function InventoryManagerDashboard() {
                                     <span>Stock: {item.stock}</span>
                                     <span>Min: {item.min}</span>
                                 </div>
-                                <button className="mt-3 w-full py-2 text-[10px] font-black uppercase tracking-widest text-app-text bg-rose-600 rounded-lg hover:bg-rose-500 transition-colors shadow-lg shadow-rose-500/20">
+                                <button className="mt-3 w-full py-2 text-[10px] font-black uppercase tracking-widest text-app-text bg-rose-600 rounded-none hover:bg-rose-500 transition-colors shadow-lg shadow-rose-500/20">
                                     Restock Now
                                 </button>
                             </div>
                         ))}
-                        <div className="p-4 bg-app-surface-soft rounded-xl text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-app-surface transition-colors border border-dashed border-app-border">
+                        <div className="p-4 bg-app-surface-soft rounded-none text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-app-surface transition-colors border border-dashed border-app-border">
                             <span className="text-[10px] font-black uppercase tracking-widest text-app-text-muted">+ View Reconciliation Report</span>
                         </div>
                     </div>
@@ -381,7 +381,7 @@ export default function InventoryManagerDashboard() {
             {/* EXIT REQUEST DETAILS MODAL */}
             {selectedExitRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                         <div className="p-6 border-b border-app-border flex justify-between items-center bg-slate-50 dark:bg-white/[0.02]">
                             <h3 className="text-xl font-black text-app-text flex items-center gap-3">
                                 <Eye className="text-orange-500" size={24} />
@@ -389,7 +389,7 @@ export default function InventoryManagerDashboard() {
                             </h3>
                             <button
                                 onClick={() => setSelectedExitRequest(null)}
-                                className="p-2 hover:bg-slate-200 dark:hover:bg-app-surface rounded-xl text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all shadow-sm"
+                                className="p-2 hover:bg-slate-200 dark:hover:bg-app-surface rounded-none text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all shadow-sm"
                             >
                                 <X size={20} />
                             </button>
@@ -402,7 +402,7 @@ export default function InventoryManagerDashboard() {
                                 </div>
                                 <div>
                                     <p className="text-[10px] uppercase tracking-widest font-black text-app-text-muted mb-1">Exit ID</p>
-                                    <p className="text-sm font-mono font-bold text-app-text-muted bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg w-fit">{selectedExitRequest.id}</p>
+                                    <p className="text-sm font-mono font-bold text-app-text-muted bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-none w-fit">{selectedExitRequest.id}</p>
                                 </div>
                             </div>
                             <div>
@@ -411,13 +411,13 @@ export default function InventoryManagerDashboard() {
                                     {selectedExitRequest.status}
                                 </span>
                             </div>
-                            <div className="p-5 bg-app-surface-soft rounded-2xl border border-app-border shadow-sm dark:shadow-inner">
+                            <div className="p-5 bg-app-surface-soft rounded-none border border-app-border shadow-sm dark:shadow-inner">
                                 <p className="text-[10px] uppercase tracking-widest font-black text-app-text-muted mb-2">Assets to Reclaim</p>
                                 <div className="text-app-text font-black text-sm mb-2 flex items-center gap-2">
                                     <Package size={16} className="text-indigo-500" />
                                     {selectedExitRequest.assets_snapshot?.length || 0} Physical Assets Linked
                                 </div>
-                                <div className="text-[10px] font-mono font-bold text-app-text-muted text-app-text-muted bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-app-border">
+                                <div className="text-[10px] font-mono font-bold text-app-text-muted text-app-text-muted bg-white dark:bg-slate-900/50 p-3 rounded-none border border-app-border">
                                     {selectedExitRequest.assets_snapshot?.map(a => a.asset_id).join(', ') || 'NONE DETECTED'}
                                 </div>
                             </div>
@@ -429,7 +429,7 @@ export default function InventoryManagerDashboard() {
             {/* REQUEST DETAILS MODAL */}
             {selectedRequest && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                         <div className="p-6 border-b border-app-border flex justify-between items-center bg-slate-50 dark:bg-white/[0.02]">
                             <div>
                                 <h3 className="text-2xl font-black text-app-text flex items-center gap-3">
@@ -440,7 +440,7 @@ export default function InventoryManagerDashboard() {
                             </div>
                             <button
                                 onClick={() => setSelectedRequest(null)}
-                                className="p-2 hover:bg-slate-200 dark:hover:bg-app-surface rounded-xl text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all shadow-sm"
+                                className="p-2 hover:bg-slate-200 dark:hover:bg-app-surface rounded-none text-app-text-muted hover:text-slate-900 dark:hover:text-app-text transition-all shadow-sm"
                             >
                                 <X size={24} />
                             </button>
@@ -473,7 +473,7 @@ export default function InventoryManagerDashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-app-border shadow-sm dark:shadow-inner">
+                            <div className="p-6 bg-slate-50 dark:bg-white/[0.03] rounded-none border border-app-border shadow-sm dark:shadow-inner">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-app-text-muted mb-2">Business Rationale</p>
                                 <p className="text-app-text-muted text-sm font-medium leading-relaxed italic border-l-4 border-slate-200 dark:border-slate-700 pl-4 py-1">
                                     {selectedRequest.justification || 'No formal justification documented.'}
@@ -481,7 +481,7 @@ export default function InventoryManagerDashboard() {
                             </div>
 
                             {selectedRequest.assetId && (
-                                <div className="p-5 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl border border-emerald-500/20 flex items-center justify-between shadow-lg shadow-emerald-500/5">
+                                <div className="p-5 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-none border border-emerald-500/20 flex items-center justify-between shadow-lg shadow-emerald-500/5">
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500/70 mb-1">Assigned Asset ID</p>
                                         <p className="text-emerald-700 dark:text-emerald-400 font-mono font-black text-lg">{selectedRequest.assetId}</p>
@@ -490,7 +490,7 @@ export default function InventoryManagerDashboard() {
                                 </div>
                             )}
                             {['PO_UPLOADED', 'PO_VALIDATED', 'FINANCE_APPROVED', 'DELIVERED'].includes(selectedRequest.procurementStage) && (
-                                <div className="p-5 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-2xl border border-indigo-500/20 flex items-center justify-between mt-4 shadow-lg shadow-indigo-500/5">
+                                <div className="p-5 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-none border border-indigo-500/20 flex items-center justify-between mt-4 shadow-lg shadow-indigo-500/5">
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-500/70 mb-1">Procurement Artifacts</p>
                                         <button
@@ -509,7 +509,7 @@ export default function InventoryManagerDashboard() {
                         <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-app-border flex justify-end">
                             <button
                                 onClick={() => setSelectedRequest(null)}
-                                className="px-8 py-3 bg-white dark:bg-slate-900 dark:bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-100 text-app-text dark:text-slate-900 text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-slate-900/20 dark:shadow-white/5"
+                                className="px-8 py-3 bg-white dark:bg-slate-900 dark:bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-100 text-app-text dark:text-slate-900 text-xs font-black uppercase tracking-widest rounded-none transition-all shadow-xl shadow-slate-900/20 dark:shadow-white/5"
                             >
                                 Dismiss Details
                             </button>
@@ -521,7 +521,7 @@ export default function InventoryManagerDashboard() {
             {/* QC PERFORMANCE MODAL */}
             {selectedForQC && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-lg overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
                         <div className="p-6 border-b border-app-border flex justify-between items-center bg-indigo-500/10">
                             <div>
                                 <h3 className="text-xl font-black text-app-text flex items-center gap-3">
@@ -532,7 +532,7 @@ export default function InventoryManagerDashboard() {
                             </div>
                             <button
                                 onClick={() => setSelectedForQC(null)}
-                                className="p-2 hover:bg-indigo-500/10 rounded-xl text-indigo-500 transition-all"
+                                className="p-2 hover:bg-indigo-500/10 rounded-none text-indigo-500 transition-all"
                             >
                                 <X size={20} />
                             </button>
@@ -552,14 +552,14 @@ export default function InventoryManagerDashboard() {
                                 <div>
                                     <label className="block text-[10px] font-black uppercase tracking-widest text-app-text-muted mb-3">Verification Summary</label>
                                     <div className="grid grid-cols-2 gap-4">
-                                        <label className="relative flex items-center p-5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl cursor-pointer hover:border-emerald-500/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/5 transition-all group shadow-sm">
+                                        <label className="relative flex items-center p-5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-none cursor-pointer hover:border-emerald-500/30 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-500/5 transition-all group shadow-sm">
                                             <input type="radio" name="qc_status" value="PASSED" defaultChecked className="hidden" />
                                             <div className="flex items-center gap-3">
                                                 <div className="w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-600 group-has-[:checked]:border-emerald-500 group-has-[:checked]:border-[6px] transition-all" />
                                                 <span className="font-black text-xs uppercase tracking-widest text-slate-700 text-app-text">Passed</span>
                                             </div>
                                         </label>
-                                        <label className="relative flex items-center p-5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl cursor-pointer hover:border-rose-500/30 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/5 transition-all group shadow-sm">
+                                        <label className="relative flex items-center p-5 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-none cursor-pointer hover:border-rose-500/30 has-[:checked]:border-rose-500 has-[:checked]:bg-rose-500/5 transition-all group shadow-sm">
                                             <input type="radio" name="qc_status" value="FAILED" className="hidden" />
                                             <div className="flex items-center gap-3">
                                                 <div className="w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-600 group-has-[:checked]:border-rose-500 group-has-[:checked]:border-[6px] transition-all" />
@@ -576,12 +576,12 @@ export default function InventoryManagerDashboard() {
                                         required
                                         rows={4}
                                         placeholder="Identify any hardware defects or configuration notes..."
-                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none font-medium shadow-sm dark:shadow-inner"
+                                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-none p-4 text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none font-medium shadow-sm dark:shadow-inner"
                                     ></textarea>
                                 </div>
                             </div>
 
-                            <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-2xl flex gap-4 text-[10px] font-black uppercase tracking-widest leading-relaxed text-amber-700 dark:text-amber-300 shadow-sm">
+                            <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-none flex gap-4 text-[10px] font-black uppercase tracking-widest leading-relaxed text-amber-700 dark:text-amber-300 shadow-sm">
                                 <AlertOctagon size={20} className="shrink-0 text-amber-500" />
                                 <p>Approval facilitates immediate asset transit to User Acceptance. Rejection triggers a procurement dispute workflow.</p>
                             </div>
@@ -596,7 +596,7 @@ export default function InventoryManagerDashboard() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-app-text text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-indigo-500/30"
+                                    className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-app-text text-[10px] font-black uppercase tracking-widest rounded-none transition-all shadow-xl shadow-indigo-500/30"
                                 >
                                     Log Result
                                 </button>

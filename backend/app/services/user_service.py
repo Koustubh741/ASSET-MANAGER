@@ -2,6 +2,7 @@ from typing import Optional, List, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from ..models.models import User
 from ..schemas.user_schema import UserCreate, UserUpdate
 import uuid
@@ -31,11 +32,11 @@ def verify_password(plain_password, hashed_password):
 
 async def get_user_by_email(db: AsyncSession, email: str):
     normalized_email = email.strip().lower()
-    result = await db.execute(select(User).filter(User.email == normalized_email))
+    result = await db.execute(select(User).options(joinedload(User.dept_obj)).filter(func.lower(User.email) == normalized_email))
     return result.scalars().first()
 
 async def get_user(db: AsyncSession, user_id: UUID):
-    result = await db.execute(select(User).filter(User.id == user_id))
+    result = await db.execute(select(User).options(joinedload(User.dept_obj)).filter(User.id == user_id))
     return result.scalars().first()
 
 async def create_user(db: AsyncSession, user: UserCreate):
@@ -60,7 +61,7 @@ async def create_user(db: AsyncSession, user: UserCreate):
         position=user.position,
 
         domain=user.domain,
-        department=user.department,
+        department_id=user.department_id if hasattr(user, 'department_id') else None,
         location=user.location,
         phone=user.phone,
         company=user.company,
@@ -86,7 +87,7 @@ async def get_user_hierarchy(db: AsyncSession):
         "name": u.full_name,
         "role": u.role,
         "position": u.position,
-        "department": u.department,
+        "department": u.dept_obj.name if u.dept_obj else "N/A",
         "manager_id": str(u.manager_id) if u.manager_id else None,
         "children": []
     } for u in users}
@@ -128,23 +129,54 @@ async def activate_user(db: AsyncSession, user_id: UUID) -> User:
     await db.refresh(user)
     return user
 
-async def get_users(db: AsyncSession, status: str = None, department: str = None):
+async def get_users(
+    db: AsyncSession, 
+    status: Optional[str] = None, 
+    role: Optional[str] = None,
+    department: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100
+) -> tuple[List[User], int]:
+    """
+    Get all users with pagination and total count (Asynchronous).
+    Root Fix: Supports 100k user scalability.
+    """
     query = select(User)
     
+    # 1. Filters
+    filter_clauses = []
     if status is not None:
-        query = query.filter(User.status == status)
+        filter_clauses.append(User.status == status)
+        
+    if role is not None:
+        filter_clauses.append(User.role == role)
         
     if department is not None:
         from sqlalchemy import or_
-        query = query.filter(
+        from ..models.models import Department as DeptModel
+        filter_clauses.append(
             or_(
-                User.department.ilike(f"%{department}%"),
+                User.department_id.in_(
+                    select(DeptModel.id).filter(DeptModel.name.ilike(f"%{department}%"))
+                ),
                 User.domain.ilike(f"%{department}%")
             )
         )
         
+    if filter_clauses:
+        query = query.filter(*filter_clauses)
+
+    # 2. Total Count
+    count_query = select(func.count(User.id))
+    if filter_clauses:
+        count_query = count_query.filter(*filter_clauses)
+        
+    total = (await db.execute(count_query)).scalar() or 0
+
+    # 3. Pagination & Execution
+    query = query.offset(skip).limit(limit).order_by(User.full_name)
     result = await db.execute(query)
-    return result.scalars().all()
+    return result.scalars().all(), total
 
 
 async def get_role_counts(db: AsyncSession, status: str = None):

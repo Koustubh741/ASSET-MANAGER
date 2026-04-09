@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import apiClient from '@/lib/apiClient';
 import WorkflowGuideModal from '@/components/WorkflowGuideModal';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, RefreshCw } from 'lucide-react';
 
 const TABS = [
     { id: 'renewals', label: '🔄 Renewals', statusField: 'status', filterNonNull: true },
@@ -12,45 +12,39 @@ const TABS = [
 
 function StatusBadge({ status }) {
     const colors = {
-        Requested: { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24' },
-        IT_Approved: { bg: 'rgba(99,102,241,0.15)', color: '#818cf8' },
-        Finance_Approved: { bg: 'rgba(16,185,129,0.15)', color: '#34d399' },
-        Commercial_Approved: { bg: 'rgba(16,185,129,0.15)', color: '#34d399' },
-        Rejected: { bg: 'rgba(239,68,68,0.15)', color: '#f87171' },
-        Approved: { bg: 'rgba(16,185,129,0.15)', color: '#34d399' },
-        Active: { bg: 'rgba(16,185,129,0.15)', color: '#34d399' },
-        VALIDATED: { bg: 'rgba(16,185,129,0.15)', color: '#34d399' },
-        Ordered: { bg: 'rgba(99,102,241,0.15)', color: '#818cf8' },
-        Received: { bg: 'rgba(16,185,129,0.15)', color: '#34d399' },
-        Ready_For_Wipe: { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24' },
-        Wiped: { bg: 'rgba(239,68,68,0.15)', color: '#f87171' },
-        Disposed: { bg: 'rgba(107,114,128,0.15)', color: '#9ca3af' },
-        REJECTED: { bg: 'rgba(239,68,68,0.15)', color: '#f87171' },
+        Requested: { bg: 'bg-app-gold/15', color: 'text-app-gold', border: 'border-app-gold/20' },
+        IT_Approved: { bg: 'bg-app-primary/15', color: 'text-app-primary', border: 'border-app-primary/20' },
+        Finance_Approved: { bg: 'bg-app-secondary/15', color: 'text-app-secondary', border: 'border-app-secondary/20' },
+        Commercial_Approved: { bg: 'bg-app-secondary/15', color: 'text-app-secondary', border: 'border-app-secondary/20' },
+        Rejected: { bg: 'bg-app-rose/15', color: 'text-app-rose', border: 'border-app-rose/20' },
+        Approved: { bg: 'bg-app-secondary/15', color: 'text-app-secondary', border: 'border-app-secondary/20' },
+        Active: { bg: 'bg-app-secondary/15', color: 'text-app-secondary', border: 'border-app-secondary/20' },
+        VALIDATED: { bg: 'bg-app-secondary/15', color: 'text-app-secondary', border: 'border-app-secondary/20' },
+        Ordered: { bg: 'bg-app-primary/15', color: 'text-app-primary', border: 'border-app-primary/20' },
+        Received: { bg: 'bg-app-secondary/15', color: 'text-app-secondary', border: 'border-app-secondary/20' },
+        Ready_For_Wipe: { bg: 'bg-app-gold/15', color: 'text-app-gold', border: 'border-app-gold/20' },
+        Wiped: { bg: 'bg-app-rose/15', color: 'text-app-rose', border: 'border-app-rose/20' },
+        Disposed: { bg: 'bg-app-void', color: 'text-app-text-muted', border: 'border-app-border' },
+        REJECTED: { bg: 'bg-app-rose/15', color: 'text-app-rose', border: 'border-app-rose/20' },
     };
-    const sc = colors[status] || { bg: 'rgba(107,114,128,0.15)', color: '#9ca3af' };
-    return <span style={{ background: sc.bg, color: sc.color, padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>{status}</span>;
+    const sc = colors[status] || { bg: 'bg-app-void', color: 'text-app-text-muted', border: 'border-app-border' };
+    return (
+        <span className={`${sc.bg} ${sc.color} ${sc.border} px-3 py-1 border rounded-none text-[10px] font-black uppercase tracking-widest shadow-sm shadow-black/20`}>
+            {status.replace('_', ' ')}
+        </span>
+    );
 }
 
 function UrgencyBadge({ urgency }) {
     const uc = {
-        Immediate: { bg: 'rgba(239,68,68,0.2)', color: '#f87171', shadow: '0 0 10px rgba(239,68,68,0.3)' },
-        High: { bg: 'rgba(245,158,11,0.2)', color: '#fbbf24', shadow: 'none' },
-        Medium: { bg: 'rgba(99,102,241,0.2)', color: '#818cf8', shadow: 'none' },
-        Low: { bg: 'rgba(16,185,129,0.2)', color: '#34d399', shadow: 'none' },
+        Immediate: { bg: 'bg-app-rose/20', color: 'text-app-rose', border: 'border-app-rose/40' },
+        High: { bg: 'bg-app-gold/20', color: 'text-app-gold', border: 'border-app-gold/40' },
+        Medium: { bg: 'bg-app-primary/20', color: 'text-app-primary', border: 'border-app-primary/40' },
+        Low: { bg: 'bg-app-secondary/20', color: 'text-app-secondary', border: 'border-app-secondary/40' },
     };
-    const c = uc[urgency] || { bg: 'rgba(107,114,128,0.1)', color: '#9ca3af', shadow: 'none' };
+    const c = uc[urgency] || { bg: 'bg-app-void', color: 'text-app-text-muted', border: 'border-app-border' };
     return (
-        <span style={{ 
-            background: c.bg, 
-            color: c.color, 
-            boxShadow: c.shadow,
-            padding: '4px 12px', 
-            borderRadius: '10px', 
-            fontSize: '10px', 
-            fontWeight: 800, 
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em'
-        }}>
+        <span className={`${c.bg} ${c.color} ${c.border} px-4 py-1.5 border rounded-none text-[10px] font-black uppercase tracking-[0.15em] shadow-lg shadow-black/40 italic`}>
             {urgency}
         </span>
     );
@@ -103,41 +97,43 @@ export default function WorkflowsPage() {
             <div className="space-y-6">
                 <header className="flex justify-between items-start">
                     <div>
-                        <h1 className="text-xl font-bold text-app-text flex items-center gap-2">⚙️ Workflows Engine</h1>
-                        <p className="text-app-text-muted mt-1">Manage renewal, procurement, and disposal approval workflows</p>
+                        <h1 className="text-3xl font-black text-app-text flex items-center gap-4 uppercase italic tracking-tighter leading-none">
+                            <RefreshCw size={28} className="text-app-primary" /> Workflows <span className="text-app-primary">Engine</span>
+                        </h1>
+                        <p className="text-app-text-muted mt-3 text-xs font-black uppercase tracking-[0.3em] opacity-40">Personnel Displacement & Lifecycle Regulation Subsystem</p>
                     </div>
                     <button 
                         onClick={() => setIsGuideOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-500/5 group"
+                        className="flex items-center gap-3 px-6 py-3 bg-app-void text-app-primary hover:bg-app-primary hover:text-app-void border border-app-primary/20 hover:border-transparent rounded-none text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 group"
                     >
-                        <HelpCircle size={16} className="group-hover:rotate-12 transition-transform" />
-                        How it Works
+                        <HelpCircle size={16} className="group-hover:rotate-[360deg] transition-transform duration-700" />
+                        Operation Manual
                     </button>
                 </header>
 
                 {/* Tabs */}
-                <div className="flex gap-2 border-b border-app-border pb-0">
+                <div className="flex gap-4 border-b border-app-border pb-0 overflow-x-auto">
                     {TABS.map(t => (
                         <button
                             key={t.id}
                             onClick={() => setTab(t.id)}
-                            className={`px-5 py-2.5 rounded-t-lg text-sm font-semibold transition-all border-b-2 ${tab === t.id
-                                ? 'border-indigo-500 text-indigo-300 bg-indigo-500/10'
-                                : 'border-transparent text-app-text-muted hover:text-app-text hover:bg-white/4'
+                            className={`px-8 py-4 rounded-none text-[11px] font-black uppercase tracking-[0.2em] transition-all border-b-4 italic ${tab === t.id
+                                ? 'border-app-primary text-app-primary bg-app-primary/5'
+                                : 'border-transparent text-app-text-muted hover:text-app-primary hover:bg-app-primary/5'
                                 }`}
-                        >{t.label}</button>
+                        >{t.label.toUpperCase()}</button>
                     ))}
                 </div>
 
                 {loading ? (
                     <div className="glass-card p-8 text-center text-app-text-muted">Loading assets…</div>
                 ) : filtered.length === 0 ? (
-                    <div className="glass-card p-12 text-center">
-                        <div className="text-xl mb-4">✅</div>
-                        <p className="text-app-text-muted">No assets currently in the <strong className="text-app-text">{currentTab.label.replace(/^.+?\s/, '')}</strong> workflow.</p>
+                    <div className="glass-panel p-12 text-center border-l-2 border-app-secondary">
+                        <div className="text-4xl mb-6 animate-pulse">✓</div>
+                        <p className="text-app-text-muted font-black uppercase tracking-widest">No assets currently in the <strong className="text-app-primary italic">{currentTab.label.replace(/^.+?\s/, '').toUpperCase()}</strong> workflow matrix.</p>
                     </div>
                 ) : (
-                    <div className="glass-card overflow-hidden">
+                    <div className="glass-panel p-0 overflow-hidden bg-app-obsidian shadow-2xl border-l-2 border-app-border">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-app-border text-app-text-muted text-left">
@@ -157,14 +153,14 @@ export default function WorkflowsPage() {
                                         <tr key={aid} className="border-b border-app-border hover:bg-white/3 transition-colors">
                                             <td className="px-5 py-4 text-app-text font-bold">{a.name}</td>
                                             <td className="px-5 py-4">
-                                                <span className="text-[10px] font-black uppercase tracking-tight text-slate-500 bg-app-surface-soft py-1 px-2 rounded-md border border-app-border">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-app-text-muted bg-app-void py-1.5 px-3 rounded-none border border-app-border">
                                                     {a.type}
                                                 </span>
                                             </td>
                                             <td className="px-5 py-4"><StatusBadge status={status} /></td>
                                             {tab === 'renewals' && (
-                                                <td className="px-5 py-4 font-medium text-emerald-400">
-                                                    {a.renewal_cost ? `₹${Number(a.renewal_cost).toLocaleString()}` : <span className="opacity-30 italic">Calculating...</span>}
+                                                <td className="px-5 py-4 font-black text-app-secondary tracking-widest font-mono italic">
+                                                    {a.renewal_cost ? `₹${Number(a.renewal_cost).toLocaleString()}` : <span className="opacity-20 italic">VOID</span>}
                                                 </td>
                                             )}
                                             {tab === 'renewals' && (
@@ -178,14 +174,14 @@ export default function WorkflowsPage() {
                                                         <button
                                                             onClick={() => action(aid, tab, 'approve')}
                                                             disabled={actioning[`${aid}-approve`]}
-                                                            className="text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 transition-all shadow-lg shadow-emerald-500/5"
+                                                            className="text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-none bg-app-secondary/15 text-app-secondary hover:bg-app-secondary hover:text-app-void border border-app-secondary/20 transition-all shadow-xl shadow-app-secondary/5"
                                                         >{actioning[`${aid}-approve`] ? '…' : 'Approve'}</button>
                                                     )}
                                                     {status !== 'Rejected' && status !== 'Disposed' && (
                                                         <button
                                                             onClick={() => action(aid, tab, 'reject')}
                                                             disabled={actioning[`${aid}-reject`]}
-                                                            className="text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 border border-rose-500/20 transition-all shadow-lg shadow-rose-500/5"
+                                                            className="text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-none bg-app-rose/15 text-app-rose hover:bg-app-rose hover:text-app-void border border-app-rose/20 transition-all shadow-xl shadow-app-rose/5"
                                                         >{actioning[`${aid}-reject`] ? '…' : 'Reject'}</button>
                                                     )}
                                                 </div>

@@ -41,7 +41,7 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, onClose }) => {
             <div className="glass-panel w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 border border-app-border relative">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 p-2 text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg z-[101] transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="absolute top-4 right-4 p-2 text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none z-[101] transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     aria-label="Close scanner"
                     title="Close"
                 >
@@ -52,7 +52,7 @@ const BarcodeScanner = ({ onScanSuccess, onScanError, onClose }) => {
                     <h3 className="text-lg font-bold text-app-text mb-2">Scan Barcode</h3>
                     <p className="text-xs text-app-text-muted mb-6">Point your camera at the serial number barcode on the box.</p>
 
-                    <div id="reader" className="overflow-hidden rounded-xl border border-app-border bg-black/40"></div>
+                    <div id="reader" className="overflow-hidden rounded-none border border-app-border bg-black/40"></div>
 
                     <div className="mt-6 flex justify-center">
                         <button

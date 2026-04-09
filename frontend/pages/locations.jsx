@@ -59,11 +59,11 @@ export default function LocationsPage() {
                     <p className="text-app-text-muted mt-2 text-lg">Manage and monitor assets across your global infrastructure</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="px-5 py-2.5 rounded-xl bg-app-surface-soft border border-app-border text-app-text font-medium hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-all flex items-center gap-2 group">
+                    <button className="px-5 py-2.5 rounded-none bg-app-surface-soft border border-app-border text-app-text font-medium hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-all flex items-center gap-2 group">
                         <Globe size={18} className="text-blue-400 group-hover:rotate-12 transition-transform" />
                         <span>Map View</span>
                     </button>
-                    <button className="px-5 py-2.5 rounded-xl bg-blue-600 text-app-text font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
+                    <button className="px-5 py-2.5 rounded-none bg-blue-600 text-app-text font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95">
                         <Plus size={20} />
                         <span>Add Site</span>
                     </button>
@@ -78,10 +78,10 @@ export default function LocationsPage() {
                     { label: 'Primary Data Centers', value: locations.filter(l => l.name.toLowerCase().includes('center')).length || 2, icon: Activity, color: 'purple' },
                     { label: 'Active Users', value: '~1.4k', icon: Users, color: 'emerald' },
                 ].map((stat, i) => (
-                    <div key={i} className="p-6 rounded-3xl bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border relative overflow-hidden group">
+                    <div key={i} className="p-6 rounded-none bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border relative overflow-hidden group">
                         <div className={`absolute top-0 right-0 w-24 h-24 bg-${stat.color}-500/10 blur-3xl -mr-8 -mt-8 group-hover:bg-${stat.color}-500/20 transition-colors duration-500`} />
                         <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-2xl bg-${stat.color}-500/20 text-${stat.color}-400 border border-${stat.color}-500/20`}>
+                            <div className={`p-3 rounded-none bg-${stat.color}-500/20 text-${stat.color}-400 border border-${stat.color}-500/20`}>
                                 <stat.icon size={24} />
                             </div>
                             <div>
@@ -94,19 +94,19 @@ export default function LocationsPage() {
             </div>
 
             {/* Controls Bar */}
-            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border shadow-2xl rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border shadow-2xl rounded-none p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1 group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-app-text-muted group-focus-within:text-blue-400 transition-colors" size={20} />
                     <input
                         type="text"
                         placeholder="Filter sites by name, region, or asset count..."
-                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-3.5 pl-12 pr-4 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/40 placeholder:text-app-text-muted transition-all"
+                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-3.5 pl-12 pr-4 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/40 placeholder:text-app-text-muted transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center gap-3">
-                    <select className="bg-white dark:bg-slate-900/50 border border-app-border rounded-xl px-4 py-3.5 text-slate-700 dark:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer">
+                    <select className="bg-white dark:bg-slate-900/50 border border-app-border rounded-none px-4 py-3.5 text-slate-700 dark:text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer">
                         <option>Sort by Asset Count</option>
                         <option>Sort Alphabetically</option>
                         <option>Sort by Uptime</option>
@@ -118,17 +118,17 @@ export default function LocationsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                     Array(6).fill(0).map((_, i) => (
-                        <div key={i} className="h-64 rounded-3xl bg-slate-50 dark:bg-slate-800/20 animate-pulse border border-app-border" />
+                        <div key={i} className="h-64 rounded-none bg-slate-50 dark:bg-slate-800/20 animate-pulse border border-app-border" />
                     ))
                 ) : (
                     filteredLocations.map((loc, i) => {
                         const stats = getLocationStats(loc.name);
                         return (
-                            <div key={i} className="group relative rounded-3xl bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden flex flex-col h-full shadow-lg hover:shadow-blue-500/5">
+                            <div key={i} className="group relative rounded-none bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border hover:border-blue-500/30 transition-all duration-500 overflow-hidden flex flex-col h-full shadow-lg hover:shadow-blue-500/5">
                                 {/* Card Header */}
                                 <div className="p-6 pb-4">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className={`p-3 rounded-2xl ${stats.type === 'Infrastructure' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'} border border-app-border`}>
+                                        <div className={`p-3 rounded-none ${stats.type === 'Infrastructure' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-blue-500/20 text-blue-400'} border border-app-border`}>
                                             {stats.type === 'Infrastructure' ? <Server size={24} /> : <Building2 size={24} />}
                                         </div>
                                         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 uppercase tracking-widest">
@@ -142,14 +142,14 @@ export default function LocationsPage() {
 
                                 {/* Card Body - Stats List */}
                                 <div className="px-6 space-y-4 flex-1">
-                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-app-surface-soft border border-app-border">
+                                    <div className="flex justify-between items-center p-3 rounded-none bg-app-surface-soft border border-app-border">
                                         <div className="flex items-center gap-3">
                                             <Server size={18} className="text-app-text-muted" />
                                             <span className="text-sm text-slate-700 dark:text-slate-700">Total Assets</span>
                                         </div>
                                         <span className="text-lg font-bold text-app-text">{loc.count || stats.devices}</span>
                                     </div>
-                                    <div className="flex justify-between items-center p-3 rounded-2xl bg-app-surface-soft border border-app-border">
+                                    <div className="flex justify-between items-center p-3 rounded-none bg-app-surface-soft border border-app-border">
                                         <div className="flex items-center gap-3">
                                             <Users size={18} className="text-app-text-muted" />
                                             <span className="text-sm text-slate-700 dark:text-slate-700">Personnel</span>
@@ -162,11 +162,11 @@ export default function LocationsPage() {
                                 <div className="p-6 mt-4 border-t border-app-border flex gap-3">
                                     <button
                                         onClick={() => window.location.href = `/assets?location=${encodeURIComponent(loc.name)}`}
-                                        className="flex-1 py-3 rounded-xl bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-sm font-bold border border-blue-500/20 transition-all flex items-center justify-center gap-2 group/btn"
+                                        className="flex-1 py-3 rounded-none bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-sm font-bold border border-blue-500/20 transition-all flex items-center justify-center gap-2 group/btn"
                                     >
                                         Inventory <ArrowUpRight size={16} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
                                     </button>
-                                    <button className="p-3 rounded-xl bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white border border-app-border transition-all">
+                                    <button className="p-3 rounded-none bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white border border-app-border transition-all">
                                         <ExternalLink size={18} />
                                     </button>
                                 </div>

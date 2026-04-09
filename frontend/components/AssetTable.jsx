@@ -18,7 +18,7 @@ export default function AssetTable({ assets }) {
     }
 
     return (
-        <div className="overflow-hidden rounded-xl border border-app-border shadow-xl backdrop-blur-sm bg-white bg-app-surface-soft">
+        <div className="overflow-hidden rounded-none border border-app-border shadow-xl backdrop-blur-sm bg-white bg-app-surface-soft">
             <table className="w-full text-left text-sm">
                 <thead className="bg-app-surface-soft text-app-text-muted bg-slate-100 text-app-text-muted font-medium border-b border-app-border uppercase tracking-wider text-xs">
                     <tr>
@@ -50,7 +50,7 @@ export default function AssetTable({ assets }) {
                                     {asset?.serial_number ?? '—'}
                                 </td>
                                 <td className="px-6 py-4 text-slate-700 dark:text-slate-700">
-                                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ring-1 ring-inset ${asset.segment === 'NON-IT'
+                                    <span className={`px-2.5 py-1 rounded-none text-xs font-semibold ring-1 ring-inset ${asset.segment === 'NON-IT'
                                         ? 'bg-purple-400/10 text-purple-300 ring-purple-400/20'
                                         : 'bg-blue-400/10 text-blue-300 ring-blue-400/20'
                                         }`}>
@@ -85,10 +85,10 @@ export default function AssetTable({ assets }) {
                                 <td className="px-6 py-4 text-slate-700 dark:text-slate-700 text-xs">{asset.location}</td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end space-x-1">
-                                        <Link href={`/assets/${assetId}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 rounded-lg text-app-text-muted text-app-text-muted hover:text-blue-300 hover:text-blue-600 transition-colors">
+                                        <Link href={`/assets/${assetId}`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 rounded-none text-app-text-muted text-app-text-muted hover:text-blue-300 hover:text-blue-600 transition-colors">
                                             <Eye size={16} />
                                         </Link>
-                                        <Link href={`/assets/${assetId}?edit=true`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 rounded-lg text-app-text-muted text-app-text-muted hover:text-emerald-300 hover:text-emerald-600 transition-colors">
+                                        <Link href={`/assets/${assetId}?edit=true`} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 rounded-none text-app-text-muted text-app-text-muted hover:text-emerald-300 hover:text-emerald-600 transition-colors">
                                             <Edit size={16} />
                                         </Link>
                                     </div>

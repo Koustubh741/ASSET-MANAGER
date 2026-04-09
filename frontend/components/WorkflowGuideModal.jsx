@@ -50,7 +50,7 @@ export default function WorkflowGuideModal({ isOpen, onClose }) {
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-3 bg-slate-200 dark:bg-white/[0.03] hover:bg-slate-300 dark:hover:bg-white/[0.08] text-app-text-muted rounded-2xl border border-slate-300 border-app-border transition-all"
+                        className="p-3 bg-slate-200 dark:bg-white/[0.03] hover:bg-slate-300 dark:hover:bg-white/[0.08] text-app-text-muted rounded-none border border-slate-300 border-app-border transition-all"
                     >
                         <X size={20} />
                     </button>
@@ -63,9 +63,9 @@ export default function WorkflowGuideModal({ isOpen, onClose }) {
                         <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-4">Lifecycle Entry Points</label>
                         <div className="space-y-4">
                             {stages.map((s, idx) => (
-                                <div key={idx} className="p-6 bg-slate-50 dark:bg-white/[0.03] rounded-3xl border border-app-border shadow-sm group hover:border-indigo-500/30 transition-all">
+                                <div key={idx} className="p-6 bg-slate-50 dark:bg-white/[0.03] rounded-none border border-app-border shadow-sm group hover:border-indigo-500/30 transition-all">
                                     <div className="flex items-center gap-3 mb-4">
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.bg} ${s.border} border`}>
+                                        <div className={`w-10 h-10 rounded-none flex items-center justify-center ${s.bg} ${s.border} border`}>
                                             {s.icon}
                                         </div>
                                         <span className="font-bold text-lg text-app-text">{s.label}</span>
@@ -106,7 +106,7 @@ export default function WorkflowGuideModal({ isOpen, onClose }) {
                     </div>
 
                     {/* Pro-Tip Section */}
-                    <div className="flex items-start gap-4 p-5 bg-indigo-500/5 border border-indigo-500/20 rounded-3xl">
+                    <div className="flex items-start gap-4 p-5 bg-indigo-500/5 border border-indigo-500/20 rounded-none">
                         <HelpCircle className="text-indigo-500 shrink-0 mt-0.5" size={20} />
                         <div>
                             <div className="text-sm font-bold text-app-text mb-1">Administrative Tip</div>

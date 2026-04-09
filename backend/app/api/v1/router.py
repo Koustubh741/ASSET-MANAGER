@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.routers import (
+from ...routers import (
     upload,
     workflows,
     disposal,
@@ -71,4 +71,3 @@ api_router.include_router(user_preferences.router)
 api_router.include_router(ai_configs.router)
 api_router.include_router(chat.router)
 api_router.include_router(notifications.router)
-api_router.include_router(analytics_executive.router)

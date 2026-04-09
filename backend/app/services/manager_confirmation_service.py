@@ -4,7 +4,8 @@ Handles manager approval at critical workflow stages: IT approval, Budget approv
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from ..models.models import AssetRequest
+from ..models.models import AssetRequest, User
+from sqlalchemy.orm import joinedload
 from ..schemas.asset_request_schema import AssetRequestResponse
 from ..utils.state_machine import validate_state_transition
 from typing import Optional
@@ -43,7 +44,12 @@ async def manager_confirm_stage(
     """
     from .asset_request_service import _populate_requester_info, sync_request_state
     
-    result = await db.execute(select(AssetRequest).filter(AssetRequest.id == request_id))
+    result = await db.execute(
+        select(AssetRequest).options(
+            joinedload(AssetRequest.requester).joinedload(User.dept_obj),
+            joinedload(AssetRequest.purchase_orders)
+        ).filter(AssetRequest.id == request_id)
+    )
     db_request = result.scalars().first()
     
     if not db_request:
@@ -129,7 +135,14 @@ async def manager_confirm_stage(
     db_request.manager_approvals.append(approval_entry)
     
     await db.commit()
-    await db.refresh(db_request)
+    
+    result = await db.execute(
+        select(AssetRequest).options(
+            joinedload(AssetRequest.requester).joinedload(User.dept_obj),
+            joinedload(AssetRequest.purchase_orders)
+        ).filter(AssetRequest.id == request_id)
+    )
+    db_request = result.scalars().first()
     
     # Notify stakeholders about the stage confirmation
     from .notification_service import send_notification

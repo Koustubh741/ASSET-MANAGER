@@ -79,7 +79,7 @@ export default function FinanceAnalyticsPage() {
                 </div>
                 <button
                     onClick={exportCsv}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-2 rounded-none bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
                 >
                     <Download size={18} /> Export CSV
                 </button>
@@ -89,7 +89,7 @@ export default function FinanceAnalyticsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div className="glass-card p-5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-emerald-500/20 text-emerald-400">
+                        <div className="p-3 rounded-none bg-emerald-500/20 text-emerald-400">
                             <DollarSign size={22} />
                         </div>
                         <div>
@@ -103,7 +103,7 @@ export default function FinanceAnalyticsPage() {
 
                 <div className="glass-card p-5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-rose-500/20 text-rose-400">
+                        <div className="p-3 rounded-none bg-rose-500/20 text-rose-400">
                             <TrendingDown size={22} />
                         </div>
                         <div>
@@ -117,7 +117,7 @@ export default function FinanceAnalyticsPage() {
 
                 <div className="glass-card p-5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-blue-500/20 text-blue-400">
+                        <div className="p-3 rounded-none bg-blue-500/20 text-blue-400">
                             <Activity size={22} />
                         </div>
                         <div>
@@ -131,7 +131,7 @@ export default function FinanceAnalyticsPage() {
 
                 <div className="glass-card p-5">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-purple-500/20 text-purple-400">
+                        <div className="p-3 rounded-none bg-purple-500/20 text-purple-400">
                             <TrendingUp size={22} />
                         </div>
                         <div>
@@ -214,7 +214,7 @@ export default function FinanceAnalyticsPage() {
                         {Object.entries(summary)
                             .filter(([k, v]) => typeof v === 'number' || typeof v === 'string')
                             .map(([key, value]) => (
-                                <div key={key} className="bg-app-surface-soft rounded-xl p-4 border border-app-border">
+                                <div key={key} className="bg-app-surface-soft rounded-none p-4 border border-app-border">
                                     <p className="text-xs text-app-text-muted text-app-text-muted uppercase font-bold tracking-wider mb-1">
                                         {key.replace(/_/g, ' ')}
                                     </p>

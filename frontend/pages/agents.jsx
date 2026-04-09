@@ -550,7 +550,7 @@ export default function AgentsPage() {
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Toast Notification */}
             {toast && (
-                <div className={`fixed top-8 right-8 z-50 p-4 rounded-2xl shadow-2xl border backdrop-blur-xl flex items-center gap-3 animate-in slide-in-from-right-8 duration-300 ${toast.type === 'error' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' :
+                <div className={`fixed top-8 right-8 z-50 p-4 rounded-none shadow-2xl border backdrop-blur-xl flex items-center gap-3 animate-in slide-in-from-right-8 duration-300 ${toast.type === 'error' ? 'bg-rose-500/20 border-rose-500/30 text-rose-300' :
                     toast.type === 'info' ? 'bg-blue-500/20 border-blue-500/30 text-blue-300' :
                         'bg-emerald-500/20 border-emerald-500/30 text-emerald-300'
                     }`}>
@@ -565,10 +565,10 @@ export default function AgentsPage() {
             {/* Config Modal */}
             {configAgent && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-app-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                    <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-app-border rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-app-border flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                <div className="p-2 rounded-none bg-blue-500/20 text-blue-400">
                                     <Settings size={20} />
                                 </div>
                                 <div>
@@ -576,7 +576,7 @@ export default function AgentsPage() {
                                     <p className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">{configAgent.name}</p>
                                 </div>
                             </div>
-                            <button onClick={() => setConfigAgent(null)} className="p-2 rounded-xl hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                            <button onClick={() => setConfigAgent(null)} className="p-2 rounded-none hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -607,7 +607,7 @@ export default function AgentsPage() {
                                                 type="text"
                                                 value={configAgent.name}
                                                 onChange={(e) => setConfigAgent({ ...configAgent, name: e.target.value })}
-                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-xl px-4 py-3 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none px-4 py-3 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
                                             />
                                         </div>
 
@@ -617,14 +617,14 @@ export default function AgentsPage() {
                                                 type="text"
                                                 value={configAgent.role}
                                                 onChange={(e) => setConfigAgent({ ...configAgent, role: e.target.value })}
-                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-xl px-4 py-3 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none px-4 py-3 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium"
                                             />
                                         </div>
 
 
                                         {/* SNMP Scanner Specific Configuration */}
                                         {configAgent.type === 'Network' && (
-                                            <div className="space-y-4 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20">
+                                            <div className="space-y-4 p-4 rounded-none bg-blue-500/5 border border-blue-500/20">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <Server className="text-blue-400" size={16} />
                                                     <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider">SNMP Configuration</h4>
@@ -636,7 +636,7 @@ export default function AgentsPage() {
                                                         value={snmpConfig.networkRange}
                                                         onChange={(e) => setSnmpConfig({ ...snmpConfig, networkRange: e.target.value })}
                                                         placeholder="192.168.1.0/24"
-                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                     />
                                                 </div>
                                                 <div className="space-y-2">
@@ -644,7 +644,7 @@ export default function AgentsPage() {
                                                     <select
                                                         value={snmpConfig.snmpVersion}
                                                         onChange={(e) => setSnmpConfig({ ...snmpConfig, snmpVersion: e.target.value })}
-                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                                                     >
                                                         <option value="v2c">v2c (Standard)</option>
                                                         <option value="v3">v3 (Secure USM)</option>
@@ -661,7 +661,7 @@ export default function AgentsPage() {
                                                                     value={snmpConfig.username}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, username: e.target.value })}
                                                                     placeholder="snmp-user"
-                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                                 />
                                                             </div>
                                                             <div className="space-y-2">
@@ -671,7 +671,7 @@ export default function AgentsPage() {
                                                                     value={snmpConfig.contextName}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, contextName: e.target.value })}
                                                                     placeholder="vlan-1"
-                                                                    className="w-full px-4 py-2.5 bg-blue-500/5 border border-blue-500/20 rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-blue-500/5 border border-blue-500/20 rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                                 />
                                                             </div>
                                                         </div>
@@ -682,7 +682,7 @@ export default function AgentsPage() {
                                                                 <select
                                                                     value={snmpConfig.authProtocol}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, authProtocol: e.target.value })}
-                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                                                                 >
                                                                     <option value="NONE">None</option>
                                                                     <option value="MD5">MD5</option>
@@ -697,7 +697,7 @@ export default function AgentsPage() {
                                                                     value={snmpConfig.authKey}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, authKey: e.target.value })}
                                                                     placeholder="••••••••"
-                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                                 />
                                                             </div>
                                                         </div>
@@ -708,7 +708,7 @@ export default function AgentsPage() {
                                                                 <select
                                                                     value={snmpConfig.privProtocol}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, privProtocol: e.target.value })}
-                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                                                                 >
                                                                     <option value="NONE">None</option>
                                                                     <option value="DES">DES</option>
@@ -726,7 +726,7 @@ export default function AgentsPage() {
                                                                     value={snmpConfig.privKey}
                                                                     onChange={(e) => setSnmpConfig({ ...snmpConfig, privKey: e.target.value })}
                                                                     placeholder="••••••••"
-                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                                    className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                                 />
                                                             </div>
                                                         </div>
@@ -739,7 +739,7 @@ export default function AgentsPage() {
                                                             value={snmpConfig.communityString}
                                                             onChange={(e) => setSnmpConfig({ ...snmpConfig, communityString: e.target.value })}
                                                             placeholder="public"
-                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                         />
                                                     </div>
                                                 )}
@@ -750,7 +750,7 @@ export default function AgentsPage() {
                                                         value={snmpConfig.exclusions}
                                                         onChange={(e) => setSnmpConfig({ ...snmpConfig, exclusions: e.target.value })}
                                                         placeholder="192.168.1.1, 192.168.1.254"
-                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
+                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm"
                                                     />
                                                 </div>
 
@@ -760,7 +760,7 @@ export default function AgentsPage() {
                                                         <button
                                                             onClick={testSNMPConnection}
                                                             disabled={testingConnection || !snmpConfig.networkRange}
-                                                            className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-slate-700 disabled:to-slate-700 text-app-text font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                            className="w-full px-4 py-3 rounded-none bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:from-slate-700 disabled:to-slate-700 text-app-text font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 disabled:shadow-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                                         >
                                                             {testingConnection ? (
                                                                 <>
@@ -790,7 +790,7 @@ export default function AgentsPage() {
 
                                         {/* Server Scanner Specific Configuration */}
                                         {configAgent.type === 'Server' && (
-                                            <div className="space-y-4 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20">
+                                            <div className="space-y-4 p-4 rounded-none bg-indigo-500/5 border border-indigo-500/20">
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <Terminal className="text-indigo-400" size={16} />
                                                     <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Remote Server Access</h4>
@@ -803,7 +803,7 @@ export default function AgentsPage() {
                                                         onChange={(e) => setServerConfig({ ...serverConfig, targets: e.target.value })}
                                                         placeholder="192.168.1.15, 10.0.0.50"
                                                         rows={2}
-                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm resize-none"
+                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm resize-none"
                                                     />
                                                 </div>
 
@@ -812,13 +812,13 @@ export default function AgentsPage() {
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => setServerConfig({ ...serverConfig, osType: 'linux', username: 'root' })}
-                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'linux' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-app-surface-soft border-transparent text-app-text-muted hover:text-slate-900 dark:hover:text-white'}`}
+                                                            className={`flex-1 py-2 rounded-none text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'linux' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300' : 'bg-app-surface-soft border-transparent text-app-text-muted hover:text-slate-900 dark:hover:text-white'}`}
                                                         >
                                                             Linux (SSH)
                                                         </button>
                                                         <button
                                                             onClick={() => setServerConfig({ ...serverConfig, osType: 'windows', username: 'Administrator' })}
-                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'windows' ? 'bg-blue-500/20 border-blue-500 text-blue-300' : 'bg-app-surface-soft border-transparent text-app-text-muted hover:text-slate-900 dark:hover:text-white'}`}
+                                                            className={`flex-1 py-2 rounded-none text-xs font-bold uppercase tracking-wider transition-all border ${serverConfig.osType === 'windows' ? 'bg-blue-500/20 border-blue-500 text-blue-300' : 'bg-app-surface-soft border-transparent text-app-text-muted hover:text-slate-900 dark:hover:text-white'}`}
                                                         >
                                                             Windows (WinRM)
                                                         </button>
@@ -833,7 +833,7 @@ export default function AgentsPage() {
                                                             value={serverConfig.username}
                                                             onChange={(e) => setServerConfig({ ...serverConfig, username: e.target.value })}
                                                             placeholder={serverConfig.osType === 'linux' ? 'root' : 'Administrator'}
-                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
+                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
@@ -843,7 +843,7 @@ export default function AgentsPage() {
                                                             value={serverConfig.password}
                                                             onChange={(e) => setServerConfig({ ...serverConfig, password: e.target.value })}
                                                             placeholder="••••••••"
-                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
+                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-sm"
                                                         />
                                                     </div>
                                                 </div>
@@ -856,7 +856,7 @@ export default function AgentsPage() {
                                                             onChange={(e) => setServerConfig({ ...serverConfig, privateKey: e.target.value })}
                                                             placeholder="-----BEGIN RSA PRIVATE KEY-----"
                                                             rows={3}
-                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-[10px] resize-none"
+                                                            className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 transition-all font-mono text-[10px] resize-none"
                                                         />
                                                     </div>
                                                 )}
@@ -865,17 +865,17 @@ export default function AgentsPage() {
 
                                         {/* ── Cloud Provider Configuration ── */}
                                         {configAgent.type === 'Cloud' && (
-                                            <div className="space-y-4 p-4 rounded-2xl bg-sky-500/5 border border-sky-500/20">
+                                            <div className="space-y-4 p-4 rounded-none bg-sky-500/5 border border-sky-500/20">
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <Cloud className="text-sky-400" size={16} />
                                                     <h4 className="text-xs font-bold text-sky-400 uppercase tracking-wider">Cloud Provider Credentials</h4>
                                                 </div>
                                                 <p className="text-[10px] text-app-text-muted leading-relaxed">Credentials are encrypted and stored securely. Leave a field blank to keep the existing value.</p>
                                                 {/* Provider sub-tabs */}
-                                                <div className="flex gap-1 p-1 bg-app-surface-soft rounded-xl">
+                                                <div className="flex gap-1 p-1 bg-app-surface-soft rounded-none">
                                                     {['aws','azure','gcp','oci'].map(p => (
                                                         <button key={p} onClick={() => setCloudProvider(p)}
-                                                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${cloudProvider === p ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'text-app-text-muted hover:text-app-text'}`}>
+                                                            className={`flex-1 py-1.5 rounded-none text-[10px] font-black uppercase tracking-widest transition-all ${cloudProvider === p ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30' : 'text-app-text-muted hover:text-app-text'}`}>
                                                             {p.toUpperCase()}
                                                         </button>
                                                     ))}
@@ -892,7 +892,7 @@ export default function AgentsPage() {
                                                                 <input type={s?'password':'text'} value={cloudConfig[k]}
                                                                     onChange={e => setCloudConfig({...cloudConfig, [k]: e.target.value})}
                                                                     placeholder={ph}
-                                                                    className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
+                                                                    className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -910,7 +910,7 @@ export default function AgentsPage() {
                                                                 <input type={s?'password':'text'} value={cloudConfig[k]}
                                                                     onChange={e => setCloudConfig({...cloudConfig, [k]: e.target.value})}
                                                                     placeholder={ph}
-                                                                    className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
+                                                                    className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -923,7 +923,7 @@ export default function AgentsPage() {
                                                             <input type="text" value={cloudConfig.gcp_project_id}
                                                                 onChange={e => setCloudConfig({...cloudConfig, gcp_project_id: e.target.value})}
                                                                 placeholder="my-gcp-project-123"
-                                                                className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
+                                                                className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Service Account Key (JSON)</label>
@@ -931,7 +931,7 @@ export default function AgentsPage() {
                                                                 onChange={e => setCloudConfig({...cloudConfig, gcp_service_account_key: e.target.value})}
                                                                 placeholder={'{\n  "type": "service_account",\n  "project_id": "...",\n  ...\n}'}
                                                                 rows={5}
-                                                                className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-[11px] resize-none transition-all" />
+                                                                className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-[11px] resize-none transition-all" />
                                                             <p className="text-[10px] text-app-text-muted">Paste the full JSON from your GCP service account key file.</p>
                                                         </div>
                                                     </div>
@@ -949,7 +949,7 @@ export default function AgentsPage() {
                                                                 <input type={s?'password':'text'} value={cloudConfig[k]}
                                                                     onChange={e => setCloudConfig({...cloudConfig, [k]: e.target.value})}
                                                                     placeholder={ph}
-                                                                    className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
+                                                                    className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-sm transition-all" />
                                                             </div>
                                                         ))}
                                                         <div className="space-y-1.5">
@@ -958,7 +958,7 @@ export default function AgentsPage() {
                                                                 onChange={e => setCloudConfig({...cloudConfig, oci_private_key: e.target.value})}
                                                                 placeholder="-----BEGIN RSA PRIVATE KEY-----"
                                                                 rows={4}
-                                                                className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-[11px] resize-none transition-all" />
+                                                                className="w-full px-3 py-2 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-sky-500/50 focus:ring-2 focus:ring-sky-500/20 font-mono text-[11px] resize-none transition-all" />
                                                         </div>
                                                     </div>
                                                 )}
@@ -967,9 +967,9 @@ export default function AgentsPage() {
                                     </div>
                                 ) : (
                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-app-surface-soft border border-app-border group hover:border-blue-500/20 transition-all">
+                                        <div className="flex items-center justify-between p-4 rounded-none bg-app-surface-soft border border-app-border group hover:border-blue-500/20 transition-all">
                                             <div className="flex items-center gap-4">
-                                                <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
+                                                <div className="p-2 rounded-none bg-amber-500/20 text-amber-400">
                                                     <Clock size={20} />
                                                 </div>
                                                 <div>
@@ -998,7 +998,7 @@ export default function AgentsPage() {
                                                         <button
                                                             key={preset.value}
                                                             onClick={() => setScheduleConfig({ ...scheduleConfig, cron_expression: preset.value })}
-                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${scheduleConfig.cron_expression === preset.value
+                                                            className={`px-3 py-1.5 rounded-none text-[10px] font-bold border transition-all ${scheduleConfig.cron_expression === preset.value
                                                                 ? 'bg-blue-600/20 border-blue-500 text-blue-400'
                                                                 : 'bg-app-surface-soft border-app-border text-app-text-muted text-app-text-muted hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
                                                                 }`}
@@ -1017,13 +1017,13 @@ export default function AgentsPage() {
                                                         value={scheduleConfig.cron_expression}
                                                         onChange={(e) => setScheduleConfig({ ...scheduleConfig, cron_expression: e.target.value })}
                                                         placeholder="0 0 * * *"
-                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-xl text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm pr-10"
+                                                        className="w-full px-4 py-2.5 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder-slate-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm pr-10"
                                                     />
                                                     <div className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-muted">
                                                         <Clock size={14} />
                                                     </div>
                                                 </div>
-                                                <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                                                <div className="flex items-start gap-2 p-3 rounded-none bg-blue-500/5 border border-blue-500/10">
                                                     <Info size={14} className="text-blue-400 mt-0.5 flex-shrink-0" />
                                                     <div>
                                                         <p className="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-0.5">Schedule Preview</p>
@@ -1042,13 +1042,13 @@ export default function AgentsPage() {
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-4 pt-4">
-                                            <div className="p-4 rounded-xl bg-app-surface-soft border border-app-border">
+                                            <div className="p-4 rounded-none bg-app-surface-soft border border-app-border">
                                                 <span className="text-[10px] uppercase font-black text-app-text-muted block mb-1">Last Run</span>
                                                 <span className="text-sm font-mono text-slate-700 dark:text-slate-700">
                                                     {scheduleConfig.last_run ? new Date(scheduleConfig.last_run).toLocaleString() : 'Never'}
                                                 </span>
                                             </div>
-                                            <div className="p-4 rounded-xl bg-app-surface-soft border border-app-border">
+                                            <div className="p-4 rounded-none bg-app-surface-soft border border-app-border">
                                                 <span className="text-[10px] uppercase font-black text-app-text-muted block mb-1">Next Run</span>
                                                 <span className="text-sm font-mono text-blue-400 font-bold">
                                                     {scheduleConfig.next_run ? new Date(scheduleConfig.next_run).toLocaleString() : 'Pending...'}
@@ -1063,13 +1063,13 @@ export default function AgentsPage() {
                         <div className="p-6 bg-slate-50 dark:bg-slate-800/20 border-t border-app-border flex flex-shrink-0 gap-3">
                             <button
                                 onClick={() => setConfigAgent(null)}
-                                className="flex-1 py-3 rounded-xl font-bold text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft transition-all text-sm"
+                                className="flex-1 py-3 rounded-none font-bold text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft transition-all text-sm"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={() => handleSaveConfig(configAgent)}
-                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-app-text rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-95 text-sm"
+                                className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-app-text rounded-none font-bold shadow-lg shadow-blue-500/20 transition-all active:scale-95 text-sm"
                             >
                                 Save Changes
                             </button>
@@ -1083,10 +1083,10 @@ export default function AgentsPage() {
             {
                 selectedLog && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-                        <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-app-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-purple-500/20 shadow-purple-500/10 flex flex-col max-h-[90vh]">
+                        <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-app-border rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-purple-500/20 shadow-purple-500/10 flex flex-col max-h-[90vh]">
                             <div className="p-6 border-b border-app-border flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-purple-500/10 to-transparent">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400">
+                                    <div className="p-2 rounded-none bg-purple-500/20 text-purple-400">
                                         <Activity size={20} />
                                     </div>
                                     <div>
@@ -1094,7 +1094,7 @@ export default function AgentsPage() {
                                         <p className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">{selectedLog.event}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedLog(null)} className="p-2 rounded-xl hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                                <button onClick={() => setSelectedLog(null)} className="p-2 rounded-none hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -1135,7 +1135,7 @@ export default function AgentsPage() {
                                                 const isIpAddress = key.toLowerCase() === 'ip_address' && typeof value === 'string' && value.includes('; ');
                                                 const ipEntries = isIpAddress ? value.split('; ').map(s => s.trim()).filter(Boolean) : [];
                                                 return (
-                                                    <div key={key} className={`p-4 rounded-2xl bg-app-surface-soft border border-app-border group hover:border-blue-500/20 transition-all ${isIpAddress ? 'flex flex-col gap-2' : 'flex items-center justify-between'}`}>
+                                                    <div key={key} className={`p-4 rounded-none bg-app-surface-soft border border-app-border group hover:border-blue-500/20 transition-all ${isIpAddress ? 'flex flex-col gap-2' : 'flex items-center justify-between'}`}>
                                                         <span className="text-xs font-bold text-app-text-muted text-app-text-muted uppercase tracking-tight">
                                                             {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                                         </span>
@@ -1150,7 +1150,7 @@ export default function AgentsPage() {
                                                 );
                                             })}
                                         {Object.keys(selectedLog.details).length === 0 && (
-                                            <div className="py-8 text-center bg-app-surface-soft rounded-2xl border border-dashed border-app-border">
+                                            <div className="py-8 text-center bg-app-surface-soft rounded-none border border-dashed border-app-border">
                                                 <p className="text-xs text-app-text-muted font-bold uppercase tracking-widest">No detailed payload available</p>
                                             </div>
                                         )}
@@ -1161,7 +1161,7 @@ export default function AgentsPage() {
                             <div className="p-6 bg-slate-50 dark:bg-slate-800/20 border-t border-app-border flex flex-shrink-0 gap-3">
                                 <button
                                     onClick={() => setSelectedLog(null)}
-                                    className="flex-1 py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                    className="flex-1 py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-none font-bold transition-all active:scale-95 text-sm"
                                 >
                                     Close Intelligence Data
                                 </button>
@@ -1175,10 +1175,10 @@ export default function AgentsPage() {
             {
                 selectedAgentDiscoveries && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-                        <div className="w-full max-w-4xl bg-white dark:bg-slate-900 border border-app-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                        <div className="w-full max-w-4xl bg-white dark:bg-slate-900 border border-app-border rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
                             <div className="p-6 border-b border-app-border flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                    <div className="p-2 rounded-none bg-blue-500/20 text-blue-400">
                                         <Database size={20} />
                                     </div>
                                     <div>
@@ -1186,7 +1186,7 @@ export default function AgentsPage() {
                                         <p className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">Findings reported by {selectedAgentDiscoveries.agent.name}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedAgentDiscoveries(null)} className="p-2 rounded-xl hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                                <button onClick={() => setSelectedAgentDiscoveries(null)} className="p-2 rounded-none hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -1200,13 +1200,13 @@ export default function AgentsPage() {
                                 ) : selectedAgentDiscoveries.data.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {selectedAgentDiscoveries.data.map((item, idx) => (
-                                            <div key={item.id || idx} className="p-5 rounded-2xl bg-app-surface-soft border border-app-border hover:border-blue-500/20 transition-all group">
+                                            <div key={item.id || idx} className="p-5 rounded-none bg-app-surface-soft border border-app-border hover:border-blue-500/20 transition-all group">
                                                 {selectedAgentDiscoveries.agent.type === 'API' ? (
                                                     /* Software License View */
                                                     <>
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-all">
+                                                                <div className="p-2 rounded-none bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-all">
                                                                     <Package size={18} />
                                                                 </div>
                                                                 <div>
@@ -1234,7 +1234,7 @@ export default function AgentsPage() {
                                                     <>
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-all">
+                                                                <div className="p-2 rounded-none bg-amber-500/10 text-amber-400 group-hover:bg-amber-500/20 transition-all">
                                                                     <Users size={18} />
                                                                 </div>
                                                                 <div>
@@ -1262,7 +1262,7 @@ export default function AgentsPage() {
                                                     <>
                                                         <div className="flex justify-between items-start mb-4">
                                                             <div className="flex items-center gap-3">
-                                                                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-all">
+                                                                <div className="p-2 rounded-none bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-all">
                                                                     <Server size={18} />
                                                                 </div>
                                                                 <div>
@@ -1302,7 +1302,7 @@ export default function AgentsPage() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="py-20 text-center bg-app-surface-soft rounded-3xl border border-dashed border-app-border">
+                                    <div className="py-20 text-center bg-app-surface-soft rounded-none border border-dashed border-app-border">
                                         <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center mx-auto mb-4 text-app-text-muted">
                                             <Database size={32} />
                                         </div>
@@ -1315,7 +1315,7 @@ export default function AgentsPage() {
                             <div className="p-6 bg-slate-50 dark:bg-slate-800/20 border-t border-app-border flex flex-shrink-0 gap-3">
                                 <button
                                     onClick={() => setSelectedAgentDiscoveries(null)}
-                                    className="w-full py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                    className="w-full py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-none font-bold transition-all active:scale-95 text-sm"
                                 >
                                     Close Intelligence View
                                 </button>
@@ -1331,10 +1331,10 @@ export default function AgentsPage() {
             {
                 selectedAgentDetails && agentMetadata && agentMetadata[selectedAgentDetails.id] && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-                        <div className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-app-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                        <div className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-app-border rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
                             <div className="p-6 border-b border-app-border flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                    <div className="p-2 rounded-none bg-blue-500/20 text-blue-400">
                                         <FileText size={20} />
                                     </div>
                                     <div>
@@ -1342,7 +1342,7 @@ export default function AgentsPage() {
                                         <p className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">{selectedAgentDetails.role} • Technical Documentation</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedAgentDetails(null)} className="p-2 rounded-xl hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                                <button onClick={() => setSelectedAgentDetails(null)} className="p-2 rounded-none hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                                     <X size={20} />
                                 </button>
                             </div>
@@ -1351,7 +1351,7 @@ export default function AgentsPage() {
 
                                 {/* Purpose */}
 
-                                <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                                <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
 
                                     <div className="flex items-center gap-2 mb-3">
 
@@ -1369,7 +1369,7 @@ export default function AgentsPage() {
 
                                 {/* Discovery Methods */}
 
-                                <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                                <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
 
                                     <div className="flex items-center gap-2 mb-3">
 
@@ -1383,7 +1383,7 @@ export default function AgentsPage() {
 
                                         {agentMetadata[selectedAgentDetails.id].discoveryMethods.map((method, idx) => (
 
-                                            <span key={idx} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                                            <span key={idx} className="px-3 py-1.5 rounded-none bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
 
                                                 {method}
 
@@ -1399,7 +1399,7 @@ export default function AgentsPage() {
 
                                 {/* Data Sources */}
 
-                                <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                                <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
 
                                     <div className="flex items-center gap-2 mb-3">
 
@@ -1431,7 +1431,7 @@ export default function AgentsPage() {
 
                                 {/* Capabilities */}
 
-                                <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                                <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
 
                                     <div className="flex items-center gap-2 mb-3">
 
@@ -1463,7 +1463,7 @@ export default function AgentsPage() {
 
                                 {/* Schedule */}
 
-                                <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                                <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
 
                                     <div className="flex items-center gap-2 mb-3">
 
@@ -1481,7 +1481,7 @@ export default function AgentsPage() {
 
                                 {/* Output */}
 
-                                <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                                <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
 
                                     <div className="flex items-center gap-2 mb-3">
 
@@ -1504,7 +1504,7 @@ export default function AgentsPage() {
 
                                     onClick={() => setSelectedAgentDetails(null)}
 
-                                    className="w-full py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                    className="w-full py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-none font-bold transition-all active:scale-95 text-sm"
 
                                 >
 
@@ -1523,10 +1523,10 @@ export default function AgentsPage() {
             {/* Agent Metrics Modal */}
             {viewingMetrics && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-app-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
+                    <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-app-border rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10 flex flex-col max-h-[90vh]">
                         <div className="p-6 border-b border-app-border flex flex-shrink-0 justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400">
+                                <div className="p-2 rounded-none bg-blue-500/20 text-blue-400">
                                     <BarChart3 size={20} />
                                 </div>
                                 <div>
@@ -1536,7 +1536,7 @@ export default function AgentsPage() {
                                     </p>
                                 </div>
                             </div>
-                            <button onClick={() => setViewingMetrics(null)} className="p-2 rounded-xl hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                            <button onClick={() => setViewingMetrics(null)} className="p-2 rounded-none hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -1550,7 +1550,7 @@ export default function AgentsPage() {
                             ) : (
                                 <div className="grid grid-cols-2 gap-4">
                                     {Object.entries(agentMetrics[viewingMetrics]).map(([key, value]) => (
-                                        <div key={key} className="p-4 rounded-2xl bg-app-surface-soft border border-app-border group hover:border-blue-500/20 transition-all">
+                                        <div key={key} className="p-4 rounded-none bg-app-surface-soft border border-app-border group hover:border-blue-500/20 transition-all">
                                             <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-2">{key.replace(/_/g, ' ')}</span>
                                             <span className="text-xl font-black text-blue-400 font-mono">
                                                 {(() => {
@@ -1595,14 +1595,14 @@ export default function AgentsPage() {
                                     fetchAgentMetrics(viewingMetrics);
                                     showToast('Refreshing mission telemetry...');
                                 }}
-                                className="flex-1 py-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 rounded-xl font-bold transition-all active:scale-95 text-sm flex items-center justify-center gap-2"
+                                className="flex-1 py-3 bg-blue-600/10 hover:bg-blue-600/20 border border-blue-500/20 text-blue-400 rounded-none font-bold transition-all active:scale-95 text-sm flex items-center justify-center gap-2"
                             >
                                 <RefreshCw size={16} />
                                 Refresh Telemetry
                             </button>
                             <button
                                 onClick={() => setViewingMetrics(null)}
-                                className="flex-1 py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-xl font-bold transition-all active:scale-95 text-sm"
+                                className="flex-1 py-3 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text rounded-none font-bold transition-all active:scale-95 text-sm"
                             >
                                 Close
                             </button>
@@ -1622,7 +1622,7 @@ export default function AgentsPage() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={triggerGlobalSync}
-                        className="px-6 py-3 rounded-2xl bg-blue-600 text-app-text font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95 group"
+                        className="px-6 py-3 rounded-none bg-blue-600 text-app-text font-bold hover:bg-blue-500 shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2 active:scale-95 group"
                     >
                         <Zap size={20} className="group-hover:animate-pulse" />
                         <span>Global Sync</span>
@@ -1638,10 +1638,10 @@ export default function AgentsPage() {
                     { label: 'Discovery Fleet Health', value: stats.networkHealth, sub: 'No critical failures', icon: Activity, color: 'emerald' },
                     { label: 'Cloud Sync', value: stats.cloudStatus, sub: 'Last sync: 15m ago', icon: Cloud, color: 'indigo' },
                 ].map((stat, i) => (
-                    <div key={i} className="p-6 rounded-3xl bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border relative overflow-hidden group">
+                    <div key={i} className="p-6 rounded-none bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border relative overflow-hidden group">
                         <div className={`absolute top-0 right-0 w-24 h-24 bg-${stat.color}-500/10 blur-3xl -mr-8 -mt-8 transition-all duration-500 group-hover:scale-150`} />
                         <div className="flex items-baseline justify-between mb-4">
-                            <div className={`p-3 rounded-2xl bg-${stat.color}-500/20 text-${stat.color}-400 border border-${stat.color}-500/20`}>
+                            <div className={`p-3 rounded-none bg-${stat.color}-500/20 text-${stat.color}-400 border border-${stat.color}-500/20`}>
                                 <stat.icon size={24} />
                             </div>
                             <span className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest">Real-time</span>
@@ -1675,7 +1675,7 @@ export default function AgentsPage() {
                                 <div
                                     key={agent.id}
                                     onClick={() => fetchAgentDiscoveries(agent)}
-                                    className={`p-6 rounded-3xl bg-white dark:bg-slate-900/60 border transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98] ${isSyncing ? 'border-blue-500/50 shadow-lg shadow-blue-500/5' : 'border-app-border hover:border-blue-500/30'}`}
+                                    className={`p-6 rounded-none bg-white dark:bg-slate-900/60 border transition-all group relative overflow-hidden cursor-pointer active:scale-[0.98] ${isSyncing ? 'border-blue-500/50 shadow-lg shadow-blue-500/5' : 'border-app-border hover:border-blue-500/30'}`}
                                 >
                                     {isSyncing && (
                                         <div className="absolute inset-0 bg-blue-500/5 animate-pulse flex items-center justify-center">
@@ -1685,7 +1685,7 @@ export default function AgentsPage() {
 
                                     <div className="flex justify-between items-start mb-6 relative">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-app-border transition-all ${agent.status === 'online' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-50 dark:bg-slate-800/50 text-app-text-muted'}`}>
+                                            <div className={`w-12 h-12 rounded-none flex items-center justify-center border border-app-border transition-all ${agent.status === 'online' ? 'bg-blue-500/10 text-blue-400' : 'bg-slate-50 dark:bg-slate-800/50 text-app-text-muted'}`}>
                                                 {agent.type === 'System' && <Cpu size={24} />}
                                                 {agent.type === 'Cloud' && <Cloud size={24} />}
                                                 {agent.type === 'API' && <RefreshCw size={24} className={isSyncing ? 'animate-spin' : ''} />}
@@ -1697,7 +1697,7 @@ export default function AgentsPage() {
                                                 <p className="text-app-text-muted text-xs font-medium">{agent.role}</p>
                                             </div>
                                         </div>
-                                        <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border ${agent.status === 'online' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
+                                        <div className={`px-2 py-1 rounded-none text-[10px] font-black uppercase tracking-tighter border ${agent.status === 'online' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'}`}>
                                             {isSyncing ? 'Syncing...' : agent.status}
                                         </div>
                                     </div>
@@ -1744,7 +1744,7 @@ export default function AgentsPage() {
                                         <button
                                             onClick={(e) => { e.stopPropagation(); triggerScan(agent); }}
                                             disabled={isSyncing}
-                                            className={`flex-1 min-w-[120px] py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 ${isSyncing
+                                            className={`flex-1 min-w-[120px] py-3 rounded-none font-bold text-xs transition-all flex items-center justify-center gap-2 ${isSyncing
                                                 ? 'bg-blue-600/40 text-blue-200 cursor-not-allowed'
                                                 : 'bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 active:scale-95'
                                                 }`}
@@ -1762,21 +1762,21 @@ export default function AgentsPage() {
                                                 fetchAgentMetrics(agent.id);
                                                 setViewingMetrics(agent.id);
                                             }}
-                                            className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 text-app-text-muted text-app-text-muted rounded-xl border border-app-border transition-all active:scale-95"
+                                            className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 text-app-text-muted text-app-text-muted rounded-none border border-app-border transition-all active:scale-95"
                                             title="View Performance Metrics"
                                         >
                                             <BarChart3 size={16} />
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setConfigAgent(agent); }}
-                                            className="p-3 rounded-xl bg-app-surface-soft border border-app-border text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-all active:scale-95"
+                                            className="p-3 rounded-none bg-app-surface-soft border border-app-border text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-all active:scale-95"
                                             title="Configure Agent"
                                         >
                                             <Settings size={16} />
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); setSelectedAgentDetails(agent); }}
-                                            className="p-3 rounded-xl bg-app-surface-soft border border-app-border text-app-text-muted hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all active:scale-95"
+                                            className="p-3 rounded-none bg-app-surface-soft border border-app-border text-app-text-muted hover:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/20 transition-all active:scale-95"
                                             title="View Agent Details"
                                         >
                                             <Info size={16} />
@@ -1786,7 +1786,7 @@ export default function AgentsPage() {
                                                 e.stopPropagation();
                                                 window.location.href = `/security/port-policies?agentId=${agent.id}`;
                                             }}
-                                            className="px-3 py-3 rounded-xl bg-white dark:bg-slate-900/70 border border-indigo-500/40 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-600/20 hover:text-indigo-100 transition-all active:scale-95"
+                                            className="px-3 py-3 rounded-none bg-white dark:bg-slate-900/70 border border-indigo-500/40 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-600/20 hover:text-indigo-100 transition-all active:scale-95"
                                             title="View Port Policies for this Agent"
                                         >
                                             Port Policies
@@ -1818,12 +1818,12 @@ export default function AgentsPage() {
                             <Terminal className="text-purple-400" size={20} />
                             Intelligence Feed
                         </h3>
-                        <button onClick={fetchAuditLogs} className="p-2 rounded-lg hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-all">
+                        <button onClick={fetchAuditLogs} className="p-2 rounded-none hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-all">
                             <RefreshCw size={14} />
                         </button>
                     </div>
 
-                    <div className="rounded-3xl bg-white dark:bg-slate-900/60 border border-app-border p-2 overflow-hidden backdrop-blur-md relative min-h-[400px]">
+                    <div className="rounded-none bg-white dark:bg-slate-900/60 border border-app-border p-2 overflow-hidden backdrop-blur-md relative min-h-[400px]">
                         {loading && (
                             <div className="absolute inset-0 z-10 bg-white dark:bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
                                 <RefreshCw className="animate-spin text-blue-500" size={32} />
@@ -1839,7 +1839,7 @@ export default function AgentsPage() {
                                     </div>
                                     <p className="text-xs text-app-text-muted text-app-text-muted font-medium mb-2">{item.entity}</p>
                                     <div className="flex items-center gap-2">
-                                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter ${item.status === 'Success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-500'}`}>
+                                        <span className={`px-2 py-0.5 rounded-none text-[9px] font-black uppercase tracking-tighter ${item.status === 'Success' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-500'}`}>
                                             {item.status}
                                         </span>
                                         <button

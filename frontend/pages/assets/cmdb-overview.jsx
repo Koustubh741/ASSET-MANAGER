@@ -19,7 +19,8 @@ export default function CMDBOverviewPage() {
             setLoading(true);
             try {
                 // Fetch critical assets (Servers, Switches, DBs)
-                const data = await apiClient.getAssets();
+                const res = await apiClient.getAssets();
+                const data = res.data || [];
                 setAssets(data);
 
                 // Filter for "Infrastructure" assets to build a core map
@@ -109,7 +110,7 @@ export default function CMDBOverviewPage() {
             {/* --- TOP BAR --- */}
             <div className="border-b border-app-border bg-white dark:bg-slate-900/50 backdrop-blur-md px-8 py-4 flex items-center justify-between z-20">
                 <div className="flex items-center gap-4">
-                    <Link href="/enterprise" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg transition-colors text-app-text-muted hover:text-app-text">
+                    <Link href="/enterprise" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none transition-colors text-app-text-muted hover:text-app-text">
                         <ArrowLeft size={20} />
                     </Link>
                     <div>
@@ -122,15 +123,15 @@ export default function CMDBOverviewPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-lg border border-app-border mr-4">
+                    <div className="flex bg-slate-50 dark:bg-slate-800 p-1 rounded-none border border-app-border mr-4">
                         <button
                             onClick={() => setViewMode('topology')}
-                            className={`px-4 py-1.5 rounded-md text-xs font-semibold ${viewMode === 'topology' ? 'bg-blue-600 text-app-text' : 'text-app-text-muted hover:text-app-text'}`}
+                            className={`px-4 py-1.5 rounded-none text-xs font-semibold ${viewMode === 'topology' ? 'bg-blue-600 text-app-text' : 'text-app-text-muted hover:text-app-text'}`}
                         >
                             Topology
                         </button>
                     </div>
-                    <Link href="/assets/search" className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-lg text-xs font-bold border border-app-border transition-all">
+                    <Link href="/assets/search" className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-none text-xs font-bold border border-app-border transition-all">
                         <Search size={14} />
                         Find Asset
                     </Link>
@@ -179,12 +180,12 @@ export default function CMDBOverviewPage() {
                         >
                             <Link href={node.realId ? `/assets/${node.realId}/cmdb` : '#'}>
                                 <div className={`group flex flex-col items-center cursor-pointer`}>
-                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border-2 bg-slate-100 dark:bg-slate-950 transition-all duration-300 hover:scale-110 ${getNodeColor(node)}`}>
+                                    <div className={`w-14 h-14 rounded-none flex items-center justify-center border-2 bg-slate-100 dark:bg-slate-950 transition-all duration-300 hover:scale-110 ${getNodeColor(node)}`}>
                                         <node.icon size={24} />
 
                                         {/* Glow effect for biz nodes */}
                                         {node.layer === 'biz' && (
-                                            <div className="absolute inset-0 rounded-2xl bg-blue-500/10 animate-pulse -z-10 shadow-[0_0_30px_rgba(59,130,246,0.3)]"></div>
+                                            <div className="absolute inset-0 rounded-none bg-blue-500/10 animate-pulse -z-10 shadow-[0_0_30px_rgba(59,130,246,0.3)]"></div>
                                         )}
                                     </div>
                                     <div className="mt-3 text-center">
@@ -200,7 +201,7 @@ export default function CMDBOverviewPage() {
                 </div>
 
                 {/* Info Panel */}
-                <div className="absolute bottom-8 left-8 p-6 bg-white dark:bg-slate-900/80 backdrop-blur-xl border border-app-border rounded-2xl max-w-xs z-30">
+                <div className="absolute bottom-8 left-8 p-6 bg-white dark:bg-slate-900/80 backdrop-blur-xl border border-app-border rounded-none max-w-xs z-30">
                     <h3 className="text-sm font-bold text-app-text mb-2 flex items-center gap-2">
                         <Zap size={16} className="text-yellow-400" />
                         Infrastructure Insights
@@ -222,11 +223,11 @@ export default function CMDBOverviewPage() {
 
                 {/* Legend */}
                 <div className="absolute top-24 left-8 space-y-2 z-30">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-lg border border-app-border">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-none border border-app-border">
                         <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                         <span className="text-[10px] text-app-text-muted uppercase font-bold">Business Service</span>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-lg border border-app-border">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-slate-900/50 rounded-none border border-app-border">
                         <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                         <span className="text-[10px] text-app-text-muted uppercase font-bold">Critical Infra</span>
                     </div>

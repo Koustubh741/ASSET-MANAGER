@@ -41,7 +41,7 @@ function UpdateProfileModal({ isOpen, onClose, user, onUpdate }) {
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[100] flex items-center justify-center p-6">
             <div className="w-full max-w-lg glass-panel p-10 border border-white/10 shadow-2xl bg-slate-900 animate-in fade-in zoom-in duration-300">
                 <div className="flex items-center gap-4 mb-8">
-                    <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
+                    <div className="p-3 bg-indigo-500/10 rounded-none text-indigo-400">
                         <Settings size={24} className="animate-spin-slow" />
                     </div>
                     <div>
@@ -66,7 +66,7 @@ function UpdateProfileModal({ isOpen, onClose, user, onUpdate }) {
                                     type="text"
                                     value={formData[field.name]}
                                     onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-                                    className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-5 py-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-700"
+                                    className="w-full bg-slate-950/50 border border-white/5 rounded-none px-5 py-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all placeholder:text-slate-700"
                                     placeholder={field.placeholder}
                                 />
                             </div>
@@ -77,14 +77,14 @@ function UpdateProfileModal({ isOpen, onClose, user, onUpdate }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-[11px] font-black text-slate-400 uppercase tracking-widest rounded-2xl border border-white/5 transition-all"
+                            className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-[11px] font-black text-slate-400 uppercase tracking-widest rounded-none border border-white/5 transition-all"
                         >
                             Abort
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-[2] py-4 bg-indigo-600 hover:bg-indigo-500 text-[11px] font-black text-white uppercase tracking-widest rounded-2xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            className="flex-[2] py-4 bg-indigo-600 hover:bg-indigo-500 text-[11px] font-black text-white uppercase tracking-widest rounded-none shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {loading ? <RefreshCw className="animate-spin" size={14} /> : <ShieldCheck size={14} />}
                             Synchronize
@@ -105,17 +105,18 @@ export default function ProfilePage() {
 
     // Fallback profile if user context is thin
     const displayProfile = {
-        name: user?.name,
+        name: user?.full_name || user?.name,
         email: user?.email,
         role: currentRole?.label || 'End User',
         department: user?.department || 'Operations',
         location: user?.location || 'Remote Node',
-        joinDate: '2023-08-14'
+        joinDate: user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'
     };
 
     const assignedAssets = assets
         .filter(a => {
-            const matches = (a.assigned_to?.toLowerCase() === (user?.name || '').toLowerCase()) &&
+            const userName = (user?.full_name || user?.name || '').toLowerCase();
+            const matches = (a.assigned_to?.toLowerCase() === userName) &&
                 (a.status === ASSET_STATUS.IN_USE || a.status === 'Active');
             return matches;
         });
@@ -135,7 +136,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-6">
                 <button
                     onClick={() => router.back()}
-                    className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-app-border hover:bg-slate-50 dark:hover:bg-app-surface-soft transition-all group"
+                    className="p-3 rounded-none bg-white dark:bg-slate-900 border border-app-border hover:bg-slate-50 dark:hover:bg-app-surface-soft transition-all group"
                 >
                     <ChevronLeft size={24} className="text-app-text-muted group-hover:text-slate-900 dark:group-hover:text-app-text group-hover:-translate-x-1 transition-all" />
                 </button>
@@ -159,7 +160,7 @@ export default function ProfilePage() {
                                     {(displayProfile.name || 'U').split(' ').map(n => n[0]).join('')}
                                 </span>
                             </div>
-                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl border-4 border-white dark:border-slate-900 flex items-center justify-center shadow-lg">
+                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-none border-4 border-white dark:border-slate-900 flex items-center justify-center shadow-lg">
                                 <CheckCircle size={18} className="text-app-text" />
                             </div>
                         </div>
@@ -177,13 +178,13 @@ export default function ProfilePage() {
                         <div className="relative z-10 w-full mt-10 space-y-3">
                             <button 
                                 onClick={() => setIsUpdateModalOpen(true)}
-                                className="w-full py-4 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface text-[11px] font-black text-slate-700 text-app-text uppercase tracking-widest rounded-2xl border border-app-border transition-all flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-app-surface text-[11px] font-black text-slate-700 text-app-text uppercase tracking-widest rounded-none border border-app-border transition-all flex items-center justify-center gap-2"
                             >
                                 <Settings size={14} /> Update Parameters
                             </button>
                             <button
                                 onClick={handleLogout}
-                                className="w-full py-4 bg-rose-500/10 hover:bg-rose-500/20 text-[11px] font-black text-rose-500 uppercase tracking-widest rounded-2xl border border-rose-500/20 transition-all flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-rose-500/10 hover:bg-rose-500/20 text-[11px] font-black text-rose-500 uppercase tracking-widest rounded-none border border-rose-500/20 transition-all flex items-center justify-center gap-2"
                             >
                                 <LogOut size={14} /> Terminate Session
                             </button>
@@ -208,7 +209,7 @@ export default function ProfilePage() {
                     {/* Security & Access Section */}
                     <div className="glass-panel p-8 border border-app-border bg-white dark:bg-slate-900/40 rounded-[2.5rem] space-y-8">
                         <div className="flex items-center gap-4 border-b border-black/5 border-app-border pb-6">
-                            <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            <div className="p-3 bg-amber-500/10 rounded-none text-amber-600 dark:text-amber-400 border border-amber-500/20">
                                 <Shield size={24} />
                             </div>
                             <div>
@@ -224,10 +225,10 @@ export default function ProfilePage() {
                                 { label: 'Cloud Identity', value: 'Synced via Azure AD', icon: Globe, action: 'Verify' },
                                 { label: 'Session Integrity', value: 'Last login from New York, US', icon: Clock, action: 'Logs' }
                             ].map((item, i) => (
-                                <div key={i} className="p-6 rounded-3xl bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-app-surface-soft transition-all group/item">
+                                <div key={i} className="p-6 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-app-surface-soft transition-all group/item">
                                     <div className="flex justify-between items-start">
                                         <div className="flex items-center gap-4">
-                                            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 text-app-text-muted group-hover/item:text-indigo-500 transition-colors">
+                                            <div className="p-2.5 rounded-none bg-white dark:bg-slate-800 text-app-text-muted group-hover/item:text-indigo-500 transition-colors">
                                                 <item.icon size={18} />
                                             </div>
                                             <div>
@@ -247,7 +248,7 @@ export default function ProfilePage() {
                     {/* Assigned Fleet Section */}
                     <div className="glass-panel p-8 border border-app-border bg-white dark:bg-slate-900/40 rounded-[2.5rem] space-y-8">
                         <div className="flex items-center gap-4 border-b border-black/5 border-app-border pb-6">
-                            <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                            <div className="p-3 bg-blue-500/10 rounded-none text-blue-600 dark:text-blue-400 border border-blue-500/20">
                                 <Briefcase size={24} />
                             </div>
                             <div>
@@ -258,9 +259,9 @@ export default function ProfilePage() {
 
                         <div className="space-y-4">
                             {assignedAssets.length > 0 ? assignedAssets.map((asset) => (
-                                <div key={asset.id} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-white/[0.02] border border-app-border rounded-3xl group/asset">
+                                <div key={asset.id} className="flex items-center justify-between p-6 bg-slate-50 dark:bg-white/[0.02] border border-app-border rounded-none group/asset">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center text-app-text-muted group-hover/asset:text-blue-500 transition-colors shadow-sm">
+                                        <div className="w-14 h-14 rounded-none bg-white dark:bg-slate-800 flex items-center justify-center text-app-text-muted group-hover/asset:text-blue-500 transition-colors shadow-sm">
                                             {(asset.asset_type || '').toLowerCase().includes('laptop') ? <Laptop size={28} /> :
                                                 (asset.asset_type || '').toLowerCase().includes('phone') ? <Smartphone size={28} /> : <Briefcase size={28} />}
                                         </div>
@@ -274,7 +275,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20">
+                                        <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-none border border-emerald-500/20">
                                             {asset.status}
                                         </span>
                                         <p className="text-[10px] text-app-text-muted uppercase tracking-widest mt-2">Health: Optimal</p>

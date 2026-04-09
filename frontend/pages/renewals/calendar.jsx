@@ -17,7 +17,8 @@ export default function RenewalsCalendarPage() {
         const fetchEvents = async () => {
             setLoading(true);
             try {
-                const assetList = await apiClient.getAssets();
+                const assetResponse = await apiClient.getAssets();
+                const assetList = assetResponse.data || [];
                 const warrantyEvents = assetList
                     .filter(a => a.warranty_expiry)
                     .map(a => ({
@@ -82,7 +83,7 @@ export default function RenewalsCalendarPage() {
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-none hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
@@ -93,7 +94,7 @@ export default function RenewalsCalendarPage() {
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Calendar Grid */}
-                    <div className="flex-1 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-app-border">
+                    <div className="flex-1 glass-panel p-6 rounded-none bg-white dark:bg-slate-900 border border-app-border">
                         {/* Month Nav */}
                         <div className="flex justify-between items-center mb-8">
                             <button onClick={prevMonth} className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-full"><ChevronLeft /></button>
@@ -119,7 +120,7 @@ export default function RenewalsCalendarPage() {
                                     <div
                                         key={i}
                                         onClick={() => setSelectedDate(day)}
-                                        className={`min-h-[100px] p-2 rounded-xl border border-app-border transition-all cursor-pointer relative
+                                        className={`min-h-[100px] p-2 rounded-none border border-app-border transition-all cursor-pointer relative
                                             ${!isCurrentMonth ? 'opacity-30 bg-slate-100 dark:bg-slate-950' : 'bg-white dark:bg-slate-900/50 hover:bg-slate-100 dark:bg-slate-800'}
                                             ${isSelected ? 'ring-2 ring-emerald-500/50 bg-emerald-900/10' : ''}
                                         `}
@@ -146,14 +147,14 @@ export default function RenewalsCalendarPage() {
                     </div>
 
                     {/* Details Sidebar */}
-                    <div className="w-full lg:w-96 glass-panel p-6 rounded-2xl bg-white dark:bg-slate-900 border border-app-border h-fit">
+                    <div className="w-full lg:w-96 glass-panel p-6 rounded-none bg-white dark:bg-slate-900 border border-app-border h-fit">
                         <h3 className="text-lg font-semibold text-app-text mb-4 border-b border-app-border pb-4">
                             Events for {format(selectedDate, "MMM d, yyyy")}
                         </h3>
 
                         <div className="space-y-4">
                             {selectedDayEvents.length > 0 ? selectedDayEvents.map((e, i) => (
-                                <div key={i} className="flex gap-4 p-4 rounded-xl bg-app-surface-soft border border-app-border hover:border-app-border transition-colors">
+                                <div key={i} className="flex gap-4 p-4 rounded-none bg-app-surface-soft border border-app-border hover:border-app-border transition-colors">
                                     <div className={`mt-1 
                                         ${e.type === 'Warranty' ? 'text-orange-400' : 
                                           e.type === 'License' ? 'text-purple-400' : 'text-blue-400'}`}>

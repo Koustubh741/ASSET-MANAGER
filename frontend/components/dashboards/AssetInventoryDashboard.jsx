@@ -23,12 +23,12 @@ export default function AssetInventoryDashboard() {
     return (
         <div className="space-y-6 neural-compact">
             {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-1 bg-white/40 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-app-border backdrop-blur-md w-fit shadow-sm">
+            <div className="flex flex-wrap gap-1 bg-white/40 dark:bg-slate-900/80 p-1.5 rounded-none border border-app-border backdrop-blur-md w-fit shadow-sm">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-widest transition-all duration-300 ${activeTab === tab.id
+                        className={`flex items-center gap-2 px-4 py-2 rounded-none text-sm font-bold uppercase tracking-widest transition-all duration-300 ${activeTab === tab.id
                             ? 'bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 ring-2 ring-blue-500/20'
                             : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text hover:bg-slate-100 dark:hover:bg-app-surface-soft'
                             }`}

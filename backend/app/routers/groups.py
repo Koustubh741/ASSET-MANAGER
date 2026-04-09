@@ -11,6 +11,8 @@ from ..schemas.ticket_schema import AssignmentGroupCreate, AssignmentGroupRespon
 from ..utils.auth_utils import get_current_user
 from ..schemas.user_schema import UserResponse
 
+from sqlalchemy.orm import selectinload
+
 router = APIRouter(
     prefix="/groups",
     tags=["groups"]
@@ -23,8 +25,29 @@ async def verify_admin(user: UserResponse) -> UserResponse:
 
 @router.get("/", response_model=List[AssignmentGroupResponse])
 async def get_groups(db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
-    result = await db.execute(select(AssignmentGroup).order_by(AssignmentGroup.name))
-    return result.scalars().all()
+    """
+    ROOT FIX: Retrieve all assignment groups with their linked department names.
+    Prioritizes official Department.name with a legacy string fallback.
+    """
+    result = await db.execute(
+        select(AssignmentGroup)
+        .options(selectinload(AssignmentGroup.dept_obj))
+        .order_by(AssignmentGroup.name)
+    )
+    groups = result.scalars().all()
+    
+    # Map the department name for the schema
+    for g in groups:
+        if g.dept_obj:
+            g.department_name = g.dept_obj.name
+        elif g.department:
+            g.department_name = g.department # Fallback
+        else:
+            g.department_name = "General" # Ultimate fallback
+            
+    return groups
+
+
 
 @router.post("/", response_model=AssignmentGroupResponse)
 async def create_group(

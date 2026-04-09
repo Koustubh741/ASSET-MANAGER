@@ -6,11 +6,11 @@ from sqlalchemy.sql import func
 from typing import Dict, Any, List
 import uuid
 
-from app.database.database import get_db, AsyncSessionLocal
-from app.models.models import AgentConfiguration, AgentSchedule, DiscoveryScan, DiscoveryDiff, Asset, DiscoveryAgent
-from app.schemas.agent_schema import AgentConfigUpdate, AgentConfigResponse, AgentValidationResponse, AgentScheduleUpdate, AgentScheduleResponse, DiscoveryAgentResponse, DiscoveryAgentUpdate
-from app.services.encryption_service import encrypt_value, decrypt_value
-from app.scheduler import scheduler
+from ..database.database import get_db, AsyncSessionLocal
+from ..models.models import AgentConfiguration, AgentSchedule, DiscoveryScan, DiscoveryDiff, Asset, DiscoveryAgent
+from ..schemas.agent_schema import AgentConfigUpdate, AgentConfigResponse, AgentValidationResponse, AgentScheduleUpdate, AgentScheduleResponse, DiscoveryAgentResponse, DiscoveryAgentUpdate
+from ..services.encryption_service import encrypt_value, decrypt_value
+from ..scheduler import scheduler
 from .auth import check_ADMIN
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime

@@ -68,7 +68,7 @@ export default function GatePassPage() {
                     </div>
                     <button
                         onClick={() => setShowForm(v => !v)}
-                        className="px-5 py-2.5 rounded-xl bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 font-semibold text-sm transition-all"
+                        className="px-5 py-2.5 rounded-none bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 font-semibold text-sm transition-all"
                     >+ Create Gate Pass</button>
                 </header>
 
@@ -82,7 +82,7 @@ export default function GatePassPage() {
                                     required
                                     value={form.asset_id}
                                     onChange={e => setForm(f => ({ ...f, asset_id: e.target.value }))}
-                                    className="w-full bg-app-surface-soft border border-white/15 rounded-lg px-3 py-2 text-sm text-app-text"
+                                    className="w-full bg-app-surface-soft border border-white/15 rounded-none px-3 py-2 text-sm text-app-text"
                                 >
                                     <option value="">Select asset…</option>
                                     {assets.map(a => <option key={a.id} value={a.id}>{a.name} ({a.serial_number})</option>)}
@@ -96,7 +96,7 @@ export default function GatePassPage() {
                                     placeholder="Person receiving the asset"
                                     value={form.issued_to}
                                     onChange={e => setForm(f => ({ ...f, issued_to: e.target.value }))}
-                                    className="w-full bg-app-surface-soft border border-white/15 rounded-lg px-3 py-2 text-sm text-app-text"
+                                    className="w-full bg-app-surface-soft border border-white/15 rounded-none px-3 py-2 text-sm text-app-text"
                                 />
                             </div>
                             <div>
@@ -106,7 +106,7 @@ export default function GatePassPage() {
                                     placeholder="e.g. Branch Office"
                                     value={form.destination}
                                     onChange={e => setForm(f => ({ ...f, destination: e.target.value }))}
-                                    className="w-full bg-app-surface-soft border border-white/15 rounded-lg px-3 py-2 text-sm text-app-text"
+                                    className="w-full bg-app-surface-soft border border-white/15 rounded-none px-3 py-2 text-sm text-app-text"
                                 />
                             </div>
                             <div>
@@ -115,7 +115,7 @@ export default function GatePassPage() {
                                     type="datetime-local"
                                     value={form.valid_until}
                                     onChange={e => setForm(f => ({ ...f, valid_until: e.target.value }))}
-                                    className="w-full bg-app-surface-soft border border-white/15 rounded-lg px-3 py-2 text-sm text-app-text"
+                                    className="w-full bg-app-surface-soft border border-white/15 rounded-none px-3 py-2 text-sm text-app-text"
                                 />
                             </div>
                             <div className="md:col-span-2">
@@ -125,13 +125,13 @@ export default function GatePassPage() {
                                     placeholder="Reason for moving this asset"
                                     value={form.reason}
                                     onChange={e => setForm(f => ({ ...f, reason: e.target.value }))}
-                                    className="w-full bg-app-surface-soft border border-white/15 rounded-lg px-3 py-2 text-sm text-app-text resize-none h-20"
+                                    className="w-full bg-app-surface-soft border border-white/15 rounded-none px-3 py-2 text-sm text-app-text resize-none h-20"
                                 />
                             </div>
                         </div>
                         <div className="flex gap-3 justify-end">
-                            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg text-sm text-app-text-muted hover:text-app-text">Cancel</button>
-                            <button type="submit" disabled={saving} className="px-5 py-2 rounded-lg text-sm bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 font-semibold">
+                            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 rounded-none text-sm text-app-text-muted hover:text-app-text">Cancel</button>
+                            <button type="submit" disabled={saving} className="px-5 py-2 rounded-none text-sm bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 font-semibold">
                                 {saving ? 'Creating…' : 'Create Pass'}
                             </button>
                         </div>
@@ -178,10 +178,10 @@ export default function GatePassPage() {
                                                 <td className="px-4 py-3">
                                                     <div className="flex gap-2">
                                                         {gp.status === 'PENDING' && (
-                                                            <button onClick={() => updatePass(gp.id, 'approve')} className="text-xs px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all">Approve</button>
+                                                            <button onClick={() => updatePass(gp.id, 'approve')} className="text-xs px-3 py-1 rounded-none bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all">Approve</button>
                                                         )}
                                                         {gp.status === 'APPROVED' && (
-                                                            <button onClick={() => updatePass(gp.id, 'revoke')} className="text-xs px-3 py-1 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 transition-all">Revoke</button>
+                                                            <button onClick={() => updatePass(gp.id, 'revoke')} className="text-xs px-3 py-1 rounded-none bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 transition-all">Revoke</button>
                                                         )}
                                                     </div>
                                                 </td>

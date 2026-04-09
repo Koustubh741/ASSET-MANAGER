@@ -1,14 +1,22 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1']
+const COLORS = [
+    'var(--color-kinetic-primary)',
+    'var(--color-kinetic-secondary)',
+    'var(--color-kinetic-gold)',
+    'var(--color-kinetic-rose)',
+    'var(--color-kinetic-cyan)',
+    'var(--color-kinetic-accent)',
+    'var(--color-kinetic-primary-soft)'
+];
 
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                <p className="text-slate-900 dark:text-slate-200 font-medium mb-1">{payload[0].name}</p>
-                <p className="text-app-text font-bold text-lg">
-                    {payload[0].value} <span className="text-app-text-muted text-xs font-normal">assets</span>
+            <div className="bg-app-obsidian border border-app-border p-4 rounded-none shadow-2xl backdrop-blur-md">
+                <p className="text-app-text-muted font-black text-[10px] uppercase tracking-widest mb-2 border-b border-app-border pb-1">{payload[0].name}</p>
+                <p className="text-app-text font-black text-xl font-['Outfit']">
+                    {payload[0].value} <span className="text-app-primary text-[10px] font-black uppercase tracking-widest ml-1">UNITS</span>
                 </p>
             </div>
         )
@@ -46,8 +54,8 @@ export default function CustomPieChart({ data, onPieClick, minAngle }) {
                 <Legend
                     verticalAlign="bottom"
                     height={36}
-                    iconType="circle"
-                    formatter={(value) => <span className="text-app-text-muted ml-1">{value}</span>}
+                    iconType="rect"
+                    formatter={(value) => <span className="text-app-text-muted text-[10px] font-black uppercase tracking-widest ml-2">{value}</span>}
                 />
             </PieChart>
         </ResponsiveContainer>

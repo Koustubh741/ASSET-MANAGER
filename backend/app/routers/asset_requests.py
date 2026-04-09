@@ -28,7 +28,7 @@ from ..services import asset_request_service, procurement_service
 from ..services.notification_service import send_notification
 from ..utils.auth_utils import get_current_user
 from ..schemas.user_schema import UserResponse
-from ..models.models import ByodDevice, Asset, AssetAssignment, PurchaseRequest, User, PurchaseOrder, AssetInventory
+from ..models.models import AssetRequest, ByodDevice, Asset, AssetAssignment, PurchaseRequest, User, PurchaseOrder, AssetInventory
 from ..services import asset_service
 from ..schemas.asset_schema import AssetCreate
 import uuid as _uuid
@@ -41,7 +41,7 @@ router = APIRouter(
 )
 
 # Root Fix: Staff roles that are authorized to perform lifecycle transitions (Procurement, Finance, Inventory)
-STAFF_ROLES = {"ADMIN", "PROCUREMENT", "ASSET_MANAGER", "FINANCE", "IT_MANAGEMENT"}
+STAFF_ROLES = {"ADMIN", "SUPPORT", "MANAGER"}
 
 @router.get("", response_model=List[AssetRequestResponse])
 async def get_asset_requests(
@@ -72,7 +72,7 @@ async def get_asset_requests(
     # IT managers have position=MANAGER but role=IT_MANAGEMENT, they should see ALL requests
     if current_user.role not in exclude_roles and current_user.position == "MANAGER":
         if not department:
-            department = current_user.department or current_user.domain
+            department = current_user.dept_obj.name if current_user.dept_obj else current_user.domain
         # Unified scoping: Managers see Dept OR Domain OR their OWN requests
         # We pass effective_requester_id to the service to enable this OR logic
         effective_requester_id = current_user.id
@@ -91,14 +91,12 @@ async def get_asset_requests(
 
 @router.get("/{request_id}", response_model=AssetRequestResponse)
 async def get_asset_request_by_id(
-    request_id: UUID,
+    request_id: UUID, 
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    """
-    Get a single asset request by ID (Asynchronous).
-    """
     asset_request = await asset_request_service.get_asset_request_by_id(db, request_id, user_role=current_user.role)
+
     if not asset_request:
         raise HTTPException(status_code=404, detail="Asset request not found")
         
@@ -108,10 +106,15 @@ async def get_asset_request_by_id(
         return asset_request
 
     # 2. Managers see their own requests OR requests within their department
-    if current_user.position == "MANAGER":
+    if str(current_user.position).upper() == "MANAGER" or str(current_user.role).upper() == "MANAGER":
+
         is_owner = asset_request.requester_id == current_user.id
-        # Note: asset_request_service.get_asset_request_by_id usually populates requester info
-        in_dept = asset_request.requester and asset_request.requester.get('department') == current_user.department
+        # Root Fix: Compare requester_department from response with manager's dept_obj name
+        user_dept_name = str(current_user.department).strip().lower() if current_user.department else ""
+
+        req_dept_name = str(asset_request.requester_department).strip().lower() if asset_request.requester_department else ""
+        in_dept = req_dept_name == user_dept_name
+
         
         if not (is_owner or in_dept):
             raise HTTPException(status_code=403, detail="Unauthorized: Request belongs to a different department")
@@ -172,7 +175,7 @@ async def verify_manager_authorization(
     manager = await asset_request_service.get_user_by_id_db(db, manager_id)
     if not manager:
         raise HTTPException(status_code=404, detail="Manager not found")
-    if manager.role != "END_USER" or manager.position != "MANAGER":
+    if manager.role not in ["MANAGER", "ADMIN"] and not (manager.position and "MANAGER" in manager.position.upper()):
         raise HTTPException(status_code=403, detail="Only managers can approve/reject")
     if manager.status != "ACTIVE":
         raise HTTPException(status_code=403, detail="Manager account is not active")
@@ -266,8 +269,8 @@ async def verify_it_management(user_id: UUID, db: AsyncSession) -> User:
     user = await asset_request_service.get_user_by_id_db(db, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    if user.role != "IT_MANAGEMENT":
-        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT")
+    if user.role not in ["IT_MANAGEMENT", "ADMIN", "SUPPORT"]:
+        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT or SUPPORT")
     if user.status != "ACTIVE":
         raise HTTPException(status_code=403, detail="Not active")
     return user
@@ -281,8 +284,8 @@ async def it_approve_request(
     current_user = Depends(get_current_user)
 ):
     reviewer = current_user
-    if reviewer.role != "IT_MANAGEMENT" and reviewer.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT")
+    if reviewer.role not in ["IT_MANAGEMENT", "ADMIN", "SUPPORT"]:
+        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT or SUPPORT")
         
     try:
         res = await asset_request_service.update_it_review_status(
@@ -317,8 +320,8 @@ async def it_reject_request(
     current_user = Depends(get_current_user)
 ):
     reviewer = current_user
-    if reviewer.role != "IT_MANAGEMENT" and reviewer.role != "ADMIN":
-        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT")
+    if reviewer.role not in ["IT_MANAGEMENT", "ADMIN", "SUPPORT"]:
+        raise HTTPException(status_code=403, detail="Not IT_MANAGEMENT or SUPPORT")
     try:
         res = await asset_request_service.update_it_review_status(
             db, request_id, "IT_REJECTED", reviewer.id, reviewer.full_name, "IT_REJECTED", reason=rejection.reason
@@ -365,7 +368,7 @@ async def byod_register_device(
 async def verify_ASSET_MANAGER(user_id: UUID, db: AsyncSession) -> User:
     user = await asset_request_service.get_user_by_id_db(db, user_id)
     if not user or user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
     return user
 
 
@@ -413,8 +416,8 @@ async def fulfill_company_owned_request(
 async def verify_procurement_or_finance(user_id: UUID, db: AsyncSession) -> User:
     """Allow only PROCUREMENT or FINANCE (no combined role)."""
     user = await asset_request_service.get_user_by_id_db(db, user_id)
-    if not user or user.role not in ["PROCUREMENT", "FINANCE"]:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    if not user or user.role not in ["PROCUREMENT", "ADMIN", "SUPPORT"]:
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
     return user
 
 @router.post("/{id}/procurement/approve", response_model=AssetRequestResponse)
@@ -426,7 +429,7 @@ async def procurement_approve_request(
 ):
     reviewer = current_user
     if reviewer.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(current_user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
     try:
         res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_APPROVED", reviewer.id, reviewer.full_name, user_role="PROCUREMENT")
         if not res:
@@ -448,7 +451,7 @@ async def procurement_reject_request(
     current_user = Depends(get_current_user)
 ):
     if current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(current_user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
     res = await asset_request_service.update_procurement_finance_status(db, id, "PROCUREMENT_REJECTED", current_user.id, current_user.full_name, reason=rejection.reason, user_role="PROCUREMENT")
     if not res:
         raise HTTPException(status_code=404, detail="Asset request not found")
@@ -462,7 +465,7 @@ async def finance_approve_request(
     current_user = Depends(get_current_user)
 ):
     if current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(current_user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
     try:
         from sqlalchemy import desc
         from ..models.models import PurchaseOrder
@@ -475,7 +478,16 @@ async def finance_approve_request(
             raise HTTPException(status_code=400, detail="No Purchase Order found for this request. Procurement must upload and validate PO first.")
         await procurement_service.validate_finance_budget(db, po.id, current_user.id, "APPROVE")
         await db.commit()
-        await db.refresh(db_request)
+        
+        # Re-fetch with joinedload for async serialization (ROOT FIX)
+        from sqlalchemy.orm import joinedload
+        res_stmt = await db.execute(
+            select(AssetRequest).options(
+                joinedload(AssetRequest.requester).joinedload(User.dept_obj), 
+                joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)
+            ).filter(AssetRequest.id == id)
+        )
+        db_request = res_stmt.scalars().first()
         
         # Notify stakeholders about budget approval
         await send_notification(db, id, "status_change", old_status="PO_VALIDATED", new_status="FINANCE_APPROVED", reviewer_name=current_user.full_name)
@@ -498,7 +510,7 @@ async def finance_reject_request(
     current_user = Depends(get_current_user)
 ):
     if current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(current_user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
     from sqlalchemy import desc
     from ..models.models import PurchaseOrder
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
@@ -510,7 +522,17 @@ async def finance_reject_request(
         raise HTTPException(status_code=400, detail="No Purchase Order found for this request.")
     await procurement_service.validate_finance_budget(db, po.id, current_user.id, "REJECT", reason=rejection.reason)
     await db.commit()
-    await db.refresh(db_request)
+    
+    # Re-fetch with joinedload for async serialization (ROOT FIX)
+    from sqlalchemy.orm import joinedload
+    res_stmt = await db.execute(
+        select(AssetRequest).options(
+            joinedload(AssetRequest.requester).joinedload(User.dept_obj), 
+            joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)
+        ).filter(AssetRequest.id == id)
+    )
+    db_request = res_stmt.scalars().first()
+
     await send_notification(db, id, "status_change", old_status="PO_VALIDATED", new_status="FINANCE_REJECTED", reviewer_name=current_user.full_name, reason=rejection.reason)
     return await asset_request_service._populate_requester_info(db, db_request, user_role="FINANCE")
 
@@ -522,7 +544,7 @@ async def procurement_confirm_delivery(
     current_user = Depends(get_current_user)
 ):
     if current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(current_user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
         
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
     if not db_request:
@@ -622,7 +644,7 @@ async def user_accept_asset(
     # Verify current_user is the requester
     db_request = await asset_request_service.get_asset_request_by_id_db(db, id)
     if not db_request or db_request.requester_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(current_user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
         
     res = await asset_request_service.update_user_acceptance(db, id, current_user.id, "ACCEPTED")
     if not res:
@@ -846,8 +868,8 @@ async def enroll_device_in_mdm(
     Manually trigger MDM enrollment for a BYOD device.
     Returns enrollment status, compliance checks, and applied security policies.
     """
-    if it_user.role not in ["IT_MANAGEMENT", "ADMIN"]:
-        raise HTTPException(status_code=403, detail="Unauthorized")
+    if it_user.role not in ["IT_MANAGEMENT", "ADMIN", "SUPPORT"]:
+        raise HTTPException(status_code=403, detail=f"Unauthorized - Role: {getattr(current_user, 'role', 'None')}, Allowed: {globals().get('STAFF_ROLES', [])}")
     from ..services.mdm_service import simulate_mdm_enrollment
     
     result = await simulate_mdm_enrollment(

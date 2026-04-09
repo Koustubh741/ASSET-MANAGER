@@ -4,9 +4,9 @@ from uuid import UUID
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import text, or_
-from app.worker.celery_app import celery_app
-from app.database.database import SessionLocal
-from app.models.models import PatchDeploymentJob, PatchLog, PatchDeployment, Asset
+from .celery_app import celery_app
+from ..database.database import SessionLocal
+from ..models.models import PatchDeploymentJob, PatchLog, PatchDeployment, Asset
 
 @celery_app.task(bind=True, name="app.worker.tasks.process_patch_job")
 def process_patch_job(self, job_id: str):

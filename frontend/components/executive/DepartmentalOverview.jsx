@@ -19,7 +19,7 @@ const DepartmentalOverview = ({ analytics }) => {
             <div className="flex items-center justify-between mb-10">
                 <div>
                     <h4 className="text-xl font-['Outfit'] font-black flex items-center gap-3 text-app-text uppercase tracking-tighter">
-                        <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                        <div className="p-2 rounded-none bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
                             <Users size={20} />
                         </div>
                         Organizational Audit

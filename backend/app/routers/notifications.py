@@ -54,8 +54,16 @@ async def get_notifications(
     limit: int = 20
 ):
     """Fetch recent notifications for the logged-in user or global ones"""
+    # RBAC Filtering for Global Notifications
+    if current_user.role == "END_USER":
+        global_condition = (Notification.user_id == None) & (Notification.type == "system")
+    elif current_user.role == "MANAGER":
+        global_condition = (Notification.user_id == None) & (Notification.type.in_(["system", "procurement", "workflow"]))
+    else:  # ADMIN, SUPPORT
+        global_condition = (Notification.user_id == None)
+
     stmt = select(Notification).where(
-        (Notification.user_id == current_user.id) | (Notification.user_id == None)
+        (Notification.user_id == current_user.id) | global_condition
     ).order_by(Notification.created_at.desc()).limit(limit)
     
     result = await db.execute(stmt)
@@ -68,8 +76,16 @@ async def mark_all_notifications_read(
     current_user = Depends(get_current_user)
 ):
     """Mark all notifications for the current user as read"""
+    # RBAC Filtering for Global Notifications
+    if current_user.role == "END_USER":
+        global_condition = (Notification.user_id == None) & (Notification.type == "system")
+    elif current_user.role == "MANAGER":
+        global_condition = (Notification.user_id == None) & (Notification.type.in_(["system", "procurement", "workflow"]))
+    else:
+        global_condition = (Notification.user_id == None)
+
     stmt = update(Notification).where(
-        (Notification.user_id == current_user.id) | (Notification.user_id == None),
+        (Notification.user_id == current_user.id) | global_condition,
         Notification.is_read == False
     ).values(is_read=True, read_at=datetime.utcnow())
     
@@ -106,30 +122,62 @@ async def stream_notifications(
     request: Request,
     current_user = Depends(get_current_user)
 ):
-    """Real-time Server-Sent Events (SSE) stream for notifications"""
+    """
+    Real-time Server-Sent Events (SSE) stream for notifications.
+
+    ROOT FIX: Added 25-second keepalive heartbeat. Without this, proxies and browsers
+    silently close idle SSE connections after ~30-60s of no data, causing constant
+    onerror/reconnect cycles on the frontend. Also fixed escaped newline bug.
+    """
     async def event_generator():
         queue = await notification_bus.subscribe()
+        # Send initial connection confirmation
+        yield "event: connected\ndata: {\"status\": \"ok\"}\n\n"
         try:
             while True:
                 # Check for client disconnect
                 if await request.is_disconnected():
                     break
-                
-                # Wait for new notifications published to the bus
-                notification = await queue.get()
-                
-                # Filter by user if applicable
-                target_user = notification.get("user_id")
-                if target_user and str(target_user) != str(current_user.id):
-                    continue
-                
-                # Format as SSE event
-                data = json.dumps(notification, default=str)
-                yield f"event: notification\ndata: {data}\n\n"
+
+                try:
+                    # Wait up to 25s for a notification.
+                    # If nothing arrives, send a keepalive comment to reset
+                    # proxy/browser idle timers and prevent silent drops.
+                    notification = await asyncio.wait_for(queue.get(), timeout=25.0)
+
+                    # Filter by user if applicable
+                    target_user = notification.get("user_id")
+                    if target_user and str(target_user) != str(current_user.id):
+                        continue
+
+                    # RBAC Filtering for Global Notifications
+                    if not target_user:
+                        notif_type = notification.get("type", "")
+                        if current_user.role == "END_USER" and notif_type != "system":
+                            continue
+                        if current_user.role == "MANAGER" and notif_type not in ["system", "procurement", "workflow"]:
+                            continue
+
+                    # Format as SSE event
+                    data = json.dumps(notification, default=str)
+                    yield f"event: notification\ndata: {data}\n\n"
+
+                except asyncio.TimeoutError:
+                    # SSE comment — browsers ignore it but it resets CDN/proxy idle timers
+                    yield ": keepalive\n\n"
+
         finally:
             notification_bus.unsubscribe(queue)
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "X-Accel-Buffering": "no",        # Disable nginx buffering
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+        }
+    )
 
 # Utility function to be used by other services (like discovery_service)
 async def create_notification(

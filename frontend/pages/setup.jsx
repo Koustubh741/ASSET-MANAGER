@@ -187,7 +187,7 @@ export default function Setup() {
                                         value={company.name}
                                         onChange={handleCompanyChange}
                                         placeholder="Acme Inc."
-                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     />
                                 </div>
                                 <div className="space-y-1">
@@ -198,7 +198,7 @@ export default function Setup() {
                                         value={company.legal_name}
                                         onChange={handleCompanyChange}
                                         placeholder="Acme Corporation"
-                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -208,7 +208,7 @@ export default function Setup() {
                                             name="timezone"
                                             value={company.timezone}
                                             onChange={handleCompanyChange}
-                                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                         >
                                             {TIMEZONES.map((tz) => (
                                                 <option key={tz} value={tz} className="bg-white dark:bg-slate-900 text-slate-900">
@@ -223,7 +223,7 @@ export default function Setup() {
                                             name="currency"
                                             value={company.currency}
                                             onChange={handleCompanyChange}
-                                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                         >
                                             {CURRENCIES.map((c) => (
                                                 <option key={c} value={c} className="bg-white dark:bg-slate-900 text-slate-900">
@@ -241,7 +241,7 @@ export default function Setup() {
                                         value={company.contact_email}
                                         onChange={handleCompanyChange}
                                         placeholder="admin@company.com"
-                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     />
                                 </div>
                                 <div className="space-y-1">
@@ -250,7 +250,7 @@ export default function Setup() {
                                         name="industry"
                                         value={company.industry}
                                         onChange={handleCompanyChange}
-                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                     >
                                         <option value="" className="bg-white dark:bg-slate-900 text-slate-900">Select...</option>
                                         {INDUSTRIES.map((ind) => (
@@ -268,7 +268,7 @@ export default function Setup() {
                                         onChange={handleCompanyChange}
                                         placeholder="123 Main St, City, Country"
                                         rows={2}
-                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50 resize-none"
+                                        className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2.5 px-4 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50 resize-none"
                                     />
                                 </div>
                             </div>
@@ -282,7 +282,7 @@ export default function Setup() {
                             <p className="text-app-text-muted text-app-text-muted text-sm">Add your main office or site locations.</p>
                             <div className="space-y-4">
                                 {locations.map((loc, idx) => (
-                                    <div key={idx} className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-app-border bg-slate-50 border-slate-200 space-y-3">
+                                    <div key={idx} className="p-4 rounded-none bg-white dark:bg-slate-900/50 border border-app-border bg-slate-50 border-slate-200 space-y-3">
                                         <div className="flex justify-between items-center">
                                             <span className="text-xs font-semibold text-app-text-muted uppercase text-app-text-muted">Location {idx + 1}</span>
                                             {locations.length > 1 && (
@@ -301,19 +301,19 @@ export default function Setup() {
                                                 placeholder="Location name *"
                                                 value={loc.name}
                                                 onChange={(e) => handleLocationChange(idx, 'name', e.target.value)}
-                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg py-2 px-3 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none py-2 px-3 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                             />
                                             <input
                                                 type="text"
                                                 placeholder="Address"
                                                 value={loc.address}
                                                 onChange={(e) => handleLocationChange(idx, 'address', e.target.value)}
-                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg py-2 px-3 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none py-2 px-3 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                             />
                                             <select
                                                 value={loc.timezone}
                                                 onChange={(e) => handleLocationChange(idx, 'timezone', e.target.value)}
-                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg py-2 px-3 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none py-2 px-3 text-sm text-app-text bg-white border-slate-300 text-slate-900 focus:outline-none focus:border-emerald-500/50"
                                             >
                                                 {TIMEZONES.map((tz) => (
                                                     <option key={tz} value={tz} className="bg-white dark:bg-slate-900 text-slate-900">
@@ -341,13 +341,13 @@ export default function Setup() {
                         <div className="space-y-6 animate-in fade-in duration-300">
                             <h2 className="text-xl font-bold text-emerald-400">Review & Finish</h2>
                             <div className="space-y-4">
-                                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-app-border">
+                                <div className="p-4 rounded-none bg-white dark:bg-slate-900/50 border border-app-border">
                                     <h3 className="text-sm font-semibold text-app-text-muted mb-2">Company</h3>
                                     <p className="text-app-text font-medium">{company.name}</p>
                                     {company.legal_name && <p className="text-app-text-muted text-sm">{company.legal_name}</p>}
                                     <p className="text-app-text-muted text-sm mt-1">{company.timezone} · {company.currency}</p>
                                 </div>
-                                <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-app-border">
+                                <div className="p-4 rounded-none bg-white dark:bg-slate-900/50 border border-app-border">
                                     <h3 className="text-sm font-semibold text-app-text-muted mb-2">Locations</h3>
                                     <ul className="space-y-1">
                                         {locations.filter((l) => l.name?.trim()).map((loc, i) => (
@@ -370,7 +370,7 @@ export default function Setup() {
                             type="button"
                             onClick={prevStep}
                             disabled={step === 1}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-app-border text-app-text-muted border-slate-200 text-app-text-muted hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-4 py-2 rounded-none border border-app-border text-app-text-muted border-slate-200 text-app-text-muted hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <ArrowLeft size={18} />
                             Back
@@ -379,7 +379,7 @@ export default function Setup() {
                             <button
                                 type="button"
                                 onClick={nextStep}
-                                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-emerald-500 text-app-text hover:bg-emerald-600"
+                                className="flex items-center gap-2 px-6 py-2 rounded-none bg-emerald-500 text-app-text hover:bg-emerald-600"
                             >
                                 Next
                                 <ArrowRight size={18} />
@@ -389,7 +389,7 @@ export default function Setup() {
                                 type="button"
                                 onClick={handleComplete}
                                 disabled={isLoading}
-                                className="flex items-center gap-2 px-6 py-2 rounded-xl bg-emerald-500 text-app-text hover:bg-emerald-600 disabled:opacity-70"
+                                className="flex items-center gap-2 px-6 py-2 rounded-none bg-emerald-500 text-app-text hover:bg-emerald-600 disabled:opacity-70"
                             >
                                 {isLoading ? 'Completing...' : 'Complete Setup'}
                                 <Check size={18} />

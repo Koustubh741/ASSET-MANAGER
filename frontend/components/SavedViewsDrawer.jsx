@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { X, Save, Eye, Trash2, Share2, MoreHorizontal } from 'lucide-react';
 import { useRole } from '@/contexts/RoleContext';
 
@@ -69,12 +70,12 @@ export default function SavedViewsDrawer({ isOpen, onClose, currentFilters, onLo
                                 value={viewName}
                                 onChange={(e) => setViewName(e.target.value)}
                                 placeholder="Enter view name..."
-                                className="flex-1 bg-slate-100 dark:bg-slate-950 border border-app-border rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none text-app-text"
+                                className="flex-1 bg-slate-100 dark:bg-slate-950 border border-app-border rounded-none px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none text-app-text"
                             />
                             <button
                                 onClick={handleSave}
                                 disabled={!viewName}
-                                className="bg-blue-600 hover:bg-blue-500 text-app-text px-4 py-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="bg-blue-600 hover:bg-blue-500 text-app-text px-4 py-2 rounded-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 <Save size={18} />
                             </button>
@@ -85,17 +86,17 @@ export default function SavedViewsDrawer({ isOpen, onClose, currentFilters, onLo
                     <div className="flex-1 overflow-y-auto p-6 space-y-4">
                         <h3 className="text-sm font-semibold text-app-text-muted uppercase tracking-wide mb-2">My Views</h3>
                         {savedViews.map(view => (
-                            <div key={view.id} className="group bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-app-border hover:border-app-border-soft rounded-xl p-4 transition-all duration-200">
+                            <div key={view.id} className="group bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-app-border hover:border-app-border-soft rounded-none p-4 transition-all duration-200">
                                 <div className="flex justify-between items-start mb-2">
                                     <h4 className="font-medium text-slate-900 dark:text-slate-200">{view.name}</h4>
                                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => handleDelete(view.id)}
-                                            className="p-1.5 text-app-text-muted hover:text-red-400 rounded-lg hover:bg-red-400/10"
+                                            className="p-1.5 text-app-text-muted hover:text-red-400 rounded-none hover:bg-red-400/10"
                                         >
                                             <Trash2 size={14} />
                                         </button>
-                                        <button className="p-1.5 text-app-text-muted hover:text-blue-400 rounded-lg hover:bg-blue-400/10">
+                                        <button className="p-1.5 text-app-text-muted hover:text-blue-400 rounded-none hover:bg-blue-400/10">
                                             <Share2 size={14} />
                                         </button>
                                     </div>

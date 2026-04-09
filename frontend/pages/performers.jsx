@@ -110,7 +110,7 @@ export default function TopPerformersPage() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                        <div className="p-2 rounded-none bg-amber-500/10 text-amber-500">
                             <Trophy size={24} />
                         </div>
                         <h1 className="text-2xl font-black text-app-text tracking-tight">IT Support Champions</h1>
@@ -118,7 +118,7 @@ export default function TopPerformersPage() {
                     <p className="text-app-text-muted text-lg ml-1">Celebrating our top problem solvers and engineering excellence.</p>
                 </div>
 
-                <div className="flex items-center gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-2 rounded-2xl border border-app-border">
+                <div className="flex items-center gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-2 rounded-none border border-app-border">
                     <div className="px-4 py-2 text-center">
                         <p className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest">Total Resolved</p>
                         <p className="text-xl font-bold text-emerald-500">{totalResolutions}</p>
@@ -151,7 +151,7 @@ export default function TopPerformersPage() {
                                 </p>
                                 <div className="flex flex-wrap gap-3">
                                     {['Optimization Guru', 'Efficiency Master', 'Top Rated'].map(tag => (
-                                        <span key={tag} className="px-3 py-1 rounded-lg bg-app-surface border border-slate-300 border-app-border text-[10px] font-bold uppercase tracking-wider text-app-text-muted">
+                                        <span key={tag} className="px-3 py-1 rounded-none bg-app-surface border border-slate-300 border-app-border text-[10px] font-bold uppercase tracking-wider text-app-text-muted">
                                             {tag}
                                         </span>
                                     ))}
@@ -159,11 +159,11 @@ export default function TopPerformersPage() {
                                 <div className="pt-4 flex items-center gap-4">
                                     <button 
                                         onClick={() => handleViewPortfolio(topPerformer)}
-                                        className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-app-text font-black rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                                        className="px-8 py-3 bg-amber-500 hover:bg-amber-600 text-app-text font-black rounded-none shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
                                     >
                                         View Portfolio <TrendingUp size={18} />
                                     </button>
-                                    <button className="p-3 bg-app-surface-soft hover:bg-app-surface border border-slate-300 border-app-border rounded-xl transition-all">
+                                    <button className="p-3 bg-app-surface-soft hover:bg-app-surface border border-slate-300 border-app-border rounded-none transition-all">
                                         <Share2 size={20} className="text-app-text-muted" />
                                     </button>
                                 </div>
@@ -203,7 +203,7 @@ export default function TopPerformersPage() {
                         placeholder="Search performers..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all font-medium"
+                        className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-none py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-amber-500/50 transition-all font-medium"
                     />
                 </div>
 
@@ -218,22 +218,22 @@ export default function TopPerformersPage() {
                         }}
                         trigger={['click']}
                     >
-                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-app-border text-xs font-bold text-app-text-muted hover:border-amber-500/50 transition-all">
+                        <button className="flex items-center gap-2 px-4 py-2.5 rounded-none bg-white dark:bg-slate-900 border border-app-border text-xs font-bold text-app-text-muted hover:border-amber-500/50 transition-all">
                             <span className="flex items-center gap-2">
                                 <Filter size={16} /> {selectedCategory}
                             </span>
                         </button>
                     </Dropdown>
-                    <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-app-border">
+                    <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-none border border-app-border">
                         <button
                             onClick={() => setTimeRange('lifetime')}
-                            className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'lifetime' ? 'bg-amber-500 text-app-text shadow-lg shadow-amber-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text'}`}
+                            className={`px-4 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'lifetime' ? 'bg-amber-500 text-app-text shadow-lg shadow-amber-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text'}`}
                         >
                             Lifetime
                         </button>
                         <button
                             onClick={() => setTimeRange('monthly')}
-                            className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'monthly' ? 'bg-amber-500 text-app-text shadow-lg shadow-amber-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text'}`}
+                            className={`px-4 py-1.5 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all ${timeRange === 'monthly' ? 'bg-amber-500 text-app-text shadow-lg shadow-amber-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text'}`}
                         >
                             Monthly
                         </button>
@@ -270,7 +270,7 @@ export default function TopPerformersPage() {
                                             #{index + 1}
                                         </div>
 
-                                        <div className={`p-3 rounded-2xl ${styles.bg} ${styles.text} group-hover:scale-110 transition-transform duration-300`}>
+                                        <div className={`p-3 rounded-none ${styles.bg} ${styles.text} group-hover:scale-110 transition-transform duration-300`}>
                                             <styles.icon size={28} />
                                         </div>
 
@@ -311,7 +311,7 @@ export default function TopPerformersPage() {
                                             </div>
                                             <button 
                                                 onClick={() => handleViewPortfolio(solver)}
-                                                className="p-2 opacity-0 group-hover:opacity-100 bg-app-surface-soft hover:bg-app-surface rounded-lg transition-all"
+                                                className="p-2 opacity-0 group-hover:opacity-100 bg-app-surface-soft hover:bg-app-surface rounded-none transition-all"
                                             >
                                                 <TrendingUp size={18} className="text-amber-500" />
                                             </button>
@@ -325,7 +325,7 @@ export default function TopPerformersPage() {
             </div>
 
             {/* Footer / Recognition text */}
-            <div className="text-center p-8 bg-gradient-to-r from-amber-500/5 via-indigo-500/5 to-amber-500/5 rounded-3xl border border-app-border">
+            <div className="text-center p-8 bg-gradient-to-r from-amber-500/5 via-indigo-500/5 to-amber-500/5 rounded-none border border-app-border">
                 <p className="text-sm text-app-text-muted italic">
                     "Great things in business are never done by one person. They're done by a team of people."
                 </p>
@@ -339,7 +339,7 @@ export default function TopPerformersPage() {
                     @apply bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-[2rem] border border-app-border shadow-xl shadow-slate-200/50 dark:shadow-none;
                 }
                 .glass-card {
-                    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-2xl border border-app-border shadow-lg;
+                    @apply bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-none border border-app-border shadow-lg;
                 }
                 @keyframes float {
                     0%, 100% { transform: translateY(0px); }

@@ -49,61 +49,92 @@ const WorkflowProgressBar = ({ currentStatus, isByod = false, compact = false })
     const currentStepLabel = visibleSteps[currentIndex]?.label ?? '—';
 
     return (
-        <div className={`w-full ${compact ? 'py-3 px-2' : 'py-6 px-4'}`}>
-            <div className="relative flex justify-between" style={compact ? { minHeight: 32 } : undefined}>
-                {/* Background Line */}
-                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 dark:bg-slate-700 -translate-y-1/2 z-0" />
+        <div className={`w-full ${compact ? 'py-4' : 'py-8'}`}>
+            <div className="relative flex justify-between" style={compact ? { minHeight: 40 } : undefined}>
+                {/* Background Line (Technical Segmented Style) */}
+                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-white/10 -translate-y-1/2 z-0" />
 
                 {/* Progress Line */}
                 <div
-                    className={`absolute top-1/2 left-0 h-0.5 transition-all duration-700 -translate-y-1/2 z-0 ${isError ? 'bg-red-500' : 'bg-indigo-500'}`}
+                    className={`absolute top-1/2 left-0 h-[2px] transition-all duration-700 -translate-y-1/2 z-0 ${isError ? 'bg-danger shadow-[0_0_8px_var(--color-danger)]' : 'bg-primary shadow-[0_0_8px_var(--color-primary)]'}`}
                     style={{ width: `${(currentIndex / Math.max(1, visibleSteps.length - 1)) * 100}%` }}
                 />
 
-                {steps.map((step, index) => {
+                {visibleSteps.map((step, index) => {
                     const isCompleted = index < currentIndex;
                     const isActive = index === currentIndex;
                     const isCurrentError = isActive && isError;
 
-                    if (step.skipIf) return null;
-
                     return (
                         <div key={step.id} className="relative z-10 flex flex-col items-center flex-1 min-w-0 group">
-                            {/* Dot */}
-                            <div className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${compact ? 'w-6 h-6' : 'w-8 h-8'} ${isCompleted ? (isError ? 'bg-red-500 border-red-500 text-app-text' : 'bg-indigo-500 border-indigo-500 text-app-text') :
-                                isActive ? (isError ? 'bg-white border-red-500 text-red-500 scale-125' : 'bg-white border-indigo-500 text-indigo-500 scale-125 shadow-lg shadow-indigo-200') :
-                                    'bg-white border-slate-200 text-app-text-muted border-slate-300'
-                                }`}>
+                            {/* Technical Checkpoint */}
+                            <div className={`flex-shrink-0 border transition-all duration-500 relative flex items-center justify-center
+                                ${compact ? 'w-5 h-5' : 'w-7 h-7'} 
+                                ${isCompleted 
+                                    ? (isError ? 'bg-danger border-danger text-white' : 'bg-primary border-primary text-white shadow-[0_0_10px_rgba(var(--color-primary),0.4)]') 
+                                    : isActive 
+                                        ? (isError ? 'bg-danger/20 border-danger text-danger scale-110 animate-pulse' : 'bg-primary/20 border-primary text-primary scale-110 shadow-[0_0_15px_rgba(var(--color-primary),0.3)] animate-glow') 
+                                        : 'bg-app-surface border-white/10 text-app-text-muted hover:border-white/30'
+                                }
+                                !rounded-none
+                            `}>
+                                {/* Corner Accents for Active */}
+                                {isActive && (
+                                    <>
+                                        <div className="absolute -top-1 -left-1 w-1.5 h-1.5 border-t border-l border-primary"></div>
+                                        <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 border-b border-r border-primary"></div>
+                                    </>
+                                )}
+
                                 {isCompleted ? (
-                                    <Check className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
+                                    <Check className={compact ? 'w-3 h-3' : 'w-4 h-4'} strokeWidth={3} />
                                 ) : isCurrentError ? (
-                                    <AlertCircle className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
+                                    <AlertCircle className={compact ? 'w-3 h-3' : 'w-4 h-4'} strokeWidth={3} />
                                 ) : (
-                                    <span className="text-[10px] font-bold">{index + 1}</span>
+                                    <span className={`font-mono leading-none ${compact ? 'text-[8px]' : 'text-[10px]'} font-bold`}>
+                                        {index + 1}
+                                    </span>
                                 )}
                             </div>
 
-                            {/* Per-step labels only in non-compact mode; they overlap in narrow cards so compact uses single line below */}
+                            {/* Labels */}
                             {!compact && (
-                                <div className={`absolute -bottom-8 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider transition-colors duration-300 ${isActive ? (isError ? 'text-red-500' : 'text-indigo-600') : 'text-app-text-muted'}`} title={step.label}>
+                                <div className={`absolute -bottom-10 whitespace-nowrap text-[9px] font-bold uppercase tracking-[0.2em] transition-colors duration-300 
+                                    ${isActive ? (isError ? 'text-danger' : 'text-primary') : 'text-app-text-muted/60'}`} 
+                                    title={step.label}>
                                     {step.label}
                                 </div>
                             )}
+
+                            {/* Role Tooltip */}
                             {!compact && (
-                                <div className="absolute -top-8 px-2 py-1 bg-slate-200 dark:bg-slate-700 dark:bg-slate-800 text-app-text text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap font-medium">
-                                    Action by: {step.roles.join(', ')}
+                                <div className="absolute -top-10 px-3 py-1 bg-app-surface border border-white/10 text-app-text text-[8px] opacity-0 group-hover:opacity-100 transition-all pointer-events-none whitespace-nowrap font-mono tracking-tighter translate-y-2 group-hover:translate-y-0">
+                                    <span className="text-primary/60 mr-2">[AUTH_REQ]</span> {step.roles.join(' | ')}
                                 </div>
                             )}
                         </div>
                     );
                 })}
             </div>
-            {/* Compact: single line below bar to avoid squashed/overlapping labels */}
+
             {compact && (
-                <p className="text-center text-[10px] font-medium uppercase tracking-wider text-app-text-muted mt-2 min-h-[1.25rem] truncate px-1" title={currentStepLabel}>
-                    Step {currentIndex + 1}: {currentStepLabel}
-                </p>
+                <div className="mt-4 flex items-center justify-center gap-2">
+                    <div className={`text-[9px] font-bold uppercase tracking-[0.3em] px-2 py-0.5 border-y border-white/5 
+                                    ${isError ? 'text-danger bg-danger/5' : 'text-primary bg-primary/5'}`}>
+                        {currentStepLabel}
+                    </div>
+                </div>
             )}
+
+            <style jsx>{`
+                @keyframes glow {
+                    0%, 100% { box-shadow: 0 0 5px rgba(var(--color-primary), 0.2); }
+                    50% { box-shadow: 0 0 15px rgba(var(--color-primary), 0.5); }
+                }
+                .animate-glow {
+                    animation: glow 2s ease-in-out infinite;
+                }
+            `}</style>
         </div>
     );
 };

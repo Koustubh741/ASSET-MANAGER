@@ -88,9 +88,9 @@ const departments = [
 ];
 
 const STATUS_META = {
-    live: { label: 'Live & Integrated', color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)', dot: '#10b981' },
-    partial: { label: 'Partial', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)', dot: '#f59e0b' },
-    planned: { label: 'Planned', color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.2)', dot: '#4b5563' },
+    live: { label: 'Live & Integrated', color: 'var(--color-kinetic-secondary)', bg: 'rgba(var(--color-kinetic-secondary-rgb), 0.12)', border: 'rgba(var(--color-kinetic-secondary-rgb), 0.3)', dot: 'var(--color-kinetic-secondary)' },
+    partial: { label: 'Partial', color: 'var(--color-kinetic-gold)', bg: 'rgba(var(--color-kinetic-gold-rgb), 0.12)', border: 'rgba(var(--color-kinetic-gold-rgb), 0.3)', dot: 'var(--color-kinetic-gold)' },
+    planned: { label: 'Planned', color: 'var(--text-muted)', bg: 'rgba(var(--text-muted-rgb), 0.08)', border: 'rgba(var(--text-muted-rgb), 0.2)', dot: 'var(--text-muted)' },
 };
 
 export default function IntegrationStatus() {
@@ -163,44 +163,44 @@ export default function IntegrationStatus() {
           overflow: hidden;
         }
 
-        .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.12; pointer-events: none; }
-        .orb1 { width: 500px; height: 500px; background: #3b5bdb; top: -100px; left: -100px; }
-        .orb2 { width: 400px; height: 400px; background: #10b981; bottom: -100px; right: -100px; }
+        .orb { position: absolute; border-radius: 0; filter: blur(140px); opacity: 0.15; pointer-events: none; }
+        .orb1 { width: 600px; height: 600px; background: var(--color-kinetic-primary); top: -200px; left: -200px; }
+        .orb2 { width: 500px; height: 500px; background: var(--color-kinetic-secondary); bottom: -150px; right: -150px; }
 
         .grid-bg {
           position: absolute; inset: 0; pointer-events: none;
-          background-image: linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
-          background-size: 56px 56px;
+          background-image: linear-gradient(var(--color-kinetic-primary-rgb) 0.05 1px, transparent 1px),
+                            linear-gradient(90deg, var(--color-kinetic-primary-rgb) 0.05 1px, transparent 1px);
+          background-size: 64px 64px;
         }
 
         .inner { position: relative; z-index: 1; width: 100%; max-width: 1200px; }
 
-        .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: blink 1.8s ease-in-out infinite; }
+        .badge-dot { width: 6px; height: 6px; border-radius: 0; background: var(--color-kinetic-secondary); animation: blink 1.8s ease-in-out infinite; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
         .s-card {
-          @apply bg-app-surface/40 border border-app-border rounded-[14px] p-5 flex flex-col items-center gap-1 transition-all duration-300;
+          @apply bg-app-obsidian border border-app-border rounded-none p-6 flex flex-col items-center gap-1 transition-all duration-300 shadow-2xl;
         }
-        .s-card:hover { border-color: var(--color-primary); }
-        .s-num { font-size: 36px; font-weight: 800; line-height: 1; }
-        .s-lbl { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-top: 2px; }
+        .s-card:hover { border-color: var(--color-kinetic-primary); }
+        .s-num { font-size: 42px; font-weight: 900; line-height: 1; font-family: 'Space Grotesk'; }
+        .s-lbl { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; color: var(--text-muted); margin-top: 4px; }
         
-        .progress-track { height: 8px; background: var(--bg-surface-soft); border-radius: 99px; overflow: hidden; }
+        .progress-track { height: 10px; background: var(--bg-app-obsidian); border-radius: 0; border: 1px solid var(--border-main); overflow: hidden; }
         .progress-fill {
-          height: 100%; border-radius: 99px;
-          background: linear-gradient(90deg, var(--color-primary), var(--color-success));
-          box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
-          transition: width 1s ease;
+          height: 100%; border-radius: 0;
+          background: linear-gradient(90deg, var(--color-kinetic-primary), var(--color-kinetic-secondary));
+          box-shadow: 0 0 15px rgba(var(--color-kinetic-secondary-rgb), 0.4);
+          transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .filt-btn {
-          @apply px-[18px] py-[7px] border border-app-border rounded-lg text-xs font-semibold cursor-pointer transition-all duration-200 bg-transparent text-app-text/60;
+          @apply px-[18px] py-[7px] border border-app-border rounded-none text-xs font-semibold cursor-pointer transition-all duration-200 bg-transparent text-app-text/60;
         }
         .filt-btn.active, .filt-btn:hover { @apply text-app-text border-primary/50 bg-primary/10; }
 
         .dept-card {
-           @apply bg-app-surface/30 border border-app-border rounded-2xl overflow-hidden transition-all duration-300;
+           @apply bg-app-surface/30 border border-app-border rounded-none overflow-hidden transition-all duration-300;
         }
         .dept-card:hover { box-shadow: 0 0 32px rgba(99, 102, 241, 0.1); }
 
@@ -215,8 +215,8 @@ export default function IntegrationStatus() {
         .feat-name { font-size: 13px; font-weight: 600; color: var(--app-text); margin-bottom: 2px; }
         .feat-note { font-size: 11px; color: var(--app-text-muted); line-height: 1.4; opacity: 0.7; }
         .feat-badge {
-          font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 99px;
-          flex-shrink: 0; white-space: nowrap; letter-spacing: 0.05em; text-transform: uppercase;
+          font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 0;
+          flex-shrink: 0; white-space: nowrap; letter-spacing: 0.1em; text-transform: uppercase;
         }
 
         @media (max-width: 700px) {
@@ -233,44 +233,44 @@ export default function IntegrationStatus() {
                 <div className="inner">
                     {/* Header */}
                     <div className="header text-center mb-12">
-                        <div className="badge flex justify-center mb-4">
-                            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-success/10 border border-success/30 text-[10px] font-bold uppercase tracking-wider text-success">
-                                <span className="badge-dot" /> Live Audit
+                        <div className="badge flex justify-center mb-6">
+                            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-none bg-app-secondary/10 border border-app-secondary/30 text-[10px] font-black uppercase tracking-[0.3em] text-app-secondary">
+                                <span className="badge-dot" /> Live System Audit
                             </span>
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Platform <span className="text-gradient-primary">Integration Status</span></h1>
-                        <p className="sub text-app-text-muted text-base">Real-time feature audit based on backend routers + frontend pages</p>
+                        <h1 className="text-4xl md:text-6xl font-black mb-6 tracking-tighter uppercase font-['Space_Grotesk']">Platform <span className="text-app-primary">Integration Status</span></h1>
+                        <p className="sub text-app-text-muted text-lg font-mono tracking-widest opacity-60">REAL-TIME TELEMETRY · GLOBAL NODE CLUSTER v5.0</p>
                     </div>
 
                     {/* Summary cards */}
-                    <div className="summary-row grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                        <div className="s-card" style={{ borderColor: 'var(--color-success)' }}>
-                            <span className="s-num text-success">{liveCount}</span>
-                            <span className="s-lbl">Live & Active</span>
-                            <span className="text-[10px] text-app-text-muted/60">Fully integrated</span>
+                    <div className="summary-row grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+                        <div className="s-card" style={{ borderColor: 'var(--color-kinetic-secondary)' }}>
+                            <span className="s-num text-app-secondary">{liveCount}</span>
+                            <span className="s-lbl">Live & Integrated</span>
+                            <span className="text-[10px] uppercase font-black tracking-tighter text-app-text-muted/40 mt-1">Full Sync Status</span>
                         </div>
-                        <div className="s-card" style={{ borderColor: 'var(--color-warning)' }}>
-                            <span className="s-num text-warning">{partialCount}</span>
-                            <span className="s-lbl">Partial</span>
-                            <span className="text-[10px] text-app-text-muted/60">Needs completion</span>
+                        <div className="s-card" style={{ borderColor: 'var(--color-kinetic-gold)' }}>
+                            <span className="s-num text-app-gold">{partialCount}</span>
+                            <span className="s-lbl">Telemetry Partial</span>
+                            <span className="text-[10px] uppercase font-black tracking-tighter text-app-text-muted/40 mt-1">Optimization Required</span>
                         </div>
-                        <div className="s-card" style={{ borderColor: 'var(--app-text-muted)' }}>
+                        <div className="s-card" style={{ borderStyle: 'dashed' }}>
                             <span className="s-num text-app-text-muted">{plannedCount}</span>
-                            <span className="s-lbl">Planned</span>
-                            <span className="text-[10px] text-app-text-muted/60">Not yet built</span>
+                            <span className="s-lbl">Planned Deployment</span>
+                            <span className="text-[10px] uppercase font-black tracking-tighter text-app-text-muted/40 mt-1">Hardware Blueprinting</span>
                         </div>
-                        <div className="s-card" style={{ borderColor: 'var(--color-primary)' }}>
-                            <span className="s-num text-primary">{livePercent}%</span>
-                            <span className="s-lbl">Completion</span>
-                            <span className="text-[10px] text-app-text-muted/60">{liveCount} of {totalCount} features</span>
+                        <div className="s-card" style={{ borderColor: 'var(--color-kinetic-primary)' }}>
+                            <span className="s-num text-app-primary">{livePercent}%</span>
+                            <span className="s-lbl">Mission Readiness</span>
+                            <span className="text-[10px] uppercase font-black tracking-tighter text-app-text-muted/40 mt-1">{liveCount} of {totalCount} nodes active</span>
                         </div>
                     </div>
 
                     {/* Progress bar */}
-                    <div className="progress-wrap">
-                        <div className="progress-label">
-                            <span>Overall integration progress</span>
-                            <span style={{ color: '#34d399', fontWeight: 600 }}>{livePercent}% complete</span>
+                    <div className="progress-wrap mb-16">
+                        <div className="flex justify-between items-end mb-3">
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-app-text-muted">Master Integration Sequence</span>
+                            <span className="text-xl font-black font-mono text-app-secondary">{livePercent}% READY</span>
                         </div>
                         <div className="progress-track">
                             <div className="progress-fill" style={{ width: `${livePercent}%` }} />
@@ -295,11 +295,11 @@ export default function IntegrationStatus() {
                         {departments.map(dept => {
                             // UI Metadata based on ID
                             const UI_META = {
-                                it: { icon: '🖥️', color: '#6366f1', glow: 'rgba(99,102,241,0.3)' },
-                                admin: { icon: '⚙️', color: '#0ea5e9', glow: 'rgba(14,165,233,0.3)' },
-                                finance: { icon: '💰', color: '#10b981', glow: 'rgba(16,185,129,0.3)' },
-                                operations: { icon: '📦', color: '#f59e0b', glow: 'rgba(245,158,11,0.3)' },
-                                support: { icon: '🎫', color: '#ec4899', glow: 'rgba(236,72,153,0.3)' },
+                                it: { icon: '🖥️', color: 'var(--color-kinetic-primary)', glow: 'rgba(var(--color-kinetic-primary-rgb), 0.3)' },
+                                admin: { icon: '⚙️', color: 'var(--color-kinetic-cyan)', glow: 'rgba(var(--color-kinetic-cyan-rgb), 0.3)' },
+                                finance: { icon: '💰', color: 'var(--color-kinetic-secondary)', glow: 'rgba(var(--color-kinetic-secondary-rgb), 0.3)' },
+                                operations: { icon: '📦', color: 'var(--color-kinetic-gold)', glow: 'rgba(var(--color-kinetic-gold-rgb), 0.3)' },
+                                support: { icon: '🎫', color: 'var(--color-kinetic-rose)', glow: 'rgba(var(--color-kinetic-rose-rgb), 0.3)' },
                             }[dept.id];
 
                             const featuresWithStatus = dept.features.map(f => ({

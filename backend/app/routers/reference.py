@@ -78,20 +78,22 @@ async def get_departments(
     Get list of available departments.
     Optionally include user counts per department.
     """
-    departments = []
+    from ..models.models import Department
+    result = await db.execute(select(Department))
+    db_depts = result.scalars().all()
     
     if include_counts:
-        # Get counts from database
-        for dept in DEPARTMENTS:
-            result = await db.execute(
-                select(User).filter(User.department == dept)
-            )
-            users = result.scalars().all()
-            departments.append(DepartmentResponse(name=dept, count=len(users)))
-    else:
-        departments = [DepartmentResponse(name=dept) for dept in DEPARTMENTS]
+        # Optimized: Get counts via join in a single query
+        counts_res = await db.execute(
+            select(Department.name, func.count(User.id))
+            .outerjoin(User, User.department_id == Department.id)
+            .group_by(Department.name)
+        )
+        counts_dict = {row[0]: row[1] for row in counts_res.all()}
+        return [DepartmentResponse(name=d.name, count=counts_dict.get(d.name, 0)) for d in db_depts]
     
-    return departments
+    return [DepartmentResponse(name=d.name) for d in db_depts]
+    
 
 
 @router.get("/locations", response_model=List[LocationResponse])
@@ -132,11 +134,9 @@ async def get_departments_from_db(
     """
     Get unique departments from actual user data.
     """
-    result = await db.execute(
-        select(distinct(User.department)).filter(User.department.isnot(None))
-    )
-    departments = [row[0] for row in result.fetchall()]
-    return sorted(departments)
+    from ..models.models import Department
+    result = await db.execute(select(Department.name).order_by(Department.name))
+    return [row[0] for row in result.all()]
 
 
 @router.get("/locations/from-db", response_model=List[str])

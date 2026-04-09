@@ -18,7 +18,7 @@ export default function AssetRequestsPage() {
                         </p>
                     </div>
 
-                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-app-text font-medium rounded-xl shadow-lg shadow-indigo-500/20 border border-indigo-500/20 flex items-center gap-2 transition-all">
+                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-app-text font-medium rounded-none shadow-lg shadow-indigo-500/20 border border-indigo-500/20 flex items-center gap-2 transition-all">
                         <Plus className="w-5 h-5" />
                         New Request
                     </button>

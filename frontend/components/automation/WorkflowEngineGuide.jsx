@@ -32,7 +32,7 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-3 bg-app-surface-soft hover:bg-rose-500/20 text-app-text-muted hover:text-rose-500 rounded-2xl border border-app-border transition-all group"
+                        className="p-3 bg-app-surface-soft hover:bg-rose-500/20 text-app-text-muted hover:text-rose-500 rounded-none border border-app-border transition-all group"
                     >
                         <X size={20} className="group-hover:rotate-90 transition-transform duration-300" />
                     </button>
@@ -50,8 +50,8 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                                 { title: 'First-Match', desc: 'The engine stops at the first rule that meets all conditions.', icon: Zap, color: 'amber' },
                                 { title: 'Deterministic', desc: 'Immutable logic ensures predictability across all tickets.', icon: Shield, color: 'emerald' }
                             ].map((step, i) => (
-                                <div key={i} className="p-5 bg-app-surface-soft border border-app-border rounded-3xl group hover:border-indigo-500/30 transition-all">
-                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center bg-${step.color}-500/10 text-${step.color}-400 mb-4`}>
+                                <div key={i} className="p-5 bg-app-surface-soft border border-app-border rounded-none group hover:border-indigo-500/30 transition-all">
+                                    <div className={`w-10 h-10 rounded-none flex items-center justify-center bg-${step.color}-500/10 text-${step.color}-400 mb-4`}>
                                         <step.icon size={20} />
                                     </div>
                                     <h4 className="text-xs font-black text-app-text uppercase mb-2 tracking-tight">{step.title}</h4>
@@ -74,7 +74,7 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                                         <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
                                         <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Logic Conditions</span>
                                     </div>
-                                    <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-2xl flex items-center justify-between">
+                                    <div className="p-4 bg-indigo-900/20 border border-indigo-500/30 rounded-none flex items-center justify-between">
                                         <div className="text-[11px] font-bold text-indigo-100 italic">IF: Requestor Department</div>
                                         <ArrowRight size={14} className="text-indigo-400" />
                                         <div className="text-[11px] font-black text-indigo-400 uppercase">IS: FINANCE</div>
@@ -92,7 +92,7 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                                         <div className="w-2 h-2 rounded-full bg-emerald-500" />
                                         <span className="text-[10px] font-black text-app-text-muted uppercase tracking-widest text-right">Execution Actions</span>
                                     </div>
-                                    <div className="p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-2xl flex items-center justify-between flex-row-reverse md:flex-row">
+                                    <div className="p-4 bg-emerald-900/20 border border-emerald-500/30 rounded-none flex items-center justify-between flex-row-reverse md:flex-row">
                                         <div className="text-[11px] font-black text-emerald-400 uppercase">DO: ASSIGN ROLE</div>
                                         <ArrowRight size={14} className="text-emerald-400" />
                                         <div className="text-[11px] font-bold text-emerald-100 italic">FINANCE_MGR</div>
@@ -116,7 +116,7 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                                     { name: 'Subject Keywords', desc: 'Case-insensitive string match' },
                                     { name: 'Department', desc: 'Originating requestor dept' }
                                 ].map((f, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3.5 bg-app-surface-soft border border-app-border rounded-2xl">
+                                    <div key={i} className="flex items-center justify-between p-3.5 bg-app-surface-soft border border-app-border rounded-none">
                                         <span className="text-[11px] font-bold text-app-text-muted">{f.name}</span>
                                         <span className="text-[9px] font-black text-slate-500 uppercase italic opacity-60">{f.desc}</span>
                                     </div>
@@ -136,7 +136,7 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                                     { name: 'Override Priority', desc: 'Elevates SLA levels' },
                                     { name: 'Override Status', desc: 'Instant status transition' }
                                 ].map((f, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3.5 bg-app-surface-soft border border-app-border rounded-2xl">
+                                    <div key={i} className="flex items-center justify-between p-3.5 bg-app-surface-soft border border-app-border rounded-none">
                                         <span className="text-[11px] font-bold text-app-text-muted">{f.name}</span>
                                         <span className="text-[9px] font-black text-emerald-500 uppercase italic opacity-60">{f.desc}</span>
                                     </div>
@@ -146,8 +146,8 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                     </div>
 
                     {/* Exclusions */}
-                    <div className="p-6 bg-rose-500/5 border border-rose-500/20 rounded-3xl flex items-start gap-5">
-                        <div className="p-3 bg-rose-500/10 text-rose-400 rounded-2xl border border-rose-500/20 shadow-lg shadow-rose-500/5">
+                    <div className="p-6 bg-rose-500/5 border border-rose-500/20 rounded-none flex items-start gap-5">
+                        <div className="p-3 bg-rose-500/10 text-rose-400 rounded-none border border-rose-500/20 shadow-lg shadow-rose-500/5">
                             <AlertCircle size={20} />
                         </div>
                         <div>
@@ -163,7 +163,7 @@ export default function WorkflowEngineGuide({ isOpen, onClose }) {
                 <div className="p-6 border-t border-app-border bg-app-surface flex justify-center">
                     <button
                         onClick={onClose}
-                        className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-95"
+                        className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-none shadow-xl shadow-indigo-600/20 transition-all active:scale-95"
                     >
                         Acknowledge Protocol
                     </button>

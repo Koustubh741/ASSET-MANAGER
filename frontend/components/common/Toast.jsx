@@ -46,10 +46,10 @@ export function ToastProvider({ children }) {
 
 function ToastItem({ variant, message, onDismiss }) {
     const styles = {
-        success: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-        error: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-        warning: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-        info: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
+        success: 'bg-app-secondary/10 border-app-secondary/20 text-app-secondary',
+        error: 'bg-app-rose/10 border-app-rose/20 text-app-rose',
+        warning: 'bg-app-gold/10 border-app-gold/20 text-app-gold',
+        info: 'bg-app-primary/10 border-app-primary/20 text-app-primary',
     };
     const icons = {
         success: CheckCircle,
@@ -62,17 +62,18 @@ function ToastItem({ variant, message, onDismiss }) {
 
     return (
         <div
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-xl animate-in slide-in-from-right fade-in duration-200 pointer-events-auto ${style}`}
+            className={`flex items-center gap-4 px-6 py-4 rounded-none border backdrop-blur-md shadow-2xl animate-in slide-in-from-right fade-in duration-300 pointer-events-auto relative group overflow-hidden ${style}`}
         >
-            <Icon size={20} />
-            <span className="text-sm font-medium flex-1">{message}</span>
+            <div className="absolute top-0 left-0 w-1 h-full bg-current opacity-20" />
+            <Icon size={18} className="shrink-0" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] flex-1 leading-tight">{message}</span>
             <button
                 type="button"
                 onClick={onDismiss}
-                className="p-1 rounded-lg hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors"
+                className="p-1 rounded-none hover:bg-white/10 transition-colors opacity-40 hover:opacity-100"
                 aria-label="Dismiss"
             >
-                <X size={16} />
+                <X size={14} />
             </button>
         </div>
     );

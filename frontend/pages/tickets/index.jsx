@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, Plus, Ticket, CheckCircle, Clock, AlertCircle, Settings, Zap, ChevronUp, Cpu } from 'lucide-react';
+import { ArrowLeft, Plus, Ticket, CheckCircle, Clock, AlertCircle, Settings, Zap, ChevronUp, Cpu, Activity, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import apiClient from '@/lib/apiClient';
@@ -18,7 +18,7 @@ export default function TicketsDashboard() {
     const [executiveSummary, setExecutiveSummary] = useState(null);
     const [statsLoading, setStatsLoading] = useState(true);
     const [isExecutiveHUDOpen, setIsExecutiveHUDOpen] = useState(false);
-    const [dashboardMode, setDashboardMode] = useState('external'); // 'external' (Inter-dept) or 'internal' (Dept)
+    const [dashboardMode, setDashboardMode] = useState('external'); 
     const [isKBSearchOpen, setIsKBSearchOpen] = useState(false);
     const [kbQuery, setKbQuery] = useState('');
     const [selectedArticle, setSelectedArticle] = useState(null);
@@ -40,11 +40,11 @@ export default function TicketsDashboard() {
             setStatsLoading(true);
             try {
                 const isInternal = dashboardMode === 'internal';
-                const tickets = await apiClient.getTickets(0, 100, null, null, isInternal);
+                const ticketResponse = await apiClient.getTickets(0, 100, null, null, isInternal);
+                const tickets = ticketResponse.data || [];
 
                 if (!active) return;
 
-                // Map API tickets to frontend format using sanitized backend fields
                 const mappedTickets = tickets.map(t => ({
                     ...t,
                     displayId: t.display_id,
@@ -54,7 +54,6 @@ export default function TicketsDashboard() {
                     created: t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A'
                 }));
 
-                // Calc Stats
                 const counts = {
                     open: mappedTickets.filter(t => t.status?.toUpperCase() === 'OPEN' || t.status?.toUpperCase() === 'IN_PROGRESS').length,
                     pending: mappedTickets.filter(t => t.status?.toUpperCase() === 'PENDING').length,
@@ -103,77 +102,65 @@ export default function TicketsDashboard() {
     }, [dashboardMode, isManagerial, isITStaff]);
 
     const getPriorityColor = (p) => {
-        if (p === 'High') return 'text-red-400 bg-red-500/10 border-red-500/20';
-        if (p === 'Medium') return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
-        return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+        if (p === 'High') return 'text-app-rose bg-app-rose/10 border-app-rose/20';
+        if (p === 'Medium') return 'text-app-gold bg-app-gold/10 border-app-gold/20';
+        return 'text-app-secondary bg-app-secondary/10 border-app-secondary/20';
     };
 
     return (
-        <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-app-text">
-            <style jsx global>{`
-                @keyframes scanline {
-                    0% { transform: translateY(-100%); }
-                    100% { transform: translateY(1000%); }
-                }
-                .animate-scanline {
-                    animation: scanline 8s linear infinite;
-                }
-            `}</style>
-            <div className="max-w-7xl mx-auto space-y-8">
+        <div className="min-h-screen p-8 bg-app-obsidian text-app-text font-['Space_Grotesk']">
+            <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-700">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-6">
                         <button
                             onClick={() => router.back()}
-                            className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors"
+                            className="p-3 bg-app-void hover:bg-app-primary hover:text-app-void border border-app-border transition-all shadow-xl active:scale-95 group"
                         >
-                            <ArrowLeft size={24} />
+                            <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
                         </button>
                         <div>
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-rose-400 to-red-400 bg-clip-text text-transparent">
+                            <h1 className="text-4xl font-black text-app-text uppercase italic tracking-tighter leading-none">Incident <span className="text-app-primary">Stream</span></h1>
+                            <p className="text-app-text-muted mt-3 text-[10px] font-black uppercase tracking-[0.3em] opacity-40">
                                 {dashboardMode === 'internal' 
-                                    ? (isManagerial ? `🏠 ${user?.department || 'Departmental'} Queue` : '🏠 Team Mode')
-                                    : (isManagerial ? '🌐 Dept. Service Requests' : '🌐 Support Mode')}
-                            </h1>
-                            <p className="text-app-text-muted mt-1">
-                                {dashboardMode === 'internal' 
-                                    ? 'Internal team tasks and departmental issues' 
-                                    : 'Service requests from other departments'}
+                                    ? 'Sector Internal // Intra-dept Data Packets' 
+                                    : 'Global Uplink // Inter-dept Support Vectors'}
                             </p>
                         </div>
                     </div>
 
-                    {/* Dashboard Switcher - Hidden for End Users, Renamed for Managers */}
-                    {(isStaff || isManagerial) && (
-                        <div className="flex items-center gap-4">
-                            {isManagerial && (
-                                <button
-                                    onClick={() => setIsExecutiveHUDOpen(true)}
-                                    className="px-4 py-2 rounded-xl bg-primary/10 text-primary border border-primary/20 text-xs font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center gap-2 group"
-                                >
-                                    <Cpu size={14} className="group-hover:rotate-12 transition-transform" />
-                                    Executive HUD
-                                </button>
-                            )}
-                            <div className="flex bg-slate-200 bg-app-surface-soft p-1 rounded-xl border border-slate-300 border-app-border shadow-inner">
-                                <button
-                                    onClick={() => setDashboardMode('external')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${dashboardMode === 'external' ? 'bg-white bg-app-surface text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-white'}`}
-                                >
-                                    {isManagerial ? 'Incoming Requests' : 'Support Mode'}
-                                </button>
-                                <button
-                                    onClick={() => setDashboardMode('internal')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${dashboardMode === 'internal' ? 'bg-white bg-app-surface text-rose-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-white'}`}
-                                >
-                                    {isManagerial ? 'Internal Team' : 'Team Mode'}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                    <Link href="/tickets/new" className="btn btn-primary bg-rose-600 hover:bg-rose-500 text-app-text px-6 py-3 rounded-xl flex items-center gap-2 font-bold shadow-lg shadow-rose-500/20">
-                        <Plus size={20} /> New Ticket
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        {(isStaff || isManagerial) && (
+                            <>
+                                {isManagerial && (
+                                    <button
+                                        onClick={() => setIsExecutiveHUDOpen(true)}
+                                        className="px-4 py-2 rounded-none bg-app-primary/10 text-app-primary border border-app-primary/20 text-[10px] font-black uppercase tracking-widest hover:bg-app-primary/20 transition-all flex items-center gap-2 group"
+                                    >
+                                        <Cpu size={14} className="group-hover:rotate-12 transition-transform" />
+                                        Executive HUD
+                                    </button>
+                                )}
+                                <div className="flex bg-app-surface-soft p-1 rounded-none border border-app-border shadow-inner">
+                                    <button
+                                        onClick={() => setDashboardMode('external')}
+                                        className={`px-4 py-2 rounded-none text-[10px] font-black uppercase tracking-widest transition-all ${dashboardMode === 'external' ? 'bg-app-surface text-app-primary shadow-sm' : 'text-app-text-muted hover:text-app-text'}`}
+                                    >
+                                        {isManagerial ? 'Incoming' : 'External'}
+                                    </button>
+                                    <button
+                                        onClick={() => setDashboardMode('internal')}
+                                        className={`px-4 py-2 rounded-none text-[10px] font-black uppercase tracking-widest transition-all ${dashboardMode === 'internal' ? 'bg-app-surface text-app-primary shadow-sm' : 'text-app-text-muted hover:text-app-text'}`}
+                                    >
+                                        {isManagerial ? 'Internal' : 'Team'}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                        <Link href="/tickets/new" className="px-6 py-3 bg-app-primary hover:bg-app-text text-app-void rounded-none flex items-center gap-2 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-app-primary/20 transition-all">
+                            <Plus size={20} /> New Ticket
+                        </Link>
+                    </div>
                 </div>
 
                 <ExecutiveIntelligenceOverlay 
@@ -184,171 +171,147 @@ export default function TicketsDashboard() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Link href="/tickets/all?status=Open" className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border hover:border-rose-500/30 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-all cursor-pointer">
+                    <Link href="/tickets/all?status=Open" className="glass-panel p-6 rounded-none bg-app-surface border border-app-border hover:border-app-primary/30 transition-all cursor-pointer">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-rose-500/10 text-rose-400">
+                            <div className="p-3 rounded-none bg-app-primary/10 text-app-primary">
                                 <AlertCircle size={24} />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold">{stats.open}</div>
-                                <div className="text-sm text-app-text-muted">Open Tickets</div>
+                                <div className="text-2xl font-black text-app-text leading-none">{stats.open}</div>
+                                <div className="text-[10px] text-app-text-muted font-black uppercase tracking-widest mt-1">Open Tickets</div>
                             </div>
                         </div>
                     </Link>
-                    <Link href="/tickets/all?status=Pending" className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border hover:border-orange-500/30 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 transition-all cursor-pointer">
+                    <Link href="/tickets/all?status=Pending" className="glass-panel p-6 rounded-none bg-app-surface border border-app-border hover:border-app-gold/30 transition-all cursor-pointer">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-orange-500/10 text-orange-400">
+                            <div className="p-3 rounded-none bg-app-gold/10 text-app-gold">
                                 <Clock size={24} />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold">{stats.pending}</div>
-                                <div className="text-sm text-app-text-muted text-app-text-muted">Pending Actions</div>
+                                <div className="text-2xl font-black text-app-text leading-none">{stats.pending}</div>
+                                <div className="text-[10px] text-app-text-muted font-black uppercase tracking-widest mt-1">Pending Actions</div>
                             </div>
                         </div>
                     </Link>
-                    <Link href="/tickets/all?status=Closed" className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border hover:border-emerald-500/30 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-100 transition-all cursor-pointer">
+                    <Link href="/tickets/all?status=Closed" className="glass-panel p-6 rounded-none bg-app-surface border border-app-border hover:border-app-secondary/30 transition-all cursor-pointer">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                            <div className="p-3 rounded-none bg-app-secondary/10 text-app-secondary">
                                 <CheckCircle size={24} />
                             </div>
                             <div>
-                                <div className="text-2xl font-bold">{stats.closed}</div>
-                                <div className="text-sm text-app-text-muted">Closed This Month</div>
+                                <div className="text-2xl font-black text-app-text leading-none">{stats.closed}</div>
+                                <div className="text-[10px] text-app-text-muted font-black uppercase tracking-widest mt-1">Closed This Month</div>
                             </div>
                         </div>
                     </Link>
                 </div>
 
-                {/* Operational Excellence - Executive View */}
-                {isManagerial && executiveSummary && (
-                    <div className="space-y-6 animate-in fade-in zoom-in-95 duration-1000">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-black bg-gradient-to-r from-primary to-indigo-400 bg-clip-text text-transparent uppercase tracking-tighter">
-                                🛡️ Operational Excellence
-                            </h2>
-                        </div>
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <div className="lg:col-span-2">
-                                <TicketExecutiveBrief summary={executiveSummary} />
-                            </div>
-                            <div>
-                                <DepartmentalTicketLoad load={executiveSummary.departmental_load} />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Category Summary */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold text-app-text flex items-center gap-2 text-rose-400">
-                            Summary by Category
-                        </h2>
-                    </div>
-                    <TicketCategorySummary stats={categoryStats} loading={statsLoading} />
-                </div>
-
-                {/* Recent Tickets Section */}
+                {/* Main Content Grid */}
                 <div className="flex flex-col lg:flex-row gap-8">
-                    {/* List */}
-                    <div className="flex-1 glass-panel rounded-2xl bg-white dark:bg-slate-900 border border-app-border border-slate-200 overflow-hidden">
-                        <div className="p-6 border-b border-app-border flex justify-between items-center">
-                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                <Ticket size={20} className="text-app-text-muted" /> Recent Activity
-                            </h3>
-                            <Link href="/tickets/all" className="text-sm text-blue-400 hover:text-blue-300">View All Tickets</Link>
+                    <div className="flex-1 space-y-8">
+                        {/* Category Summary */}
+                        <div className="glass-panel p-2 rounded-none bg-app-surface border border-app-border">
+                             <div className="p-4 border-b border-app-border">
+                                <h3 className="font-black text-[10px] uppercase tracking-[0.3em] text-app-text opacity-40">Heuristic Category Distribution</h3>
+                             </div>
+                             <TicketCategorySummary stats={categoryStats} loading={statsLoading} />
                         </div>
-                        <div className="divide-y divide-white/5">
-                            {statsLoading ? (
-                                <div className="p-4 space-y-4">
-                                    {[1, 2, 3].map(i => (
-                                        <div key={i} className="animate-pulse flex justify-between items-start">
-                                            <div className="space-y-2 flex-1">
-                                                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                                                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded w-1/2"></div>
+
+                        {/* Recent Activity */}
+                        <div className="glass-panel rounded-none bg-app-surface border border-app-border overflow-hidden">
+                            <div className="p-6 border-b border-app-border flex justify-between items-center">
+                                 <h3 className="font-black text-sm flex items-center gap-2 uppercase tracking-widest text-app-text">
+                                    <Ticket size={20} className="text-app-primary" /> Recent Activity
+                                </h3>
+                                <Link href="/tickets/all" className="text-[10px] font-black text-app-primary uppercase tracking-widest hover:text-app-text transition-colors">View All Tickets</Link>
+                            </div>
+                            <div className="divide-y divide-white/5">
+                                {statsLoading ? (
+                                    <div className="p-8 space-y-6">
+                                        {[1, 2, 3].map(i => (
+                                            <div key={i} className="animate-pulse flex justify-between items-start">
+                                                <div className="space-y-3 flex-1">
+                                                    <div className="h-5 bg-app-void rounded-none w-3/4"></div>
+                                                    <div className="h-3 bg-app-void rounded-none w-1/2"></div>
+                                                </div>
+                                                <div className="h-6 bg-app-void rounded-none w-20 ml-6"></div>
                                             </div>
-                                            <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-16 ml-4"></div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : recentTickets.length > 0 ? recentTickets.map(ticket => (
-                                <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block p-4 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50 transition-colors group">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <div className="font-medium text-slate-900 dark:text-slate-200 group-hover:text-rose-400 transition-colors">{ticket.subject}</div>
-                                            <div className="text-sm text-app-text-muted text-app-text-muted mt-1 flex items-center gap-2">
-                                                <span className="font-mono text-xs opacity-70 border border-app-border px-1 rounded bg-app-surface-soft">{ticket.displayId}</span>
-                                                <span>•</span>
-                                                <span className="flex items-center gap-1"><Clock size={12} /> {ticket.created}</span>
-                                                <span>•</span>
-                                                <span>{ticket.user}</span>
-                                                <span className="ml-2 px-1.5 py-0.5 bg-app-surface-soft rounded text-[10px] font-bold text-slate-400">
-                                                    {ticket.userDept} → {ticket.groupDept}
-                                                </span>
+                                        ))}
+                                    </div>
+                                ) : recentTickets.length > 0 ? (
+                                    recentTickets.map(ticket => (
+                                        <Link key={ticket.id} href={`/tickets/${ticket.id}`} className="block group">
+                                            <div className="p-6 hover:bg-app-primary/[0.03] transition-all flex justify-between items-start relative overflow-hidden">
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-app-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-black text-app-text group-hover:text-app-primary uppercase tracking-tight transition-colors italic">{ticket.subject}</div>
+                                                    <div className="text-[10px] text-app-text-muted mt-1.5 flex items-center gap-2 font-black uppercase tracking-widest">
+                                                        <span className="font-mono text-[9px] opacity-70 border border-app-border px-1 rounded-none bg-app-void">{ticket.displayId}</span>
+                                                        <span className="flex items-center gap-1"><Clock size={12} /> {ticket.created}</span>
+                                                        <span>•</span>
+                                                        <span>{ticket.user}</span>
+                                                        <span className="ml-2 px-1.5 py-0.5 bg-app-void border border-app-border rounded-none text-[8px] font-black text-app-primary">
+                                                            {ticket.userDept} → {ticket.groupDept}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <span className={`px-2 py-0.5 rounded-none text-[8px] font-black uppercase tracking-widest border ${getPriorityColor(ticket.priority)}`}>
+                                                        {ticket.priority}
+                                                    </span>
+                                                    <span className="text-[9px] text-app-text-muted font-black uppercase tracking-widest">{ticket.status}</span>
+                                                </div>
                                             </div>
+                                        </Link>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-20 px-8 bg-app-void/40 border border-app-border rounded-none shadow-inner">
+                                        <div className="w-20 h-20 bg-app-surface-soft rounded-none flex items-center justify-center mx-auto mb-6 text-app-text-muted border border-app-border shadow-inner">
+                                            <Activity size={40} className="opacity-20" />
                                         </div>
-                                        <div className="flex flex-col items-end gap-2">
-                                            <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getPriorityColor(ticket.priority)}`}>
-                                                {ticket.priority}
-                                            </span>
-                                            <span className="text-xs text-app-text-muted">{ticket.status}</span>
-                                        </div>
+                                        <h4 className="text-xl font-black text-app-text-muted uppercase italic tracking-tighter opacity-50 italic">Queues_Zeroed_Out</h4>
+                                        <p className="text-[10px] text-app-text-muted mt-2 font-black uppercase tracking-[0.2em] opacity-30">No active incident packets detected for this node.</p>
+                                        <Link href="/tickets/new" className="inline-flex items-center gap-3 mt-8 px-6 py-3 bg-app-surface hover:bg-app-rose hover:text-app-void border border-app-border transition-all text-[11px] font-black uppercase tracking-widest active:scale-95">
+                                            <Plus size={16} /> Deploy_First_Stream
+                                        </Link>
                                     </div>
-                                </Link>
-                            )) : (
-                                <div className="p-12 text-center">
-                                    <div className="w-16 h-16 bg-app-surface-soft rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
-                                        <Ticket size={32} />
-                                    </div>
-                                    <h4 className="text-app-text font-bold uppercase tracking-tight">Queues are clear</h4>
-                                    <p className="text-sm text-app-text-muted mt-1">No recent ticket activity found for your profile.</p>
-                                    <Link href="/tickets/new" className="inline-flex items-center gap-2 mt-6 text-xs font-black text-rose-500 uppercase tracking-widest hover:text-rose-400 transition-colors">
-                                        <Plus size={14} /> Open First Ticket
-                                    </Link>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Quick Actions / Knowledge Base Mock */}
+                    {/* Sidebar */}
                     <div className="w-full lg:w-80 space-y-6">
-                        <div className="p-6 rounded-2xl bg-gradient-to-br from-rose-900/20 to-purple-900/20 border border-app-border">
-                            <h3 className="font-bold text-lg mb-2">Need Help?</h3>
-                            <p className="text-sm text-app-text-muted mb-4">Check the knowledge base for common asset issues before raising a ticket.</p>
+                        <div className="p-6 rounded-none bg-gradient-to-br from-app-primary/10 to-app-secondary/10 border border-app-border relative overflow-hidden group">
+                            <div className="kinetic-scan-line" />
+                            <h3 className="font-black text-sm uppercase tracking-widest mb-2 text-app-text">Neural Library</h3>
+                            <p className="text-[11px] text-app-text-muted uppercase font-black tracking-wider mb-4 leading-relaxed opacity-60">Check the knowledge repository for common asset discrepancies.</p>
                             <button
                                 onClick={() => setIsKBSearchOpen(true)}
-                                className="w-full py-2 bg-app-surface hover:bg-white/20 rounded-xl text-sm font-medium transition-colors"
+                                className="w-full py-3 bg-app-void hover:bg-app-primary border border-app-border hover:border-transparent hover:text-app-void rounded-none text-[10px] font-black uppercase tracking-widest transition-all"
                             >
-                                Search Knowledge Base
+                                Access Wiki
                             </button>
                         </div>
 
-                        {/* Admin Tools - Hidden for End Users */}
-                        {(isStaff || isManagerial) && (
-                            <div className="p-6 rounded-2xl bg-app-surface-soft border border-app-border">
-                                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                    <Settings size={18} className="text-indigo-400" /> Administrative Tools
+                         {/* Admin Tools */}
+                         {(isStaff || isManagerial) && (
+                            <div className="p-6 rounded-none bg-app-surface border border-app-border">
+                                <h3 className="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2 text-app-text">
+                                    <Settings size={18} className="text-app-primary" /> Admin Protocols
                                 </h3>
                                 <div className="space-y-3">
-                                    <Link 
-                                        href="/tickets/automation" 
-                                        className="flex items-center justify-between p-3 rounded-xl bg-slate-200 bg-app-surface-soft hover:bg-indigo-600/10 border border-transparent hover:border-indigo-500/30 transition-all group"
-                                    >
+                                    <Link href="/tickets/automation" className="flex items-center justify-between p-3 bg-app-void border border-app-border hover:border-app-primary transition-all text-[10px] font-black uppercase tracking-widest">
                                         <div className="flex items-center gap-3">
-                                            <Zap size={16} className="text-indigo-400" />
-                                            <span className="text-xs font-semibold">Rule Editor</span>
+                                            <Zap size={16} className="text-app-primary" />
+                                            Rule Engine
                                         </div>
-                                        <ChevronUp size={14} className="rotate-90 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </Link>
-                                    <Link 
-                                        href="/tickets/sla" 
-                                        className="flex items-center justify-between p-3 rounded-xl bg-slate-200 bg-app-surface-soft hover:bg-emerald-600/10 border border-transparent hover:border-emerald-500/30 transition-all group"
-                                    >
+                                    <Link href="/tickets/sla" className="flex items-center justify-between p-3 bg-app-void border border-app-border hover:border-app-secondary transition-all text-[10px] font-black uppercase tracking-widest">
                                         <div className="flex items-center gap-3">
-                                            <Clock size={16} className="text-emerald-400" />
-                                            <span className="text-xs font-semibold">SLA Manager</span>
+                                            <Clock size={16} className="text-app-secondary" />
+                                            SLA Controller
                                         </div>
-                                        <ChevronUp size={14} className="rotate-90 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </Link>
                                 </div>
                             </div>
@@ -358,68 +321,66 @@ export default function TicketsDashboard() {
             </div>
 
             {/* KB Modal */}
-            {
-                isKBSearchOpen && (
-                    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-app-border rounded-2xl p-6 shadow-2xl relative">
-                            <button
-                                onClick={() => setIsKBSearchOpen(false)}
-                                className="absolute top-4 right-4 text-app-text-muted hover:text-app-text"
-                            >
-                                <Plus size={24} className="rotate-45" />
-                            </button>
+            {isKBSearchOpen && (
+                <div className="fixed inset-0 bg-app-void/90 backdrop-blur-3xl z-150 flex items-center justify-center p-4 animate-in fade-in duration-500">
+                    <div className="w-full max-w-lg bg-app-obsidian border border-app-border rounded-none p-10 shadow-[0_0_100px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                        <div className="kinetic-scan-line" />
+                        <button
+                            onClick={() => setIsKBSearchOpen(false)}
+                            className="p-3 bg-app-void hover:bg-app-rose border border-app-border hover:text-app-void transition-all absolute top-6 right-6 active:scale-95"
+                        >
+                            <X size={20} />
+                        </button>
 
-                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <div className="p-2 bg-rose-500/20 text-rose-400 rounded-lg"><Ticket size={20} /></div>
-                                Knowledge Base
-                            </h3>
+                        <h3 className="text-3xl font-black mb-8 flex items-center gap-4 uppercase italic tracking-tighter text-app-text">
+                            <span className="text-app-primary">Neural</span> Wiki
+                        </h3>
 
-                            <input
-                                type="text"
-                                placeholder="Search help articles..."
-                                className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border rounded-xl px-4 py-3 mb-4 text-app-text focus:outline-none focus:ring-2 focus:ring-rose-500/50"
-                                value={kbQuery}
-                                onChange={(e) => setKbQuery(e.target.value)}
-                                autoFocus
-                            />
+                        <input
+                            type="text"
+                            placeholder="Search help articles..."
+                            className="w-full bg-app-void border border-app-border rounded-none px-4 py-3 mb-4 text-app-text focus:outline-none focus:ring-2 focus:ring-app-primary/50 text-sm font-black uppercase tracking-widest placeholder:opacity-30"
+                            value={kbQuery}
+                            onChange={(e) => setKbQuery(e.target.value)}
+                        />
 
-                            {selectedArticle ? (
-                                <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                                    <button
-                                        onClick={() => setSelectedArticle(null)}
-                                        className="text-sm text-app-text-muted hover:text-app-text flex items-center gap-1 mb-4"
+                        {selectedArticle ? (
+                            <div className="animate-in fade-in slide-in-from-right-6 duration-500 space-y-6">
+                                <button
+                                    onClick={() => setSelectedArticle(null)}
+                                    className="text-[9px] font-black text-app-primary hover:text-app-text flex items-center gap-2 uppercase tracking-widest transition-colors mb-2"
+                                >
+                                    <ArrowLeft size={14} /> Back
+                                </button>
+                                <div>
+                                    <h4 className="font-black text-2xl text-app-text uppercase italic tracking-tight">{selectedArticle.title}</h4>
+                                    <span className="text-[10px] text-app-rose font-black uppercase tracking-[0.3em] mt-2 block border-l-2 border-app-rose pl-3">{selectedArticle.category}</span>
+                                </div>
+                                <div className="text-app-text-muted text-[11px] leading-relaxed uppercase font-black tracking-wider opacity-60 whitespace-pre-line border-t border-app-border/30 pt-6">
+                                    {selectedArticle.content}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                                {filteredArticles.map(article => (
+                                    <div
+                                        key={article.id}
+                                        className="p-5 bg-app-void border border-app-border hover:border-app-primary/30 transition-all cursor-pointer group relative"
+                                        onClick={() => setSelectedArticle(article)}
                                     >
-                                        <ArrowLeft size={16} /> Back to search
-                                    </button>
-                                    <h4 className="font-bold text-xl text-app-text mb-2">{selectedArticle.title}</h4>
-                                    <span className="text-xs text-rose-400 font-mono mb-4 block">{selectedArticle.category}</span>
-                                    <div className="text-app-text-muted text-sm leading-relaxed whitespace-pre-line">
-                                        {selectedArticle.content}
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-app-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <h4 className="font-black text-[12px] uppercase tracking-tight text-app-text group-hover:text-app-primary transition-colors italic">{article.title}</h4>
+                                        <div className="flex justify-between items-center mt-3">
+                                            <span className="text-[9px] text-app-text-muted uppercase tracking-widest font-black opacity-30">{article.category}</span>
+                                            <span className="text-[8px] font-black text-app-primary uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Access_Packet</span>
+                                        </div>
                                     </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                                    {filteredArticles.map(article => (
-                                        <div
-                                            key={article.id}
-                                            className="p-3 rounded-xl bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors cursor-pointer group"
-                                            onClick={() => setSelectedArticle(article)}
-                                        >
-                                            <h4 className="font-medium text-slate-900 dark:text-slate-200 group-hover:text-rose-300">{article.title}</h4>
-                                            <span className="text-xs text-app-text-muted uppercase tracking-wider">{article.category}</span>
-                                        </div>
-                                    ))}
-                                    {filteredArticles.length === 0 && (
-                                        <div className="text-center text-app-text-muted py-8">
-                                            No articles found.
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )
-            }
-        </div >
+                </div>
+            )}
+        </div>
     );
 }

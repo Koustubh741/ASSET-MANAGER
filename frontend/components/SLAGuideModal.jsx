@@ -27,7 +27,7 @@ export default function SLAGuideModal({ isOpen, onClose }) {
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-3 bg-slate-200 dark:bg-white/[0.03] hover:bg-slate-300 dark:hover:bg-white/[0.08] text-app-text-muted rounded-2xl border border-slate-300 border-app-border transition-all"
+                        className="p-3 bg-slate-200 dark:bg-white/[0.03] hover:bg-slate-300 dark:hover:bg-white/[0.08] text-app-text-muted rounded-none border border-slate-300 border-app-border transition-all"
                     >
                         <X size={20} />
                     </button>
@@ -39,7 +39,7 @@ export default function SLAGuideModal({ isOpen, onClose }) {
                     <div>
                         <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-4">Core Performance Metrics</label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="p-5 bg-slate-50 dark:bg-white/[0.03] rounded-3xl border border-app-border shadow-sm">
+                            <div className="p-5 bg-slate-50 dark:bg-white/[0.03] rounded-none border border-app-border shadow-sm">
                                 <div className="flex items-center gap-3 mb-3 text-indigo-500">
                                     <Clock size={20} />
                                     <span className="font-bold text-sm">Response Target</span>
@@ -48,7 +48,7 @@ export default function SLAGuideModal({ isOpen, onClose }) {
                                     The maximum time allowed for an agent to **acknowledge** or **first-reply** to a new ticket. Measured from the moment of submission.
                                 </p>
                             </div>
-                            <div className="p-5 bg-slate-50 dark:bg-white/[0.03] rounded-3xl border border-app-border shadow-sm">
+                            <div className="p-5 bg-slate-50 dark:bg-white/[0.03] rounded-none border border-app-border shadow-sm">
                                 <div className="flex items-center gap-3 mb-3 text-emerald-500">
                                     <Zap size={20} />
                                     <span className="font-bold text-sm">Resolution Target</span>
@@ -65,8 +65,8 @@ export default function SLAGuideModal({ isOpen, onClose }) {
                         <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-4">SLA Priority Matrix</label>
                         <div className="space-y-3">
                             {priorities.map((p, idx) => (
-                                <div key={idx} className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/[0.02] border border-app-border rounded-2xl hover:bg-white dark:hover:bg-white/[0.04] transition-colors group">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${p.bg} ${p.border} border`}>
+                                <div key={idx} className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/[0.02] border border-app-border rounded-none hover:bg-white dark:hover:bg-white/[0.04] transition-colors group">
+                                    <div className={`w-12 h-12 rounded-none flex items-center justify-center shrink-0 ${p.bg} ${p.border} border`}>
                                         <AlertCircle size={20} className={p.color} />
                                     </div>
                                     <div className="flex-1">
@@ -105,7 +105,7 @@ export default function SLAGuideModal({ isOpen, onClose }) {
                     </div>
 
                     {/* Pro-Tip Section */}
-                    <div className="flex items-start gap-4 p-5 bg-indigo-500/5 border border-indigo-500/20 rounded-3xl">
+                    <div className="flex items-start gap-4 p-5 bg-indigo-500/5 border border-indigo-500/20 rounded-none">
                         <HelpCircle className="text-indigo-500 shrink-0 mt-0.5" size={20} />
                         <div>
                             <div className="text-sm font-bold text-app-text mb-1">Provisioning Best Practices</div>

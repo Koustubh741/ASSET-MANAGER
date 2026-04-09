@@ -66,15 +66,10 @@ export const NotificationProvider = ({ children }) => {
 
     // Establish SSE Connection
     useEffect(() => {
+        // Only run if the user is logged in
         const user = localStorage.getItem('user');
-        const token = localStorage.getItem('accessToken');
-        
-        if (!user || !token) {
-            return;
-        }
+        if (!user) return;
 
-        const streamUrl = `${API_URL}/notifications/stream?token=${token}`;
-        
         const connect = () => {
             if (reconnectTimerRef.current) {
                 clearTimeout(reconnectTimerRef.current);
@@ -85,13 +80,25 @@ export const NotificationProvider = ({ children }) => {
                 eventSourceRef.current.close();
             }
 
+            // ROOT FIX: Read the token fresh on every connect attempt.
+            // If the token was refreshed since the last connect, we must use the new one.
+            const freshToken = localStorage.getItem('accessToken');
+            if (!freshToken) return; // Not logged in
+
+            const streamUrl = `${API_URL}/notifications/stream?token=${freshToken}`;
             const es = new EventSource(streamUrl);
             eventSourceRef.current = es;
 
             es.onopen = () => {
-                console.log('SSE Notification Stream Connected');
+                console.log('SSE Notification Stream: Connection open');
                 setIsConnected(true);
             };
+
+            // Handle the initial connection confirmation event
+            es.addEventListener('connected', () => {
+                console.log('SSE Notification Stream: Server confirmed connection');
+                setIsConnected(true);
+            });
 
             es.addEventListener('notification', (event) => {
                 try {
@@ -124,13 +131,13 @@ export const NotificationProvider = ({ children }) => {
             });
 
             es.onerror = (err) => {
-                console.error('SSE Error:', err);
+                console.warn('SSE stream error — will reconnect in 5s', err);
                 setIsConnected(false);
                 es.close();
                 
-                // Attempt reconnect after 10 seconds if not already scheduled
+                // Reconnect after 5 seconds
                 if (!reconnectTimerRef.current) {
-                    reconnectTimerRef.current = setTimeout(connect, 10000);
+                    reconnectTimerRef.current = setTimeout(connect, 5000);
                 }
             };
         };

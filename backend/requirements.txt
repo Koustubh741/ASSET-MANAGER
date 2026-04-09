@@ -20,6 +20,7 @@ apscheduler
 celery
 redis
 flower
+httpx           # Phase 5.2: SSO OAuth HTTP client
 
 # Remote Server Discovery
 paramiko

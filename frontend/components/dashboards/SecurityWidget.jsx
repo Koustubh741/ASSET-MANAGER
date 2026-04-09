@@ -58,14 +58,14 @@ export default function SecurityWidget() {
         : 100;
 
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border p-6 shadow-2xl transition-all duration-300 hover:shadow-blue-500/10 hover:border-blue-500/30 group">
+        <div className="relative overflow-hidden rounded-none bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-app-border p-6 shadow-2xl transition-all duration-300 hover:shadow-blue-500/10 hover:border-blue-500/30 group">
             {/* Animated Background Pulse */}
             <div className="absolute -right-12 -top-12 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl group-hover:bg-blue-500/20 transition-all duration-500"></div>
 
             <div className="relative z-10 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-600/20 border border-blue-500/30 text-blue-400">
+                        <div className="p-2.5 rounded-none bg-gradient-to-br from-blue-500/20 to-indigo-600/20 border border-blue-500/30 text-blue-400">
                             <Shield size={22} className="group-hover:scale-110 transition-transform duration-300" />
                         </div>
                         <div>
@@ -75,7 +75,7 @@ export default function SecurityWidget() {
                     </div>
                     <button
                         onClick={fetchSecurityStats}
-                        className="p-2 rounded-lg bg-app-surface-soft text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-all"
+                        className="p-2 rounded-none bg-app-surface-soft text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-all"
                         disabled={loading}
                     >
                         <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
@@ -83,14 +83,14 @@ export default function SecurityWidget() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 rounded-xl bg-app-surface-soft border border-app-border hover:border-blue-500/20 transition-colors">
+                    <div className="p-4 rounded-none bg-app-surface-soft border border-app-border hover:border-blue-500/20 transition-colors">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-app-text-muted mb-1">Active Policies</p>
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-black text-app-text">{stats.total}</span>
                             <span className="text-[10px] text-emerald-400 font-semibold">+2 today</span>
                         </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-app-surface-soft border border-app-border hover:border-blue-500/20 transition-colors">
+                    <div className="p-4 rounded-none bg-app-surface-soft border border-app-border hover:border-blue-500/20 transition-colors">
                         <p className="text-[10px] uppercase tracking-wider font-bold text-app-text-muted mb-1">Compliance Rate</p>
                         <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-black text-app-text">{completionRate}%</span>
@@ -102,21 +102,21 @@ export default function SecurityWidget() {
                 </div>
 
                 <div className="space-y-3 flex-1">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                    <div className="flex items-center justify-between p-3 rounded-none bg-emerald-500/5 border border-emerald-500/10">
                         <div className="flex items-center gap-2">
                             <ShieldCheck size={14} className="text-emerald-400" />
                             <span className="text-xs font-medium text-app-text-muted">Enforced Targets</span>
                         </div>
                         <span className="text-sm font-bold text-emerald-400">{stats.enforced}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
+                    <div className="flex items-center justify-between p-3 rounded-none bg-orange-500/5 border border-orange-500/10">
                         <div className="flex items-center gap-2">
                             <Activity size={14} className="text-orange-400" />
                             <span className="text-xs font-medium text-app-text-muted">Pending Sync</span>
                         </div>
                         <span className="text-sm font-bold text-orange-400">{stats.pending}</span>
                     </div>
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-rose-500/5 border border-rose-500/10">
+                    <div className="flex items-center justify-between p-3 rounded-none bg-rose-500/5 border border-rose-500/10">
                         <div className="flex items-center gap-2">
                             <ShieldAlert size={14} className="text-rose-400" />
                             <span className="text-xs font-medium text-app-text-muted">Policy Conflicts</span>

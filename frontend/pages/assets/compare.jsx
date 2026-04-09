@@ -18,7 +18,8 @@ export default function AssetComparisonPage() {
         // Load real assets
         const fetchAssets = async () => {
             try {
-                const apiAssets = await apiClient.getAssets();
+                const res = await apiClient.getAssets();
+                const apiAssets = res.data || [];
                 setAssets(apiAssets);
             } catch (error) {
                 console.error('Failed to fetch assets:', error);
@@ -150,7 +151,7 @@ export default function AssetComparisonPage() {
             <div className="max-w-7xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex items-center space-x-4">
-                    <Link href="/enterprise-features" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
+                    <Link href="/enterprise-features" className="p-2 rounded-none hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
                     <div>
@@ -160,11 +161,11 @@ export default function AssetComparisonPage() {
                 </div>
 
                 {/* Selection Panel */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 glass-panel rounded-2xl bg-app-surface-soft border border-app-border">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end p-6 glass-panel rounded-none bg-app-surface-soft border border-app-border">
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-app-text-muted">Asset A</label>
                         <select
-                            className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-xl p-3 text-slate-900 dark:text-slate-200"
+                            className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-none p-3 text-slate-900 dark:text-slate-200"
                             value={selectedAsset1 || ''}
                             onChange={(e) => setSelectedAsset1(e.target.value)}
                         >
@@ -182,7 +183,7 @@ export default function AssetComparisonPage() {
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-app-text-muted">Asset B</label>
                         <select
-                            className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-xl p-3 text-slate-900 dark:text-slate-200"
+                            className="w-full bg-white dark:bg-slate-900 border border-app-border rounded-none p-3 text-slate-900 dark:text-slate-200"
                             value={selectedAsset2 || ''}
                             onChange={(e) => setSelectedAsset2(e.target.value)}
                         >
@@ -195,14 +196,14 @@ export default function AssetComparisonPage() {
                         <button
                             onClick={handleCompare}
                             disabled={!selectedAsset1 || !selectedAsset2 || loading}
-                            className="btn btn-primary px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-app-text font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="btn btn-primary px-8 py-3 rounded-none bg-blue-600 hover:bg-blue-500 text-app-text font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                         >
                             {loading ? 'Analyzing...' : 'Compare Specifications'}
                         </button>
                         {comparisonData && (
                             <button
                                 onClick={() => setComparisonData(null)}
-                                className="px-8 py-3 rounded-xl bg-app-surface-soft border border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-all"
+                                className="px-8 py-3 rounded-none bg-app-surface-soft border border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-all"
                             >
                                 Clear
                             </button>
@@ -212,7 +213,7 @@ export default function AssetComparisonPage() {
 
                 {/* Error Message */}
                 {error && (
-                    <div className="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="p-6 rounded-none bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
                         <AlertCircle size={20} />
                         <span className="font-medium">{error}</span>
                     </div>
@@ -220,7 +221,7 @@ export default function AssetComparisonPage() {
 
                 {/* Comparison Result */}
                 {comparisonData && (
-                    <div className="grid grid-cols-3 gap-0 border border-app-border rounded-2xl bg-white dark:bg-slate-900/50 overflow-hidden animate-in zoom-in-95 duration-300">
+                    <div className="grid grid-cols-3 gap-0 border border-app-border rounded-none bg-white dark:bg-slate-900/50 overflow-hidden animate-in zoom-in-95 duration-300">
                         {/* Headers */}
                         <div className="p-4 bg-slate-100 dark:bg-slate-950/50 border-b border-r border-app-border text-sm font-semibold text-app-text-muted uppercase tracking-wider flex items-center justify-center">
                             Specification

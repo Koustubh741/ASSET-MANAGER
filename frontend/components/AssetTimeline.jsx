@@ -23,11 +23,11 @@ import {
 import apiClient from '@/lib/apiClient';
 
 const STAGES = [
-    { label: 'Created', icon: Search, type: 'CREATED', color: '#3b82f6', description: 'Genesis point' },
-    { label: 'Discovered', icon: Server, type: 'DISCOVERED', color: '#6366f1', description: 'Network identified' },
-    { label: 'Assigned', icon: User, type: 'ASSIGNMENT', color: '#10b981', description: 'Custody established' },
-    { label: 'Maintenance', icon: Wrench, type: 'MAINTENANCE', color: '#f59e0b', description: 'Health optimization' },
-    { label: 'Retired', icon: Trash2, type: 'SOFT_DELETED', color: '#f43f5e', description: 'End of cycle' }
+    { label: 'Created', icon: Search, type: 'CREATED', color: 'var(--color-kinetic-primary)', description: 'Genesis point' },
+    { label: 'Discovered', icon: Server, type: 'DISCOVERED', color: 'var(--color-kinetic-primary-soft)', description: 'Network identified' },
+    { label: 'Assigned', icon: User, type: 'ASSIGNMENT', color: 'var(--color-kinetic-secondary)', description: 'Custody established' },
+    { label: 'Maintenance', icon: Wrench, type: 'MAINTENANCE', color: 'var(--color-kinetic-gold)', description: 'Health optimization' },
+    { label: 'Retired', icon: Trash2, type: 'SOFT_DELETED', color: 'var(--color-kinetic-rose)', description: 'End of cycle' }
 ];
 
 const AssetTimeline = ({ assetId }) => {
@@ -67,12 +67,12 @@ const AssetTimeline = ({ assetId }) => {
 
     const getEventColor = (type) => {
         switch (type) {
-            case 'CREATED': return 'text-blue-400';
-            case 'ASSIGNMENT': return 'text-emerald-400';
-            case 'MAINTENANCE': return 'text-amber-400';
-            case 'STATUS_CHANGE': return 'text-cyan-400';
-            case 'DISCOVERED': return 'text-indigo-400';
-            case 'SOFT_DELETED': return 'text-rose-400';
+            case 'CREATED': return 'text-app-primary';
+            case 'ASSIGNMENT': return 'text-app-secondary';
+            case 'MAINTENANCE': return 'text-app-gold';
+            case 'STATUS_CHANGE': return 'text-app-cyan';
+            case 'DISCOVERED': return 'text-app-primary-soft';
+            case 'SOFT_DELETED': return 'text-app-rose';
             default: return 'text-app-text-muted';
         }
     };
@@ -86,18 +86,18 @@ const AssetTimeline = ({ assetId }) => {
     const currentStageIndex = STAGES.findIndex(s => s.label === data.current_stage);
 
     if (loading) return (
-        <div className="p-24 flex flex-col justify-center items-center relative overflow-hidden bg-app-surface-soft rounded-[3rem]">
+        <div className="p-24 flex flex-col justify-center items-center relative overflow-hidden bg-app-void rounded-none border border-app-border">
             <div className="absolute inset-0 z-0 opacity-20">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/30 blur-[120px] rounded-full animate-pulse"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-app-primary/20 blur-[120px] rounded-none animate-pulse"></div>
             </div>
             <div className="relative z-10 space-y-8 flex flex-col items-center">
                 <div className="relative w-20 h-20">
                     <svg className="w-full h-full animate-spin-slow" viewBox="0 0 100 100">
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1" className="text-blue-500/10" />
-                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="60 180" className="text-blue-500" strokeLinecap="round" />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="1" className="text-app-primary/10" />
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray="60 180" className="text-app-primary" strokeLinecap="square" />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <Cpu size={24} className="text-blue-500 animate-pulse" />
+                        <Cpu size={24} className="text-app-primary animate-pulse" />
                     </div>
                 </div>
                 <div className="text-center">
@@ -130,19 +130,19 @@ const AssetTimeline = ({ assetId }) => {
                                     onClick={() => setFilterStage(isFiltered ? null : stage.label)}
                                 >
                                     {/* Stage Indicator */}
-                                    <div className={`relative w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-500 border-2 ${isCurrent ? 'bg-app-surface border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)] scale-110' :
-                                            isCompleted ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' :
-                                                'bg-app-surface border-app-border text-app-text-muted hover:bg-app-surface-soft'
-                                        } ${isFiltered ? 'scale-110 !border-white shadow-[0_0_40px_rgba(255,255,255,0.2)]' : ''}`}>
+                                    <div className={`relative w-14 h-14 rounded-none flex items-center justify-center transition-all duration-500 border-2 ${isCurrent ? 'bg-app-obsidian border-app-primary shadow-[0_0_30px_rgba(var(--color-kinetic-primary-rgb),0.3)] scale-110' :
+                                            isCompleted ? 'bg-app-secondary/10 border-app-secondary/30 text-app-secondary' :
+                                                'bg-app-void border-app-border text-app-text-muted hover:bg-app-obsidian'
+                                        } ${isFiltered ? 'scale-110 !border-app-text shadow-[0_0_40px_rgba(255,255,255,0.2)]' : ''}`}>
 
                                         {isCurrent && (
-                                            <div className="absolute -inset-1 border border-blue-400/30 rounded-[1.5rem] animate-ping opacity-20"></div>
+                                            <div className="absolute -inset-1 border border-app-primary/30 rounded-none animate-ping opacity-20"></div>
                                         )}
 
-                                        <Icon size={20} className={`transition-all duration-500 ${isCurrent ? 'text-blue-400' : isCompleted ? 'text-emerald-400' : 'text-slate-700'}`} />
+                                        <Icon size={20} className={`transition-all duration-500 ${isCurrent ? 'text-app-primary' : isCompleted ? 'text-app-secondary' : 'text-slate-700'}`} />
 
                                         {/* Status Glow */}
-                                        {isCurrent && <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-500 blur-sm rounded-full"></div>}
+                                        {isCurrent && <div className="absolute bottom-[-1px] left-1/2 -translate-x-1/2 w-8 h-1 bg-app-primary blur-sm rounded-none"></div>}
                                     </div>
 
                                     {/* Stage Labeling */}
@@ -158,7 +158,7 @@ const AssetTimeline = ({ assetId }) => {
 
                                     {isFiltered && (
                                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                            <div className="text-[8px] font-black text-blue-500 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                            <div className="text-[8px] font-black text-app-primary bg-app-primary/10 border border-app-primary/20 px-2 py-0.5 rounded-none whitespace-nowrap">
                                                 FILTER ACTIVE
                                             </div>
                                         </div>
@@ -166,15 +166,15 @@ const AssetTimeline = ({ assetId }) => {
                                 </div>
 
                                 {idx < STAGES.length - 1 && (
-                                    <div className="flex-1 h-[2px] mx-6 relative overflow-hidden bg-app-surface-soft rounded-full max-w-[80px]">
+                                    <div className="flex-1 h-[2px] mx-6 relative overflow-hidden bg-app-border rounded-none max-w-[80px]">
                                         <div
-                                            className={`absolute inset-0 transition-all duration-1000 ${idx < currentStageIndex ? 'bg-gradient-to-r from-emerald-500 to-blue-500' :
+                                            className={`absolute inset-0 transition-all duration-1000 ${idx < currentStageIndex ? 'bg-gradient-to-r from-app-secondary to-app-primary' :
                                                     'bg-transparent'
                                                 }`}
                                         ></div>
                                         {isCurrent && (
                                             <div className="absolute inset-0 flex items-center">
-                                                <div className="h-full w-4 bg-white/40 blur-[4px] animate-pulse-flow"></div>
+                                                <div className="h-full w-4 bg-app-text/20 blur-[4px] animate-pulse-flow"></div>
                                             </div>
                                         )}
                                     </div>
@@ -236,38 +236,38 @@ const AssetTimeline = ({ assetId }) => {
                             >
                                 {/* Neural Node Marker */}
                                 <div
-                                    className={`absolute -left-[44px] top-2 w-10 h-10 flex items-center justify-center rounded-[1rem] border transition-all duration-500 z-10 cursor-pointer backdrop-blur-3xl shadow-2xl ${isSelected
-                                            ? 'bg-blue-600 border-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.5)] scale-110'
-                                            : 'bg-app-surface border-app-border hover:border-app-border-soft'
+                                    className={`absolute -left-[44px] top-2 w-10 h-10 flex items-center justify-center rounded-none border transition-all duration-500 z-10 cursor-pointer backdrop-blur-3xl shadow-2xl ${isSelected
+                                            ? 'bg-app-primary border-app-primary shadow-[0_0_30px_rgba(var(--color-kinetic-primary-rgb),0.5)] scale-110'
+                                            : 'bg-app-obsidian border-app-border'
                                         }`}
                                     onClick={() => setSelectedId(isSelected ? null : event.id)}
                                 >
-                                    <div className={`${isSelected ? 'text-app-text' : eventColor}`}>
+                                    <div className={`${isSelected ? 'text-app-void' : eventColor}`}>
                                         {getIcon(event.type)}
                                     </div>
 
                                     {/* Connecting Wire Line */}
-                                    <div className="absolute right-[-14px] top-1/2 -translate-y-1/2 w-4 h-[1px] bg-app-surface group-hover:bg-white/20 transition-all duration-500"></div>
+                                    <div className="absolute right-[-14px] top-1/2 -translate-y-1/2 w-4 h-[1px] bg-app-border group-hover:bg-app-primary transition-all duration-500"></div>
                                 </div>
 
                                 {/* Intelligent Event Card */}
                                 <div
-                                    className={`relative ml-4 transition-all duration-700 rounded-[2rem] p-8 cursor-pointer border shadow-2xl overflow-hidden ${isSelected
-                                            ? 'bg-blue-500/10 border-blue-500/30'
-                                            : 'bg-app-surface border-app-border hover:bg-app-surface-soft hover:shadow-blue-500/5'
+                                    className={`relative ml-4 transition-all duration-700 rounded-none p-8 cursor-pointer border shadow-2xl overflow-hidden ${isSelected
+                                            ? 'bg-app-primary/5 border-app-primary'
+                                            : 'bg-app-void border-app-border hover:bg-app-obsidian'
                                         }`}
                                     onClick={() => setSelectedId(isSelected ? null : event.id)}
                                 >
                                     {/* Hover Interactive Scan Effect */}
-                                    <div className="absolute inset-x-0 top-0 h-[100px] bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                                    <div className="absolute inset-x-0 top-0 h-[100px] bg-gradient-to-b from-app-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
 
                                     <div className="flex flex-col lg:flex-row justify-between gap-8 relative z-10">
                                         <div className="space-y-4 max-w-2xl">
                                             <div className="flex items-center gap-4">
-                                                <div className={`text-[10px] font-black uppercase tracking-[0.25em] px-3 py-1 rounded-full border border-app-border bg-app-surface-soft ${eventColor}`}>
+                                                <div className={`text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1 rounded-none border border-app-border bg-app-obsidian ${eventColor}`}>
                                                     {event.type}
                                                 </div>
-                                                <h4 className="text-lg font-black text-app-text/95 tracking-tightest">
+                                                <h4 className="text-lg font-black text-app-text tracking-tighter uppercase font-['Space_Grotesk']">
                                                     {event.title}
                                                 </h4>
                                             </div>
@@ -278,23 +278,23 @@ const AssetTimeline = ({ assetId }) => {
 
                                             <div className="flex items-center gap-6 pt-2">
                                                 <div className="flex items-center gap-2 group/performer">
-                                                    <div className="w-6 h-6 rounded-full bg-app-surface-soft border border-app-border flex items-center justify-center overflow-hidden">
-                                                        <User size={12} className="text-app-text-muted group-hover/performer:text-blue-400 transition-colors" />
+                                                    <div className="w-8 h-8 rounded-none bg-app-obsidian border border-app-border flex items-center justify-center overflow-hidden">
+                                                        <User size={14} className="text-app-text-muted group-hover/performer:text-app-primary transition-colors" />
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="text-[9px] font-bold text-app-text-muted uppercase tracking-tighter">Initiator</span>
-                                                        <span className="text-[11px] text-app-text-muted font-bold">{event.performer || 'System Core'}</span>
+                                                        <span className="text-[8px] font-black text-app-text-muted uppercase tracking-widest">Initiator</span>
+                                                        <span className="text-[11px] text-app-text font-black uppercase">{event.performer || 'System Core'}</span>
                                                     </div>
                                                 </div>
 
                                                 <div className="h-6 w-[1px] bg-app-surface-soft"></div>
 
                                                 <div className="flex items-center gap-2">
-                                                    <History size={12} className="text-app-text-muted" />
+                                                    <History size={14} className="text-app-text-muted" />
                                                     <div className="flex flex-col">
-                                                        <span className="text-[9px] font-bold text-app-text-muted uppercase tracking-tighter">Frequency Count</span>
-                                                        <span className="text-[11px] text-blue-400 font-mono font-bold">
-                                                            {data.stats[event.type] || 0} Instances
+                                                        <span className="text-[8px] font-black text-app-text-muted uppercase tracking-widest">Telemetry Count</span>
+                                                        <span className="text-[11px] text-app-primary font-mono font-black">
+                                                            {data.stats[event.type] || 0} SEGM
                                                         </span>
                                                     </div>
                                                 </div>
@@ -303,7 +303,7 @@ const AssetTimeline = ({ assetId }) => {
 
                                         <div className="flex flex-col items-end lg:justify-between h-full pt-1">
                                             <div className="flex flex-col items-end space-y-2">
-                                                <div className="flex items-center gap-2 px-4 py-2 bg-app-surface-soft border border-app-border rounded-2xl shadow-sm dark:shadow-inner">
+                                                <div className="flex items-center gap-2 px-4 py-2 bg-app-surface-soft border border-app-border rounded-none shadow-sm dark:shadow-inner">
                                                     <Calendar size={12} className="text-app-text-muted" />
                                                     <span className="text-[11px] font-bold text-app-text-muted">
                                                         {new Date(event.timestamp).toLocaleString([], {
@@ -319,7 +319,7 @@ const AssetTimeline = ({ assetId }) => {
 
                                             {/* Advanced Data Diffs Overlay */}
                                             {event.changes && event.changes.length > 0 && isSelected && (
-                                                <div className="mt-6 lg:mt-0 p-4 bg-app-surface-soft border border-emerald-500/20 rounded-2xl animate-in zoom-in-95 duration-500 w-full lg:w-[280px]">
+                                                <div className="mt-6 lg:mt-0 p-4 bg-app-surface-soft border border-emerald-500/20 rounded-none animate-in zoom-in-95 duration-500 w-full lg:w-[280px]">
                                                     <h5 className="text-[9px] font-black text-emerald-500/50 uppercase tracking-[0.2em] mb-3">Parameter delta</h5>
                                                     <div className="space-y-3">
                                                         {event.changes.map((change, i) => (
@@ -340,7 +340,7 @@ const AssetTimeline = ({ assetId }) => {
 
                                     {/* Hologram Pulse Line for Selection */}
                                     {isSelected && (
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)] animate-pulse"></div>
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-app-primary shadow-[0_0_15px_rgba(var(--color-kinetic-primary-rgb),0.8)] animate-pulse"></div>
                                     )}
                                 </div>
                             </div>
@@ -357,7 +357,7 @@ const AssetTimeline = ({ assetId }) => {
                             <p className="text-[10px] text-app-text-muted font-bold mt-2 uppercase tracking-tightest">No data mapped to {filterStage} stage</p>
                             <button
                                 onClick={() => setFilterStage(null)}
-                                className="mt-8 px-10 py-3 rounded-full bg-blue-600/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-blue-400 hover:bg-blue-600 hover:text-app-text transition-all duration-500"
+                                className="mt-8 px-10 py-3 rounded-none bg-app-primary/10 border border-app-primary/20 text-[10px] font-black uppercase tracking-[0.4em] text-app-primary hover:bg-app-primary hover:text-app-void transition-all duration-500"
                             >
                                 Recalibrate Sensory Filter
                             </button>

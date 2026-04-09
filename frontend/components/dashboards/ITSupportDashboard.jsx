@@ -39,7 +39,7 @@ const SoftwareInstallItem = ({ app, assetId }) => {
     };
 
     return (
-        <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border border-app-border">
+        <div className="flex items-center justify-between p-3 bg-slate-100 dark:bg-slate-800 rounded-none border border-app-border">
             <div className="flex items-center gap-3">
                 <div className="p-1.5 bg-slate-200 dark:bg-slate-700 rounded text-app-text-muted">
                     <Server size={14} />
@@ -165,7 +165,8 @@ export default function ITSupportDashboard() {
                 if (isManagerial && !isAdmin && isITStaff) {
                     departmentScope = user.department || user.domain;
                 }
-                const results = await apiClient.getTickets(0, 500, departmentScope, searchQuery);
+                const ticketResponse = await apiClient.getTickets(0, 500, departmentScope, searchQuery);
+                const results = ticketResponse.data || [];
 
                 // MAP raw API results to the standard format the UI expects (matching AssetContext)
                 const mappedResults = results.map(t => ({
@@ -229,7 +230,8 @@ export default function ITSupportDashboard() {
             try {
                 // Only include specialized solvers (NOT management/admin)
                 const itRoles = ['IT_SUPPORT', 'SUPPORT_SPECIALIST'];
-                const allUsers = await apiClient.getUsers({ status: 'ACTIVE' });
+                const response = await apiClient.getUsers({ status: 'ACTIVE' });
+                const allUsers = response.data || [];
                 const filtered = allUsers.filter(u => itRoles.includes(u.role));
                 setTechnicians(filtered);
             } catch (err) {
@@ -421,7 +423,7 @@ export default function ITSupportDashboard() {
                                     IT Control <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">Center</span>
                                 </h1>
                                 <div className="flex items-center gap-4 mt-3">
-                                    <div className="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2 shadow-lg">
+                                    <div className="px-3 py-1.5 rounded-none bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2 shadow-lg">
                                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
                                         <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{user?.persona?.replace(/_/g, ' ') || 'SYSTEM OPERATOR'}</span>
                                     </div>
@@ -443,7 +445,7 @@ export default function ITSupportDashboard() {
                             />
                             {/* Hotkey Decorator */}
                             <div className="absolute right-5 inset-y-0 flex items-center pointer-events-none opacity-40">
-                                <span className="px-2 py-1 rounded-md border border-app-border-soft text-[10px] font-black text-app-text-muted uppercase tracking-widest">CMD + K</span>
+                                <span className="px-2 py-1 rounded-none border border-app-border-soft text-[10px] font-black text-app-text-muted uppercase tracking-widest">CMD + K</span>
                             </div>
                         </div>
                     </header>
@@ -516,7 +518,7 @@ export default function ITSupportDashboard() {
 
                             <div className="flex items-center justify-between mb-10 relative z-10">
                                 <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                                    <div className="p-3 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                                         <ShieldCheck size={24} />
                                     </div>
                                     <div>
@@ -567,12 +569,12 @@ export default function ITSupportDashboard() {
                                     { label: 'BitLocker', status: 'Enforced', color: 'emerald' },
                                     { label: 'EDR Active', status: 'Protected', color: 'emerald' }
                                 ].map((item, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3.5 bg-black/20 border border-app-border rounded-2xl group/item hover:bg-app-surface-soft transition-all">
+                                    <div key={i} className="flex items-center justify-between p-3.5 bg-black/20 border border-app-border rounded-none group/item hover:bg-app-surface-soft transition-all">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-1.5 h-1.5 rounded-full bg-${item.color}-500 shadow-[0_0_8px_rgba(var(--${item.color === 'emerald' ? '16,185,129' : '99,102,241'}),0.6)] animate-pulse`}></div>
                                             <Text className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">{item.label}</Text>
                                         </div>
-                                        <span className={`px-2 py-0.5 rounded-lg bg-${item.color}-500/10 text-${item.color}-400 text-[8px] font-black uppercase tracking-widest border border-${item.color}-500/20`}>
+                                        <span className={`px-2 py-0.5 rounded-none bg-${item.color}-500/10 text-${item.color}-400 text-[8px] font-black uppercase tracking-widest border border-${item.color}-500/20`}>
                                             {item.status}
                                         </span>
                                     </div>
@@ -586,7 +588,7 @@ export default function ITSupportDashboard() {
 
                             <div className="flex items-center justify-between mb-10 relative z-10">
                                 <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                                    <div className="p-3 rounded-none bg-blue-500/10 border border-blue-500/20 text-blue-400">
                                         <Activity size={24} />
                                     </div>
                                     <div>
@@ -595,7 +597,7 @@ export default function ITSupportDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="px-5 py-2 rounded-xl bg-slate-50 dark:bg-white/[0.03] text-app-text-muted text-[10px] font-black border border-slate-300 border-app-border uppercase tracking-widest shadow-lg">Global Feed</span>
+                                    <span className="px-5 py-2 rounded-none bg-slate-50 dark:bg-white/[0.03] text-app-text-muted text-[10px] font-black border border-slate-300 border-app-border uppercase tracking-widest shadow-lg">Global Feed</span>
                                 </div>
                             </div>
 
@@ -606,7 +608,7 @@ export default function ITSupportDashboard() {
                                     { label: 'EoL (3y+)', value: '20%', color: 'rose', icon: AlertCircle, glow: 'rgba(244,63,94,0.3)' }
                                 ].map((item, i) => (
                                     <div key={i} className="p-6 rounded-[2rem] bg-app-surface-soft border border-app-border text-center group/aging hover:bg-slate-200/50 dark:hover:bg-slate-100 dark:bg-white/[0.05] hover:border-indigo-500/20 transition-all duration-500 shadow-xl">
-                                        <div className={`w-12 h-12 rounded-2xl bg-${item.color}-500/10 flex items-center justify-center mx-auto mb-4 border border-${item.color}-500/20 shadow-[0_0_15px_${item.glow}] group-hover/aging:scale-110 group-hover/aging:rotate-3 transition-all duration-500`}>
+                                        <div className={`w-12 h-12 rounded-none bg-${item.color}-500/10 flex items-center justify-center mx-auto mb-4 border border-${item.color}-500/20 shadow-[0_0_15px_${item.glow}] group-hover/aging:scale-110 group-hover/aging:rotate-3 transition-all duration-500`}>
                                             <item.icon size={20} className={`text-${item.color}-400`} />
                                         </div>
                                         <div className="text-xl font-['Outfit'] font-black text-app-text mb-1 drop-shadow-sm">{item.value}</div>
@@ -622,9 +624,9 @@ export default function ITSupportDashboard() {
                                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
                                             Live Capacity Allocation
                                         </span>
-                                        <span className="text-[10px] text-indigo-400 font-black uppercase tracking-widest bg-indigo-500/10 px-4 py-1.5 rounded-xl border border-indigo-500/10 shadow-lg">85% Optimization</span>
+                                        <span className="text-[10px] text-indigo-400 font-black uppercase tracking-widest bg-indigo-500/10 px-4 py-1.5 rounded-none border border-indigo-500/10 shadow-lg">85% Optimization</span>
                                     </div>
-                                    <div className="flex gap-1.5 h-4 w-full rounded-2xl overflow-hidden bg-app-surface p-1 border border-app-border shadow-sm dark:shadow-inner">
+                                    <div className="flex gap-1.5 h-4 w-full rounded-none overflow-hidden bg-app-surface p-1 border border-app-border shadow-sm dark:shadow-inner">
                                         <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 w-[60%] rounded-l-xl shadow-[0_0_15px_rgba(16,185,129,0.3)]"></div>
                                         <div className="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 w-[25%] shadow-[0_0_15px_rgba(99,102,241,0.3)]"></div>
                                         <div className="h-full bg-gradient-to-r from-rose-600 to-rose-400 w-[15%] rounded-r-xl shadow-[0_0_15px_rgba(244,63,94,0.3)]"></div>
@@ -657,7 +659,7 @@ export default function ITSupportDashboard() {
                             <div className="flex items-center justify-between mb-12 relative z-10">
                                 <div>
                                     <h3 className="text-xl font-['Outfit'] font-black text-app-text tracking-tighter flex items-center gap-5 uppercase">
-                                        <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-lg">
+                                        <div className="p-3 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-lg">
                                             <Activity size={32} />
                                         </div>
                                         SLA & Operational Oversight
@@ -683,7 +685,7 @@ export default function ITSupportDashboard() {
                                         <div className={`text-xl font-['Outfit'] font-black ${stat.isRose ? 'text-rose-600 dark:text-rose-500' : 'text-app-text'} drop-shadow-sm group-hover/stat:scale-105 transition-transform origin-left duration-500`}>
                                             {stat.value}
                                         </div>
-                                        <div className={`text-[9px] text-${stat.color}-400 font-black uppercase tracking-widest mt-6 flex items-center gap-2 bg-${stat.color}-500/10 w-fit px-4 py-1.5 rounded-xl border border-${stat.color}-500/20 shadow-lg shadow-${stat.color}-500/5 uppercase`}>
+                                        <div className={`text-[9px] text-${stat.color}-400 font-black uppercase tracking-widest mt-6 flex items-center gap-2 bg-${stat.color}-500/10 w-fit px-4 py-1.5 rounded-none border border-${stat.color}-500/20 shadow-lg shadow-${stat.color}-500/5 uppercase`}>
                                             <stat.icon size={12} /> {stat.trend}
                                         </div>
                                     </div>
@@ -713,7 +715,7 @@ export default function ITSupportDashboard() {
                     )}
 
                     {pendingQueue.length > 0 && (
-                        <div className="glass-panel p-1 border border-slate-300 border-app-border rounded-2xl mb-12 overflow-hidden bg-white dark:bg-white/[0.01]">
+                        <div className="glass-panel p-1 border border-slate-300 border-app-border rounded-none mb-12 overflow-hidden bg-white dark:bg-white/[0.01]">
                             {/* ... existing table if needed or just a placeholder ... */}
                         </div>
                     )}
@@ -749,7 +751,7 @@ export default function ITSupportDashboard() {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <button onClick={() => setActiveModal('PENDING')} className="p-3 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-white/[0.08] text-app-text-muted hover:text-slate-900 dark:hover:text-app-text rounded-2xl border border-app-border transition-all">
+                                                <button onClick={() => setActiveModal('PENDING')} className="p-3 bg-app-surface-soft hover:bg-slate-200 dark:hover:bg-white/[0.08] text-app-text-muted hover:text-slate-900 dark:hover:text-app-text rounded-none border border-app-border transition-all">
                                                     <X size={20} />
                                                 </button>
                                             </div>
@@ -757,7 +759,7 @@ export default function ITSupportDashboard() {
                                             <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
                                                 <div>
                                                     <label className="text-xs text-app-text-muted uppercase block mb-2">Business Justification</label>
-                                                    <div className="text-app-text-muted text-sm whitespace-pre-wrap leading-relaxed bg-app-surface-soft p-6 rounded-3xl border border-app-border">
+                                                    <div className="text-app-text-muted text-sm whitespace-pre-wrap leading-relaxed bg-app-surface-soft p-6 rounded-none border border-app-border">
                                                         {selectedItem.justification || 'No justification telemetry recorded.'}
                                                     </div>
                                                 </div>
@@ -776,7 +778,7 @@ export default function ITSupportDashboard() {
                                                         <h3 className="text-sm font-bold text-app-text-muted uppercase mb-3 border-b border-app-border pb-2">Approval History</h3>
                                                         <div className="space-y-2">
                                                             {selectedItem.manager_approvals.map((approval, idx) => (
-                                                                <div key={idx} className="flex justify-between items-start text-xs bg-slate-50 dark:bg-white/[0.03] p-2 rounded-xl border border-app-border">
+                                                                <div key={idx} className="flex justify-between items-start text-xs bg-slate-50 dark:bg-white/[0.03] p-2 rounded-none border border-app-border">
                                                                     <div>
                                                                         <span className="font-bold text-slate-200">{approval.reviewer_name}</span>
                                                                         <span className="text-app-text-muted mx-1">({approval.type || 'Review'})</span>
@@ -803,7 +805,7 @@ export default function ITSupportDashboard() {
                                                             setActiveModal('PENDING');
                                                         }
                                                     }}
-                                                    className="px-4 py-2 text-rose-400 border border-rose-500/30 hover:bg-rose-500/10 rounded-xl transition-colors text-xs font-bold uppercase tracking-widest"
+                                                    className="px-4 py-2 text-rose-400 border border-rose-500/30 hover:bg-rose-500/10 rounded-none transition-colors text-xs font-bold uppercase tracking-widest"
                                                 >
                                                     Reject Request
                                                 </button>
@@ -813,7 +815,7 @@ export default function ITSupportDashboard() {
                                                             registerByod(selectedItem.id);
                                                             setActiveModal('PENDING');
                                                         }}
-                                                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-xl font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-none font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
                                                     >
                                                         <ShieldCheck size={18} /> Validate & Register BYOD
                                                     </button>
@@ -824,13 +826,13 @@ export default function ITSupportDashboard() {
                                                                 registerByod(selectedItem.id);
                                                                 setActiveModal(null);
                                                             }}
-                                                            className="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-app-text rounded-xl font-bold shadow-lg shadow-sky-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                            className="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-app-text rounded-none font-bold shadow-lg shadow-sky-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
                                                         >
                                                             <ShieldCheck size={18} /> Validate & Register BYOD
                                                         </button>
                                                         <button
                                                             onClick={() => setComplianceModalOpen(true)}
-                                                            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-xl font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                            className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-none font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-xs uppercase tracking-widest"
                                                         >
                                                             <CheckCircle size={18} /> Run Compliance Check
                                                         </button>
@@ -841,7 +843,7 @@ export default function ITSupportDashboard() {
                                                             itApproveRequest(selectedItem.id);
                                                             setActiveModal('PENDING');
                                                         }}
-                                                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all flex items-center gap-2 text-xs uppercase tracking-widest"
+                                                        className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-none font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all flex items-center gap-2 text-xs uppercase tracking-widest"
                                                     >
                                                         <CheckCircle size={18} /> Approve & Forward
                                                     </button>
@@ -858,7 +860,7 @@ export default function ITSupportDashboard() {
                                                     <div>
                                                         <div className="flex items-center gap-3 mb-1">
                                                             <h3 className="text-2xl font-['Outfit'] font-bold text-app-text tracking-tight">Incident Detail</h3>
-                                                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${selectedItem.priority?.toUpperCase() === 'HIGH' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                            <span className={`px-2 py-0.5 rounded-none text-[9px] font-black uppercase tracking-widest border ${selectedItem.priority?.toUpperCase() === 'HIGH' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
                                                                 }`}>
                                                                 {selectedItem.priority || 'MEDIUM'} PRIORITY
                                                             </span>
@@ -880,7 +882,7 @@ export default function ITSupportDashboard() {
                                                             </button>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => setActiveModal(['RESOLVED', 'CLOSED'].includes(selectedItem?.status?.toUpperCase()) ? 'CLOSED_TICKETS' : 'TICKETS')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-2xl border border-app-border transition-all">
+                                                    <button onClick={() => setActiveModal(['RESOLVED', 'CLOSED'].includes(selectedItem?.status?.toUpperCase()) ? 'CLOSED_TICKETS' : 'TICKETS')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-none border border-app-border transition-all">
                                                         <X size={20} />
                                                     </button>
                                                 </div>
@@ -889,12 +891,12 @@ export default function ITSupportDashboard() {
                                                     <div>
                                                         <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-1.5">Description & Context</label>
                                                         <h4 className="text-xl font-bold text-slate-200 leading-tight mb-4">{selectedItem.subject}</h4>
-                                                        <div className="p-6 bg-slate-50 dark:bg-white/[0.03] rounded-3xl border border-app-border text-app-text-muted text-sm leading-relaxed whitespace-pre-wrap">
+                                                        <div className="p-6 bg-slate-50 dark:bg-white/[0.03] rounded-none border border-app-border text-app-text-muted text-sm leading-relaxed whitespace-pre-wrap">
                                                             {selectedItem.description || 'No additional telemetry provided for this incident.'}
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-app-border">
+                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-none border border-app-border">
                                                         <div>
                                                             <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-1">Status</label>
                                                             <div className="text-sm font-bold text-indigo-400 uppercase tracking-widest">{selectedItem.status}</div>
@@ -923,7 +925,7 @@ export default function ITSupportDashboard() {
                                                                     <User size={16} className="text-app-text-muted group-focus-within:text-indigo-400 transition-colors" />
                                                                 </div>
                                                                 <select
-                                                                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-300 border-app-border rounded-2xl pl-12 pr-4 py-3.5 text-sm text-app-text-muted focus:ring-2 focus:ring-indigo-500/50 outline-none appearance-none transition-all cursor-pointer"
+                                                                    className="w-full bg-slate-50 dark:bg-white/[0.03] border border-slate-300 border-app-border rounded-none pl-12 pr-4 py-3.5 text-sm text-app-text-muted focus:ring-2 focus:ring-indigo-500/50 outline-none appearance-none transition-all cursor-pointer"
                                                                     value={selectedItem.assigned_to_id || ''}
                                                                     onChange={(e) => handleAssignTicket(e.target.value)}
                                                                     disabled={isAssigning}
@@ -948,7 +950,7 @@ export default function ITSupportDashboard() {
                                                         <div className="p-8 border-top border-app-border bg-slate-50 dark:bg-white/[0.02] shrink-0 flex justify-end">
                                                             <button
                                                                 onClick={() => { setActiveModal('TICKETS'); openResolveModal(selectedItem); }}
-                                                                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-app-text rounded-2xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-sm uppercase tracking-widest flex items-center gap-3"
+                                                                className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-app-text rounded-none font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-sm uppercase tracking-widest flex items-center gap-3"
                                                             >
                                                                 START RESOLUTION WIZARD <ArrowRight size={18} />
                                                             </button>
@@ -972,13 +974,13 @@ export default function ITSupportDashboard() {
                                                         </h3>
                                                         <p className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.2em] mt-1">Operational Audit Sync</p>
                                                     </div>
-                                                    <button onClick={() => setActiveModal('CLOSED_TICKETS')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-2xl border border-app-border transition-all">
+                                                    <button onClick={() => setActiveModal('CLOSED_TICKETS')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-none border border-app-border transition-all">
                                                         <X size={20} />
                                                     </button>
                                                 </div>
 
                                                 <div className="p-8 overflow-y-auto custom-scrollbar space-y-8 flex-1">
-                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-app-border">
+                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-none border border-app-border">
                                                         <div className="col-span-2">
                                                             <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-1">Incident Subject</label>
                                                             <div className="text-lg font-bold text-app-text leading-tight">{selectedItem.subject}</div>
@@ -1021,7 +1023,7 @@ export default function ITSupportDashboard() {
                                                         </div>
 
                                                         <div className="space-y-6">
-                                                            <div className="p-6 bg-slate-50 dark:bg-white/[0.03] border border-app-border rounded-3xl shadow-sm dark:shadow-inner">
+                                                            <div className="p-6 bg-slate-50 dark:bg-white/[0.03] border border-app-border rounded-none shadow-sm dark:shadow-inner">
                                                                 <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-3">Diagnostic Summary</label>
                                                                 <p className="text-sm text-app-text-muted leading-relaxed whitespace-pre-wrap">
                                                                     {selectedItem.resolution_notes || 'No tactical notes recorded.'}
@@ -1033,15 +1035,15 @@ export default function ITSupportDashboard() {
                                                                 <div className="space-y-2">
                                                                     {selectedItem.resolution_checklist && selectedItem.resolution_checklist.length > 0 ? (
                                                                         selectedItem.resolution_checklist.map((check, idx) => (
-                                                                            <div key={idx} className="flex items-center gap-4 p-4 bg-white dark:bg-white/[0.01] border border-app-border rounded-2xl group hover:bg-slate-50 dark:bg-white/[0.03] transition-all">
-                                                                                <div className="w-6 h-6 bg-emerald-500/10 rounded-lg flex items-center justify-center border border-emerald-500/20">
+                                                                            <div key={idx} className="flex items-center gap-4 p-4 bg-white dark:bg-white/[0.01] border border-app-border rounded-none group hover:bg-slate-50 dark:bg-white/[0.03] transition-all">
+                                                                                <div className="w-6 h-6 bg-emerald-500/10 rounded-none flex items-center justify-center border border-emerald-500/20">
                                                                                     <CheckCircle size={14} className="text-emerald-400" />
                                                                                 </div>
                                                                                 <span className="text-sm text-app-text-muted group-hover:text-slate-200 transition-colors">{check.text}</span>
                                                                             </div>
                                                                         ))
                                                                     ) : (
-                                                                        <div className="text-center py-8 border-2 border-dashed border-app-border rounded-3xl">
+                                                                        <div className="text-center py-8 border-2 border-dashed border-app-border rounded-none">
                                                                             <p className="text-xs text-app-text-muted font-bold uppercase tracking-widest">No checklist data found</p>
                                                                         </div>
                                                                     )}
@@ -1054,7 +1056,7 @@ export default function ITSupportDashboard() {
                                                 <div className="p-8 border-t border-app-border bg-slate-50 dark:bg-white/[0.02] shrink-0 flex justify-end">
                                                     <button
                                                         onClick={() => setActiveModal('CLOSED_TICKETS')}
-                                                        className="px-8 py-4 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-2xl font-bold border border-slate-300 border-app-border transition-all text-sm uppercase tracking-widest"
+                                                        className="px-8 py-4 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-none font-bold border border-slate-300 border-app-border transition-all text-sm uppercase tracking-widest"
                                                     >
                                                         CLOSE ARCHIVE
                                                     </button>
@@ -1071,7 +1073,7 @@ export default function ITSupportDashboard() {
                                             <div className="glass-panel overflow-hidden border border-slate-300 border-app-border shadow-2xl animate-in zoom-in-95 duration-300 w-full max-w-lg flex flex-col">
                                                 <div className={`p-8 border-b border-app-border bg-slate-50 dark:bg-white/[0.02] flex justify-between items-center shrink-0`}>
                                                     <div className="flex items-center gap-4">
-                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${selectedItem._viewType === 'deploy'
+                                                        <div className={`w-12 h-12 rounded-none flex items-center justify-center border ${selectedItem._viewType === 'deploy'
                                                             ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
                                                             : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
                                                             }`}>
@@ -1084,7 +1086,7 @@ export default function ITSupportDashboard() {
                                                             <p className="text-[10px] text-app-text-muted font-black uppercase tracking-widest mt-1">Asset Traceability</p>
                                                         </div>
                                                     </div>
-                                                    <button onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-2xl border border-app-border transition-all">
+                                                    <button onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-none border border-app-border transition-all">
                                                         <X size={20} />
                                                     </button>
                                                 </div>
@@ -1096,7 +1098,7 @@ export default function ITSupportDashboard() {
                                                         <div className="text-[10px] text-indigo-400 font-mono mt-1 uppercase tracking-widest opacity-60">{selectedItem.id}</div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-app-border">
+                                                    <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.02] rounded-none border border-app-border">
                                                         {selectedItem._viewType === 'deploy' ? (
                                                             <>
                                                                 <div>
@@ -1134,7 +1136,7 @@ export default function ITSupportDashboard() {
                                                 <div className="p-8 border-t border-app-border bg-slate-50 dark:bg-white/[0.02] shrink-0 flex justify-end">
                                                     <button
                                                         onClick={() => setActiveModal(selectedItem._viewType === 'deploy' ? 'DEPLOY' : 'DISPOSAL')}
-                                                        className="px-8 py-4 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-2xl font-bold border border-slate-300 border-app-border transition-all text-sm uppercase tracking-widest"
+                                                        className="px-8 py-4 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-none font-bold border border-slate-300 border-app-border transition-all text-sm uppercase tracking-widest"
                                                     >
                                                         CLOSE INSPECTION
                                                     </button>
@@ -1154,7 +1156,7 @@ export default function ITSupportDashboard() {
                                 {/* ---- CONFIG WIZARD MODAL (5 STEPS) ---- */}
                                 {
                                     activeModal === 'CONFIG' && selectedItem && (
-                                        <div className="bg-white dark:bg-slate-900 border border-app-border rounded-xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
+                                        <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-2xl shadow-2xl overflow-hidden animate-in scale-95 duration-200 flex flex-col max-h-[90vh]">
                                             <div className="bg-gradient-to-r from-indigo-900/50 to-slate-900 p-6 border-b border-app-border flex justify-between items-center shrink-0">
                                                 <div>
                                                     <h2 className="text-xl font-bold text-app-text flex items-center gap-2">
@@ -1176,22 +1178,22 @@ export default function ITSupportDashboard() {
                                                 </div>
 
                                                 {/* Step Content */}
-                                                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl p-6 border border-app-border min-h-[300px]">
+                                                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-none p-6 border border-app-border min-h-[300px]">
 
                                                     {/* STEP 1: ASSET OVERVIEW */}
                                                     {configStep === 1 && (
                                                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                                                             <h3 className="text-lg font-bold text-app-text mb-4">Step 1: Asset Overview</h3>
                                                             <div className="grid grid-cols-2 gap-4">
-                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-app-border">
+                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-none border border-app-border">
                                                                     <span className="text-xs text-app-text-muted uppercase">Model</span>
                                                                     <div className="text-app-text font-medium">{selectedItem.model || 'Standard Workstation'}</div>
                                                                 </div>
-                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-app-border">
+                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-none border border-app-border">
                                                                     <span className="text-xs text-app-text-muted uppercase">Serial Number</span>
                                                                     <div className="text-app-text font-medium">{selectedItem.serial || 'Unknown'}</div>
                                                                 </div>
-                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-app-border col-span-2">
+                                                                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-none border border-app-border col-span-2">
                                                                     <span className="text-xs text-app-text-muted uppercase">Specs</span>
                                                                     <div className="text-app-text font-medium">{selectedItem.details || 'Standard Configuration'}</div>
                                                                 </div>
@@ -1208,14 +1210,14 @@ export default function ITSupportDashboard() {
                                                         <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                                                             <h3 className="text-lg font-bold text-app-text mb-4">Step 2: OS & Image Selection</h3>
                                                             <div className="grid grid-cols-1 gap-3">
-                                                                <label className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-500 rounded-lg cursor-pointer">
+                                                                <label className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 border-2 border-indigo-500 rounded-none cursor-pointer">
                                                                     <input type="radio" name="os" defaultChecked className="w-5 h-5 text-indigo-600" />
                                                                     <div>
                                                                         <div className="font-bold text-app-text">Windows 11 Enterprise 23H2 (Stable)</div>
                                                                         <div className="text-xs text-app-text-muted">Standard Corporate Image v4.2</div>
                                                                     </div>
                                                                 </label>
-                                                                <label className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 border border-app-border rounded-lg cursor-pointer opacity-60">
+                                                                <label className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 border border-app-border rounded-none cursor-pointer opacity-60">
                                                                     <input type="radio" name="os" className="w-5 h-5 text-indigo-600" />
                                                                     <div>
                                                                         <div className="font-bold text-app-text">Windows 10 Enterprise LTSC</div>
@@ -1248,7 +1250,7 @@ export default function ITSupportDashboard() {
                                                             <div className="space-y-4">
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-xs text-app-text-muted text-app-text-muted uppercase font-bold">Domain Join</label>
-                                                                    <select className="bg-white dark:bg-slate-900 border border-app-border text-app-text p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                                    <select className="bg-white dark:bg-slate-900 border border-app-border text-app-text p-3 rounded-none focus:ring-2 focus:ring-indigo-500 outline-none">
                                                                         <option>CORP.GLOBAL (Default)</option>
                                                                         <option>DMZ.LOCAL</option>
                                                                         <option>WORKGROUP</option>
@@ -1257,7 +1259,7 @@ export default function ITSupportDashboard() {
 
                                                                 <div className="flex flex-col gap-1">
                                                                     <label className="text-xs text-app-text-muted text-app-text-muted uppercase font-bold">VLAN Assignment</label>
-                                                                    <select className="bg-white dark:bg-slate-900 border border-app-border text-app-text p-3 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                                                                    <select className="bg-white dark:bg-slate-900 border border-app-border text-app-text p-3 rounded-none focus:ring-2 focus:ring-indigo-500 outline-none">
                                                                         <option>VLAN 100 - Employee Workstations</option>
                                                                         <option>VLAN 200 - Developers</option>
                                                                         <option>VLAN 900 - Guest</option>
@@ -1305,7 +1307,7 @@ export default function ITSupportDashboard() {
                                                             </button>
                                                             <button
                                                                 onClick={handleConfigStepComplete}
-                                                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-lg font-semibold shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+                                                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-none font-semibold shadow-lg shadow-indigo-500/20 flex items-center gap-2"
                                                             >
                                                                 {configStep === 4 ? 'Validate & Finish' : 'Next Step'} <ArrowRight size={16} />
                                                             </button>
@@ -1313,7 +1315,7 @@ export default function ITSupportDashboard() {
                                                     ) : (
                                                         <button
                                                             onClick={handleConfigStepComplete}
-                                                            className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-lg font-semibold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 animate-pulse"
+                                                            className="w-full px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-none font-semibold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 animate-pulse"
                                                         >
                                                             <CheckCircle size={20} /> Complete Configuration
                                                         </button>
@@ -1345,13 +1347,13 @@ export default function ITSupportDashboard() {
                                                                 <input
                                                                     type="text"
                                                                     placeholder="Scylla Search..."
-                                                                    className="pl-12 pr-6 py-2.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-300 border-app-border rounded-2xl text-app-text text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none w-72 transition-all placeholder:text-app-text-muted"
+                                                                    className="pl-12 pr-6 py-2.5 bg-slate-50 dark:bg-white/[0.03] border border-slate-300 border-app-border rounded-none text-app-text text-sm focus:ring-2 focus:ring-indigo-500/50 outline-none w-72 transition-all placeholder:text-app-text-muted"
                                                                     value={searchQuery}
                                                                     onChange={(e) => setSearchQuery(e.target.value)}
                                                                 />
                                                             </div>
                                                         )}
-                                                        <button onClick={() => { setActiveModal(null); setSearchQuery(''); }} className="p-3 bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-app-text-muted hover:text-slate-900 dark:hover:text-app-text rounded-2xl border border-app-border transition-all">
+                                                        <button onClick={() => { setActiveModal(null); setSearchQuery(''); }} className="p-3 bg-slate-100 dark:bg-white/[0.03] hover:bg-slate-200 dark:hover:bg-white/[0.08] text-app-text-muted hover:text-slate-900 dark:hover:text-app-text rounded-none border border-app-border transition-all">
                                                             <X size={20} />
                                                         </button>
                                                     </div>
@@ -1385,7 +1387,7 @@ export default function ITSupportDashboard() {
                                                                     </td>
                                                                     <td className="p-5">
                                                                         <div className="flex flex-col gap-1.5">
-                                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit border ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-app-surface-soft text-app-text-muted border-slate-300 border-app-border'}`}>
+                                                                            <span className={`px-2.5 py-1 rounded-none text-[10px] font-black uppercase tracking-widest w-fit border ${req.urgency === 'High' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-app-surface-soft text-app-text-muted border-slate-300 border-app-border'}`}>
                                                                                 {req.urgency ? req.urgency.toUpperCase() : 'STANDARD'}
                                                                             </span>
                                                                             <div className="text-[10px] text-app-text-muted font-black uppercase tracking-widest ml-1">{req.status}</div>
@@ -1395,7 +1397,7 @@ export default function ITSupportDashboard() {
                                                                         <div className="flex justify-end gap-3 items-center">
                                                                             <button
                                                                                 onClick={() => { setSelectedItem(req); setActiveModal('REQUEST_DETAILS'); }}
-                                                                                className="p-2 text-app-text-muted hover:text-slate-900 dark:hover:text-app-text hover:bg-slate-100 dark:hover:bg-app-surface-soft rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-300 border-app-border transition-all"
+                                                                                className="p-2 text-app-text-muted hover:text-slate-900 dark:hover:text-app-text hover:bg-slate-100 dark:hover:bg-app-surface-soft rounded-none border border-transparent hover:border-slate-200 dark:hover:border-slate-300 border-app-border transition-all"
                                                                                 title="View Specifications"
                                                                             >
                                                                                 <Eye size={18} />
@@ -1406,7 +1408,7 @@ export default function ITSupportDashboard() {
                                                                                     const reason = prompt("Enter rejection reason Scylla:");
                                                                                     if (reason) itRejectRequest(req.id, reason);
                                                                                 }}
-                                                                                className="px-4 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl border border-rose-500/10 hover:border-rose-500/30 transition-all"
+                                                                                className="px-4 py-2 text-xs font-bold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-none border border-rose-500/10 hover:border-rose-500/30 transition-all"
                                                                             >
                                                                                 Discard
                                                                             </button>
@@ -1414,7 +1416,7 @@ export default function ITSupportDashboard() {
                                                                             {req.status === 'IT_APPROVED' && req.assetType === 'BYOD' ? (
                                                                                 <button
                                                                                     onClick={() => registerByod(req.id)}
-                                                                                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-xl font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all flex items-center gap-2 text-xs"
+                                                                                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-none font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all flex items-center gap-2 text-xs"
                                                                                 >
                                                                                     <ShieldCheck size={16} /> VALIDATE & COMMIT
                                                                                 </button>
@@ -1422,13 +1424,13 @@ export default function ITSupportDashboard() {
                                                                                 <div className="flex gap-2">
                                                                                     <button
                                                                                         onClick={() => { setSelectedItem(req); setComplianceModalOpen(true); }}
-                                                                                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 text-xs"
+                                                                                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-none font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 text-xs"
                                                                                     >
                                                                                         <Activity size={16} /> SCAN COMPLIANCE
                                                                                     </button>
                                                                                     <button
                                                                                         onClick={() => registerByod(req.id)}
-                                                                                        className="px-5 py-2.5 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-xl font-bold border border-slate-300 border-app-border transition-all text-xs"
+                                                                                        className="px-5 py-2.5 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-none font-bold border border-slate-300 border-app-border transition-all text-xs"
                                                                                     >
                                                                                         BYPASS & REGISTER
                                                                                     </button>
@@ -1436,7 +1438,7 @@ export default function ITSupportDashboard() {
                                                                             ) : (
                                                                                 <button
                                                                                     onClick={() => itApproveRequest(req.id)}
-                                                                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-app-text rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-xs uppercase tracking-widest"
+                                                                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-app-text rounded-none font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-xs uppercase tracking-widest"
                                                                                 >
                                                                                     {req.assetType === 'BYOD' ? 'Initialize Verification' : 'Commit & Allocate'}
                                                                                 </button>
@@ -1470,7 +1472,7 @@ export default function ITSupportDashboard() {
                                                                         <div className="flex justify-end gap-3 items-center">
                                                                             <button
                                                                                 onClick={() => { setSelectedItem(item); setActiveModal('TICKET_VIEW'); }}
-                                                                                className="p-2 text-app-text-muted hover:text-app-text hover:bg-app-surface-soft rounded-xl border border-transparent hover:border-slate-300 border-app-border transition-all"
+                                                                                className="p-2 text-app-text-muted hover:text-app-text hover:bg-app-surface-soft rounded-none border border-transparent hover:border-slate-300 border-app-border transition-all"
                                                                                 title="Inspect Payload"
                                                                             >
                                                                                 <Eye size={18} />
@@ -1478,14 +1480,14 @@ export default function ITSupportDashboard() {
                                                                             {(item.status?.toUpperCase() === 'OPEN') && (
                                                                                 <button
                                                                                     onClick={() => acknowledgeTicket(item.id)}
-                                                                                    className="px-4 py-2 text-xs font-bold text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-xl border border-blue-500/10 hover:border-blue-500/30 transition-all uppercase tracking-widest"
+                                                                                    className="px-4 py-2 text-xs font-bold text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-none border border-blue-500/10 hover:border-blue-500/30 transition-all uppercase tracking-widest"
                                                                                 >
                                                                                     Acknowledge
                                                                                 </button>
                                                                             )}
                                                                             <button
                                                                                 onClick={() => openResolveModal(item)}
-                                                                                className="px-5 py-2.5 bg-app-surface-soft hover:bg-emerald-600/10 text-app-text-muted hover:text-emerald-400 border border-slate-300 border-app-border hover:border-emerald-500/30 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                                                                className="px-5 py-2.5 bg-app-surface-soft hover:bg-emerald-600/10 text-app-text-muted hover:text-emerald-400 border border-slate-300 border-app-border hover:border-emerald-500/30 rounded-none transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
                                                                             >
                                                                                 <CheckCircle size={14} /> Commit Fix
                                                                             </button>
@@ -1518,7 +1520,7 @@ export default function ITSupportDashboard() {
                                                                         <div className="flex justify-end gap-3 items-center">
                                                                             <button
                                                                                 onClick={() => { setSelectedItem(item); setActiveModal('RESOLVED_TICKET_VIEW'); }}
-                                                                                className="px-5 py-2.5 bg-app-surface-soft hover:bg-app-surface text-app-text-muted hover:text-app-text border border-app-border hover:border-app-border-soft rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
+                                                                                className="px-5 py-2.5 bg-app-surface-soft hover:bg-app-surface text-app-text-muted hover:text-app-text border border-app-border hover:border-app-border-soft rounded-none transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"
                                                                             >
                                                                                 <Eye size={16} /> Audit Trail
                                                                             </button>
@@ -1542,7 +1544,7 @@ export default function ITSupportDashboard() {
                                                                         </td>
                                                                         <td className="p-5">
                                                                             <div className="flex items-center gap-2">
-                                                                                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">STAGED</span>
+                                                                                <span className="px-2.5 py-1 rounded-none bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">STAGED</span>
                                                                                 <div className="flex items-center gap-1 text-[10px] text-emerald-500/60 font-bold uppercase tracking-widest">
                                                                                     <Shield size={10} /> Secure
                                                                                 </div>
@@ -1552,20 +1554,20 @@ export default function ITSupportDashboard() {
                                                                             <div className="flex justify-end gap-3 items-center">
                                                                                 <button
                                                                                     onClick={() => { setSelectedItem({ ...item, _viewType: 'deploy' }); setActiveModal('ITEM_VIEW'); }}
-                                                                                    className="p-2 text-app-text-muted hover:text-app-text hover:bg-app-surface-soft rounded-xl border border-transparent hover:border-slate-300 border-app-border transition-all"
+                                                                                    className="p-2 text-app-text-muted hover:text-app-text hover:bg-app-surface-soft rounded-none border border-transparent hover:border-slate-300 border-app-border transition-all"
                                                                                     title="Inspect Asset"
                                                                                 >
                                                                                     <Eye size={18} />
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={() => handleGenerateAck(item)}
-                                                                                    className="px-4 py-2 text-xs font-bold text-app-text-muted hover:text-app-text hover:bg-app-surface rounded-xl border border-app-border hover:border-app-border-soft transition-all flex items-center gap-2 uppercase tracking-widest"
+                                                                                    className="px-4 py-2 text-xs font-bold text-app-text-muted hover:text-app-text hover:bg-app-surface rounded-none border border-app-border hover:border-app-border-soft transition-all flex items-center gap-2 uppercase tracking-widest"
                                                                                 >
                                                                                     <Printer size={14} /> ACK
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={() => deployAsset(item.id)}
-                                                                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-app-text rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-xs uppercase tracking-widest"
+                                                                                    className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-app-text rounded-none font-bold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all text-xs uppercase tracking-widest"
                                                                                 >
                                                                                     DEPLOY
                                                                                 </button>
@@ -1590,7 +1592,7 @@ export default function ITSupportDashboard() {
                                                                         </td>
                                                                         <td className="p-5">
                                                                             <div className="flex items-center gap-2">
-                                                                                <span className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-500/20">SCHEDULED</span>
+                                                                                <span className="px-2.5 py-1 rounded-none bg-rose-500/10 text-rose-400 text-[10px] font-black uppercase tracking-widest border border-rose-500/20">SCHEDULED</span>
                                                                                 {item.isSecure && (
                                                                                     <div className="flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-widest">
                                                                                         <Shield size={10} /> ENCRYPTED
@@ -1602,7 +1604,7 @@ export default function ITSupportDashboard() {
                                                                             <div className="flex justify-end gap-3 items-center">
                                                                                 <button
                                                                                     onClick={() => { setSelectedItem(item); setActiveModal('DISPOSAL_DETAILS'); }}
-                                                                                    className="p-2 text-app-text-muted hover:text-app-text hover:bg-app-surface-soft rounded-xl border border-transparent hover:border-slate-300 border-app-border transition-all"
+                                                                                    className="p-2 text-app-text-muted hover:text-app-text hover:bg-app-surface-soft rounded-none border border-transparent hover:border-slate-300 border-app-border transition-all"
                                                                                     title="Audit Specs"
                                                                                 >
                                                                                     <Eye size={18} />
@@ -1614,7 +1616,7 @@ export default function ITSupportDashboard() {
                                                                                             processDisposal(item.id, certId);
                                                                                         }
                                                                                     }}
-                                                                                    className="px-6 py-2.5 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-app-text border border-rose-500/20 hover:border-rose-600 rounded-xl font-bold transition-all text-xs uppercase tracking-widest shadow-lg shadow-rose-500/5 hover:shadow-rose-500/20"
+                                                                                    className="px-6 py-2.5 bg-rose-600/10 hover:bg-rose-600 text-rose-500 hover:text-app-text border border-rose-500/20 hover:border-rose-600 rounded-none font-bold transition-all text-xs uppercase tracking-widest shadow-lg shadow-rose-500/5 hover:shadow-rose-500/20"
                                                                                 >
                                                                                     PURGE ASSET
                                                                                 </button>
@@ -1644,7 +1646,7 @@ export default function ITSupportDashboard() {
                                                         {resolutionStep === 1 ? 'Diagnostic Review' : resolutionStep === 2 ? 'Resolution Protocol' : 'Final Verification'}
                                                     </h3>
                                                 </div>
-                                                <button onClick={() => setActiveModal(null)} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-2xl border border-app-border transition-all">
+                                                <button onClick={() => setActiveModal(null)} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-none border border-app-border transition-all">
                                                     <X size={20} />
                                                 </button>
                                             </div>
@@ -1652,7 +1654,7 @@ export default function ITSupportDashboard() {
                                             <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
                                                 {resolutionStep === 1 && (
                                                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-                                                        <div className="p-6 bg-indigo-500/5 rounded-3xl border border-indigo-500/10">
+                                                        <div className="p-6 bg-indigo-500/5 rounded-none border border-indigo-500/10">
                                                             <h4 className="text-xs font-black text-indigo-300 uppercase tracking-widest mb-4 flex items-center gap-2">
                                                                 <Info size={14} /> Subject Analysis
                                                             </h4>
@@ -1661,11 +1663,11 @@ export default function ITSupportDashboard() {
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-4">
-                                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-app-border">
+                                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.02] rounded-none border border-app-border">
                                                                 <div className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-1">Reporter</div>
                                                                 <div className="text-sm text-app-text font-bold">{selectedItem.requestedBy?.name}</div>
                                                             </div>
-                                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-app-border">
+                                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.02] rounded-none border border-app-border">
                                                                 <div className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-1">Created</div>
                                                                 <div className="text-sm text-app-text font-bold">{new Date(selectedItem.createdAt).toLocaleDateString()}</div>
                                                             </div>
@@ -1679,8 +1681,8 @@ export default function ITSupportDashboard() {
                                                                 "Impact scope confirmed (Individual)",
                                                                 "Prior resolution history reviewed"
                                                             ].map((item, i) => (
-                                                                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/[0.02] rounded-xl border border-app-border">
-                                                                    <div className="w-5 h-5 rounded-md bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                                                                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-white/[0.02] rounded-none border border-app-border">
+                                                                    <div className="w-5 h-5 rounded-none bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
                                                                         <Check size={12} />
                                                                     </div>
                                                                     <span className="text-xs text-app-text-muted">{item}</span>
@@ -1699,7 +1701,7 @@ export default function ITSupportDashboard() {
                                                                     <button
                                                                         key={type}
                                                                         onClick={() => setResolutionType(type)}
-                                                                        className={`p-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${resolutionType === type ? 'bg-indigo-600 border-indigo-500 text-app-text shadow-lg' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-300 border-app-border text-app-text-muted hover:bg-app-surface-soft'}`}
+                                                                        className={`p-3 rounded-none border text-[10px] font-black uppercase tracking-widest transition-all ${resolutionType === type ? 'bg-indigo-600 border-indigo-500 text-app-text shadow-lg' : 'bg-slate-50 dark:bg-white/[0.02] border-slate-300 border-app-border text-app-text-muted hover:bg-app-surface-soft'}`}
                                                                     >
                                                                         {type}
                                                                     </button>
@@ -1710,7 +1712,7 @@ export default function ITSupportDashboard() {
                                                         <div className="space-y-4">
                                                             <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Resolution Summary</label>
                                                             <textarea
-                                                                className="w-full h-32 bg-slate-50 dark:bg-white/[0.03] border border-slate-300 border-app-border rounded-2xl p-4 text-app-text text-sm focus:outline-none focus:border-indigo-500 transition-all"
+                                                                className="w-full h-32 bg-slate-50 dark:bg-white/[0.03] border border-slate-300 border-app-border rounded-none p-4 text-app-text text-sm focus:outline-none focus:border-indigo-500 transition-all"
                                                                 placeholder="Detail the technical steps taken to remediate this incident..."
                                                                 value={resolutionNotes}
                                                                 onChange={(e) => setResolutionNotes(e.target.value)}
@@ -1729,7 +1731,7 @@ export default function ITSupportDashboard() {
                                                             <p className="text-sm text-app-text-muted">All resolution steps have been logged. Resolution will be synced to Neural Cache.</p>
                                                         </div>
 
-                                                        <div className="p-6 bg-slate-50 dark:bg-white/[0.02] rounded-3xl border border-app-border space-y-4">
+                                                        <div className="p-6 bg-slate-50 dark:bg-white/[0.02] rounded-none border border-app-border space-y-4">
                                                             <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-app-text-muted">
                                                                 <span>Resolution Type</span>
                                                                 <span className="text-indigo-400">{resolutionType}</span>
@@ -1751,11 +1753,11 @@ export default function ITSupportDashboard() {
                                                     ))}
                                                 </div>
                                                 <div className="flex gap-4">
-                                                    {resolutionStep > 1 && <button onClick={() => setResolutionStep(resolutionStep - 1)} className="px-6 py-2.5 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-xl font-bold transition-all text-xs uppercase tracking-widest">Back</button>}
+                                                    {resolutionStep > 1 && <button onClick={() => setResolutionStep(resolutionStep - 1)} className="px-6 py-2.5 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-none font-bold transition-all text-xs uppercase tracking-widest">Back</button>}
                                                     {resolutionStep < 3 ? (
-                                                        <button onClick={() => setResolutionStep(resolutionStep + 1)} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all text-xs uppercase tracking-widest">Next</button>
+                                                        <button onClick={() => setResolutionStep(resolutionStep + 1)} className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-app-text rounded-none font-bold shadow-lg shadow-indigo-500/20 transition-all text-xs uppercase tracking-widest">Next</button>
                                                     ) : (
-                                                        <button onClick={submitResolution} className="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all text-xs uppercase tracking-widest">Resolve & Close</button>
+                                                        <button onClick={submitResolution} className="px-8 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-app-text rounded-none font-bold shadow-lg shadow-emerald-500/20 transition-all text-xs uppercase tracking-widest">Resolve & Close</button>
                                                     )}
                                                 </div>
                                             </div>
@@ -1775,14 +1777,14 @@ export default function ITSupportDashboard() {
                                                     </h3>
                                                     <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.2em] mt-1">Managed Exit Protocol</p>
                                                 </div>
-                                                <button onClick={() => setActiveModal(null)} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-2xl border border-app-border transition-all">
+                                                <button onClick={() => setActiveModal(null)} className="p-3 bg-slate-50 dark:bg-white/[0.03] hover:bg-white/[0.08] text-app-text-muted hover:text-app-text rounded-none border border-app-border transition-all">
                                                     <X size={20} />
                                                 </button>
                                             </div>
 
                                             <div className="p-8 overflow-y-auto custom-scrollbar space-y-8 flex-1">
                                                 {/* User Payload Info */}
-                                                <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.03] rounded-3xl border border-app-border shadow-sm dark:shadow-inner">
+                                                <div className="grid grid-cols-2 gap-6 p-6 bg-slate-50 dark:bg-white/[0.03] rounded-none border border-app-border shadow-sm dark:shadow-inner">
                                                     <div>
                                                         <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest block mb-1.5">Stakeholder</label>
                                                         <div className="text-base font-bold text-app-text leading-none">{selectedItem.user_name || 'Unknown'}</div>
@@ -1805,12 +1807,12 @@ export default function ITSupportDashboard() {
                                                     {selectedItem.byod_snapshot && selectedItem.byod_snapshot.length > 0 ? (
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                             {selectedItem.byod_snapshot.map((device, idx) => (
-                                                                <div key={idx} className="p-5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:bg-white/[0.05] border border-app-border rounded-2xl transition-all group shadow-sm">
+                                                                <div key={idx} className="p-5 bg-slate-50 dark:bg-white/[0.02] hover:bg-slate-100 dark:bg-white/[0.05] border border-app-border rounded-none transition-all group shadow-sm">
                                                                     <div className="flex justify-between items-start mb-4">
-                                                                        <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/10 group-hover:scale-110 transition-transform">
+                                                                        <div className="w-10 h-10 bg-blue-500/10 rounded-none flex items-center justify-center border border-blue-500/10 group-hover:scale-110 transition-transform">
                                                                             <Smartphone size={20} className="text-blue-400" />
                                                                         </div>
-                                                                        <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase tracking-widest border border-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors">
+                                                                        <span className="px-2 py-0.5 rounded-none bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase tracking-widest border border-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors">
                                                                             {device.os_version?.toUpperCase() || 'OS'}
                                                                         </span>
                                                                     </div>
@@ -1820,7 +1822,7 @@ export default function ITSupportDashboard() {
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <div className="text-center py-12 bg-slate-50 dark:bg-white/[0.02] border-2 border-dashed border-app-border rounded-3xl">
+                                                        <div className="text-center py-12 bg-slate-50 dark:bg-white/[0.02] border-2 border-dashed border-app-border rounded-none">
                                                             <p className="text-xs text-app-text-muted font-bold uppercase tracking-widest">No verified device snapshots found</p>
                                                         </div>
                                                     )}
@@ -1830,7 +1832,7 @@ export default function ITSupportDashboard() {
                                             <div className="p-8 border-t border-app-border bg-slate-50 dark:bg-white/[0.02] shrink-0 flex gap-4">
                                                 <button
                                                     onClick={() => setActiveModal(null)}
-                                                    className="flex-1 px-6 py-4 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-2xl font-bold border border-slate-300 border-app-border transition-all text-sm uppercase tracking-widest"
+                                                    className="flex-1 px-6 py-4 bg-app-surface-soft hover:bg-app-surface text-app-text rounded-none font-bold border border-slate-300 border-app-border transition-all text-sm uppercase tracking-widest"
                                                 >
                                                     Retain Assets
                                                 </button>
@@ -1841,7 +1843,7 @@ export default function ITSupportDashboard() {
                                                             setActiveModal(null);
                                                         }
                                                     }}
-                                                    className="flex-[2] px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-app-text rounded-2xl font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3"
+                                                    className="flex-[2] px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-app-text rounded-none font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3"
                                                 >
                                                     <ShieldAlert size={20} /> EXECUTE DE-REGISTRATION
                                                 </button>
@@ -1911,7 +1913,7 @@ export default function ITSupportDashboard() {
                                     title: 'Status',
                                     key: 'status',
                                     render: (record) => (
-                                        <Tag color={record.status === 'OPEN' ? 'warning' : 'success'} className="!text-[10px] font-bold uppercase rounded-md py-0.5 px-2">
+                                        <Tag color={record.status === 'OPEN' ? 'warning' : 'success'} className="!text-[10px] font-bold uppercase rounded-none py-0.5 px-2">
                                             {record.status === 'OPEN' ? 'Pending' : 'Verified'}
                                         </Tag>
                                     )
@@ -1923,13 +1925,13 @@ export default function ITSupportDashboard() {
                                     render: (record) => (
                                         <Space size={8}>
                                             <button
-                                                className="px-3 py-1 bg-white border border-slate-200 text-app-text-muted text-xs font-bold rounded-lg hover:bg-slate-50 transition-all"
+                                                className="px-3 py-1 bg-white border border-slate-200 text-app-text-muted text-xs font-bold rounded-none hover:bg-slate-50 transition-all"
                                                 onClick={() => { setSelectedItem(record); setActiveModal('BYOD_EXIT_DETAILS'); }}
                                             >
                                                 Review
                                             </button>
                                             <button
-                                                className="px-3 py-1 bg-rose-600 text-app-text text-xs font-bold rounded-lg hover:bg-rose-500 transition-all"
+                                                className="px-3 py-1 bg-rose-600 text-app-text text-xs font-bold rounded-none hover:bg-rose-500 transition-all"
                                                 onClick={async () => {
                                                     if (confirm(`Confirm MDM unenrollment and data wipe for BYOD devices belonging to ${record.user_name || record.user_id}?`)) {
                                                         await processExitByod(record.id);

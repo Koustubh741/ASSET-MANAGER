@@ -2,8 +2,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Dict, Any
 from sqlalchemy.orm import Session
-from app.database.database import SessionLocal
-from app.models.models import SystemPatch
+from ..database.database import SessionLocal
+from ..models.models import SystemPatch
 
 logger = logging.getLogger(__name__)
 

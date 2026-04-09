@@ -1,22 +1,26 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, Request, BackgroundTasks
+import logging
+logger_auth = logging.getLogger(__name__)
 from pydantic import BaseModel
 from uuid import UUID
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import cast, String
-from ..database.database import get_db
+from ..database.database import get_db, AsyncSessionLocal
 from ..schemas.user_schema import (
     UserCreate, UserUpdate, UserResponse, LoginRequest, LoginResponse, 
     RefreshTokenRequest, ForgotPasswordRequest, ResetPasswordRequest
 )
+from ..schemas.common_schema import PaginatedResponse
 from ..schemas.exit_schema import ExitRequestResponse
 from ..schemas.discovery_schema import UserSyncPayload
 from ..services import user_service, exit_service, user_sync_service
 from ..utils import auth_utils
 from ..utils.auth_utils import get_current_user
-from ..models.models import AssetAssignment, ByodDevice, ExitRequest, Asset, PasswordResetToken, User
+from ..models.models import AssetAssignment, ByodDevice, ExitRequest, Asset, PasswordResetToken, User, AuditLog
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 import secrets
 
 router = APIRouter(
@@ -24,12 +28,15 @@ router = APIRouter(
     tags=["auth"]
 )
 
-# Simulated SSO Secret (In production, use Env variables)
-SSO_CONFIG = {
-    "google": {"client_id": "google_id", "auth_url": "https://accounts.google.com/o/oauth2/v2/auth"},
-    "azure": {"client_id": "azure_id", "auth_url": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"},
-    "okta": {"client_id": "okta_id", "auth_url": "https://okta.com/oauth2/default/v1/authorize"}
-}
+# Phase 5.2: SSO — real OAuth flows for Google and Azure AD
+from ..services.sso_service import SSOService, SSOProvider
+from fastapi.responses import RedirectResponse
+import secrets as _secrets
+
+# Legacy stub config kept for reference only (real config now in sso_service.py)
+_SSO_PROVIDERS = SSOProvider.SUPPORTED
+
+STAFF_ROLES = ["ADMIN", "SUPPORT", "MANAGER"]
 
 async def check_user_list_access(
     current_user = Depends(get_current_user),
@@ -37,14 +44,14 @@ async def check_user_list_access(
 ):
     """
     Verify user is authorized to view user list.
-    ADMIN/ADMIN see all. MANAGER sees department.
+    ADMIN sees all. SUPPORT/MANAGER sees department.
     """
-    if current_user.role == "ADMIN" or current_user.position == "MANAGER":
+    if current_user.role in STAFF_ROLES:
         return current_user
         
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Only ADMIN, ADMIN, or Managers can view the user list"
+        detail="Only Staff (ADMIN, SUPPORT, MANAGER) can view the user list"
     )
 
 async def check_ADMIN(
@@ -77,36 +84,52 @@ async def check_IT_MANAGEMENT(
     current_user = Depends(get_current_user)
 ):
     """
-    Dependency to verify user is IT Management or Admin.
+    Dependency to verify user is IT Management (SUPPORT in IT) or Admin.
     """
-    if current_user.role not in ["IT_MANAGEMENT", "ADMIN"]:
+    is_admin = current_user.role == "ADMIN"
+    is_it_staff = (
+        (current_user.dept_obj.name.upper() if current_user.dept_obj else str(current_user.department).upper()) == "IT" or 
+        str(current_user.domain).upper() == "IT"
+    )
+                     
+    if not (is_admin or is_it_staff):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Requires IT Management privileges"
+            detail="Requires IT Management or IT Support privileges"
         )
     return current_user
 
-@router.get("/users", response_model=list[UserResponse])
+@router.get("/users", response_model=PaginatedResponse[UserResponse])
 async def get_users(
     status: str = None,
+    department: str = None,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_user_list_access)
 ):
     """
-    Get users, optionally filtered by status (Asynchronous).
-    Managers only see their department.
+    Get users, optionally filtered by status and department (Asynchronous).
+    Staff (SUPPORT/MANAGER) are restricted to their own department if not filtering explicitly.
     """
-    department = None
     try:
-        # Improved attribute safety
         is_admin = getattr(current_user, 'role', '') == 'ADMIN'
-        is_manager = getattr(current_user, 'position', '') == 'MANAGER'
         
-        if not is_admin and is_manager:
-            department = getattr(current_user, 'department', None) or getattr(current_user, 'domain', None)
+        # If not admin, force departmental filter if not already provided or if trying to see other departments
+        if not is_admin:
+            user_dept = getattr(current_user, 'department', None) or getattr(current_user, 'domain', None)
+            # If user provides a department, verify it matches theirs
+            if department and str(department).lower() != str(user_dept).lower():
+                # For non-admins, they can only request their own department
+                department = user_dept
+            elif not department:
+                department = user_dept
             
-        users = await user_service.get_users(db, status=status, department=department)
-        return users
+        users, total = await user_service.get_users(db, status=status, department=department)
+        return PaginatedResponse(
+            total=total,
+            page=1, # Default as these aren't currently used in this endpoint's logic
+            size=len(users),
+            data=users
+        )
     except Exception as e:
         import logging
         logging.error(f"Error in get_users: {str(e)}")
@@ -146,19 +169,44 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
+    background_tasks: BackgroundTasks,
     username: str = Form(...),
     password: str = Form(...),
     db: AsyncSession = Depends(get_db)
 ):
-    normalized_username = username.strip().lower()
-    user = await user_service.authenticate_user(db, normalized_username, password)
+    # ROOT FIX: Explicitly handle potential multi-layer encoding from legacy clients
+    from urllib.parse import unquote_plus
+    
+    # Handle username normalization
+    clean_username = unquote_plus(username.strip()).lower()
+    # Handle potential double-encoding or special characters in passwords
+    clean_password = unquote_plus(password)
+
+    user = await user_service.authenticate_user(db, clean_username, clean_password)
+    
     if not user:
         # Check if user exists but is not active
-        db_user = await user_service.get_user_by_email(db, normalized_username)
+        db_user = await user_service.get_user_by_email(db, clean_username)
+        
+        # ROOT FIX: Background Audit Logging for Failure
+        async def log_failure():
+            async with AsyncSessionLocal() as audit_db:
+                audit_log = AuditLog(
+                    id=uuid.uuid4(),
+                    entity_type="USER",
+                    entity_id=clean_username,
+                    action="LOGIN_FAILED",
+                    details={"reason": "Incorrect credentials" if not db_user else f"Status: {db_user.status}"}
+                )
+                audit_db.add(audit_log)
+                await audit_db.commit()
+
+        background_tasks.add_task(log_failure)
+
         if db_user and db_user.status != "ACTIVE":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Account is not active. Please contact administrator for activation.",
+                detail=f"Account is not active (Status: {db_user.status}). Please contact administrator.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         raise HTTPException(
@@ -166,6 +214,23 @@ async def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # ROOT FIX: Background Audit Logging for Success
+    async def log_success(u_id, u_email, u_role):
+        async with AsyncSessionLocal() as audit_db:
+            audit_log = AuditLog(
+                id=uuid.uuid4(),
+                entity_type="USER",
+                entity_id=str(u_id),
+                action="LOGIN_SUCCESS",
+                performed_by=u_id,
+                details={"email": u_email, "role": u_role}
+            )
+            audit_db.add(audit_log)
+            await audit_db.commit()
+
+    background_tasks.add_task(log_success, user.id, user.email, user.role)
+
     # Create access and refresh tokens
     token_data = {"sub": user.email, "user_id": str(user.id), "role": user.role}
     access_token = auth_utils.create_access_token(data=token_data)
@@ -338,70 +403,86 @@ async def update_my_plan(
     return updated_user
 
 
-@router.get("/sso/login/{provider}")
-async def sso_login(provider: str):
+@router.get("/sso/status")
+async def sso_status():
     """
-    Initiate SSO login by redirecting to the provider.
+    Returns which SSO providers are configured (have credentials in .env).
+    Safe to call from the login page to conditionally show SSO buttons.
     """
-    if provider not in SSO_CONFIG:
-        raise HTTPException(status_code=400, detail="Unsupported SSO provider")
-    
-    # In a real app, we would return a RedirectResponse here
-    # return RedirectResponse(url=f"{SSO_CONFIG[provider]['auth_url']}?client_id=...")
-    redirect_uri = f"http://localhost:3000/login?provider={provider}"
     return {
-        "provider": provider,
-        "redirect_url": f"{SSO_CONFIG[provider]['auth_url']}?client_id={SSO_CONFIG[provider]['client_id']}&response_type=code&scope=openid%20profile%20email&redirect_uri={redirect_uri}"
+        "google": SSOService.is_configured(SSOProvider.GOOGLE),
+        "azure":  SSOService.is_configured(SSOProvider.AZURE),
     }
 
 
-@router.get("/sso/callback/{provider}", response_model=LoginResponse)
+@router.get("/sso/login/{provider}")
+async def sso_login(provider: str):
+    """
+    Phase 5.2: Redirect the browser to the real OAuth consent screen.
+    Supported providers: google, azure
+    """
+    if provider not in _SSO_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Unsupported SSO provider: {provider!r}")
+
+    if not SSOService.is_configured(provider):
+        raise HTTPException(
+            status_code=503,
+            detail=f"{provider.title()} SSO is not configured. Add credentials to .env."
+        )
+
+    state = _secrets.token_urlsafe(16)
+    auth_url = SSOService.get_authorization_url(provider, state=state)
+    # Return URL so the frontend can redirect (avoids CORS issues with direct 302)
+    return {"provider": provider, "redirect_url": auth_url, "state": state}
+
+
+@router.get("/sso/{provider}/callback", response_model=LoginResponse)
 async def sso_callback(
-    provider: str, 
-    code: str = Query(...), 
+    provider: str,
+    code: str = Query(..., description="Authorization code from the OAuth provider"),
+    state: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Handle SSO callback after user authenticates with provider.
+    Phase 5.2: Exchange the authorization code for user info, upsert the user
+    in the database, and return a standard JWT access token.
     """
-    if provider not in SSO_CONFIG:
-        raise HTTPException(status_code=400, detail="Unsupported SSO provider")
-    
-    # SIMULATION: In a real app, we would exchange the 'code' for an 'id_token' and 'access_token'
-    # For this implementation, we simulate the user data returned by the provider
-    if code == "SUCCESS_CODE":
-        user_info = {
-            "sso_id": f"sso_{provider}_12345",
-            "email": "sso_user@example.com",
-            "full_name": "SSO Test User"
-        }
-    else:
-        # For simulation, we'll allow the code to be the email for testing
-        user_info = {
-            "sso_id": f"sso_{provider}_{code}",
-            "email": code if "@" in code else f"{code}@example.com",
-            "full_name": f"SSO {code}"
-        }
+    if provider not in _SSO_PROVIDERS:
+        raise HTTPException(status_code=400, detail=f"Unsupported SSO provider: {provider!r}")
 
-    # Sync user with our database
+    if not SSOService.is_configured(provider):
+        raise HTTPException(status_code=503, detail=f"{provider.title()} SSO credentials not configured.")
+
+    try:
+        user_info = await SSOService.exchange_code(provider, code)
+    except Exception as e:
+        logger_auth.error("SSO code exchange failed for %s: %s", provider, e)
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to authenticate with {provider.title()}: {e}"
+        )
+
+    if not user_info.get("email"):
+        raise HTTPException(status_code=400, detail="Provider did not return an email address.")
+
+    # Upsert user (find by SSO id, then by email, then create)
     user = await user_service.sync_sso_user(
-        db, 
+        db,
         sso_provider=provider,
         sso_id=user_info["sso_id"],
         email=user_info["email"],
-        full_name=user_info["full_name"]
+        full_name=user_info["full_name"],
     )
 
-    # Create tokens (standard JWT flow)
     token_data = {"sub": user.email, "user_id": str(user.id), "role": user.role}
-    access_token = auth_utils.create_access_token(data=token_data)
+    access_token  = auth_utils.create_access_token(data=token_data)
     refresh_token = auth_utils.create_refresh_token(data=token_data)
-    
+
     return {
-        "access_token": access_token,
+        "access_token":  access_token,
         "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "user": user
+        "token_type":    "bearer",
+        "user":          user,
     }
 
 
@@ -552,13 +633,14 @@ async def check_exit_access(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Allow access to System Admin, Asset Manager, and IT Management via JWT token.
+    Allow access to System Admin, Support Agents, and Managers via JWT token.
+    Normalized for Phase 2 base roles.
     """
-    allowed_roles = ["ADMIN", "ASSET_MANAGER", "IT_MANAGEMENT"]
+    allowed_roles = ["ADMIN", "SUPPORT", "MANAGER"]
     if current_user.role not in allowed_roles:
          raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Role {current_user.role} not authorized"
+            detail=f"Role {current_user.role} not authorized for exit processing"
         )
     return current_user
 
@@ -589,7 +671,7 @@ async def get_exit_requests(
                 "updated_at": exit_req.updated_at,
                 "user_name": user.full_name,
                 "user_email": user.email,
-                "user_department": user.department
+                "user_department": user.dept_obj.name if user.dept_obj else user.department,
             })
             
         print(f"DEBUG: Found {len(res)} exit requests")
@@ -608,8 +690,8 @@ async def process_exit_assets(
     db: AsyncSession = Depends(get_db),
     manager = Depends(check_exit_access)
 ):
-    allowed_roles = ["ASSET_MANAGER", "ASSET_MANAGER", "ADMIN", "ADMIN"]
-    if manager.role not in allowed_roles:
+    # Phase 2: Decoupled Role check
+    if manager.role not in ["SUPPORT", "MANAGER", "ADMIN"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
     result = await db.execute(select(ExitRequest).filter(ExitRequest.id == exit_request_id))
@@ -647,7 +729,7 @@ async def process_exit_byod(
     db: AsyncSession = Depends(get_db),
     it_manager = Depends(check_exit_access)
 ):
-    if it_manager.role not in ["IT_MANAGEMENT", "ADMIN", "ADMIN"]:
+    if it_manager.role not in ["SUPPORT", "MANAGER", "ADMIN"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
     result = await db.execute(select(ExitRequest).filter(ExitRequest.id == exit_request_id))

@@ -50,7 +50,8 @@ export default function AssetRelationships() {
 
     const fetchAssets = async () => {
         try {
-            const data = await apiClient.getAssets()
+            const res = await apiClient.getAssets()
+            const data = res.data || []
             setAssets(data.filter(a => a.id !== id)) // Exclude current asset
         } catch (err) {
             console.error('Failed to fetch assets:', err)
@@ -131,7 +132,7 @@ export default function AssetRelationships() {
                                 required
                                 value={newRelationship.target_asset_id}
                                 onChange={(e) => setNewRelationship({...newRelationship, target_asset_id: e.target.value})}
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none p-2.5 text-slate-900 dark:text-slate-200"
                             >
                                 <option value="">Select an asset...</option>
                                 {assets.map(asset => (
@@ -146,7 +147,7 @@ export default function AssetRelationships() {
                             <select
                                 value={newRelationship.relationship_type}
                                 onChange={(e) => setNewRelationship({...newRelationship, relationship_type: e.target.value})}
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none p-2.5 text-slate-900 dark:text-slate-200"
                             >
                                 {relationshipTypes.map(type => (
                                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -159,7 +160,7 @@ export default function AssetRelationships() {
                                 type="text"
                                 value={newRelationship.description}
                                 onChange={(e) => setNewRelationship({...newRelationship, description: e.target.value})}
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-lg p-2.5 text-slate-900 dark:text-slate-200"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none p-2.5 text-slate-900 dark:text-slate-200"
                                 placeholder="e.g., Database connection"
                             />
                         </div>
@@ -219,14 +220,14 @@ export default function AssetRelationships() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Upstream */}
-                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-app-border">
+                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-none border border-app-border">
                                 <h4 className="font-bold text-slate-900 dark:text-slate-200 mb-4 border-b border-app-border pb-2 flex items-center">
                                     <span className="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
                                     Upstream (This Asset Depends On)
                                 </h4>
                                 <ul className="space-y-3">
                                     {relationships.upstream.map(rel => (
-                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-lg group">
+                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-none group">
                                             <div className="flex items-center space-x-3">
                                                 <span className={`px-2 py-0.5 text-xs rounded bg-${getTypeColor(rel.relationship_type)}-500/20 text-${getTypeColor(rel.relationship_type)}-400`}>
                                                     {rel.relationship_type}
@@ -251,14 +252,14 @@ export default function AssetRelationships() {
                             </div>
 
                             {/* Downstream */}
-                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-app-border">
+                            <div className="bg-white dark:bg-slate-900/50 p-6 rounded-none border border-app-border">
                                 <h4 className="font-bold text-slate-900 dark:text-slate-200 mb-4 border-b border-app-border pb-2 flex items-center">
                                     <span className="w-3 h-3 bg-emerald-500 rounded-full mr-2"></span>
                                     Downstream (Depends On This Asset)
                                 </h4>
                                 <ul className="space-y-3">
                                     {relationships.downstream.map(rel => (
-                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-lg group">
+                                        <li key={rel.id} className="flex items-center justify-between p-3 bg-app-surface-soft rounded-none group">
                                             <div className="flex items-center space-x-3">
                                                 <span className={`px-2 py-0.5 text-xs rounded bg-${getTypeColor(rel.relationship_type)}-500/20 text-${getTypeColor(rel.relationship_type)}-400`}>
                                                     {rel.relationship_type}

@@ -3,13 +3,20 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white dark:bg-slate-900 border border-slate-700 p-3 rounded-lg shadow-xl">
-                <p className="text-slate-900 dark:text-slate-200 font-bold mb-2">{label}</p>
-                {payload.map((entry, index) => (
-                    <p key={index} className="text-sm" style={{ color: entry.color }}>
-                        {entry.name}: <span className="font-mono font-bold">{entry.value}</span>
-                    </p>
-                ))}
+            <div className="bg-app-obsidian border border-app-border p-4 rounded-none shadow-2xl backdrop-blur-md">
+                <p className="text-app-text-muted font-black text-[10px] uppercase tracking-widest mb-3 border-b border-app-border pb-2">{label}</p>
+                <div className="space-y-2">
+                    {payload.map((entry, index) => (
+                        <div key={index} className="flex items-center justify-between gap-8">
+                            <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: entry.color }}>
+                                {entry.name}
+                            </span>
+                            <span className="text-app-text font-black text-sm font-mono">
+                                {entry.value}
+                            </span>
+                        </div>
+                    ))}
+                </div>
             </div>
         )
     }
@@ -25,44 +32,44 @@ export default function TrendLineChart({ data }) {
                 data={data}
                 margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
             >
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-main)" vertical={false} strokeOpacity={0.5} />
                 <XAxis
                     dataKey="name"
-                    stroke="#94a3b8"
+                    stroke="var(--text-muted)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                     dy={10}
                 />
                 <YAxis
-                    stroke="#94a3b8"
+                    stroke="var(--text-muted)"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
                     dx={-10}
                 />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
+                 <Legend
                     verticalAlign="top"
                     height={36}
-                    iconType="circle"
+                    iconType="rect"
+                    formatter={(value) => <span className="text-app-text-muted text-[10px] font-black uppercase tracking-widest ml-2">{value}</span>}
                 />
                 <Line
-                    type="monotone"
+                    type="stepAfter"
                     dataKey="repaired"
                     name="Repaired"
-                    stroke="#f97316"
+                    stroke="var(--color-kinetic-gold)"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: '#f97316', strokeWidth: 0 }}
+                    dot={{ r: 4, fill: 'var(--color-kinetic-gold)', strokeWidth: 0, stroke: 'var(--bg-app-obsidian)', strokeOpacity: 0.8 }}
                     activeDot={{ r: 6, strokeWidth: 0 }}
                 />
                 <Line
-                    type="monotone"
+                    type="stepAfter"
                     dataKey="renewed"
                     name="Renewed"
-                    stroke="#3b82f6"
+                    stroke="var(--color-kinetic-primary)"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: '#3b82f6', strokeWidth: 0 }}
+                    dot={{ r: 4, fill: 'var(--color-kinetic-primary)', strokeWidth: 0, stroke: 'var(--bg-app-obsidian)', strokeOpacity: 0.8 }}
                     activeDot={{ r: 6, strokeWidth: 0 }}
                 />
             </LineChart>

@@ -84,7 +84,7 @@ function ScheduleModal({ patch, onClose, onScheduled }) {
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white dark:bg-slate-900 border border-app-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="relative bg-white dark:bg-slate-900 border border-app-border rounded-none p-6 w-full max-w-md shadow-2xl">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-app-text">Schedule Patch</h3>
                     <button onClick={onClose} className="text-app-text-muted hover:text-app-text"><X size={18} /></button>
@@ -97,7 +97,7 @@ function ScheduleModal({ patch, onClose, onScheduled }) {
                             type="datetime-local"
                             value={scheduledAt}
                             onChange={(e) => setScheduledAt(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-app-border rounded-xl px-3 py-2 text-sm text-app-text focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-app-border rounded-none px-3 py-2 text-sm text-app-text focus:outline-none focus:border-emerald-500"
                         />
                     </div>
                     <div>
@@ -105,7 +105,7 @@ function ScheduleModal({ patch, onClose, onScheduled }) {
                         <select
                             value={targetGroup}
                             onChange={(e) => setTargetGroup(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-800 border border-app-border rounded-xl px-3 py-2 text-sm text-app-text focus:outline-none focus:border-emerald-500"
+                            className="w-full bg-slate-50 dark:bg-slate-800 border border-app-border rounded-none px-3 py-2 text-sm text-app-text focus:outline-none focus:border-emerald-500"
                         >
                             <option value="ALL">All Endpoints</option>
                             <option value="PILOT">Pilot Assets Only</option>
@@ -115,11 +115,11 @@ function ScheduleModal({ patch, onClose, onScheduled }) {
                     </div>
                     {error && <p className="text-xs text-rose-400">{error}</p>}
                     <div className="flex gap-2 justify-end pt-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-app-text-muted border border-app-border hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft">Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-none text-sm text-app-text-muted border border-app-border hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft">Cancel</button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 rounded-xl text-sm font-bold bg-violet-500 hover:bg-violet-600 text-app-text flex items-center gap-2"
+                            className="px-4 py-2 rounded-none text-sm font-bold bg-violet-500 hover:bg-violet-600 text-app-text flex items-center gap-2"
                         >
                             {loading ? <Loader2 size={14} className="animate-spin" /> : <Clock size={14} />}
                             Schedule
@@ -156,7 +156,7 @@ function PatchUploadModal({ patch, onClose, onUploaded }) {
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center">
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white dark:bg-slate-900 border border-app-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="relative bg-white dark:bg-slate-900 border border-app-border rounded-none p-6 w-full max-w-md shadow-2xl">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-app-text flex items-center gap-2">
                         <Upload size={20} className="text-emerald-400" />
@@ -166,7 +166,7 @@ function PatchUploadModal({ patch, onClose, onUploaded }) {
                 </div>
                 <p className="text-sm text-app-text-muted mb-6 truncate">{patch.title}</p>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="border-2 border-dashed border-app-border rounded-2xl p-8 text-center hover:border-emerald-500/50 transition-colors">
+                    <div className="border-2 border-dashed border-app-border rounded-none p-8 text-center hover:border-emerald-500/50 transition-colors">
                         <input
                             type="file"
                             id="patchFile"
@@ -183,13 +183,13 @@ function PatchUploadModal({ patch, onClose, onUploaded }) {
                             </p>
                         </label>
                     </div>
-                    {error && <p className="text-xs text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">{error}</p>}
+                    {error && <p className="text-xs text-rose-400 bg-rose-500/10 p-2 rounded-none border border-rose-500/20">{error}</p>}
                     <div className="flex gap-2 justify-end">
-                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-xl text-sm text-app-text-muted border border-app-border hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 rounded-none text-sm text-app-text-muted border border-app-border hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
                         <button
                             type="submit"
                             disabled={loading || !file}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${loading || !file ? 'bg-app-surface-soft text-slate-400 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600 text-app-text shadow-lg shadow-emerald-500/20'}`}
+                            className={`px-4 py-2 rounded-none text-sm font-bold flex items-center gap-2 transition-all ${loading || !file ? 'bg-app-surface-soft text-slate-400 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600 text-app-text shadow-lg shadow-emerald-500/20'}`}
                         >
                             {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                             {loading ? 'Uploading…' : 'Finalize Upload'}
@@ -429,7 +429,7 @@ export default function PatchManagement() {
                         <p className="text-app-text-muted text-sm">Monitor vulnerabilities and manage security updates across the fleet.</p>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap">
-                        <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-xl border border-app-border">
+                        <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-none border border-app-border">
                             {[
                                 ['compliance', 'Compliance', 'emerald'], 
                                 ['available', 'Patches', 'violet'],
@@ -438,7 +438,7 @@ export default function PatchManagement() {
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === tab ? `bg-${color}-500 text-app-text shadow-lg` : 'text-app-text-muted hover:text-app-text'}`}
+                                    className={`px-3 py-1.5 rounded-none text-xs font-semibold transition-all ${activeTab === tab ? `bg-${color}-500 text-app-text shadow-lg` : 'text-app-text-muted hover:text-app-text'}`}
                                 >{label}</button>
                             ))}
                         </div>
@@ -456,7 +456,7 @@ export default function PatchManagement() {
                                     setIsLoading(false);
                                 }
                             }}
-                            className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-xl text-app-text-muted transition-all border border-app-border flex items-center gap-1.5 px-3 text-xs font-semibold"
+                            className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-none text-app-text-muted transition-all border border-app-border flex items-center gap-1.5 px-3 text-xs font-semibold"
                             title="Sync with Microsoft/Linux Vendor Feeds"
                         >
                             <RefreshCw size={14} className={syncStatus?.status === 'RUNNING' ? 'animate-spin' : ''} />
@@ -466,16 +466,16 @@ export default function PatchManagement() {
                         <button
                             onClick={handleExport}
                             disabled={exporting}
-                            className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-xl text-app-text-muted transition-all border border-app-border flex items-center gap-1.5 px-3 text-xs font-semibold"
+                            className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-none text-app-text-muted transition-all border border-app-border flex items-center gap-1.5 px-3 text-xs font-semibold"
                             title="Export Compliance CSV"
                         >
                             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                             Export
                         </button>
-                        <button onClick={handleSnapshot} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-xl text-app-text-muted transition-all border border-app-border" title="Initialize History Snapshot">
+                        <button onClick={handleSnapshot} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-none text-app-text-muted transition-all border border-app-border" title="Initialize History Snapshot">
                             <Zap size={18} />
                         </button>
-                        <button onClick={fetchData} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-xl text-app-text-muted transition-all border border-app-border" title="Refresh">
+                        <button onClick={fetchData} className="p-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 rounded-none text-app-text-muted transition-all border border-app-border" title="Refresh">
                             <RefreshCcw size={18} className={isLoading ? 'animate-spin' : ''} />
                         </button>
                     </div>
@@ -483,7 +483,7 @@ export default function PatchManagement() {
 
                 {/* Deploy result banner */}
                 {deployResult && (
-                    <div className={`flex items-center gap-3 p-4 rounded-xl border text-sm font-medium ${deployResult.ok ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+                    <div className={`flex items-center gap-3 p-4 rounded-none border text-sm font-medium ${deployResult.ok ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
                         {deployResult.ok ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
                         {deployResult.msg}
                         <button onClick={() => setDeployResult(null)} className="ml-auto opacity-60 hover:opacity-100"><X size={16} /></button>
@@ -498,9 +498,9 @@ export default function PatchManagement() {
                         { label: 'MISSING PATCHES', value: totalMissing, icon: <ArrowUpCircle size={20} />, color: 'violet', sub: 'Across all endpoints' },
                         { label: 'MANAGED ENDPOINTS', value: compliance.length, icon: <Monitor size={20} />, color: 'blue', sub: 'Assets tracked' },
                     ].map(({ label, value, icon, color, sub }) => (
-                        <div key={label} className="backdrop-blur-md bg-white bg-app-surface-soft border border-app-border p-6 rounded-2xl shadow-sm">
+                        <div key={label} className="backdrop-blur-md bg-white bg-app-surface-soft border border-app-border p-6 rounded-none shadow-sm">
                             <div className="flex justify-between items-start mb-4">
-                                <div className={`p-2 bg-${color}-500/10 text-${color}-400 rounded-lg`}>{icon}</div>
+                                <div className={`p-2 bg-${color}-500/10 text-${color}-400 rounded-none`}>{icon}</div>
                                 <span className="text-[10px] font-bold text-app-text-muted uppercase tracking-widest">{label}</span>
                             </div>
                             <p className="text-xl font-bold text-app-text">{value}</p>
@@ -511,7 +511,7 @@ export default function PatchManagement() {
 
                 {/* Enterprise Compliance Heatmap */}
                 {activeTab === 'compliance' && compliance.length > 0 && (
-                    <div className="p-6 rounded-2xl bg-white bg-app-surface-soft border border-app-border shadow-sm animate-in slide-in-from-top duration-500">
+                    <div className="p-6 rounded-none bg-white bg-app-surface-soft border border-app-border shadow-sm animate-in slide-in-from-top duration-500">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-xs font-bold text-app-text-muted uppercase tracking-widest flex items-center gap-2">
                                 <Shield className="text-emerald-400" size={14} /> Fleet Compliance Heatmap
@@ -526,7 +526,7 @@ export default function PatchManagement() {
                             {[...compliance].sort((a,b) => a.compliance_score - b.compliance_score).map(c => (
                                 <div 
                                     key={c.asset_id} 
-                                    className={`w-6 h-6 rounded-md transition-all duration-300 hover:scale-125 hover:shadow-lg cursor-help ${getScoreBg(c.compliance_score)} border border-white/10`}
+                                    className={`w-6 h-6 rounded-none transition-all duration-300 hover:scale-125 hover:shadow-lg cursor-help ${getScoreBg(c.compliance_score)} border border-white/10`}
                                     title={`${c.asset_name}: ${Math.round(c.compliance_score)}%`}
                                 />
                             ))}
@@ -536,7 +536,7 @@ export default function PatchManagement() {
                 )}
 
                 {/* Main table */}
-                <div className="backdrop-blur-md bg-app-surface-soft border border-app-border rounded-2xl overflow-hidden shadow-2xl">
+                <div className="backdrop-blur-md bg-app-surface-soft border border-app-border rounded-none overflow-hidden shadow-2xl">
                     {/* Search */}
                     <div className="p-6 border-b border-app-border flex items-center gap-4">
                         <div className="relative flex-grow max-w-md">
@@ -546,7 +546,7 @@ export default function PatchManagement() {
                                 placeholder={activeTab === 'compliance' ? 'Search assets…' : 'Search patches, CVE, platform…'}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2 pl-10 pr-4 text-sm text-app-text focus:outline-none focus:border-emerald-500"
+                                className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2 pl-10 pr-4 text-sm text-app-text focus:outline-none focus:border-emerald-500"
                             />
                         </div>
                         {searchTerm && <button onClick={() => setSearchTerm('')} className="text-app-text-muted hover:text-app-text"><X size={16} /></button>}
@@ -587,7 +587,7 @@ export default function PatchManagement() {
                                             <tr key={c.asset_id} className="hover:bg-white dark:bg-white/[0.01] transition-colors group">
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400"><Monitor size={16} /></div>
+                                                        <div className="w-8 h-8 rounded-none bg-blue-500/20 flex items-center justify-center text-blue-400"><Monitor size={16} /></div>
                                                         <span className="text-sm font-medium text-app-text">{c.asset_name}</span>
                                                     </div>
                                                 </td>
@@ -666,7 +666,7 @@ export default function PatchManagement() {
                                                                         setDeployResult({ ok: false, msg: "Approval failed: " + err.message });
                                                                     }
                                                                 }}
-                                                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-bold flex items-center gap-1"
+                                                                className="px-2 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-none text-[10px] font-bold flex items-center gap-1"
                                                             >
                                                                 <ShieldCheck size={12} /> Approve
                                                             </button>
@@ -681,7 +681,7 @@ export default function PatchManagement() {
                                                                 } catch (err) { console.error(err); }
                                                                 finally { setLogsLoading(false); }
                                                             }}
-                                                            className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400"
+                                                            className="p-1.5 hover:bg-white/5 rounded-none text-slate-400"
                                                         >
                                                             <ChevronRight size={18} />
                                                         </button>
@@ -730,7 +730,7 @@ export default function PatchManagement() {
                                                         {/* Upload button */}
                                                         <button
                                                             onClick={() => setUploadingPatch(p)}
-                                                            className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1 ${p.is_custom ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-app-surface-soft text-app-text-muted border-app-border hover:border-emerald-500/30 hover:text-emerald-400'}`}
+                                                            className={`px-2.5 py-1.5 rounded-none text-xs font-bold border transition-all flex items-center gap-1 ${p.is_custom ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-app-surface-soft text-app-text-muted border-app-border hover:border-emerald-500/30 hover:text-emerald-400'}`}
                                                             title={p.is_custom ? "Update binary" : "Upload binary"}
                                                         >
                                                             <Upload size={11} /> {p.is_custom ? "Update" : "Upload"}
@@ -738,7 +738,7 @@ export default function PatchManagement() {
                                                         {/* Schedule button */}
                                                         <button
                                                             onClick={() => setSchedulingPatch(p)}
-                                                            className="px-2.5 py-1.5 rounded-lg text-xs font-bold border bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border-violet-500/20 flex items-center gap-1"
+                                                            className="px-2.5 py-1.5 rounded-none text-xs font-bold border bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border-violet-500/20 flex items-center gap-1"
                                                             title="Schedule deployment"
                                                         >
                                                             <Clock size={11} /> Schedule
@@ -747,7 +747,7 @@ export default function PatchManagement() {
                                                         <button
                                                             onClick={() => handleDeployToAll(p)}
                                                             disabled={!!deployingPatch}
-                                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 ${deployingPatch === p.id ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 cursor-not-allowed' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'}`}
+                                                            className={`px-3 py-1.5 rounded-none text-xs font-bold transition-all border flex items-center gap-1.5 ${deployingPatch === p.id ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 cursor-not-allowed' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20'}`}
                                                         >
                                                             {deployingPatch === p.id ? <><Loader2 size={12} className="animate-spin" /> Deploying…</> : <><Zap size={12} /> Deploy All</>}
                                                         </button>
@@ -762,7 +762,7 @@ export default function PatchManagement() {
                 </div>
 
                 {/* Info banner */}
-                <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex items-start gap-4">
+                <div className="p-6 bg-blue-500/5 border border-blue-500/10 rounded-none flex items-start gap-4">
                     <Info className="text-blue-400 mt-0.5 shrink-0" size={20} />
                     <div>
                         <p className="text-sm font-bold text-blue-400">Scheduled Automation Active</p>
@@ -811,7 +811,7 @@ export default function PatchManagement() {
                                     <span className={`text-sm font-bold ${getScoreColor(selectedAsset.compliance_score)}`}>{Math.round(selectedAsset.compliance_score)}% Compliant</span>
                                 </div>
                             </div>
-                            <button onClick={() => setSelectedAsset(null)} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-xl text-app-text-muted hover:text-app-text transition-all"><X size={20} /></button>
+                            <button onClick={() => setSelectedAsset(null)} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none text-app-text-muted hover:text-app-text transition-all"><X size={20} /></button>
                         </div>
 
                         {/* Quick stats */}
@@ -840,7 +840,7 @@ export default function PatchManagement() {
                                     <span className="text-xs text-app-text-muted">Records appear after agent scan or manual deploy.</span>
                                 </div>
                             ) : assetDeployments.map((dep) => (
-                                <div key={dep.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-app-border hover:bg-slate-100 dark:bg-white/[0.05] transition-colors gap-2">
+                                <div key={dep.id} className="flex items-center justify-between p-3 rounded-none bg-slate-50 dark:bg-white/[0.03] border border-app-border hover:bg-slate-100 dark:bg-white/[0.05] transition-colors gap-2">
                                     <div className="flex items-center gap-3 min-w-0">
                                         {STATUS_ICON[dep.status] ?? STATUS_ICON.MISSING}
                                         <div className="min-w-0">
@@ -856,7 +856,7 @@ export default function PatchManagement() {
                                             <button
                                                 onClick={() => handleDeployAction(dep.id, 'retry')}
                                                 disabled={actionLoading === dep.id}
-                                                className="p-1 rounded-lg text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-colors"
+                                                className="p-1 rounded-none text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-colors"
                                                 title="Retry install"
                                             >
                                                 {actionLoading === dep.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
@@ -867,7 +867,7 @@ export default function PatchManagement() {
                                             <button
                                                 onClick={() => handleDeployAction(dep.id, 'rollback')}
                                                 disabled={actionLoading === dep.id}
-                                                className="p-1 rounded-lg text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-colors"
+                                                className="p-1 rounded-none text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-colors"
                                                 title="Rollback patch"
                                             >
                                                 {actionLoading === dep.id ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
@@ -884,7 +884,7 @@ export default function PatchManagement() {
             {selectedJob && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedJob(null)} />
-                    <div className="relative bg-white dark:bg-slate-900 border border-app-border rounded-2xl p-6 w-full max-w-2xl h-[70vh] flex flex-col shadow-2xl overflow-hidden">
+                    <div className="relative bg-white dark:bg-slate-900 border border-app-border rounded-none p-6 w-full max-w-2xl h-[70vh] flex flex-col shadow-2xl overflow-hidden">
                         <div className="flex items-center justify-between mb-4">
                             <div>
                                 <h3 className="text-lg font-bold text-app-text">Deployment Logs</h3>
@@ -893,7 +893,7 @@ export default function PatchManagement() {
                             <button onClick={() => setSelectedJob(null)} className="text-app-text-muted hover:text-app-text"><X size={18} /></button>
                         </div>
 
-                        <div className="flex-1 bg-slate-50 dark:bg-black/40 rounded-xl border border-app-border p-4 font-mono text-[11px] overflow-y-auto space-y-2">
+                        <div className="flex-1 bg-slate-50 dark:bg-black/40 rounded-none border border-app-border p-4 font-mono text-[11px] overflow-y-auto space-y-2">
                             {logsLoading ? (
                                 <div className="flex items-center gap-2 text-slate-500"><Loader2 size={14} className="animate-spin" /> Fetching agent logs…</div>
                             ) : jobLogs.length === 0 ? (

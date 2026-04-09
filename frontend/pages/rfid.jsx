@@ -64,7 +64,7 @@ export default function RFIDPage() {
                         placeholder="Search assets by name or tag…"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="flex-1 bg-app-surface-soft border border-white/15 rounded-lg px-4 py-2 text-sm text-app-text placeholder-slate-500 min-w-[200px]"
+                        className="flex-1 bg-app-surface-soft border border-white/15 rounded-none px-4 py-2 text-sm text-app-text placeholder-slate-500 min-w-[200px]"
                     />
                     <div className="flex gap-3 text-sm text-app-text-muted">
                         <span><span className="text-app-text font-semibold">{assets.length}</span> total assets</span>
@@ -109,7 +109,7 @@ export default function RFIDPage() {
                                                     placeholder="Enter RFID tag…"
                                                     value={tagInputs[asset.id] || ''}
                                                     onChange={e => setTagInputs(p => ({ ...p, [asset.id]: e.target.value }))}
-                                                    className="bg-app-surface-soft border border-white/15 rounded-lg px-3 py-1.5 text-xs text-app-text w-36"
+                                                    className="bg-app-surface-soft border border-white/15 rounded-none px-3 py-1.5 text-xs text-app-text w-36"
                                                 />
                                                 <button
                                                     onClick={() => assignTag(asset)}
@@ -118,7 +118,7 @@ export default function RFIDPage() {
                                                         !tagInputs[asset.id]?.trim() ||
                                                         tagInputs[asset.id]?.trim() === asset.serial_number
                                                     }
-                                                    className={`text-xs px-3 py-1.5 rounded-lg transition-all font-semibold border ${saved[asset.id]
+                                                    className={`text-xs px-3 py-1.5 rounded-none transition-all font-semibold border ${saved[asset.id]
                                                             ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                                                             : 'bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/25 border-indigo-500/30 disabled:opacity-30 disabled:cursor-not-allowed'
                                                         }`}

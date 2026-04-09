@@ -138,7 +138,7 @@ const WorkflowVisualizer = () => {
                         </span>
 
                         {/* Circle (Enlarged) */}
-                        <div className={`w-20 h-20 rounded-3xl flex items-center justify-center border-2 backdrop-blur-md transition-all duration-300 transform group-hover:scale-105 shadow-xl ${getColorClasses(step.color)} mb-5`}>
+                        <div className={`w-20 h-20 rounded-none flex items-center justify-center border-2 backdrop-blur-md transition-all duration-300 transform group-hover:scale-105 shadow-xl ${getColorClasses(step.color)} mb-5`}>
                             <step.icon size={32} strokeWidth={1.5} />
                         </div>
 

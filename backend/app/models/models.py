@@ -1,11 +1,13 @@
 from sqlalchemy import Column, String, Date, Float, DateTime, JSON, Text, ForeignKey, Boolean, Index, UUID, Integer, Enum
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.future import select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 import uuid
 import enum
 from datetime import datetime
-from app.database.database import Base
+from ..database.database import Base
 
 class Asset(Base):
     """
@@ -49,7 +51,7 @@ class Asset(Base):
     assigned_to_name = Column(String(255), nullable=True) # Denormalized for display
     assigned_by = Column(String(255), nullable=True)
 
-    assigned_user = relationship("User", foreign_keys=[assigned_to_id])
+    assigned_user = relationship("User", foreign_keys=[assigned_to_id], lazy='selectin')
 
     # Specifications
     specifications = Column(JSONB, nullable=True, default={})
@@ -88,7 +90,7 @@ class Asset(Base):
     request_id = Column(UUID(as_uuid=True), nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     # GIN Index for JSONB specifications
@@ -115,7 +117,7 @@ class AssetAssignment(Base):
     location = Column(String(255), nullable=True)
     assigned_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], lazy='selectin')
 
 class AssetInventory(Base):
     """
@@ -155,7 +157,7 @@ class Department(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    users = relationship("User", back_populates="dept_obj", foreign_keys="User.department_id")
+    users = relationship("User", back_populates="dept_obj", foreign_keys="User.department_id", lazy='selectin')
 
     def __repr__(self):
         return f"<Department(slug={self.slug}, name={self.name})>"
@@ -176,7 +178,6 @@ class User(Base):
     status = Column(String(50), nullable=False, default="PENDING", index=True)  # PENDING | ACTIVE | EXITING | DISABLED
     position = Column(String(50), nullable=True)  # MANAGER | TEAM_MEMBER
     domain = Column(String(50), nullable=True)  # DATA_AI | CLOUD | SECURITY | DEVELOPMENT
-    department = Column(String(100), nullable=True) # Legacy string field
     department_id = Column(UUID(as_uuid=True), ForeignKey("auth.departments.id", ondelete="SET NULL"), nullable=True)
     location = Column(String(100), nullable=True)
 
@@ -198,11 +199,14 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     dept_obj = relationship("Department", back_populates="users", foreign_keys=[department_id], lazy="selectin")
-
     def __repr__(self):
-
-
         return f"<User(id={self.id}, email={self.email}, role={self.role}, status={self.status})>"
+
+# ROOT FIX: Synchronization Listeners for Legacy Data Consistency
+from sqlalchemy import event
+
+
+# Removed legacy sync_user_department_label listener in Phase 5.3
 
 class Ticket(Base):
     """
@@ -220,18 +224,21 @@ class Ticket(Base):
     status = Column(String(50), default="Open", index=True) # Open, Pending, Closed
     priority = Column(String(20), default="Medium") # Low, Medium, High
     category = Column(String(50), nullable=True) # Hardware, Software, Network
+    subcategory = Column(String(100), nullable=True) # e.g., Payroll, Laptop Repair
     
     # Relations
     requestor_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True) 
     assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     assignment_group_id = Column(UUID(as_uuid=True), ForeignKey("support.assignment_groups.id", ondelete="SET NULL"), nullable=True)
+    target_department_id = Column(UUID(as_uuid=True), ForeignKey("auth.departments.id", ondelete="SET NULL"), nullable=True)
     related_asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="SET NULL"), nullable=True)
 
-    requestor = relationship("User", foreign_keys=[requestor_id])
-    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
-    assignment_group = relationship("AssignmentGroup", foreign_keys=[assignment_group_id])
-    tasks = relationship("Task", back_populates="ticket", cascade="all, delete-orphan")
-    sla = relationship("TicketSLA", back_populates="ticket", uselist=False, cascade="all, delete-orphan")
+    requestor = relationship("User", foreign_keys=[requestor_id], lazy='selectin')
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id], lazy='selectin')
+    assignment_group = relationship("AssignmentGroup", foreign_keys=[assignment_group_id], lazy='selectin')
+    target_department = relationship("Department", foreign_keys=[target_department_id], lazy='selectin')
+    tasks = relationship("Task", back_populates="ticket", cascade="all, delete-orphan", lazy='selectin')
+    sla = relationship("TicketSLA", back_populates="ticket", uselist=False, cascade="all, delete-orphan", lazy='selectin')
     
     # Resolution Details
     resolution_notes = Column(Text, nullable=True)
@@ -239,11 +246,50 @@ class Ticket(Base):
     resolution_percentage = Column(Float, default=0.0)
     timeline = Column(JSON, nullable=True, default=list)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
     def __repr__(self):
         return f"<Ticket(id={self.id}, subject={self.subject}, status={self.status})>"
+
+class TicketComment(Base):
+    """
+    User and Agent comments on a ticket
+    """
+    __tablename__ = "ticket_comments"
+    __table_args__ = {"schema": "support"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    ticket_id = Column(UUID(as_uuid=True), ForeignKey("support.tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
+    content = Column(Text, nullable=False)
+    is_internal = Column(Boolean, default=False)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    ticket = relationship("Ticket", lazy='selectin')
+    author = relationship("User", lazy='selectin')
+
+class TicketAttachment(Base):
+    """
+    Files attached to a ticket
+    """
+    __tablename__ = "ticket_attachments"
+    __table_args__ = {"schema": "support"}
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    ticket_id = Column(UUID(as_uuid=True), ForeignKey("support.tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    uploader_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
+    
+    file_name = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_type = Column(String(50), nullable=True)
+    file_size = Column(Integer, nullable=True) # in bytes
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    ticket = relationship("Ticket", lazy='selectin')
+    uploader = relationship("User", lazy='selectin')
 
 class AssignmentGroup(Base):
     """
@@ -254,17 +300,19 @@ class AssignmentGroup(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     name = Column(String(100), unique=True, nullable=False, index=True)
-    department = Column(String(100), nullable=True)
+    department_id = Column(UUID(as_uuid=True), ForeignKey("auth.departments.id", ondelete="SET NULL"), nullable=True)
     description = Column(Text, nullable=True)
     manager_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     
-    manager = relationship("User", foreign_keys=[manager_id])
+    manager = relationship("User", foreign_keys=[manager_id], lazy='selectin')
+    dept_obj = relationship("Department", foreign_keys=[department_id], lazy='selectin')
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     def __repr__(self):
-        return f"<AssignmentGroup(name={self.name}, department={self.department})>"
+        return f"<AssignmentGroup(name={self.name}, department_id={self.department_id})>"
 
 class AssignmentGroupMember(Base):
     """
@@ -277,8 +325,8 @@ class AssignmentGroupMember(Base):
     group_id = Column(UUID(as_uuid=True), ForeignKey("support.assignment_groups.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False)
     
-    group = relationship("AssignmentGroup")
-    user = relationship("User")
+    group = relationship("AssignmentGroup", lazy='selectin')
+    user = relationship("User", lazy='selectin')
 
     __table_args__ = (
         Index('ix_group_member_unique', group_id, user_id, unique=True),
@@ -308,9 +356,9 @@ class Task(Base):
     due_date = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     
-    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
-    group = relationship("AssignmentGroup", foreign_keys=[group_id])
-    ticket = relationship("Ticket", back_populates="tasks")
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id], lazy='selectin')
+    group = relationship("AssignmentGroup", foreign_keys=[group_id], lazy='selectin')
+    ticket = relationship("Ticket", back_populates="tasks", lazy='selectin')
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -351,7 +399,10 @@ class AssetRequest(Base):
     # Requester information
     requester_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    requester = relationship("User", foreign_keys=[requester_id])
+    requester = relationship("User", foreign_keys=[requester_id], lazy="selectin")
+    
+    # Root Fix: Relationships for batch-loading to eliminate N+1 query explosion
+    purchase_orders = relationship("PurchaseOrder", backref="asset_request", cascade="all, delete-orphan", order_by="desc(PurchaseOrder.created_at)", lazy="selectin")
     
     # Asset details (can be linked to existing asset or new asset request)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="SET NULL"), nullable=True)  # If requesting existing asset
@@ -482,7 +533,7 @@ class PurchaseOrder(Base):
     expected_delivery_date = Column(DateTime, nullable=True)
     extracted_data = Column(JSONB, nullable=True)
     status = Column(String(50), default="UPLOADED") # UPLOADED / VALIDATED / REJECTED
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
 
 
 class PurchaseInvoice(Base):
@@ -493,7 +544,10 @@ class PurchaseInvoice(Base):
     __table_args__ = {"schema": "procurement"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("procurement.purchase_orders.id"), nullable=False, index=True)
+    purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("procurement.purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Root Fix: Direct relationship for optimized fetching
+    purchase_order = relationship("PurchaseOrder", backref="invoice", uselist=False, lazy="selectin")
     invoice_pdf_path = Column(String(500), nullable=False)
     purchase_date = Column(DateTime, nullable=True)
     total_amount = Column(Float, nullable=True)
@@ -742,7 +796,9 @@ class AgentConfiguration(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     __table_args__ = (
-        {"schema": "public"} # Default schema
+        # Root Fix Phase 3: migrated from public → system schema
+        # Run migration: alembic upgrade migrate_agent_tables_system
+        {"schema": "system"}
     )
 
 
@@ -751,6 +807,9 @@ class AgentSchedule(Base):
     Model for storing agent execution schedules
     """
     __tablename__ = "agent_schedules"
+    # Root Fix Phase 3: migrated from public → system schema
+    # Run migration: alembic upgrade migrate_agent_tables_system
+    __table_args__ = {"schema": "system"}
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     agent_id = Column(String(100), nullable=False, unique=True)
@@ -1087,7 +1146,7 @@ class UserPreference(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], lazy='selectin')
 
     def __repr__(self):
         return f"<UserPreference(user_id={self.user_id})>"
@@ -1134,7 +1193,7 @@ class ChatMessage(Base):
     
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], lazy='selectin')
 
     def __repr__(self):
         return f"<ChatMessage(user_id={self.user_id}, role={self.role})>"
@@ -1167,7 +1226,7 @@ class Notification(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     read_at = Column(DateTime(timezone=True), nullable=True)
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", foreign_keys=[user_id], lazy='selectin')
 
     def __repr__(self):
         return f"<Notification(id={self.id}, title={self.title}, type={self.type})>"

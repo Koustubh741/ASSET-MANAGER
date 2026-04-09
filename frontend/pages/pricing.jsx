@@ -120,7 +120,7 @@ const PricingPage = () => {
                         return (
                             <div
                                 key={tier.name}
-                                className={`relative group p-6 rounded-3xl bg-white dark:bg-slate-900/40 backdrop-blur-xl border-2 ${tier.borderColor} flex flex-col transition-all duration-500 hover:scale-[1.03] hover:bg-white dark:bg-slate-900/60 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-700`}
+                                className={`relative group p-6 rounded-none bg-white dark:bg-slate-900/40 backdrop-blur-xl border-2 ${tier.borderColor} flex flex-col transition-all duration-500 hover:scale-[1.03] hover:bg-white dark:bg-slate-900/60 shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-700`}
                                 style={{ animationDelay: `${idx * 150}ms` }}
                             >
                                 {tier.highlight && (
@@ -129,7 +129,7 @@ const PricingPage = () => {
                                     </div>
                                 )}
 
-                                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center mb-6 border border-app-border group-hover:rotate-12 transition-transform duration-500`}>
+                                <div className={`w-12 h-12 rounded-none bg-gradient-to-br ${tier.color} flex items-center justify-center mb-6 border border-app-border group-hover:rotate-12 transition-transform duration-500`}>
                                     <Icon size={24} className={tier.iconColor} />
                                 </div>
 
@@ -157,7 +157,7 @@ const PricingPage = () => {
                                     ))}
                                 </div>
 
-                                <button className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-300 ${tier.highlight
+                                <button className={`w-full py-3.5 rounded-none font-bold text-sm transition-all duration-300 ${tier.highlight
                                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/40'
                                     : 'bg-app-surface-soft border border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
                                     }`}>
@@ -168,7 +168,7 @@ const PricingPage = () => {
                     })}
                 </div>
 
-                <footer className="mt-16 p-8 rounded-3xl bg-white dark:bg-slate-900/20 border border-app-border text-center animate-in fade-in duration-1000 delay-500">
+                <footer className="mt-16 p-8 rounded-none bg-white dark:bg-slate-900/20 border border-app-border text-center animate-in fade-in duration-1000 delay-500">
                     <p className="text-app-text-muted mb-6">Need a custom plan for your non-profit or educational institution?</p>
                     <Link href="/contact" className="text-blue-400 font-semibold hover:text-blue-300 hover:underline transition-all">
                         Talk to our experts today →

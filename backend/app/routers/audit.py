@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, and_
@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from uuid import UUID
 from ..routers.auth import check_ADMIN, check_user_list_access
 from ..utils.auth_utils import get_current_user
+from ..schemas.common_schema import PaginatedResponse
 from datetime import datetime
 
 router = APIRouter(
@@ -24,12 +25,12 @@ async def check_audit_access(
     Dependency to check if user has access to audit logs.
     Admins see all. Managers see their department.
     """
-    if current_user.role in ["ADMIN", "ADMIN"] or current_user.position == "MANAGER":
+    if current_user.role in ["ADMIN", "SUPPORT"] or current_user.position == "MANAGER":
         return current_user
         
     raise HTTPException(
         status_code=403,
-        detail="Only ADMIN, ADMIN, or Managers can view audit logs"
+        detail="Only ADMIN, SUPPORT, or Managers can view audit logs"
     )
 
 class AuditLogResponse(BaseModel):
@@ -44,50 +45,64 @@ class AuditLogResponse(BaseModel):
     class Config:
         from_attributes = True
 
-@router.get("/logs", response_model=List[AuditLogResponse])
+@router.get("/logs", response_model=PaginatedResponse[AuditLogResponse])
 async def get_audit_logs(
-    limit: int = 100,
-    offset: int = 0,
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=100),
     after_id: Optional[UUID] = None,
     entity_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(check_audit_access)
 ):
     """
-    Get system audit logs (Asynchronous).
-    Supports Keyset pagination via 'after_id'.
+    Get system audit logs with pagination (Asynchronous).
+    Root Fix: Supports 100k user scalability with structured pagination.
     """
     query = select(AuditLog)
     
-    # Apply manager scoping
-    if current_user.role not in ["ADMIN", "ADMIN"] and current_user.position == "MANAGER":
+    # 1. Base scoping filters
+    filter_clauses = []
+    if current_user.role not in ["ADMIN", "SUPPORT"] and current_user.position == "MANAGER":
         from ..models.models import User
         manager_unit = current_user.department or current_user.domain
-        
-        # We need to filter logs by users who belong to the same department/domain
-        # This requires joining with the User table
-        query = query.join(User, AuditLog.performed_by == User.id).filter(
-            (User.department == manager_unit) | (User.domain == manager_unit)
-        )
+        query = query.join(User, AuditLog.performed_by == User.id)
+        filter_clauses.append((User.department == manager_unit) | (User.domain == manager_unit))
 
     if entity_type:
-        query = query.filter(AuditLog.entity_type == entity_type)
+        filter_clauses.append(AuditLog.entity_type == entity_type)
         
     if after_id:
         res_anchor = await db.execute(select(AuditLog).filter(AuditLog.id == after_id))
         anchor = res_anchor.scalars().first()
         if anchor:
-            # Anchor point for keyset pagination
-            query = query.filter(
-                and_(
-                    AuditLog.timestamp <= anchor.timestamp,
-                    AuditLog.id < anchor.id
-                )
-            )
+            filter_clauses.append(and_(AuditLog.timestamp <= anchor.timestamp, AuditLog.id < anchor.id))
 
-    query = query.order_by(AuditLog.timestamp.desc(), AuditLog.id.desc()).offset(offset).limit(limit)
+    if filter_clauses:
+        query = query.filter(*filter_clauses)
+
+    # 2. Total Count
+    count_query = select(func.count(AuditLog.id))
+    if current_user.role not in ["ADMIN", "SUPPORT"] and current_user.position == "MANAGER":
+        from ..models.models import User
+        count_query = count_query.join(User, AuditLog.performed_by == User.id).filter(filter_clauses[0])
+        if entity_type: count_query = count_query.filter(AuditLog.entity_type == entity_type)
+    elif entity_type:
+        count_query = count_query.filter(AuditLog.entity_type == entity_type)
+        
+    total = (await db.execute(count_query)).scalar() or 0
+
+    # 3. Execution
+    skip = (page - 1) * size
+    query = query.order_by(AuditLog.timestamp.desc(), AuditLog.id.desc()).offset(skip).limit(size)
     result = await db.execute(query)
-    return result.scalars().all()
+    data = result.scalars().all()
+    
+    return PaginatedResponse(
+        total=total,
+        page=page,
+        size=size,
+        data=data
+    )
 
 @router.get("/stats")
 async def get_audit_stats(
@@ -100,7 +115,7 @@ async def get_audit_stats(
     base_query = select(AuditLog)
     
     # Apply manager scoping
-    if current_user.role not in ["ADMIN", "ADMIN"] and current_user.position == "MANAGER":
+    if current_user.role not in ["ADMIN", "SUPPORT"] and current_user.position == "MANAGER":
         from ..models.models import User
         manager_unit = current_user.department or current_user.domain
         base_query = base_query.join(User, AuditLog.performed_by == User.id).filter(

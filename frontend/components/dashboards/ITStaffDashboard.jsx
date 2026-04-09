@@ -35,9 +35,9 @@ const SoftwareInstallItem = ({ app, assetId }) => {
     };
 
     return (
-        <div className="flex items-center justify-between p-3 bg-app-surface-soft rounded-xl border border-slate-300 border-app-border group hover:bg-app-surface transition-colors">
+        <div className="flex items-center justify-between p-3 bg-app-surface-soft rounded-none border border-slate-300 border-app-border group hover:bg-app-surface transition-colors">
             <div className="flex items-center gap-3">
-                <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-app-text-muted border border-app-border shadow-sm group-hover:bg-indigo-500/20 group-hover:text-indigo-400 group-hover:border-indigo-500/30 transition-all">
+                <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-none text-app-text-muted border border-app-border shadow-sm group-hover:bg-indigo-500/20 group-hover:text-indigo-400 group-hover:border-indigo-500/30 transition-all">
                     <Server size={14} />
                 </div>
                 <span className="text-sm text-app-text font-black uppercase tracking-tight">{app}</span>
@@ -45,7 +45,7 @@ const SoftwareInstallItem = ({ app, assetId }) => {
             {status === 'pending' && (
                 <button
                     onClick={handleInstall}
-                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-app-text px-4 py-1.5 rounded-lg shadow-[0_0_10px_rgba(79,70,229,0.3)] transition-all font-black uppercase tracking-widest"
+                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-app-text px-4 py-1.5 rounded-none shadow-[0_0_10px_rgba(79,70,229,0.3)] transition-all font-black uppercase tracking-widest"
                 >
                     Install
                 </button>
@@ -57,7 +57,7 @@ const SoftwareInstallItem = ({ app, assetId }) => {
                 </span>
             )}
             {status === 'installed' && (
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-emerald-500/20 font-black uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-none flex items-center gap-1.5 border border-emerald-500/20 font-black uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.2)]">
                     <Check size={12} /> Live
                 </span>
             )}
@@ -123,7 +123,8 @@ export default function ITStaffDashboard() {
 
         const fetchResults = async () => {
             try {
-                const results = await apiClient.getTickets(0, 100, null, searchQuery);
+                const ticketResponse = await apiClient.getTickets(0, 100, null, searchQuery);
+                const results = ticketResponse.data || [];
                 if (active) {
                     setSearchResults(results.map(t => ({
                         ...t,
@@ -256,12 +257,12 @@ export default function ITStaffDashboard() {
                                     Operator <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-white to-rose-400 animate-gradient-x px-2 italic font-['Playfair_Display'] capitalize tracking-normal">Hub</span>
                                 </Title>
                                 <div className="flex items-center gap-6 pt-2">
-                                    <div className="px-5 py-2.5 bg-app-surface-soft border border-slate-300 border-app-border rounded-2xl flex items-center gap-3 backdrop-blur-xl group-hover:border-rose-500/30 transition-all duration-500 shadow-2xl">
+                                    <div className="px-5 py-2.5 bg-app-surface-soft border border-slate-300 border-app-border rounded-none flex items-center gap-3 backdrop-blur-xl group-hover:border-rose-500/30 transition-all duration-500 shadow-2xl">
                                         <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
                                         <div className="w-3 h-3 rounded-full bg-emerald-500 absolute shadow-[0_0_15px_rgba(16,185,129,0.8)]"></div>
                                         <span className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.4em]">System Linkage: Optimized</span>
                                     </div>
-                                    <span className="text-app-text-muted text-[11px] font-black uppercase tracking-[0.3em] opacity-50 px-4 py-2 bg-app-surface-soft rounded-xl border border-app-border backdrop-blur-sm">NODE: {user?.full_name?.split(' ')[0].toUpperCase()} // SECURE_KEY: {user?.id?.slice(0, 8).toUpperCase()}</span>
+                                    <span className="text-app-text-muted text-[11px] font-black uppercase tracking-[0.3em] opacity-50 px-4 py-2 bg-app-surface-soft rounded-none border border-app-border backdrop-blur-sm">NODE: {user?.full_name?.split(' ')[0].toUpperCase()} // SECURE_KEY: {user?.id?.slice(0, 8).toUpperCase()}</span>
                                 </div>
                             </div>
                         </div>
@@ -301,7 +302,7 @@ export default function ITStaffDashboard() {
                         ].map((stat, i) => (
                             <div
                                 key={i}
-                                className={`glass-card p-5 cursor-pointer border-t-2 transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden rounded-2xl
+                                className={`glass-card p-5 cursor-pointer border-t-2 transition-all duration-500 hover:-translate-y-2 group relative overflow-hidden rounded-none
                                     ${stat.color === 'indigo' ? 'border-indigo-500/50 shadow-md hover:shadow-indigo-500/20' :
                                         stat.color === 'rose' ? 'border-rose-500/50 shadow-md hover:shadow-rose-500/20' :
                                             stat.color === 'emerald' ? 'border-emerald-500/50 shadow-md hover:shadow-emerald-500/20' : 'border-sky-500/50 shadow-md hover:shadow-sky-500/20'}`}
@@ -332,7 +333,7 @@ export default function ITStaffDashboard() {
                                             {stat.value || 0}
                                         </span>
                                     </div>
-                                    <div className={`p-3 rounded-xl bg-app-surface-soft border border-slate-300 border-app-border group-hover:border-${stat.color}-500/40 transition-all duration-500 group-hover:bg-${stat.color}-500/10`}>
+                                    <div className={`p-3 rounded-none bg-app-surface-soft border border-slate-300 border-app-border group-hover:border-${stat.color}-500/40 transition-all duration-500 group-hover:bg-${stat.color}-500/10`}>
                                         <stat.icon size={20} className={`text-app-text-muted group-hover:text-${stat.color}-400 transition-all duration-500`} />
                                     </div>
                                 </div>
@@ -347,7 +348,7 @@ export default function ITStaffDashboard() {
                             
                             <div className="flex items-center justify-between mb-4 relative z-10">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-[0_10px_30px_rgba(79,70,229,0.3)] backdrop-blur-md">
+                                    <div className="p-2 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 shadow-[0_10px_30px_rgba(79,70,229,0.3)] backdrop-blur-md">
                                         <Activity size={28} />
                                     </div>
                                     <div>
@@ -359,7 +360,7 @@ export default function ITStaffDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="px-4 py-2 bg-indigo-500/10 text-indigo-500 text-xs font-bold uppercase tracking-widest border border-indigo-500/20 rounded-xl shadow-sm">
+                                    <span className="px-4 py-2 bg-indigo-500/10 text-indigo-500 text-xs font-bold uppercase tracking-widest border border-indigo-500/20 rounded-none shadow-sm">
                                         {myTickets.length} ACTIVE
                                     </span>
                                 </div>
@@ -369,7 +370,7 @@ export default function ITStaffDashboard() {
                                 {myTickets.slice(0, 5).map(ticket => (
                                     <div 
                                         key={ticket.id} 
-                                        className="flex items-center justify-between p-4 bg-white dark:bg-white/[0.01] hover:bg-slate-50 dark:hover:bg-white/[0.03] border border-app-border hover:border-indigo-500/40 transition-all duration-500 rounded-2xl group/ticket cursor-pointer shadow-sm relative overflow-hidden" 
+                                        className="flex items-center justify-between p-4 bg-white dark:bg-white/[0.01] hover:bg-slate-50 dark:hover:bg-white/[0.03] border border-app-border hover:border-indigo-500/40 transition-all duration-500 rounded-none group/ticket cursor-pointer shadow-sm relative overflow-hidden" 
                                         onClick={() => openResolveModal(ticket)}
                                     >
                                         <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ticket.priority === 'High' ? 'bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.6)]' : 'bg-indigo-500/40'}`}></div>
@@ -389,7 +390,7 @@ export default function ITStaffDashboard() {
                                                         <Box size={14} /> {ticket.category || 'SYSTEM_CORE'}
                                                     </span>
                                                     <span className="h-3 w-px bg-app-surface"></span>
-                                                    <span className={`text-xs font-bold uppercase tracking-tight px-2 py-0.5 rounded-lg border transition-all duration-500
+                                                    <span className={`text-xs font-bold uppercase tracking-tight px-2 py-0.5 rounded-none border transition-all duration-500
                                                         ${ticket.priority === 'High' ? 'text-rose-500 border-rose-500/20 bg-rose-500/10' : 'text-emerald-500 border-emerald-500/20 bg-emerald-500/10'}`}>
                                                         {ticket.priority === 'High' ? 'Urgent' : 'Routine'}
                                                     </span>
@@ -407,7 +408,7 @@ export default function ITStaffDashboard() {
                                                     {ticket.priority === 'High' ? 'Warning' : 'Healthy'}
                                                 </span>
                                             </div>
-                                            <button className="flex items-center gap-3 px-6 py-3 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white font-bold uppercase tracking-widest text-xs rounded-xl transition-all duration-300 border border-indigo-500/20 shadow-md transform hover:-translate-x-1 active:scale-95 group/btn">
+                                            <button className="flex items-center gap-3 px-6 py-3 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white font-bold uppercase tracking-widest text-xs rounded-none transition-all duration-300 border border-indigo-500/20 shadow-md transform hover:-translate-x-1 active:scale-95 group/btn">
                                                 Go <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                                             </button>
                                         </div>
@@ -430,7 +431,7 @@ export default function ITStaffDashboard() {
                                 <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 blur-[60px] rounded-full group-hover:bg-emerald-500/15 transition-all duration-1000"></div>
                                 <div className="flex items-center justify-between mb-8 relative z-10">
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-lg backdrop-blur-md">
+                                        <div className="p-3 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shadow-lg backdrop-blur-md">
                                             <Terminal size={22} />
                                         </div>
                                         <h3 className="text-sm font-bold text-app-text">Configuration Queue</h3>
@@ -439,7 +440,7 @@ export default function ITStaffDashboard() {
                                 </div>
                                 <div className="space-y-4 relative z-10">
                                     {pendingQueue.map(item => (
-                                        <div key={item.id} className="p-4 bg-slate-50 dark:bg-white/[0.02] border border-app-border rounded-xl hover:border-emerald-500/40 transition-all duration-300 group/item">
+                                        <div key={item.id} className="p-4 bg-slate-50 dark:bg-white/[0.02] border border-app-border rounded-none hover:border-emerald-500/40 transition-all duration-300 group/item">
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
                                                     <Text className="block text-sm font-bold text-app-text mb-0.5 group-hover/item:text-emerald-500 transition-colors uppercase tracking-tight">{item.name}</Text>
@@ -450,7 +451,7 @@ export default function ITStaffDashboard() {
                                             </div>
                                             <button 
                                                 onClick={() => startConfig(item)}
-                                                className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white text-xs font-bold uppercase tracking-widest border border-emerald-500/20 rounded-lg transition-all shadow-md active:scale-95"
+                                                className="w-full py-2.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white text-xs font-bold uppercase tracking-widest border border-emerald-500/20 rounded-none transition-all shadow-md active:scale-95"
                                             >
                                                 Initialize
                                             </button>
@@ -469,14 +470,14 @@ export default function ITStaffDashboard() {
                                 <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-sky-500/10 blur-[80px] rounded-full group-hover:bg-sky-500/15 transition-all duration-1000"></div>
                                 <div className="flex items-center justify-between mb-8 relative z-10">
                                     <div className="flex items-center gap-4">
-                                        <div className="p-3 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 shadow-lg backdrop-blur-md">
+                                        <div className="p-3 rounded-none bg-sky-500/10 border border-sky-500/20 text-sky-400 shadow-lg backdrop-blur-md">
                                             <Server size={22} />
                                         </div>
                                         <h3 className="text-sm font-bold text-app-text">Global Assets</h3>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between p-6 bg-sky-500/10 rounded-3xl border border-sky-500/20 mb-8 relative z-10 shadow-sm dark:shadow-inner overflow-hidden">
+                                <div className="flex items-center justify-between p-6 bg-sky-500/10 rounded-none border border-sky-500/20 mb-8 relative z-10 shadow-sm dark:shadow-inner overflow-hidden">
                                      <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-sky-500/10 to-transparent"></div>
                                     <div className="flex flex-col relative z-20">
                                         <span className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2">Available Nodes</span>
@@ -486,11 +487,11 @@ export default function ITStaffDashboard() {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-                                    <div className="p-4 bg-slate-50 dark:bg-white/[0.03] border border-app-border rounded-2xl group/subitem hover:border-sky-500/30 transition-all">
+                                    <div className="p-4 bg-slate-50 dark:bg-white/[0.03] border border-app-border rounded-none group/subitem hover:border-sky-500/30 transition-all">
                                         <Text className="text-[10px] text-app-text-muted block uppercase font-black tracking-widest mb-1 group-hover/subitem:text-sky-400 transition-colors">Laptops</Text>
                                         <Title level={3} className="!m-0 text-app-text font-['Outfit'] font-black">{stockroomAssets.filter(a => a.type?.toLowerCase() === 'laptop').length}</Title>
                                     </div>
-                                    <div className="p-4 bg-slate-50 dark:bg-white/[0.03] border border-app-border rounded-2xl group/subitem hover:border-sky-500/30 transition-all">
+                                    <div className="p-4 bg-slate-50 dark:bg-white/[0.03] border border-app-border rounded-none group/subitem hover:border-sky-500/30 transition-all">
                                         <Text className="text-[10px] text-app-text-muted block uppercase font-black tracking-widest mb-1 group-hover/subitem:text-sky-400 transition-colors">Infra Nodes</Text>
                                         <Title level={3} className="!m-0 text-app-text font-['Outfit'] font-black">{stockroomAssets.filter(a => a.type?.toLowerCase() === 'monitor' || a.type?.toLowerCase() === 'server').length}</Title>
                                     </div>
@@ -499,7 +500,7 @@ export default function ITStaffDashboard() {
                                     <Text className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-4 block">Deployment Log</Text>
                                     <div className="space-y-3">
                                         {stockroomAssets.slice(0, 3).map(asset => (
-                                            <div key={asset.id} className="flex justify-between items-center bg-slate-50 dark:bg-white/[0.02] p-3 rounded-xl border border-app-border hover:bg-slate-100 dark:bg-white/[0.05] transition-all">
+                                            <div key={asset.id} className="flex justify-between items-center bg-slate-50 dark:bg-white/[0.02] p-3 rounded-none border border-app-border hover:bg-slate-100 dark:bg-white/[0.05] transition-all">
                                                 <Text className="text-xs text-app-text-muted text-app-text-muted font-black uppercase tracking-tight line-clamp-1">{asset.name}</Text>
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40"></div>
                                             </div>
@@ -518,7 +519,7 @@ export default function ITStaffDashboard() {
                             <div className="flex items-center justify-between mb-16 relative z-10">
                                 <div>
                                     <h3 className="text-2xl font-['Outfit'] font-black text-app-text tracking-tight uppercase m-0 leading-none flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-[0_10px_20px_rgba(244,63,94,0.2)] backdrop-blur-3xl group-hover:rotate-6 transition-transform duration-500 relative overflow-hidden">
+                                        <div className="w-12 h-12 rounded-none bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-[0_10px_20px_rgba(244,63,94,0.2)] backdrop-blur-3xl group-hover:rotate-6 transition-transform duration-500 relative overflow-hidden">
                                             <div className="absolute inset-0 bg-gradient-to-tr from-rose-500/20 to-transparent animate-radar origin-center"></div>
                                             <Zap size={24} className="text-rose-500 animate-pulse relative z-10" />
                                         </div>
@@ -534,7 +535,7 @@ export default function ITStaffDashboard() {
                                             </div>
                                         ))}
                                     </div>
-                                    <span className="px-6 py-3 bg-rose-500/10 text-rose-500 text-xs font-bold uppercase tracking-widest border border-rose-500/20 rounded-2xl shadow-lg backdrop-blur-3xl relative overflow-hidden group/unclaimed">
+                                    <span className="px-6 py-3 bg-rose-500/10 text-rose-500 text-xs font-bold uppercase tracking-widest border border-rose-500/20 rounded-none shadow-lg backdrop-blur-3xl relative overflow-hidden group/unclaimed">
                                         <div className="absolute inset-0 bg-rose-500 animate-pulse opacity-5"></div>
                                         <span className="relative z-10">{unassignedTickets.length} UNCLAIMED</span>
                                     </span>
@@ -573,7 +574,7 @@ export default function ITStaffDashboard() {
                                                     <div 
                                                         key={ticket.id} 
                                                         style={{ animationDelay: `${index * 100}ms` }}
-                                                        className={`p-5 bg-white dark:bg-white/[0.01] hover:bg-slate-50 dark:hover:bg-white/[0.03] border border-app-border hover:border-rose-500/30 transition-all duration-300 rounded-2xl group/ticket cursor-pointer relative overflow-hidden shadow-sm flex flex-col hover:scale-[1.02] hover:shadow-xl hover:shadow-rose-500/5 animate-digitize opacity-0
+                                                        className={`p-5 bg-white dark:bg-white/[0.01] hover:bg-slate-50 dark:hover:bg-white/[0.03] border border-app-border hover:border-rose-500/30 transition-all duration-300 rounded-none group/ticket cursor-pointer relative overflow-hidden shadow-sm flex flex-col hover:scale-[1.02] hover:shadow-xl hover:shadow-rose-500/5 animate-digitize opacity-0
                                                             ${isHigh ? 'holographic-card animate-glitch-hover' : ''}
                                                             ${isClaiming ? 'scale-95 opacity-50 blur-sm brightness-50 grayscale' : ''}`}
                                                         onClick={() => !isClaiming && acknowledgeTicket(ticket.id)}
@@ -582,7 +583,7 @@ export default function ITStaffDashboard() {
                                                         <div className="absolute top-0 right-0 w-48 h-48 bg-rose-500/5 blur-[80px] rounded-full opacity-0 group-hover/ticket:opacity-100 transition-opacity duration-700"></div>
                                                         
                                                         <div className="flex justify-between items-start mb-6 relative z-10">
-                                                            <div className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border backdrop-blur-3xl transition-all duration-500 ${isHigh ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-orange-500/10 text-orange-500 border-orange-500/20'}`}>
+                                                            <div className={`px-3 py-1 rounded-none text-xs font-bold uppercase tracking-wider border backdrop-blur-3xl transition-all duration-500 ${isHigh ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : 'bg-orange-500/10 text-orange-500 border-orange-500/20'}`}>
                                                                 {ticket.priority} Severity
                                                             </div>
                                                             <div className="flex flex-col items-end">
@@ -598,13 +599,13 @@ export default function ITStaffDashboard() {
                                                         
                                                         <div className="mb-6 space-y-3 relative z-10">
                                                             <div className="flex items-center gap-3 text-xs font-semibold text-app-text-muted uppercase tracking-wider">
-                                                                <div className="p-1.5 bg-app-surface-soft rounded-lg border border-app-border">
+                                                                <div className="p-1.5 bg-app-surface-soft rounded-none border border-app-border">
                                                                     <Clock size={12} className="text-rose-500/50" />
                                                                 </div>
                                                                 {new Date(ticket.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })} // {new Date(ticket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </div>
                                                             <div className="flex items-center gap-3 text-xs font-semibold text-app-text-muted uppercase tracking-wider">
-                                                                <div className="p-1.5 bg-app-surface-soft rounded-lg border border-app-border">
+                                                                <div className="p-1.5 bg-app-surface-soft rounded-none border border-app-border">
                                                                     <MapPin size={12} className="text-indigo-500/50" />
                                                                 </div>
                                                                 SECURE_NODE_01
@@ -613,7 +614,7 @@ export default function ITStaffDashboard() {
                                                         <div className="flex items-center justify-between mt-auto pt-6 border-t border-slate-100 border-app-border relative z-10">
                                                             <div className="flex items-center gap-4">
                                                                 <div className="relative">
-                                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center font-bold text-sm text-white shadow-lg group-hover/ticket:rotate-6 transition-transform">
+                                                                    <div className="w-10 h-10 rounded-none bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center font-bold text-sm text-white shadow-lg group-hover/ticket:rotate-6 transition-transform">
                                                                         {ticket.requestor_name?.charAt(0) || 'U'}
                                                                     </div>
                                                                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900"></div>
@@ -623,7 +624,7 @@ export default function ITStaffDashboard() {
                                                                     <span className="text-xs text-slate-500 dark:text-slate-500 font-bold mt-1">Authorized</span>
                                                                 </div>
                                                             </div>
-                                                            <button className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all duration-300 text-xs font-bold uppercase tracking-widest relative overflow-hidden shadow-md active:scale-95
+                                                            <button className={`flex items-center gap-2 px-4 py-2 rounded-none border transition-all duration-300 text-xs font-bold uppercase tracking-widest relative overflow-hidden shadow-md active:scale-95
                                                                 ${isClaiming ? 'bg-rose-500 text-white border-rose-600 cursor-not-allowed' : 'bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white border-rose-500/20'}`}>
                                                                 {isClaiming ? 'EXEC_PROTOCOL' : 'Claim'}
                                                                 <Zap size={12} className={`fill-current ${isClaiming ? 'animate-spin' : ''}`} />
@@ -644,7 +645,7 @@ export default function ITStaffDashboard() {
                                 ))}
                                 
                                 {unassignedTickets.length === 0 && (
-                                    <div className="text-center py-16 bg-slate-50 dark:bg-white/[0.01] rounded-2xl border border-dashed border-app-border">
+                                    <div className="text-center py-16 bg-slate-50 dark:bg-white/[0.01] rounded-none border border-dashed border-app-border">
                                         <Zap size={32} className="text-slate-400 mx-auto mb-4 opacity-30" />
                                         <p className="text-app-text-muted font-bold uppercase tracking-widest text-xs">Registry is clean. No anomalies detected.</p>
                                     </div>
@@ -696,7 +697,7 @@ export default function ITStaffDashboard() {
                                         <div className="space-y-6">
                                             <div className="flex items-center justify-between mb-8 px-4">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+                                                    <div className="p-3 bg-emerald-500/10 rounded-none border border-emerald-500/20">
                                                         <Activity size={18} className="text-emerald-500 animate-spin duration-[4s]" />
                                                     </div>
                                                     <h4 className="text-xs font-black uppercase tracking-[0.6em] text-app-text-muted text-app-text-muted">Registry Propagation Sequence</h4>
@@ -737,7 +738,7 @@ export default function ITStaffDashboard() {
                                     <div className="pt-10 border-t border-app-border mt-10 relative z-10">
                                         <button
                                             onClick={handleConfigStepComplete}
-                                            className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-bold uppercase tracking-widest rounded-xl hover:shadow-lg transition-all active:scale-95 shadow-xl"
+                                            className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-bold uppercase tracking-widest rounded-none hover:shadow-lg transition-all active:scale-95 shadow-xl"
                                         >
                                             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
                                             <span className="flex items-center justify-center gap-6">
@@ -759,7 +760,7 @@ export default function ITStaffDashboard() {
                     {/* RESOLVE TICKET MODAL */}
                     {activeModal === 'RESOLVE_TICKET' && selectedItem && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-app-bg/80 backdrop-blur-2xl animate-in fade-in duration-500">
-                        <div className="bg-app-surface border border-app-border rounded-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh] shadow-2xl animate-in zoom-in-95 duration-500 relative">
+                        <div className="bg-app-surface border border-app-border rounded-none w-full max-w-2xl overflow-y-auto max-h-[90vh] shadow-2xl animate-in zoom-in-95 duration-500 relative">
                                 <div className="absolute top-0 right-0 w-[30rem] h-[30rem] bg-rose-500/10 blur-[150px] rounded-full pointer-events-none"></div>
                                 
                                 <div className="p-6 flex justify-between items-center relative z-10 border-b border-slate-100 border-app-border">
@@ -792,7 +793,7 @@ export default function ITStaffDashboard() {
                                         </div>
                                         <p className="text-app-text font-black text-2xl tracking-tight leading-tight mb-6">{selectedItem.subject}</p>
                                         <div className="flex items-center gap-4">
-                                            <div className="px-4 py-1.5 bg-rose-500/10 border border-rose-500/20 rounded-lg text-xs font-bold text-rose-400 uppercase tracking-widest shadow-lg">PRIORITY_{selectedItem.priority.toUpperCase()}</div>
+                                            <div className="px-4 py-1.5 bg-rose-500/10 border border-rose-500/20 rounded-none text-xs font-bold text-rose-400 uppercase tracking-widest shadow-lg">PRIORITY_{selectedItem.priority.toUpperCase()}</div>
                                             <div className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
                                             <span className="text-app-text-muted text-xs font-bold uppercase tracking-wide flex items-center gap-2">
                                                 <Box size={14} /> {selectedItem.category || 'MAINTENANCE_LOG'}
@@ -844,7 +845,7 @@ export default function ITStaffDashboard() {
                                                     </div>
                                                     <button 
                                                         onClick={(e) => { e.stopPropagation(); removeChecklistItem(idx); }}
-                                                        className="text-slate-800 hover:text-rose-500 transition-all opacity-0 group-hover/item:opacity-100 p-2 hover:bg-rose-500/10 rounded-xl"
+                                                        className="text-slate-800 hover:text-rose-500 transition-all opacity-0 group-hover/item:opacity-100 p-2 hover:bg-rose-500/10 rounded-none"
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
@@ -855,10 +856,10 @@ export default function ITStaffDashboard() {
                                                     value={newItemText}
                                                     onChange={(e) => setNewItemText(e.target.value)}
                                                     placeholder="Inject Custom Validation Phase..."
-                                                    className="flex-1 min-h-[44px] bg-slate-50 dark:bg-white/[0.02] border border-slate-300 border-app-border rounded-xl px-4 text-sm font-medium text-app-text placeholder:text-slate-400 focus:outline-none focus:border-rose-500/40 transition-all"
+                                                    className="flex-1 min-h-[44px] bg-slate-50 dark:bg-white/[0.02] border border-slate-300 border-app-border rounded-none px-4 text-sm font-medium text-app-text placeholder:text-slate-400 focus:outline-none focus:border-rose-500/40 transition-all"
                                                     onKeyDown={(e) => e.key === 'Enter' && addChecklistItem()}
                                                 />
-                                                <button onClick={addChecklistItem} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-xl border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all active:scale-90">
+                                                <button onClick={addChecklistItem} className="p-2.5 bg-rose-500/10 text-rose-400 rounded-none border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all active:scale-90">
                                                     <Plus size={24} />
                                                 </button>
                                             </div>
@@ -881,13 +882,13 @@ export default function ITStaffDashboard() {
                                     <div className="flex gap-8 pt-8 relative z-10">
                                         <button
                                             onClick={() => setActiveModal(null)}
-                                            className="px-8 py-5 rounded-xl border border-app-border text-slate-600 text-app-text-muted text-sm font-bold uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-white/5 transition-all shadow-lg active:scale-95"
+                                            className="px-8 py-5 rounded-none border border-app-border text-slate-600 text-app-text-muted text-sm font-bold uppercase tracking-widest hover:bg-slate-100 dark:hover:bg-white/5 transition-all shadow-lg active:scale-95"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             onClick={submitResolution}
-                                            className="flex-1 px-8 py-5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-white text-sm font-bold uppercase tracking-widest shadow-xl hover:shadow-rose-500/20 transform hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:transform-none"
+                                            className="flex-1 px-8 py-5 rounded-none bg-gradient-to-r from-rose-600 to-rose-500 text-white text-sm font-bold uppercase tracking-widest shadow-xl hover:shadow-rose-500/20 transform hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50 disabled:grayscale disabled:transform-none"
                                             disabled={(activeChecklist.some(i => !i.checked) && activeChecklist.length > 0) || !resolutionNotes.trim()}
                                         >
                                             Finalize Resolution Protocol

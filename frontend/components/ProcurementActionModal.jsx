@@ -108,7 +108,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                     {/* Key Details Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-4">
-                            <div className="bg-app-surface-soft p-4 rounded-xl border border-app-border bg-slate-50 border-slate-200">
+                            <div className="bg-app-surface-soft p-4 rounded-none border border-app-border bg-slate-50 border-slate-200">
                                 <label className="text-xs uppercase tracking-wider text-app-text-muted font-bold block mb-1">Request Information</label>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-center text-sm">
@@ -126,7 +126,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                 </div>
                             </div>
 
-                            <div className="bg-app-surface-soft p-4 rounded-xl border border-app-border bg-slate-50 border-slate-200">
+                            <div className="bg-app-surface-soft p-4 rounded-none border border-app-border bg-slate-50 border-slate-200">
                                 <label className="text-xs uppercase tracking-wider text-app-text-muted font-bold block mb-1">Requester Details</label>
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
@@ -148,7 +148,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                             </div>
                         </div>
 
-                        <div className="bg-app-surface-soft p-4 rounded-xl border border-app-border bg-slate-50 border-slate-200 flex flex-col">
+                        <div className="bg-app-surface-soft p-4 rounded-none border border-app-border bg-slate-50 border-slate-200 flex flex-col">
                             <label className="text-xs uppercase tracking-wider text-app-text-muted font-bold block mb-1">Business Justification</label>
                             <div className="text-sm text-slate-700 dark:text-slate-700 flex-grow italic leading-relaxed max-w-prose">
                                 "{request.justification || 'No justification provided.'}"
@@ -160,7 +160,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                     <div className="space-y-4">
                         {isFinanceApproved ? (
                             <>
-                                <div className="bg-emerald-500/5 text-emerald-300 text-xs p-4 rounded-xl border border-emerald-500/20 flex gap-3 items-center">
+                                <div className="bg-emerald-500/5 text-emerald-300 text-xs p-4 rounded-none border border-emerald-500/20 flex gap-3 items-center">
                                     <CheckCircle className="w-6 h-6 shrink-0 text-emerald-400" />
                                     <div>
                                         <p className="font-bold text-emerald-400 mb-1">Funds Released & Delivery Pending</p>
@@ -168,7 +168,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-app-surface-soft p-4 rounded-xl border border-app-border bg-slate-50 border-slate-200">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-app-surface-soft p-4 rounded-none border border-app-border bg-slate-50 border-slate-200">
                                     <div className="space-y-2">
                                         <label className="block text-xs font-bold text-app-text-muted text-app-text-muted uppercase tracking-wider flex justify-between items-center">
                                             Physical Serial Number
@@ -186,7 +186,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                             value={serialNumber}
                                             onChange={(e) => setSerialNumber(e.target.value)}
                                             placeholder="e.g. SN-12345678"
-                                            className="w-full px-3 py-2 bg-black/20 border border-app-border bg-white border-slate-300 text-slate-900 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-app-text"
+                                            className="w-full px-3 py-2 bg-black/20 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-app-text"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -197,7 +197,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                             type="text"
                                             value={receivedAssetName}
                                             onChange={(e) => setReceivedAssetName(e.target.value)}
-                                            className="w-full px-3 py-2 bg-black/20 border border-app-border bg-white border-slate-300 text-slate-900 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-app-text font-medium"
+                                            className="w-full px-3 py-2 bg-black/20 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-app-text font-medium"
                                         />
                                     </div>
                                     <div className="space-y-2 col-span-full">
@@ -209,20 +209,20 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                             value={receivedAssetModel}
                                             onChange={(e) => setReceivedAssetModel(e.target.value)}
                                             placeholder="e.g. Dell UltraSharp U2723QE"
-                                            className="w-full px-3 py-2 bg-black/20 border border-app-border bg-white border-slate-300 text-slate-900 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-app-text"
+                                            className="w-full px-3 py-2 bg-black/20 border border-app-border bg-white border-slate-300 text-slate-900 rounded-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm text-app-text"
                                         />
                                     </div>
                                 </div>
                             </>
                         ) : (
-                            <div className="bg-blue-500/5 text-blue-300 text-xs p-3 rounded-lg border border-blue-500/20 flex gap-3">
+                            <div className="bg-blue-500/5 text-blue-300 text-xs p-3 rounded-none border border-blue-500/20 flex gap-3">
                                 <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400" />
                                 <p>To approve this request for purchase, you must upload the generated Purchase Order (PDF). This will trigger a notification to Finance for final budget clearance.</p>
                             </div>
                         )}
 
                         {error && (
-                            <div className="bg-rose-500/10 text-rose-400 text-xs p-3 rounded-lg border border-rose-500/20">
+                            <div className="bg-rose-500/10 text-rose-400 text-xs p-3 rounded-none border border-rose-500/20">
                                 {error}
                             </div>
                         )}
@@ -233,7 +233,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                     <label className="block text-xs font-bold text-app-text-muted text-app-text-muted uppercase tracking-wide">
                                         1. Upload Purchase Order (PDF)
                                     </label>
-                                    <div className={`relative border-2 border-dashed rounded-xl p-6 transition-all ${selectedFile ? 'border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200' : 'border-app-border hover:border-blue-500/40 bg-app-surface-soft border-slate-200 bg-slate-50 hover:border-blue-300'}`}>
+                                    <div className={`relative border-2 border-dashed rounded-none p-6 transition-all ${selectedFile ? 'border-emerald-500/40 bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200' : 'border-app-border hover:border-blue-500/40 bg-app-surface-soft border-slate-200 bg-slate-50 hover:border-blue-300'}`}>
                                         <input
                                             type="file"
                                             accept=".pdf"
@@ -269,7 +269,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                                     <textarea
                                         value={comment}
                                         onChange={(e) => setComment(e.target.value)}
-                                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border bg-white border-slate-300 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-app-text min-h-[80px] transition-all"
+                                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border bg-white border-slate-300 text-slate-900 rounded-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-app-text min-h-[80px] transition-all"
                                         placeholder="Enter any notes for Finance or the Requester..."
                                     />
                                 </div>
@@ -292,7 +292,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                         <button
                             onClick={handleConfirmDelivery}
                             disabled={isSubmitting}
-                            className={`px-6 py-2 text-sm font-bold rounded-lg shadow-lg transition-all flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-app-text shadow-emerald-500/20`}
+                            className={`px-6 py-2 text-sm font-bold rounded-none shadow-lg transition-all flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-app-text shadow-emerald-500/20`}
                         >
                             {isSubmitting ? 'Confirming...' : (
                                 <>
@@ -306,7 +306,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                             <button
                                 onClick={handleReject}
                                 disabled={isSubmitting}
-                                className="px-4 py-2 text-sm font-bold text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 rounded-lg transition-colors"
+                                className="px-4 py-2 text-sm font-bold text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 rounded-none transition-colors"
                             >
                                 Reject Request
                             </button>
@@ -314,7 +314,7 @@ const ProcurementActionModal = ({ isOpen, onClose, request, onUploadPO, onReject
                             <button
                                 onClick={handleApprove}
                                 disabled={isSubmitting || !selectedFile}
-                                className={`px-6 py-2 text-sm font-bold rounded-lg shadow-lg transition-all flex items-center gap-2 ${selectedFile && !isSubmitting ? 'bg-blue-600 hover:bg-blue-500 text-app-text shadow-blue-500/20' : 'bg-slate-200 dark:bg-slate-700 text-app-text-muted cursor-not-allowed opacity-50'}`}
+                                className={`px-6 py-2 text-sm font-bold rounded-none shadow-lg transition-all flex items-center gap-2 ${selectedFile && !isSubmitting ? 'bg-blue-600 hover:bg-blue-500 text-app-text shadow-blue-500/20' : 'bg-slate-200 dark:bg-slate-700 text-app-text-muted cursor-not-allowed opacity-50'}`}
                             >
                                 {isSubmitting ? 'Processing...' : (
                                     <>

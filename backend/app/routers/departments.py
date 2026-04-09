@@ -1,60 +1,49 @@
-"""
-Department-scoped endpoints
-"""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Dict, Any
+from sqlalchemy.future import select
 from ..database.database import get_db
-from ..services import department_service
-from ..utils.auth_utils import get_current_user
 from ..models.models import Department
-from sqlalchemy import select
+from pydantic import BaseModel
+from uuid import UUID
 
 router = APIRouter(
     prefix="/departments",
     tags=["departments"]
 )
 
-@router.get("/")
-async def list_departments(
-    db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
+class DepartmentResponse(BaseModel):
+    id: UUID
+    slug: str
+    name: str
+    description: str | None = None
+    dept_metadata: dict | None = {}
+
+    class Config:
+        from_attributes = True
+
+@router.get("/", response_model=list[DepartmentResponse])
+async def get_departments(db: AsyncSession = Depends(get_db)):
     """
-    List all standardized departments
+    Get all departments including metadata for frontend branding.
     """
-    query = select(Department)
-    result = await db.execute(query)
+    result = await db.execute(select(Department).order_by(Department.name))
     return result.scalars().all()
 
-@router.get("/stats")
-async def get_department_stats(
-    db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """
-    Get stats for the current user's department by ID
-    """
-    if not current_user.department_id:
-        # Fallback to IT if no department is linked
-        # This shouldn't happen after migration
-        return {
-            "error": "No department linked to user",
-            "department": "Unassigned"
-        }
-        
-    return await department_service.get_department_stats(db, current_user.department_id)
+@router.get("/stats", include_in_schema=False)
+async def get_dept_stats_placeholder():
+    # Placeholder to avoid 404s from existing dashboard calls if any
+    return {"status": "ok", "stats": []}
 
-@router.get("/members")
-async def get_department_members(
-    db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
+@router.get("/{slug}", response_model=DepartmentResponse)
+async def get_department_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
     """
-    Get members of the current user's department by ID
+    Get a specific department by its URL-friendly slug.
     """
-    if not current_user.department_id:
-        return [current_user]
-        
-    return await department_service.get_department_members(db, current_user.department_id)
-
+    result = await db.execute(select(Department).where(Department.slug == slug))
+    dept = result.scalar_one_or_none()
+    if not dept:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Department with slug '{slug}' not found"
+        )
+    return dept

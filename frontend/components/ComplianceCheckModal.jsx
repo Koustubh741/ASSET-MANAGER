@@ -50,7 +50,7 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-none shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
 
                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-800 flex items-center gap-2">
@@ -74,7 +74,7 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                     <div className="space-y-3">
                         <h5 className="text-xs font-semibold text-app-text-muted uppercase tracking-wider">Security Policies</h5>
                         {policies.map((policy, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                            <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-none border border-slate-100">
                                 <div className="flex items-center gap-3">
                                     <policy.icon className="w-4 h-4 text-app-text-muted" />
                                     <span className="text-sm font-medium text-slate-700">{policy.name}</span>
@@ -89,14 +89,14 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                     </div>
 
                     {error && (
-                        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 flex gap-2 items-start">
+                        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-none border border-red-100 flex gap-2 items-start">
                             <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
                             <span>{error}</span>
                         </div>
                     )}
 
                     {result && result.success && (
-                        <div className="bg-emerald-50 text-emerald-600 text-sm p-3 rounded-lg border border-emerald-100 text-center font-medium">
+                        <div className="bg-emerald-50 text-emerald-600 text-sm p-3 rounded-none border border-emerald-100 text-center font-medium">
                             Compliance Verified Successfully!
                         </div>
                     )}
@@ -106,7 +106,7 @@ const ComplianceCheckModal = ({ isOpen, onClose, request, onUpdate }) => {
                     <button
                         onClick={handleRunCheck}
                         disabled={isChecking || (result && result.success)}
-                        className={`w-full py-2.5 px-4 rounded-lg font-medium shadow-sm flex items-center justify-center gap-2 transition-all ${result && result.success
+                        className={`w-full py-2.5 px-4 rounded-none font-medium shadow-sm flex items-center justify-center gap-2 transition-all ${result && result.success
                                 ? 'bg-emerald-600 text-app-text cursor-default'
                                 : 'bg-white dark:bg-slate-900 text-app-text hover:bg-slate-200 dark:bg-slate-700 dark:bg-slate-800 hover:bg-slate-300 dark:bg-slate-600'
                             }`}

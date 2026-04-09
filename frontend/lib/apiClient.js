@@ -81,7 +81,12 @@ class ApiClient {
     }
 
     async request(endpoint, options = {}, retryOnUnauthorized = true) {
-        const url = `${this.baseURL}${endpoint}`;
+        // Root Fix: Strip redundant /api/v1 prefix if present in the endpoint string
+        const cleanEndpoint = endpoint.startsWith('/api/v1') 
+            ? endpoint.replace('/api/v1', '') 
+            : endpoint;
+            
+        const url = `${this.baseURL}${cleanEndpoint}`;
         const headers = {
             'Content-Type': 'application/json',
             ...options.headers,
@@ -122,7 +127,8 @@ class ApiClient {
                         this.isRefreshing = false;
                         this.clearToken();
                         if (typeof window !== 'undefined') {
-                            window.location.href = '/login';
+                            // Redirect to login if token refresh fails
+                            window.location.href = `/login?message=${encodeURIComponent('Session expired. Please log in again.')}`;
                         }
                         throw refreshError;
                     }
@@ -139,6 +145,13 @@ class ApiClient {
                         });
                     });
                 }
+            }
+
+            // Handle 403 Forbidden - potential role issue or session mismatch
+            if (response.status === 403) {
+                console.error('Access Denied (403): You do not have permission for this resource.');
+                // We don't automatically redirect as the user might just be on the wrong tab,
+                // but we clear local state if it's a persistent auth issue.
             }
 
             // Handle empty responses
@@ -251,7 +264,7 @@ class ApiClient {
     async register(userData) {
         return this.request('/auth/register', {
             method: 'POST',
-            body: userData,
+            body: JSON.stringify(userData),
         });
     }
 
@@ -281,7 +294,7 @@ class ApiClient {
     async completeSetup(payload) {
         return this.request('/setup/complete', {
             method: 'POST',
-            body: payload,
+            body: JSON.stringify(payload),
         });
     }
 
@@ -480,6 +493,20 @@ class ApiClient {
         });
     }
 
+    async registerBYOD(byodData) {
+        // Wrapper for creating a BYOD asset request
+        const payload = {
+            asset_name: byodData.device_model || 'BYOD Device',
+            asset_type: (byodData.device_type || 'Mobile').toUpperCase(),
+            asset_ownership_type: 'BYOD',
+            business_justification: byodData.reason || 'BYOD Registration',
+            asset_model: byodData.device_model,
+            os_version: byodData.os_version,
+            serial_number: byodData.serial_number
+        };
+        return this.createAssetRequest(payload);
+    }
+
     // New BYOD Compliance Methods (Phase 7)
     async byodComplianceCheck(requestId) {
         return this.request(`/asset-requests/${requestId}/byod-compliance-check`, {
@@ -533,7 +560,27 @@ class ApiClient {
     async procurementConfirmDelivery(id, payload) {
         return this.request(`/asset-requests/${id}/procurement/confirm-delivery`, {
             method: 'POST',
-            body: payload
+            body: JSON.stringify(payload)
+        });
+    }
+
+
+    async getPO(requestId) {
+        return this.request(`/upload/po/${requestId}`, {
+            method: 'GET'
+        });
+    }
+
+    getPOViewUrl(requestId) {
+        // Returns the static download/view URL for the PO PDF
+        const token = localStorage.getItem('token');
+        return `${this.baseUrl}/upload/po/${requestId}/view?token=${token}`;
+    }
+
+    async updatePODetails(poId, data) {
+        return this.request(`/upload/po/${poId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
         });
     }
 
@@ -589,7 +636,7 @@ class ApiClient {
     async updatePODetails(poId, data) {
         return this.request(`/upload/po/${poId}`, {
             method: 'PATCH',
-            body: data
+            body: JSON.stringify(data)
         });
     }
 
@@ -628,6 +675,24 @@ class ApiClient {
         return this.request(`/tickets/${id}`);
     }
 
+    async getTicketAttachments(ticketId) {
+        return this.request(`/tickets/${ticketId}/attachments`);
+    }
+
+    async uploadTicketAttachment(ticketId, file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return this.request(`/tickets/${ticketId}/attachments`, {
+            method: 'POST',
+            body: formData,
+        });
+    }
+
+    async deleteTicketAttachment(attachmentId) {
+        return this.request(`/tickets/attachments/${attachmentId}`, {
+            method: 'DELETE',
+        });
+    }
     async createTicket(ticketData) {
         return this.request('/tickets', {
             method: 'POST',
@@ -761,8 +826,17 @@ class ApiClient {
     async createUser(userData) {
         return this.request('/users', {
             method: 'POST',
-            body: userData,
+            body: JSON.stringify(userData),
         });
+    }
+
+    // Departments
+    async getDepartments() {
+        return this.get('/departments');
+    }
+
+    async getDepartment(slug) {
+        return this.get(`/departments/${slug}`);
     }
 
     /**
@@ -857,10 +931,8 @@ class ApiClient {
         });
     }
 
-    // Departments
-    async getDepartments() {
-        return this.request('/reference/departments');
-    }
+    // NOTE: getDepartments() is defined above (hits /departments/ with slug+metadata)
+    // getReferenceDeptsLegacy was removed - it returned objects without slugs which broke portal links
 
     // Locations
     async getLocations() {
@@ -926,12 +998,12 @@ class ApiClient {
     async createAssetRelationship(sourceAssetId, targetAssetId, relationshipType, options = {}) {
         return this.request(`/assets/${sourceAssetId}/relationships`, {
             method: 'POST',
-            body: {
+            body: JSON.stringify({
                 target_asset_id: targetAssetId,
                 relationship_type: relationshipType,
                 description: options.description || null,
                 criticality: options.criticality || 3.0
-            }
+            })
         });
     }
 
@@ -970,7 +1042,7 @@ class ApiClient {
     async triggerNetworkScan(cidr = '192.168.1.0/24', community = 'public') {
         return this.request('/collect/scan', {
             method: 'POST',
-            body: { cidr, community }
+            body: JSON.stringify({ cidr, community })
         });
     }
 
@@ -985,7 +1057,7 @@ class ApiClient {
     async collectBarcodeScan(serial_number, scan_type = 'VERIFY', location = null) {
         return this.request('/collect/barcode', {
             method: 'POST',
-            body: { serial_number, scan_type, location }
+            body: JSON.stringify({ serial_number, scan_type, location })
         });
     }
 
@@ -998,14 +1070,14 @@ class ApiClient {
     async forgotPassword(email) {
         return this.request('/auth/forgot-password', {
             method: 'POST',
-            body: { email }
+            body: JSON.stringify({ email })
         });
     }
 
     async resetPassword(token, newPassword) {
         return this.request('/auth/reset-password', {
             method: 'POST',
-            body: { token, new_password: newPassword }
+            body: JSON.stringify({ token, new_password: newPassword })
         });
     }
 
@@ -1048,14 +1120,14 @@ class ApiClient {
     async createPortPolicy(data) {
         return this.request('/port-policies', {
             method: 'POST',
-            body: data,
+            body: JSON.stringify(data),
         });
     }
 
     async updatePortPolicy(id, data) {
         return this.request(`/port-policies/${id}`, {
             method: 'PUT',
-            body: data,
+            body: JSON.stringify(data),
         });
     }
 
@@ -1068,7 +1140,7 @@ class ApiClient {
     async assignPortPolicyTargets(policyId, targets) {
         return this.request(`/port-policies/${policyId}/targets`, {
             method: 'POST',
-            body: targets,
+            body: JSON.stringify(targets),
         });
     }
 
@@ -1084,14 +1156,14 @@ class ApiClient {
     async createAutomationRule(ruleData) {
         return this.request('/tickets/automation/rules', {
             method: 'POST',
-            body: ruleData,
+            body: JSON.stringify(ruleData),
         });
     }
 
     async updateAutomationRule(ruleId, ruleData) {
         return this.request(`/tickets/automation/rules/${ruleId}`, {
             method: 'PATCH',
-            body: ruleData,
+            body: JSON.stringify(ruleData),
         });
     }
 

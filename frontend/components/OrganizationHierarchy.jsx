@@ -17,7 +17,7 @@ const HierarchyNode = ({ node, level = 0 }) => {
     return (
         <div className="flex flex-col">
             <div
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 group cursor-pointer
+                className={`flex items-center gap-3 p-3 rounded-none border transition-all duration-300 group cursor-pointer
                     ${level === 0 ? 'bg-blue-500/10 border-blue-500/30' : 'bg-white dark:bg-slate-900/40 border-app-border hover:border-app-border hover:bg-white dark:bg-slate-900/60'}
                     mb-2 min-w-[280px] backdrop-blur-sm self-start
                 `}
@@ -32,7 +32,7 @@ const HierarchyNode = ({ node, level = 0 }) => {
                     <div className="w-4" />
                 )}
 
-                <div className={`p-2 rounded-lg ${level === 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
+                <div className={`p-2 rounded-none ${level === 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted'}`}>
                     {getRoleIcon(node.role)}
                 </div>
 
@@ -136,13 +136,13 @@ export default function OrganizationHierarchy() {
                     <h3 className="text-xl font-bold text-slate-900 dark:text-slate-200">Organization Structure</h3>
                     <p className="text-sm text-app-text-muted">Visual hierarchy of all active personnel.</p>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
                     <Zap size={14} />
                     LIVE VIEW
                 </div>
             </div>
 
-            <div className="p-8 rounded-2xl bg-white dark:bg-slate-900/30 border border-app-border backdrop-blur-xl min-h-[500px] overflow-auto custom-scrollbar">
+            <div className="p-8 rounded-none bg-white dark:bg-slate-900/30 border border-app-border backdrop-blur-xl min-h-[500px] overflow-auto custom-scrollbar">
                 {data.length > 0 ? (
                     <div className="flex flex-col gap-2">
                         {data.map((root) => (

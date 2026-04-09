@@ -27,7 +27,17 @@ module.exports = {
         'app-text': 'var(--text-main)',
         'app-text-muted': 'var(--text-muted)',
         'app-border': 'var(--border-main)',
-        'app-border-soft': 'var(--border-soft)',
+        
+        // Kinetic Ops Specialization
+        'app-obsidian': 'var(--bg-surface-obsidian)',
+        'app-void': 'var(--bg-app-void)',
+        'app-panel': 'var(--bg-surface-panel)',
+        'app-card': 'var(--bg-surface-card)',
+        'app-primary': 'var(--color-kinetic-primary)',
+        'app-secondary': 'var(--color-kinetic-secondary)',
+        'app-cyan': 'var(--color-kinetic-cyan)',
+        'app-rose': 'var(--color-kinetic-rose)',
+        'app-gold': 'var(--color-kinetic-gold)',
       },
       fontSize: {
         display: ['2.25rem', { lineHeight: '2.5rem' }],

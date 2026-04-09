@@ -15,11 +15,16 @@ import HRDashboard from '@/components/dashboards/HRDashboard'
 import OperationsDashboard from '@/components/dashboards/OperationsDashboard'
 import LegalDashboard from '@/components/dashboards/LegalDashboard'
 import BusinessOpsDashboard from '@/components/dashboards/BusinessOpsDashboard'
+import SupportPortalDashboard from '@/components/dashboards/SupportPortalDashboard'
 
 export default function Dashboard() {
-    const { currentRole, user, isAdmin, isFinanceStaff, isProcurementStaff, isAssetStaff, isITStaff, isManagerial } = useRole();
+    const { currentRole, user, isAuthenticated, isLoading, isAdmin, isFinanceStaff, isProcurementStaff, isAssetStaff, isITStaff, isManagerial } = useRole();
     const router = useRouter();
 
+    // AUTH GUARD: If not authenticated and not loading, don't render dashboards.
+    // AuthGuard.jsx will handle the redirect, but this prevents "Alex Johnson" blink.
+    if (isLoading) return null;
+    if (!isAuthenticated) return null;
     if (!currentRole) return null;
 
     // 1. High-Level Role Routing First
@@ -36,6 +41,12 @@ export default function Dashboard() {
                              title.includes('support') || 
                              title.includes('specialist');
         return isTechnician ? <ITStaffDashboard /> : <ITSupportDashboard />;
+    }
+
+    // 2.5 Non-IT SUPPORT Staff Routing
+    // If the user has a SUPPORT role but is NOT in IT, they get the generalized Support Portal
+    if (currentRole?.slug === 'SUPPORT') {
+        return <SupportPortalDashboard />;
     }
 
     // 3. Departmental "Root Fix" Routing

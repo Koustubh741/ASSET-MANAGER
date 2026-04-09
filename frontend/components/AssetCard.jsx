@@ -8,7 +8,7 @@ export default function AssetCard({ title, value, subtext, trend, icon: Icon, co
                     <p className="text-sm font-medium text-app-text-muted">{title}</p>
                     <h3 className="text-2xl font-bold mt-2 text-app-text">{value}</h3>
                 </div>
-                <div className={`p-2 rounded-lg ${color}`}>
+                <div className={`p-2 rounded-none ${color}`}>
                     <Icon size={20} className="text-white" />
                 </div>
             </div>

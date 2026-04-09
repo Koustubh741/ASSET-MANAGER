@@ -57,7 +57,7 @@ const ASSET_CATALOG = [
 export default function AssetRequestPage() {
     const router = useRouter();
     const toast = useToast();
-    const { refreshData } = useAssetContext();
+    const { createAssetRequest } = useAssetContext();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState(ASSET_CATALOG[0]);
@@ -77,18 +77,16 @@ export default function AssetRequestPage() {
 
         try {
             const requestData = {
-                assetType: selectedAsset.id,
-                reason: reason || `Standard request for ${selectedAsset.name}`,
-                urgency: urgency,
-                status: 'PENDING_MANAGER'
+                asset_name: selectedAsset.name,
+                asset_type: selectedAsset.id,
+                justification: reason || `Standard request for ${selectedAsset.name}`,
+                urgency: urgency
             };
 
-            await apiClient.createAssetRequest(requestData);
-            toast.success(`${selectedAsset.name} request transmitted to Manager.`);
-            await refreshData();
+            await createAssetRequest(requestData);
             router.push('/');
         } catch (error) {
-            toast.error(`Transmission Failed: ${error.message}`);
+            // Error handled by context
         } finally {
             setIsSubmitting(false);
         }
@@ -101,7 +99,7 @@ export default function AssetRequestPage() {
                 <div className="flex items-center gap-6">
                     <button
                         onClick={() => router.back()}
-                        className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl border border-app-border hover:bg-slate-50 dark:hover:bg-white/10 transition-all group shadow-sm hover:shadow-md active:scale-95"
+                        className="p-3 rounded-none bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl border border-app-border hover:bg-slate-50 dark:hover:bg-white/10 transition-all group shadow-sm hover:shadow-md active:scale-95"
                     >
                         <ChevronLeft size={24} className="text-app-text-muted group-hover:text-blue-500 dark:group-hover:text-blue-400 group-hover:-translate-x-1 transition-all" />
                     </button>
@@ -120,7 +118,7 @@ export default function AssetRequestPage() {
                         placeholder="Search Catalog..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl border border-app-border rounded-2xl pl-12 pr-6 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all w-full md:w-72 shadow-sm font-bold uppercase tracking-widest placeholder:text-slate-400 dark:placeholder:text-slate-600 text-app-text"
+                        className="bg-white/50 dark:bg-slate-900/40 backdrop-blur-xl border border-app-border rounded-none pl-12 pr-6 py-4 text-sm focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all w-full md:w-72 shadow-sm font-bold uppercase tracking-widest placeholder:text-slate-400 dark:placeholder:text-slate-600 text-app-text"
                     />
                 </div>
             </div>
@@ -149,7 +147,7 @@ export default function AssetRequestPage() {
                                     <div className={`absolute -right-8 -bottom-8 w-32 h-32 blur-[40px] rounded-full transition-opacity duration-1000 ${isSelected ? 'bg-white/20 opacity-100' : 'bg-blue-500/10 opacity-0 group-hover:opacity-100'}`}></div>
 
                                     <div className="relative z-10 flex justify-between items-start">
-                                        <div className={`p-4 rounded-2xl transition-all duration-500 ${isSelected ? 'bg-white text-blue-600 rotate-3' : 'bg-blue-500/10 text-blue-500 group-hover:rotate-6'}`}>
+                                        <div className={`p-4 rounded-none transition-all duration-500 ${isSelected ? 'bg-white text-blue-600 rotate-3' : 'bg-blue-500/10 text-blue-500 group-hover:rotate-6'}`}>
                                             <Icon size={28} strokeWidth={2.5} />
                                         </div>
                                         {isSelected && (
@@ -176,8 +174,8 @@ export default function AssetRequestPage() {
                         <div className="space-y-8">
                             <div>
                                 <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-4">Request Configuration</h4>
-                                <div className="p-5 rounded-2xl bg-slate-50/50 bg-app-surface-soft border border-slate-200/50 border-app-border flex items-center gap-4 group/item">
-                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover/item:scale-110 transition-transform">
+                                <div className="p-5 rounded-none bg-slate-50/50 bg-app-surface-soft border border-slate-200/50 border-app-border flex items-center gap-4 group/item">
+                                    <div className="w-14 h-14 rounded-none bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover/item:scale-110 transition-transform">
                                         {selectedAsset.icon && (
                                             <selectedAsset.icon size={28} />
                                         )}
@@ -196,7 +194,7 @@ export default function AssetRequestPage() {
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                     rows="4"
-                                    className="w-full bg-slate-50 dark:bg-black/20 border border-app-border rounded-2xl px-6 py-4 text-sm text-app-text focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium resize-none shadow-inner"
+                                    className="w-full bg-slate-50 dark:bg-black/20 border border-app-border rounded-none px-6 py-4 text-sm text-app-text focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium resize-none shadow-inner"
                                     placeholder="Enter business justification for this hardware..."
                                 ></textarea>
                             </div>
@@ -209,7 +207,7 @@ export default function AssetRequestPage() {
                                             key={u}
                                             type="button"
                                             onClick={() => setUrgency(u)}
-                                            className={`py-4 rounded-2xl border text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden
+                                            className={`py-4 rounded-none border text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden
                                                 ${urgency === u
                                                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
                                                     : 'bg-white dark:bg-slate-900 border-app-border text-slate-400 dark:text-slate-500 hover:border-blue-300 dark:hover:border-blue-500/30'}`}
@@ -224,7 +222,7 @@ export default function AssetRequestPage() {
                             </div>
 
                             <div className="pt-4 space-y-4">
-                                <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex gap-4">
+                                <div className="p-4 rounded-none bg-amber-500/5 border border-amber-500/10 flex gap-4">
                                     <Info size={18} className="text-amber-500 shrink-0" />
                                     <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 leading-relaxed italic">
                                         High urgency requires managerial override and may bypass standard procurement cycles.

@@ -56,10 +56,10 @@ function AddLicenseModal({ onClose, onSave }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
-            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
                 <div className="p-6 border-b border-app-border flex items-center justify-between">
                     <h3 className="text-xl font-bold text-app-text text-emerald-400">Add Managed License</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-500 transition-colors">✕</button>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-none text-slate-500 transition-colors">✕</button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -68,7 +68,7 @@ function AddLicenseModal({ onClose, onSave }) {
                             <input
                                 value={data.name}
                                 onChange={e => setData({ ...data, name: e.target.value })}
-                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                                 placeholder="e.g. Photoshop, Office 365"
                                 required
                             />
@@ -78,7 +78,7 @@ function AddLicenseModal({ onClose, onSave }) {
                             <input
                                 value={data.vendor}
                                 onChange={e => setData({ ...data, vendor: e.target.value })}
-                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                                 placeholder="e.g. Microsoft, Adobe"
                                 required
                             />
@@ -89,7 +89,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                 type="number"
                                 value={data.seat_count}
                                 onChange={e => setData({ ...data, seat_count: parseInt(e.target.value) })}
-                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                             />
                         </div>
                         <div>
@@ -98,7 +98,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                 type="number"
                                 value={data.cost}
                                 onChange={e => setData({ ...data, cost: parseFloat(e.target.value) })}
-                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm font-mono"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm font-mono"
                             />
                         </div>
                         <div>
@@ -107,14 +107,14 @@ function AddLicenseModal({ onClose, onSave }) {
                                 type="date"
                                 value={data.expiry_date}
                                 onChange={e => setData({ ...data, expiry_date: e.target.value })}
-                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                             />
                         </div>
                     </div>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-app-text font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-app-text font-bold rounded-none transition-all shadow-lg shadow-emerald-500/20"
                     >
                         {saving ? 'Adding...' : 'Create Managed License'}
                     </button>
@@ -240,31 +240,31 @@ function AddLicenseModal({ onClose, onSave }) {
                     <p className="text-app-text-muted text-sm">Track enterprise licenses and real-time application discovery.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-xl border border-app-border mr-2">
+                    <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-none border border-app-border mr-2">
                         <button
                             onClick={() => setActiveTab('managed')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'managed' ? 'bg-emerald-500 text-app-text shadow-lg' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
+                            className={`px-4 py-1.5 rounded-none text-xs font-semibold transition-all ${activeTab === 'managed' ? 'bg-emerald-500 text-app-text shadow-lg' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
                         >
                             Managed Licenses
                         </button>
                         {isAdmin && (
                             <button
                                 onClick={() => setActiveTab('reconciliation')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'reconciliation' ? 'bg-amber-500 text-app-text shadow-lg' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
+                                className={`px-4 py-1.5 rounded-none text-xs font-semibold transition-all ${activeTab === 'reconciliation' ? 'bg-amber-500 text-app-text shadow-lg' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
                             >
                                 Compliance & Risk
                             </button>
                         )}
                         <button
                             onClick={() => setActiveTab('discovered')}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'discovered' ? 'bg-violet-500 text-app-text shadow-lg' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
+                            className={`px-4 py-1.5 rounded-none text-xs font-semibold transition-all ${activeTab === 'discovered' ? 'bg-violet-500 text-app-text shadow-lg' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
                         >
                             Discovered Inventory
                         </button>
                     </div>
                     <button 
                         onClick={() => setShowAddLicense(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-app-text font-semibold transition-all shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)]"
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-none text-app-text font-semibold transition-all shadow-[0_0_20px_-5px_rgba(16,185,129,0.5)]"
                     >
                         <Plus size={18} />
                         <span>Add License</span>
@@ -292,9 +292,9 @@ function AddLicenseModal({ onClose, onSave }) {
                     },
                     { label: 'Detected Installs', value: discoveredSoftware.reduce((a, b) => a + b.install_count, 0), icon: ArrowUpRight, color: 'blue', show: true },
                 ].filter(s => s.show).map((stat, i) => (
-                    <div key={i} className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-6 border border-app-border hover:border-app-border transition-colors group">
+                    <div key={i} className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-6 border border-app-border hover:border-app-border transition-colors group">
                         <div className="flex items-start justify-between">
-                            <div className={`p-2 rounded-lg bg-${stat.color}-500/10 text-${stat.color}-400 group-hover:scale-110 transition-transform`}>
+                            <div className={`p-2 rounded-none bg-${stat.color}-500/10 text-${stat.color}-400 group-hover:scale-110 transition-transform`}>
                                 <stat.icon size={20} />
                             </div>
                             <span className="text-[10px] font-bold text-app-text-muted uppercase tracking-wider">REAL-TIME</span>
@@ -308,7 +308,7 @@ function AddLicenseModal({ onClose, onSave }) {
             </div>
 
             {/* Table Section */}
-            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 overflow-hidden border border-app-border">
+            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 overflow-hidden border border-app-border">
                 <div className="p-6 border-b border-app-border flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="relative flex-grow max-w-md">
                         <Search size={18} className="absolute left-3 top-2.5 text-app-text-muted" />
@@ -317,7 +317,7 @@ function AddLicenseModal({ onClose, onSave }) {
                             placeholder={activeTab === 'managed' ? 'Search licenses...' : 'Search discovered apps...'}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-xl py-2 pl-10 pr-4 text-sm text-app-text focus:outline-none focus:border-emerald-500 transition-colors"
+                            className="w-full bg-white dark:bg-slate-900/50 border border-app-border rounded-none py-2 pl-10 pr-4 text-sm text-app-text focus:outline-none focus:border-emerald-500 transition-colors"
                         />
                     </div>
                 </div>
@@ -368,7 +368,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                     <tr key={license.id} className="hover:bg-white dark:bg-white/[0.01] transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                                                <div className="w-8 h-8 rounded-none bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">
                                                     {license.name[0]}
                                                 </div>
                                                 <div className="flex flex-col">
@@ -396,7 +396,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-lg text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                                            <button className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-none text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                                                 <MoreVertical size={18} />
                                             </button>
                                         </td>
@@ -449,7 +449,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                             <button
                                                 onClick={() => item.compliance_status === 'RISK' ? handleRequestSeats(item.license_id) : handleOptimize(item.license_id)}
                                                 disabled={!!actionLoading[item.license_id]}
-                                                className={`flex items-center gap-2 px-3 py-1.5 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg text-xs transition-colors ${item.compliance_status === 'RISK' ? 'text-rose-400' : 'text-emerald-400'}`}
+                                                className={`flex items-center gap-2 px-3 py-1.5 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none text-xs transition-colors ${item.compliance_status === 'RISK' ? 'text-rose-400' : 'text-emerald-400'}`}
                                             >
                                                 {actionLoading[item.license_id] === 'buying' ? (
                                                     <span className="flex items-center gap-2">
@@ -477,7 +477,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                     <tr key={i} className="hover:bg-white dark:bg-white/[0.01] transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold text-xs">
+                                                <div className="w-8 h-8 rounded-none bg-violet-500/20 flex items-center justify-center text-violet-400 font-bold text-xs">
                                                     {soft.name[0]}
                                                 </div>
                                                 <span className="text-sm font-medium text-app-text">{soft.name}</span>
@@ -497,7 +497,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                         <td className="px-6 py-4 text-right">
                                             <button
                                                 onClick={() => setMatchModal({ isOpen: true, softwareName: soft.name })}
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg text-xs text-slate-700 dark:text-slate-700 transition-colors"
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none text-xs text-slate-700 dark:text-slate-700 transition-colors"
                                             >
                                                 <ShieldCheck size={14} className="text-violet-400" />
                                                 Verify
@@ -512,7 +512,7 @@ function AddLicenseModal({ onClose, onSave }) {
             </div>
 
             {/* Info Alert */}
-            <div className={`p-4 rounded-2xl flex items-start gap-3 ${activeTab === 'managed' ? 'bg-emerald-500/5 border border-emerald-500/10' : 'bg-violet-500/5 border border-violet-500/10'}`}>
+            <div className={`p-4 rounded-none flex items-start gap-3 ${activeTab === 'managed' ? 'bg-emerald-500/5 border border-emerald-500/10' : 'bg-violet-500/5 border border-violet-500/10'}`}>
                 {activeTab === 'managed' ? (
                     <ShieldCheck className="text-emerald-400 mt-0.5" size={20} />
                 ) : (
@@ -533,7 +533,7 @@ function AddLicenseModal({ onClose, onSave }) {
             {/* Match to License Modal */}
             {matchModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
-                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-app-border flex items-center justify-between">
                             <h3 className="text-xl font-bold text-app-text flex items-center gap-2">
                                 <ShieldCheck className="text-violet-400" />
@@ -541,7 +541,7 @@ function AddLicenseModal({ onClose, onSave }) {
                             </h3>
                             <button
                                 onClick={() => setMatchModal({ isOpen: false, softwareName: null })}
-                                className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-xl text-app-text-muted transition-colors"
+                                className="p-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-none text-app-text-muted transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -559,7 +559,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                         key={license.id}
                                         onClick={() => handleMatch(license.id)}
                                         disabled={isMatching}
-                                        className="w-full p-4 rounded-xl bg-app-surface-soft border border-app-border hover:border-violet-500/50 hover:bg-white/[0.08] text-left transition-all group"
+                                        className="w-full p-4 rounded-none bg-app-surface-soft border border-app-border hover:border-violet-500/50 hover:bg-white/[0.08] text-left transition-all group"
                                     >
                                         <div className="flex justify-between items-center">
                                             <div>
@@ -568,7 +568,7 @@ function AddLicenseModal({ onClose, onSave }) {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-xs font-mono text-app-text-muted">{license.seat_count} Seats</p>
-                                                <span className={`text-[10px] uppercase font-bold ${getStatusColor(license.status)} px-1.5 rounded-md border`}>
+                                                <span className={`text-[10px] uppercase font-bold ${getStatusColor(license.status)} px-1.5 rounded-none border`}>
                                                     {license.status}
                                                 </span>
                                             </div>

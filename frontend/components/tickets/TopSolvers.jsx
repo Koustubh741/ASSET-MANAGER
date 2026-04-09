@@ -6,13 +6,13 @@ const { Title, Text } = Typography;
 export default function TopSolvers({ solvers, loading }) {
     if (loading) {
         return (
-            <Card className="rounded-2xl border-slate-100 border-app-border shadow-sm" loading />
+            <Card className="rounded-none border-slate-100 border-app-border shadow-sm" loading />
         );
     }
 
     if (!solvers || solvers.length === 0) {
         return (
-            <Card className="rounded-2xl border-slate-100 border-app-border shadow-sm p-8 text-center">
+            <Card className="rounded-none border-slate-100 border-app-border shadow-sm p-8 text-center">
                 <Text className="text-app-text-muted italic">No resolution data available yet.</Text>
             </Card>
         );
@@ -20,12 +20,12 @@ export default function TopSolvers({ solvers, loading }) {
 
     return (
         <Card
-            className="rounded-2xl border-slate-100 border-app-border shadow-sm overflow-hidden"
+            className="rounded-none border-slate-100 border-app-border shadow-sm overflow-hidden"
             styles={{ body: { padding: '0' } }}
         >
             <div className="p-6 border-b border-slate-50 border-app-border bg-slate-50/50 bg-app-surface-soft">
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                    <div className="p-2 rounded-none bg-amber-500/10 text-amber-500">
                         <Trophy size={20} />
                     </div>
                     <div>

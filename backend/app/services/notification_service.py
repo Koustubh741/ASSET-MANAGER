@@ -468,7 +468,7 @@ class NotificationService:
         
         Ticket ID: {ticket_id}
         Requester: {requester_user.full_name if requester_user else 'Unknown'}
-        Department: {requester_user.department if requester_user else 'N/A'}
+        Department: {requester_user.dept_obj.name if requester_user and requester_user.dept_obj else (requester_user.department if requester_user else 'N/A')}
         Subject: {ticket.subject}
         Priority: {ticket.priority}
         Group: {ticket.assignment_group.name if ticket.assignment_group else 'Unassigned'}

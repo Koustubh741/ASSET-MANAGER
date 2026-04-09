@@ -49,33 +49,39 @@ const TicketExecutiveBrief = ({ summary }) => {
             </div>
 
             {/* Strategic Volume Pulse */}
-            <div className="glass p-8 relative overflow-hidden group">
-                <div className="flex items-center justify-between mb-6">
+            <div className="bg-app-void border border-app-border p-10 relative overflow-hidden group">
+                <div className="kinetic-scan-line" />
+                <div className="flex items-center justify-between mb-8">
                     <div>
-                        <h4 className="text-sm font-black uppercase tracking-[0.2em] text-app-text flex items-center gap-2">
-                            <Activity size={16} className="text-primary animate-pulse" />
-                            Operational Pulse
+                        <h4 className="text-sm font-black uppercase tracking-[0.3em] text-app-text flex items-center gap-3 italic">
+                            <Activity size={18} className="text-app-primary animate-pulse" />
+                            Operational Pulse // Tactical Uplink
                         </h4>
-                        <p className="text-[9px] text-app-text-muted font-black uppercase tracking-widest mt-1 opacity-60">7-Day Incident Velocity</p>
+                        <p className="text-[9px] text-app-text-muted font-black uppercase tracking-[0.4em] mt-2 opacity-40">Frequency Discovery Matrix // 7-Day Velocity</p>
+                    </div>
+                    <div className="px-3 py-1 bg-app-primary/10 border border-app-primary/30 rounded-none">
+                         <span className="text-[9px] font-black text-app-primary uppercase tracking-widest leading-none">Real-Time Data</span>
                     </div>
                 </div>
 
-                <div className="flex items-end gap-1 h-24 mb-4">
+                <div className="flex items-end gap-1.5 h-32 mb-6">
                     {Object.entries(summary.volume_trend || {}).map(([date, count], i) => {
                         const max = Math.max(...Object.values(summary.volume_trend || { 1: 1 }));
                         const height = (count / (max || 1)) * 100;
                         return (
                             <div key={date} className="flex-1 group/bar relative h-full flex items-end">
                                 <div 
-                                    className="w-full bg-primary/20 group-hover/bar:bg-primary/40 rounded-t-lg transition-all duration-1000 ease-out border-t border-primary/30"
+                                    className="w-full bg-app-primary/20 group-hover/bar:bg-app-primary transition-all duration-700 ease-out border-t border-app-primary/40 relative overflow-hidden"
                                     style={{ 
                                         height: `${Math.max(height, 5)}%`,
                                         transitionDelay: `${i * 50}ms`
                                     }}
-                                />
-                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-opacity whitespace-nowrap">
-                                    <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-                                        {count}
+                                >
+                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/bar:opacity-100 transition-opacity" />
+                                </div>
+                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover/bar:opacity-100 transition-all group-hover/bar:-top-12 z-20">
+                                    <span className="text-[9px] font-black text-white bg-app-obsidian px-3 py-1.5 rounded-none border border-app-primary shadow-[0_0_15px_rgba(var(--color-app-primary-rgb),0.5)]">
+                                        {count} PKTS
                                     </span>
                                 </div>
                             </div>
@@ -83,10 +89,10 @@ const TicketExecutiveBrief = ({ summary }) => {
                     })}
                 </div>
                 
-                <div className="flex justify-between items-center text-[8px] font-black text-app-text-muted uppercase tracking-widest opacity-40">
+                <div className="flex justify-between items-center text-[9px] font-black text-app-text-muted uppercase tracking-[0.3em] opacity-40 mt-4">
                     <span>{Object.keys(summary.volume_trend || {})[0]}</span>
-                    <span>System Stability: Nominal</span>
-                    <span>Today</span>
+                    <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-app-secondary rounded-none" /> System Stability: High_Efficiency</span>
+                    <span>Synchronized_Grid</span>
                 </div>
             </div>
         </div>

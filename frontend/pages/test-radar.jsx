@@ -1,14 +1,10 @@
 import React from 'react';
 import Head from 'next/head';
 import MultiLayerRadarChart from '@/components/MultiLayerRadarChart';
-import Layout from '@/components/Layout';
+// import Layout from '@/components/Layout';
 
 export default function TestRadarPage() {
     return (
-        <Layout>
-            <Head>
-                <title>Radar Chart Visualizer | ASSET-MANAGER</title>
-            </Head>
             <div className="p-8 max-w-5xl mx-auto h-full min-h-screen">
                 <header className="mb-8">
                     <h1 className="text-3xl font-black text-app-text tracking-tighter">Advanced Radar Verification</h1>
@@ -19,6 +15,5 @@ export default function TestRadarPage() {
                     <MultiLayerRadarChart />
                 </div>
             </div>
-        </Layout>
     );
 }

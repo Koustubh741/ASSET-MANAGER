@@ -47,7 +47,7 @@ const AutomationConfig = () => {
           <Settings className="w-6 h-6 text-indigo-500" />
           Powerful Workflow Automation
         </h2>
-        <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+        <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-none hover:bg-indigo-700 transition-colors shadow-sm">
           <Plus className="w-4 h-4" />
           Create New {activeTab === 'routing' ? 'Rule' : 'Policy'}
         </button>
@@ -73,10 +73,10 @@ const AutomationConfig = () => {
       <div className="grid gap-4">
         {activeTab === 'routing' ? (
           rules.map(rule => (
-            <div key={rule.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-200 transition-all group">
+            <div key={rule.id} className="p-4 bg-white border border-slate-200 rounded-none shadow-sm hover:border-indigo-200 transition-all group">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-none">
                     <Play className="w-5 h-5" />
                   </div>
                   <div>
@@ -88,17 +88,17 @@ const AutomationConfig = () => {
                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${rule.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                     {rule.is_active ? 'Active' : 'Paused'}
                   </span>
-                  <button className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-md hover:bg-slate-50">
+                  <button className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-none hover:bg-slate-50">
                     <Edit3 className="w-4 h-4" />
                   </button>
-                  <button className="p-1.5 text-slate-400 hover:text-rose-600 rounded-md hover:bg-slate-50">
+                  <button className="p-1.5 text-slate-400 hover:text-rose-600 rounded-none hover:bg-slate-50">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4 text-sm mt-4">
-                <div className="p-3 bg-slate-50 rounded-lg">
+                <div className="p-3 bg-slate-50 rounded-none">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Conditions</span>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(rule.conditions).map(([k, v]) => (
@@ -108,7 +108,7 @@ const AutomationConfig = () => {
                     ))}
                   </div>
                 </div>
-                <div className="p-3 bg-indigo-50/50 rounded-lg border border-indigo-100">
+                <div className="p-3 bg-indigo-50/50 rounded-none border border-indigo-100">
                   <span className="text-[10px] font-bold text-indigo-400 uppercase block mb-1">Actions</span>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(rule.actions).map(([k, v]) => (
@@ -123,10 +123,10 @@ const AutomationConfig = () => {
           ))
         ) : (
           policies.map(policy => (
-            <div key={policy.id} className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-emerald-200 transition-all">
+            <div key={policy.id} className="p-4 bg-white border border-slate-200 rounded-none shadow-sm hover:border-emerald-200 transition-all">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-none">
                     <Shield className="w-5 h-5" />
                   </div>
                   <div>
@@ -134,7 +134,7 @@ const AutomationConfig = () => {
                     <p className="text-xs text-slate-500">Applies to {policy.priority} tickets</p>
                   </div>
                 </div>
-                <button className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-md">
+                <button className="p-1.5 text-slate-400 hover:text-emerald-600 rounded-none">
                    <Edit3 className="w-4 h-4" />
                 </button>
               </div>

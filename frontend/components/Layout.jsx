@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Bot, RefreshCw } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
 // Hooks
 import { useRole } from '../contexts/RoleContext';
@@ -20,22 +20,16 @@ import NotificationDrawer from './NotificationDrawer';
  */
 export default function Layout({ children }) {
     const router = useRouter();
-    const { currentRole, logout, user, preferences, setOnboardingDismissed } = useRole();
+    const { currentRole, logout, user, preferences } = useRole();
     const { unreadCount, isConnected } = useNotifications();
     const { navItems } = useNavigation();
 
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isAIOpen, setIsAIOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-    const [showOnboarding, setShowOnboarding] = useState(false);
 
-    useEffect(() => {
-        if (!preferences?.onboarding_dismissed) {
-            setShowOnboarding(true);
-        } else {
-            setShowOnboarding(false);
-        }
-    }, [preferences?.onboarding_dismissed]);
+
+
 
     const handleLogout = () => {
         logout();
@@ -78,26 +72,6 @@ export default function Layout({ children }) {
                     style={{ backgroundImage: 'radial-gradient(var(--text-muted) 1px, transparent 1px)', backgroundSize: '32px 32px' }} 
                 />
                 
-                {/* Onboarding Alert */}
-                {showOnboarding && (
-                    <div className="mb-8 p-6 glass border-indigo-500/20 flex items-center justify-between gap-6 animate-in slide-in-from-top-4 duration-700">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-500">
-                                <Bot size={24} />
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-sm tracking-tight">Welcome to ITSM Cloud</h4>
-                                <p className="text-xs text-app-text-muted">Start by requesting an asset or exploring the Strategic Hub.</p>
-                            </div>
-                        </div>
-                        <button 
-                            onClick={() => setOnboardingDismissed(true)}
-                            className="px-6 py-2 glass-interactive rounded-xl text-[10px] font-black uppercase tracking-widest"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                )}
 
                 {/* Page Content with Entry Animation */}
                 <div className="animate-in fade-in zoom-in-95 duration-700 relative z-10">
@@ -120,10 +94,10 @@ export default function Layout({ children }) {
             {/* Global Utility Overlays */}
             <button
                 onClick={() => setIsAIOpen(true)}
-                className="fixed bottom-8 right-8 z-40 p-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all group scale-100 active:scale-95"
+                className="fixed bottom-8 right-8 z-40 p-4 rounded-none bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all group scale-100 active:scale-95"
                 title="Open AI Assistant"
             >
-                <div className="absolute inset-0 bg-white/20 animate-pulse rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-white/20 animate-pulse rounded-none opacity-0 group-hover:opacity-100 transition-opacity" />
                 <Bot size={24} className="relative z-10" />
             </button>
 
@@ -144,7 +118,10 @@ export default function Layout({ children }) {
                     animation: swing 3s ease-in-out infinite;
                     transform-origin: top center;
                 }
-                
+                @keyframes borderPulse {
+                    0%, 100% { opacity: 0.5; }
+                    50% { opacity: 0.9; }
+                }
                 /* Digital Scanline Effect */
                 .app-shell::after {
                     content: "";

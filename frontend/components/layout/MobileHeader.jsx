@@ -14,7 +14,7 @@ const MobileHeader = ({ unreadCount, onOpenMenu, isOpen, onOpenNotifications }) 
             <div className="flex items-center gap-2">
                 <button
                     onClick={onOpenNotifications}
-                    className="p-2.5 rounded-xl text-app-text-muted hover:text-primary transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="p-2.5 rounded-none text-app-text-muted hover:text-primary transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label="Notifications"
                 >
                     <Bell size={20} className={unreadCount > 0 ? "animate-swing" : ""} />
@@ -26,7 +26,7 @@ const MobileHeader = ({ unreadCount, onOpenMenu, isOpen, onOpenNotifications }) 
                 </button>
                 <button
                     onClick={onOpenMenu}
-                    className="p-2.5 rounded-xl text-app-text-muted hover:text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="p-2.5 rounded-none text-app-text-muted hover:text-primary transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label={isOpen ? 'Close menu' : 'Open menu'}
                 >
                     {isOpen ? <X size={20} /> : <Menu size={20} />}

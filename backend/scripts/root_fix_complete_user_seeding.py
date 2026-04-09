@@ -37,32 +37,33 @@ async def run_complete_seeding():
         # 2. Standard Workflow & Integration Accounts
         standard_accounts = [
             {"email": "admin@itsm.com", "full_name": "System Administrator", "role": "ADMIN", "position": "MANAGER", "department": "IT", "domain": "ADMINISTRATION", "persona": "SYSTEM_ADMIN"},
-            {"email": "it_manager@itsm.com", "full_name": "IT Manager", "role": "IT_MANAGEMENT", "position": "MANAGER", "department": "IT", "domain": "MANAGEMENT", "persona": "IT_OPERATIONS"},
-            {"email": "asset@test.com", "full_name": "Asset Manager", "role": "ASSET_MANAGER", "position": "TEAM_MEMBER", "department": "IT", "domain": "INVENTORY", "persona": "INVENTORY_CONTROL"},
-            {"email": "it@test.com", "full_name": "IT Staff", "role": "IT_MANAGEMENT", "position": "TEAM_MEMBER", "department": "IT", "domain": "SUPPORT", "persona": "IT_SUPPORT"},
-            {"email": "finance@test.com", "full_name": "firskey", "role": "FINANCE", "position": "TEAM_MEMBER", "department": "Operations", "domain": "FINANCE", "persona": "FINANCE_OPS"},
-            {"email": "pro@test.com", "full_name": "Finance Officer", "role": "FINANCE", "position": "TEAM_MEMBER", "department": "Operations", "domain": "FINANCE", "persona": "FINANCE_OPS"},
-            {"email": "procure@test.com", "full_name": "Mathew Crawley", "role": "PROCUREMENT", "position": "TEAM_MEMBER", "department": "Finance", "domain": "MANAGEMENT", "persona": "PROCUREMENT_OPS"},
+            {"email": "it_manager@itsm.com", "full_name": "IT Manager", "role": "MANAGER", "position": "MANAGER", "department": "IT", "domain": "MANAGEMENT", "persona": "IT_OPERATIONS"},
+            {"email": "asset@test.com", "full_name": "Asset Manager", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "IT", "domain": "INVENTORY", "persona": "INVENTORY_CONTROL"},
+            {"email": "it@test.com", "full_name": "IT Staff", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "IT", "domain": "SUPPORT", "persona": "IT_SUPPORT"},
+            {"email": "finance@test.com", "full_name": "firskey", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "Finance", "domain": "FINANCE", "persona": "FINANCE_OPS"},
+            {"email": "pro@test.com", "full_name": "Finance Officer", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "Finance", "domain": "FINANCE", "persona": "FINANCE_OPS"},
+            {"email": "procure@test.com", "full_name": "Mathew Crawley", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "Procurement", "domain": "MANAGEMENT", "persona": "PROCUREMENT_OPS"},
         ]
  
         # 3. Requested Test Accounts (134801 series and others)
         test_accounts = [
-            {"email": "admin_test_134801@company.com", "full_name": "Test IT Admin 134801", "role": "IT_MANAGEMENT", "position": "MANAGER", "department": "IT", "domain": "ADMINISTRATION", "persona": "IT_OPERATIONS"},
+            {"email": "admin_test_134801@company.com", "full_name": "Test IT Admin 134801", "role": "SUPPORT", "position": "MANAGER", "department": "IT", "domain": "ADMINISTRATION", "persona": "IT_OPERATIONS"},
             {"email": "manager_test_134801@company.com", "full_name": "Test Manager 134801", "role": "MANAGER", "position": "MANAGER", "department": "IT", "domain": "MANAGEMENT", "persona": "IT_GOVERNANCE"},
             {"email": "user_test_134801@company.com", "full_name": "Test User 134801", "role": "END_USER", "position": "TEAM_MEMBER", "department": "IT", "domain": "DEVELOPMENT", "persona": "PRODUCT_DEV"},
             {"email": "JohnathanPine@gmail.com", "full_name": "Johnathan Pine", "role": "MANAGER", "position": "MANAGER", "department": "Technology", "domain": "DATA_AI", "persona": "TECH_STRATEGY"},
-            {"email": "richardroper@gmail.com", "full_name": "Richard Roper", "role": "IT_MANAGEMENT", "position": "MANAGER", "department": "IT", "domain": "MANAGEMENT", "persona": "IT_OPERATIONS"},
+            {"email": "richardroper@gmail.com", "full_name": "Richard Roper", "role": "SUPPORT", "position": "MANAGER", "department": "IT", "domain": "MANAGEMENT", "persona": "IT_OPERATIONS"},
             {"email": "requester_FIXED@auto.com", "full_name": "Test END_USER 115636", "role": "END_USER", "position": "TEAM_MEMBER", "department": "IT", "domain": "DEVELOPMENT", "persona": "PRODUCT_DEV"},
             {"email": "manager_FIXED@auto.com", "full_name": "Test END_USER 115934", "role": "END_USER", "position": "TEAM_MEMBER", "department": "IT", "domain": "DEVELOPMENT", "persona": "PRODUCT_DEV"},
-            {"email": "finance_FIXED@auto.com", "full_name": "Test FINANCE 120042", "role": "FINANCE", "position": "TEAM_MEMBER", "department": "FINANCE", "domain": "FINANCE", "persona": "FINANCE_OPS"},
-            {"email": "it_admin_FIXED@auto.com", "full_name": "Test IT_MANAGEMENT 120009", "role": "IT_MANAGEMENT", "position": "TEAM_MEMBER", "department": "IT", "domain": "SECURITY", "persona": "IT_ENGINEERING"},
-            {"email": "inventory_FIXED@auto.com", "full_name": "Test ASSET_INVENTORY_MANAGER 120149", "role": "ASSET_MANAGER", "position": "TEAM_MEMBER", "department": "IT", "domain": "SECURITY", "persona": "INVENTORY_CONTROL"},
+            {"email": "finance_FIXED@auto.com", "full_name": "Test FINANCE 120042", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "Finance", "domain": "FINANCE", "persona": "FINANCE_OPS"},
+            {"email": "it_admin_FIXED@auto.com", "full_name": "Test IT_MANAGEMENT 120009", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "IT", "domain": "SECURITY", "persona": "IT_ENGINEERING"},
+            {"email": "inventory_FIXED@auto.com", "full_name": "Test ASSET_INVENTORY_MANAGER 120149", "role": "SUPPORT", "position": "TEAM_MEMBER", "department": "IT", "domain": "SECURITY", "persona": "INVENTORY_CONTROL"},
             # Sync with Verification Guides
             {"email": "employee@itsm.com", "full_name": "Rachel Zane", "role": "END_USER", "position": "Senior Developer", "department": "Technology", "domain": "DEVELOPMENT", "persona": "PRODUCT_DEV"},
-            {"email": "it_staff@itsm.com", "full_name": "Gretchen Bodinski", "role": "IT_SUPPORT", "position": "Support Engineer", "department": "Technology", "domain": "SECURITY", "persona": "IT_SUPPORT"},
-            {"email": "katrina.b@itsm.com", "full_name": "Katrina Bennett", "role": "IT_SUPPORT", "position": "IT Specialist", "department": "Technology", "domain": "SECURITY", "persona": "IT_ENGINEERING"},
+            {"email": "it_staff@itsm.com", "full_name": "Gretchen Bodinski", "role": "SUPPORT", "position": "Support Engineer", "department": "Technology", "domain": "SECURITY", "persona": "IT_SUPPORT"},
+            {"email": "katrina.b@itsm.com", "full_name": "Katrina Bennett", "role": "SUPPORT", "position": "IT Specialist", "department": "Technology", "domain": "SECURITY", "persona": "IT_ENGINEERING"},
             {"email": "endcloud@gmail.com", "full_name": "Test END_USER Cloud", "role": "END_USER", "position": "TEAM_MEMBER", "department": "Technology", "domain": "CLOUD", "persona": "CLOUD_INFRA"},
         ]
+
 
         all_users = enterprise_users + standard_accounts + test_accounts
         

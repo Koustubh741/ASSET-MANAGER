@@ -29,7 +29,7 @@ export default function QuickScanner({ isOpen, onClose }) {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-4 border-b border-app-border flex justify-between items-center bg-app-surface-soft">
                     <h2 className="text-lg font-bold text-app-text flex items-center gap-2">
                         <Scan size={20} className="text-indigo-400" />
@@ -51,7 +51,7 @@ export default function QuickScanner({ isOpen, onClose }) {
                                 type="text"
                                 value={serial}
                                 onChange={(e) => setSerial(e.target.value)}
-                                className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border rounded-lg p-4 text-app-text text-xl font-mono focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-700"
+                                className="w-full bg-slate-100 dark:bg-slate-950 border border-app-border rounded-none p-4 text-app-text text-xl font-mono focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-700"
                                 placeholder="Scan or type SN..."
                                 disabled={loading}
                             />
@@ -59,7 +59,7 @@ export default function QuickScanner({ isOpen, onClose }) {
                         <button
                             type="submit"
                             disabled={loading || !serial}
-                            className={`w-full py-4 rounded-lg font-bold flex items-center justify-center gap-2 transition-all ${loading || !serial
+                            className={`w-full py-4 rounded-none font-bold flex items-center justify-center gap-2 transition-all ${loading || !serial
                                     ? 'bg-slate-50 dark:bg-slate-800 text-app-text-muted cursor-not-allowed'
                                     : 'bg-indigo-600 hover:bg-indigo-500 text-app-text shadow-lg shadow-indigo-500/20'
                                 }`}
@@ -69,7 +69,7 @@ export default function QuickScanner({ isOpen, onClose }) {
                     </form>
 
                     {result && (
-                        <div className={`p-4 rounded-lg border animate-in slide-in-from-bottom-2 ${result.status === 'success'
+                        <div className={`p-4 rounded-none border animate-in slide-in-from-bottom-2 ${result.status === 'success'
                                 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                 : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
                             }`}>

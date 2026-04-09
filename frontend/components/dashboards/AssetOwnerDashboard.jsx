@@ -178,12 +178,12 @@ export default function AssetOwnerDashboard() {
                     </h3>
                     <div className="space-y-3">
                         {verificationPending.length === 0 ? (
-                            <div className="bg-app-surface-soft p-4 rounded-lg text-center text-app-text-muted text-sm border border-app-border">
+                            <div className="bg-app-surface-soft p-4 rounded-none text-center text-app-text-muted text-sm border border-app-border">
                                 No pending verifications
                             </div>
                         ) : (
                             verificationPending.map(item => (
-                                <div key={item.id} className="bg-app-surface-soft p-4 rounded-lg flex justify-between items-center hover:bg-slate-100 dark:hover:bg-app-surface border border-app-border transition-colors">
+                                <div key={item.id} className="bg-app-surface-soft p-4 rounded-none flex justify-between items-center hover:bg-slate-100 dark:hover:bg-app-surface border border-app-border transition-colors">
                                     <div>
                                         <p className="font-medium text-app-text">{item.name}</p>
                                         <p className="text-xs text-app-text-muted">Assigned: {item.assigned_date}</p>
@@ -262,7 +262,7 @@ export default function AssetOwnerDashboard() {
             {/* VIEW ALL ACTIVE ASSETS MODAL */}
             {viewAllModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-2xl w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
+                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
                         <div className="p-6 border-b border-app-border flex justify-between items-center">
                             <div>
                                 <h3 className="text-xl font-bold text-app-text">My Active Assets</h3>
@@ -270,7 +270,7 @@ export default function AssetOwnerDashboard() {
                             </div>
                             <button
                                 onClick={() => setViewAllModal(false)}
-                                className="text-app-text-muted hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors"
+                                className="text-app-text-muted hover:text-slate-900 dark:hover:text-white p-1 rounded-none hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -279,7 +279,7 @@ export default function AssetOwnerDashboard() {
                         <div className="p-6 overflow-y-auto">
                             <div className="grid gap-4">
                                 {activeAssets.map(asset => (
-                                    <div key={asset.id} className="bg-app-surface-soft border border-app-border rounded-xl p-4 hover:bg-slate-100 dark:hover:bg-app-surface transition-colors">
+                                    <div key={asset.id} className="bg-app-surface-soft border border-app-border rounded-none p-4 hover:bg-slate-100 dark:hover:bg-app-surface transition-colors">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
                                                 <h4 className="text-lg font-bold text-app-text mb-1">{asset.name}</h4>
@@ -300,7 +300,7 @@ export default function AssetOwnerDashboard() {
                                                     setViewAllModal(false);
                                                     handleReturnClick(asset);
                                                 }}
-                                                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-sm font-medium transition-colors"
+                                                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-none text-sm font-medium transition-colors"
                                             >
                                                 Return Asset
                                             </button>
@@ -322,12 +322,12 @@ export default function AssetOwnerDashboard() {
             {/* RETURN REASON MODAL */}
             {returnModal.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+                    <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="p-6 border-b border-app-border flex justify-between items-center">
                             <h3 className="text-xl font-bold text-app-text">Return Asset</h3>
                             <button
                                 onClick={() => setReturnModal({ open: false, asset: null })}
-                                className="text-app-text-muted hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors"
+                                className="text-app-text-muted hover:text-slate-900 dark:hover:text-white p-1 rounded-none hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface transition-colors"
                             >
                                 <X size={20} />
                             </button>
@@ -346,7 +346,7 @@ export default function AssetOwnerDashboard() {
                                 value={returnReason}
                                 onChange={(e) => setReturnReason(e.target.value)}
                                 placeholder="Please provide a reason for returning this asset..."
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-app-border rounded-lg px-4 py-3 text-app-text placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-app-border rounded-none px-4 py-3 text-app-text placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                                 rows="4"
                                 required
                             />
@@ -355,13 +355,13 @@ export default function AssetOwnerDashboard() {
                         <div className="p-6 border-t border-app-border flex gap-3 justify-end">
                             <button
                                 onClick={() => setReturnModal({ open: false, asset: null })}
-                                className="px-4 py-2 bg-slate-100 bg-app-surface hover:bg-white/20 text-app-text rounded-lg font-medium transition-colors"
+                                className="px-4 py-2 bg-slate-100 bg-app-surface hover:bg-white/20 text-app-text rounded-none font-medium transition-colors"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleReturnSubmit}
-                                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-app-text rounded-lg font-medium shadow-lg shadow-rose-500/10 transition-all"
+                                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-app-text rounded-none font-medium shadow-lg shadow-rose-500/10 transition-all"
                             >
                                 Submit Return Request
                             </button>

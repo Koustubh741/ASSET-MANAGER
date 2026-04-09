@@ -18,9 +18,10 @@ class TimelineService:
     async def log_event(
         self,
         db: AsyncSession,
-        asset_id: uuid.UUID,
+        entity_id: uuid.UUID,
         event_type: str,
         description: str,
+        entity_type: str = "Asset",
         performed_by_id: Optional[uuid.UUID] = None,
         performed_by_name: Optional[str] = "System",
         metadata: Optional[Dict[str, Any]] = None
@@ -28,13 +29,13 @@ class TimelineService:
         """
         Log a standardized lifecycle event.
         
-        event_type: CREATED, STATUS_CHANGE, ASSIGNMENT, MAINTENANCE, DISCOVERED, AUDIT
+        event_type: CREATED, STATUS_CHANGE, ASSIGNMENT, MAINTENANCE, DISCOVERED, AUDIT, RESOLVED, etc.
         """
         try:
             audit = AuditLog(
                 id=uuid.uuid4(),
-                entity_type="Asset",
-                entity_id=str(asset_id),
+                entity_type=entity_type,
+                entity_id=str(entity_id),
                 action=event_type,
                 performed_by=performed_by_id,
                 details={
@@ -47,8 +48,46 @@ class TimelineService:
             db.add(audit)
             return audit
         except Exception as e:
-            logger.error(f"Failed to log timeline event for asset {asset_id}: {e}")
+            logger.error(f"Failed to log timeline event for {entity_type} {entity_id}: {e}")
             raise
+
+    async def log_ticket_event(
+        self,
+        db: AsyncSession,
+        ticket: Any, # Ticket model instance
+        action: str,
+        comment: str,
+        user: Any, # User model instance
+        metadata: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Dual logging: 
+        1. Updates Ticket.timeline (JSON column) for real-time UI display.
+        2. Updates system.audit_logs (Formal table) for compliance.
+        """
+        # 1. Update Ticket Timeline (JSON)
+        tm = list(ticket.timeline) if ticket.timeline else []
+        tm.append({
+            "action": action,
+            "comment": comment,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "byRole": user.role if hasattr(user, 'role') else "SYSTEM",
+            "byUser": user.full_name if hasattr(user, 'full_name') else "System",
+            "metadata": metadata or {}
+        })
+        ticket.timeline = tm
+        
+        # 2. Record formal Audit Log
+        await self.log_event(
+            db,
+            entity_id=ticket.id,
+            entity_type="Ticket",
+            event_type=action,
+            description=comment,
+            performed_by_id=user.id if hasattr(user, 'id') else None,
+            performed_by_name=user.full_name if hasattr(user, 'full_name') else "System",
+            metadata=metadata
+        )
 
     async def get_asset_timeline(self, db: AsyncSession, asset_id: uuid.UUID) -> Dict[str, Any]:
         """

@@ -45,7 +45,7 @@ const RenderStructuredData = ({ data, onValueChange, editing = false }) => {
                 const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
                 return (
-                    <div key={key} className={`${isLongText ? 'col-span-full' : ''} group relative px-4 py-3 rounded-xl bg-white dark:bg-white/[0.01] dark:bg-white/[0.01] border border-slate-200 dark:border-white/20 hover:bg-slate-50 dark:hover:bg-slate-50 dark:bg-white/[0.03] transition-all duration-300 shadow-sm hover:shadow-md`}>
+                    <div key={key} className={`${isLongText ? 'col-span-full' : ''} group relative px-4 py-3 rounded-none bg-white dark:bg-white/[0.01] dark:bg-white/[0.01] border border-slate-200 dark:border-white/20 hover:bg-slate-50 dark:hover:bg-slate-50 dark:bg-white/[0.03] transition-all duration-300 shadow-sm hover:shadow-md`}>
                         <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-center gap-2">
                                 {getIcon(key)}
@@ -57,7 +57,7 @@ const RenderStructuredData = ({ data, onValueChange, editing = false }) => {
                         {editing && !isConfidence ? (
                             isLongText ? (
                                 <textarea
-                                    className="mt-2 w-full text-sm text-slate-900 dark:text-slate-200 leading-relaxed font-sans bg-slate-50 dark:bg-black/60 p-4 rounded-xl border border-slate-200 dark:border-white/30 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm dark:shadow-inner"
+                                    className="mt-2 w-full text-sm text-slate-900 dark:text-slate-200 leading-relaxed font-sans bg-slate-50 dark:bg-black/60 p-4 rounded-none border border-slate-200 dark:border-white/30 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm dark:shadow-inner"
                                     rows={4}
                                     value={value || ''}
                                     onChange={(e) => onValueChange(key, e.target.value)}
@@ -65,14 +65,14 @@ const RenderStructuredData = ({ data, onValueChange, editing = false }) => {
                             ) : (
                                 <input
                                     type={typeof value === 'number' ? 'number' : 'text'}
-                                    className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/30 rounded-xl px-3 py-2 text-base font-bold text-app-text focus:border-indigo-500 outline-none transition-all shadow-sm dark:shadow-inner"
+                                    className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-white/30 rounded-none px-3 py-2 text-base font-bold text-app-text focus:border-indigo-500 outline-none transition-all shadow-sm dark:shadow-inner"
                                     value={value || ''}
                                     onChange={(e) => onValueChange(key, typeof value === 'number' ? parseFloat(e.target.value) : e.target.value)}
                                 />
                             )
                         ) : (
                             isLongText ? (
-                                <div className="mt-2 text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans bg-slate-50/50 dark:bg-black/40 p-4 rounded-xl border border-slate-100 dark:border-white/15 whitespace-pre-wrap shadow-sm dark:shadow-inner italic">
+                                <div className="mt-2 text-sm text-slate-800 dark:text-slate-200 leading-relaxed font-sans bg-slate-50/50 dark:bg-black/40 p-4 rounded-none border border-slate-100 dark:border-white/15 whitespace-pre-wrap shadow-sm dark:shadow-inner italic">
                                     {value}
                                 </div>
                             ) : (
@@ -83,7 +83,7 @@ const RenderStructuredData = ({ data, onValueChange, editing = false }) => {
                                 </div>
                             )
                         )}
-                        <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 bg-gradient-to-br from-indigo-500/5 to-transparent transition-opacity pointer-events-none" />
+                        <div className="absolute inset-0 rounded-none opacity-0 group-hover:opacity-100 bg-gradient-to-br from-indigo-500/5 to-transparent transition-opacity pointer-events-none" />
                     </div>
                 );
             })}
@@ -244,13 +244,13 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                     <div className="flex flex-wrap justify-center gap-4 relative z-10">
                         <button
                             onClick={() => window.location.href = '/tickets/new'}
-                            className="flex items-center gap-3 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-6 py-3 rounded-2xl border border-indigo-200 dark:border-indigo-500/30 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/5"
+                            className="flex items-center gap-3 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 px-6 py-3 rounded-none border border-indigo-200 dark:border-indigo-500/30 transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-500/5"
                         >
                             <LifeBuoy size={18} /> Support
                         </button>
                         <button
                             onClick={exportFinanceIntel}
-                            className="flex items-center gap-3 bg-white dark:bg-slate-900 dark:bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-100 text-app-text dark:text-slate-900 px-8 py-3 rounded-2xl border border-slate-700 dark:border-white transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-indigo-500/10"
+                            className="flex items-center gap-3 bg-white dark:bg-slate-900 dark:bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-100 text-app-text dark:text-slate-900 px-8 py-3 rounded-none border border-slate-700 dark:border-white transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest shadow-2xl shadow-indigo-500/10"
                         >
                             <Download size={18} /> Export Intel
                         </button>
@@ -272,13 +272,13 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                     <div className="flex gap-4">
                         <button
                             onClick={() => setActiveView('dashboard')}
-                            className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-white bg-app-surface-soft hover:bg-slate-50 dark:hover:bg-app-surface border border-app-border text-app-text text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                            className="flex items-center gap-3 px-8 py-3 rounded-none bg-white bg-app-surface-soft hover:bg-slate-50 dark:hover:bg-app-surface border border-app-border text-app-text text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
                         >
                             <LayoutDashboard size={18} className="text-indigo-500" /> Governance Overview
                         </button>
                         <button
                             onClick={exportFinanceIntel}
-                            className="flex items-center gap-3 px-8 py-3 rounded-2xl bg-white bg-app-surface-soft hover:bg-slate-50 dark:hover:bg-app-surface border border-app-border text-app-text text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                            className="flex items-center gap-3 px-8 py-3 rounded-none bg-white bg-app-surface-soft hover:bg-slate-50 dark:hover:bg-app-surface border border-app-border text-app-text text-[10px] font-black uppercase tracking-widest shadow-xl transition-all active:scale-95"
                         >
                             <Download size={18} className="text-emerald-500" /> Export Archive
                         </button>
@@ -305,7 +305,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-500 shadow-sm dark:shadow-inner">
+                                <div className="p-4 rounded-none bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-500 shadow-sm dark:shadow-inner">
                                     <DollarSign size={24} />
                                 </div>
                                 <h3 className="text-app-text-muted text-[10px] font-black uppercase tracking-[0.2em]">Asset Book Value</h3>
@@ -314,7 +314,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                         </div>
                         <p className="text-xl font-black text-app-text tracking-tighter">₹{(totalBookValue / 100000).toFixed(1)}<span className="text-xl text-app-text-muted ml-1 font-bold">Lacs</span></p>
                         {financialSummary && (
-                            <div className="flex items-center gap-2 mt-4 bg-emerald-500/5 dark:bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/10 w-fit">
+                            <div className="flex items-center gap-2 mt-4 bg-emerald-500/5 dark:bg-emerald-500/10 p-2 rounded-none border border-emerald-500/10 w-fit">
                                 <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">Growth +12.4%</span>
                             </div>
                         )}
@@ -324,7 +324,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-purple-500 to-indigo-400"></div>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-4 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-500 shadow-sm dark:shadow-inner">
+                                <div className="p-4 rounded-none bg-purple-500/10 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-500 shadow-sm dark:shadow-inner">
                                     <TrendingDown size={24} />
                                 </div>
                                 <h3 className="text-app-text-muted text-[10px] font-black uppercase tracking-[0.2em]">YTD Depreciation</h3>
@@ -339,7 +339,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-500 to-orange-400"></div>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-4 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-500 shadow-sm dark:shadow-inner">
+                                <div className="p-4 rounded-none bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-500 shadow-sm dark:shadow-inner">
                                     <PieChart size={24} />
                                 </div>
                                 <h3 className="text-app-text-muted text-[10px] font-black uppercase tracking-[0.2em]">Budget Queue</h3>
@@ -356,7 +356,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
 
                         <button
                             onClick={() => setActiveView('budget-queue')}
-                            className="mt-6 w-full text-[10px] font-black uppercase tracking-widest px-6 py-4 rounded-2xl bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-900 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/10"
+                            className="mt-6 w-full text-[10px] font-black uppercase tracking-widest px-6 py-4 rounded-none bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-900 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center gap-3 shadow-xl shadow-indigo-500/10"
                         >
                             <Activity size={18} className="text-indigo-400" />
                             Open Budget Registry
@@ -376,12 +376,12 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                             </h3>
                             <p className="text-[10px] text-app-text-muted font-bold uppercase tracking-[0.3em] mt-2 italic">PO Telemetry vs Budgetary Requests Integrity Check</p>
                         </div>
-                        <div className="px-5 py-2.5 bg-app-surface-soft rounded-2xl border border-app-border text-[10px] font-black text-app-text-muted uppercase tracking-widest shadow-sm dark:shadow-inner">
+                        <div className="px-5 py-2.5 bg-app-surface-soft rounded-none border border-app-border text-[10px] font-black text-app-text-muted uppercase tracking-widest shadow-sm dark:shadow-inner">
                             {budgetApprovals.length} System Nodes
                         </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-3xl border border-app-border bg-white dark:bg-slate-950/40 shadow-2xl">
+                    <div className="overflow-hidden rounded-none border border-app-border bg-white dark:bg-slate-950/40 shadow-2xl">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -402,7 +402,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                 <td className="p-6 text-xs text-indigo-500 dark:text-indigo-400 font-black font-mono tracking-tighter uppercase px-6">{req.id}</td>
                                                 <td className="p-6">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-2xl bg-app-surface-soft flex items-center justify-center text-app-text-muted group-hover:text-indigo-500 group-hover:scale-110 transition-all shadow-sm dark:shadow-inner">
+                                                        <div className="w-10 h-10 rounded-none bg-app-surface-soft flex items-center justify-center text-app-text-muted group-hover:text-indigo-500 group-hover:scale-110 transition-all shadow-sm dark:shadow-inner">
                                                             <User size={16} />
                                                         </div>
                                                         <span className="text-sm font-black text-app-text uppercase tracking-tight">{po?.vendor_name || 'PENDING'}</span>
@@ -425,7 +425,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                         <details className="group/details">
                                                             <summary className="cursor-pointer text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-all list-none flex items-center justify-end gap-3 uppercase tracking-widest">
                                                                 Data Stack
-                                                                <div className="w-8 h-8 rounded-xl bg-indigo-500/10 flex items-center justify-center group-open/details:rotate-90 transition-transform shadow-sm dark:shadow-inner">
+                                                                <div className="w-8 h-8 rounded-none bg-indigo-500/10 flex items-center justify-center group-open/details:rotate-90 transition-transform shadow-sm dark:shadow-inner">
                                                                     <Activity size={14} />
                                                                 </div>
                                                             </summary>
@@ -458,11 +458,11 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                 <div className="space-y-6">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-2xl font-black text-app-text flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 shadow-lg">
+                            <div className="w-12 h-12 rounded-none bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 shadow-lg">
                                 <DollarSign size={26} className="text-emerald-400" />
                             </div>
                             Finance Review Queue
-                            <span className="text-[11px] font-black bg-app-surface px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-700 border border-app-border-soft tracking-widest uppercase shadow-md">
+                            <span className="text-[11px] font-black bg-app-surface px-3 py-1.5 rounded-none text-slate-700 dark:text-slate-700 border border-app-border-soft tracking-widest uppercase shadow-md">
                                 {budgetApprovals.length} pending
                             </span>
                         </h3>
@@ -488,7 +488,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                     <div>
                                                         <h4 className="text-2xl font-black text-app-text tracking-tighter leading-none mb-3 uppercase">{req.assetType}</h4>
                                                         <div className="flex flex-wrap items-center gap-4">
-                                                            <span className="text-[11px] font-black font-mono text-app-text-muted px-3 py-1 bg-slate-100 bg-app-surface rounded-lg border border-app-border uppercase tracking-widest shadow-sm">ID: {req.id}</span>
+                                                            <span className="text-[11px] font-black font-mono text-app-text-muted px-3 py-1 bg-slate-100 bg-app-surface rounded-none border border-app-border uppercase tracking-widest shadow-sm">ID: {req.id}</span>
                                                             <div className="flex items-center gap-2.5 text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] bg-emerald-500/5 dark:bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/10">
                                                                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.8)]"></div>
                                                                 {req.procurementStage}
@@ -529,7 +529,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                     <div className="space-y-10">
                                                         <div className="flex items-center justify-between border-b border-app-border pb-6">
                                                             <div className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-xl bg-indigo-500 text-app-text flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                                                                <div className="w-8 h-8 rounded-none bg-indigo-500 text-app-text flex items-center justify-center shadow-lg shadow-indigo-500/30">
                                                                     <Activity size={16} />
                                                                 </div>
                                                                 Extraction Telemetry
@@ -537,13 +537,13 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                             <div className="flex gap-3">
                                                                 <button
                                                                     onClick={() => window.open(apiClient.getPOViewUrl(req.id), '_blank')}
-                                                                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl bg-white bg-app-surface-soft text-app-text-muted border border-app-border hover:border-indigo-500/50 transition-all shadow-sm"
+                                                                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-none bg-white bg-app-surface-soft text-app-text-muted border border-app-border hover:border-indigo-500/50 transition-all shadow-sm"
                                                                 >
                                                                     <Eye size={14} /> View
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleEditToggle(req.id, po)}
-                                                                    className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all shadow-md ${editingPos[req.id] ? 'bg-rose-500 text-app-text border-rose-600' : 'bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-900 border-transparent'}`}
+                                                                    className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-none border transition-all shadow-md ${editingPos[req.id] ? 'bg-rose-500 text-app-text border-rose-600' : 'bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-900 border-transparent'}`}
                                                                 >
                                                                     {editingPos[req.id] ? 'Cancel Edit' : 'Modify'}
                                                                 </button>
@@ -551,12 +551,12 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                         </div>
 
                                                         <div className="grid grid-cols-2 gap-6">
-                                                            <div className="bg-white dark:bg-white/[0.03] p-5 rounded-3xl border border-slate-100 border-app-border shadow-sm">
+                                                            <div className="bg-white dark:bg-white/[0.03] p-5 rounded-none border border-slate-100 border-app-border shadow-sm">
                                                                 <div className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-2">Primary Vendor</div>
                                                                 {editingPos[req.id] ? (
                                                                     <input
                                                                         type="text"
-                                                                        className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-black text-app-text outline-none"
+                                                                        className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-700 rounded-none px-3 py-2 text-sm font-black text-app-text outline-none"
                                                                         value={editData[req.id]?.vendor_name || ''}
                                                                         onChange={(e) => setEditData(prev => ({
                                                                             ...prev,
@@ -568,12 +568,12 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                                 )}
                                                             </div>
 
-                                                            <div className="bg-white dark:bg-white/[0.03] p-5 rounded-3xl border border-slate-100 border-app-border shadow-sm">
+                                                            <div className="bg-white dark:bg-white/[0.03] p-5 rounded-none border border-slate-100 border-app-border shadow-sm">
                                                                 <div className="text-[10px] font-black text-app-text-muted uppercase tracking-widest mb-2">Final Valuation</div>
                                                                 {editingPos[req.id] ? (
                                                                     <input
                                                                         type="number"
-                                                                        className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-black text-app-text outline-none"
+                                                                        className="w-full bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-700 rounded-none px-3 py-2 text-sm font-black text-app-text outline-none"
                                                                         value={editData[req.id]?.total_cost || ''}
                                                                         onChange={(e) => setEditData(prev => ({
                                                                             ...prev,
@@ -615,14 +615,14 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                                 setExpandedPoLogs(prev => ({ ...prev, [req.id]: isOpening }));
                                                                 if (isOpening && !editingPos[req.id]) handleEditToggle(req.id, po);
                                                             }}
-                                                            className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4 ${expandedPoLogs[req.id] ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20' : 'bg-slate-100 bg-app-surface text-app-text-muted border border-app-border hover:bg-slate-200'}`}
+                                                            className={`w-full py-4 rounded-none text-[10px] font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4 ${expandedPoLogs[req.id] ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20' : 'bg-slate-100 bg-app-surface text-app-text-muted border border-app-border hover:bg-slate-200'}`}
                                                         >
                                                             {expandedPoLogs[req.id] ? 'COLLAPSE DIAGNOSTICS' : 'OPEN TELEMETRY TRACE'}
                                                         </button>
                                                     </div>
                                                 ) : (
                                                     <div className="flex-1 flex flex-col items-center justify-center text-center py-10">
-                                                        <div className="w-16 h-16 rounded-3xl bg-app-surface-soft flex items-center justify-center mb-4 border border-app-border shadow-sm dark:shadow-inner">
+                                                        <div className="w-16 h-16 rounded-none bg-app-surface-soft flex items-center justify-center mb-4 border border-app-border shadow-sm dark:shadow-inner">
                                                             <XCircle size={32} className="text-app-text-muted" />
                                                         </div>
                                                         <p className="text-[10px] font-black uppercase tracking-widest text-app-text-muted dark:text-slate-600">Purchase Document missing from stack</p>
@@ -633,7 +633,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                     {editingPos[req.id] ? (
                                                         <button
                                                             onClick={() => handleSavePO(req.id, po.id)}
-                                                            className="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-app-text font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/30 transition-all active:scale-95"
+                                                            className="w-full py-4 rounded-none bg-indigo-600 hover:bg-indigo-500 text-app-text font-black text-[10px] uppercase tracking-[0.3em] shadow-xl shadow-indigo-500/30 transition-all active:scale-95"
                                                         >
                                                             Sync Audit Metadata
                                                         </button>
@@ -644,13 +644,13 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                                                                     const reason = prompt("State reason for budgetary escalation:");
                                                                     if (reason) financeReject(req.id, reason, "Finance Manager");
                                                                 }}
-                                                                className="flex-1 py-4 rounded-2xl bg-white bg-app-surface-soft hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-app-border transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 shadow-sm"
+                                                                className="flex-1 py-4 rounded-none bg-white bg-app-surface-soft hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-app-border transition-all font-black text-[10px] uppercase tracking-widest active:scale-95 shadow-sm"
                                                             >
                                                                 Escalate
                                                             </button>
                                                             <button
                                                                 onClick={() => financeApprove(req.id, "Finance Manager")}
-                                                                className="flex-[2] py-4 rounded-2xl bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-900 shadow-2xl hover:bg-slate-100 dark:bg-slate-800 transition-all font-black text-[10px] uppercase tracking-[0.3em] active:scale-95 flex items-center justify-center gap-3"
+                                                                className="flex-[2] py-4 rounded-none bg-white dark:bg-slate-900 dark:bg-white text-app-text dark:text-slate-900 shadow-2xl hover:bg-slate-100 dark:bg-slate-800 transition-all font-black text-[10px] uppercase tracking-[0.3em] active:scale-95 flex items-center justify-center gap-3"
                                                             >
                                                                 Release Funds <CheckCircle size={18} className="text-emerald-500" />
                                                             </button>
@@ -688,7 +688,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                             <h3 className="text-2xl font-black text-app-text tracking-tighter">Fiscal Velocity Analysis</h3>
                             <p className="text-[10px] text-app-text-muted font-bold uppercase tracking-[0.3em] mt-1 italic">Rolling 6-Month Expenditure Pattern</p>
                         </div>
-                        <div className="flex items-center gap-2 text-indigo-500 bg-indigo-500/5 px-4 py-2 rounded-xl border border-indigo-500/10 text-[10px] font-black uppercase tracking-widest">
+                        <div className="flex items-center gap-2 text-indigo-500 bg-indigo-500/5 px-4 py-2 rounded-none border border-indigo-500/10 text-[10px] font-black uppercase tracking-widest">
                             <Activity size={14} /> Systems Online
                         </div>
                     </div>

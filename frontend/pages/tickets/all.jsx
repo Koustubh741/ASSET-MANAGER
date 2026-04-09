@@ -18,7 +18,8 @@ export default function AllTicketsPage() {
     useEffect(() => {
         const loadTickets = async () => {
             try {
-                const apiTickets = await apiClient.getTickets();
+                const ticketResponse = await apiClient.getTickets();
+                const apiTickets = ticketResponse.data || [];
 
                 // Map API tickets to frontend format
                 const mappedTickets = apiTickets.map(t => ({
@@ -46,7 +47,7 @@ export default function AllTicketsPage() {
         <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-app-text">
             <div className="max-w-7xl mx-auto space-y-8">
                 <div className="flex items-center space-x-4">
-                    <button onClick={() => router.back()} className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <button onClick={() => router.back()} className="p-2 rounded-none hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                         <ArrowLeft size={24} />
                     </button>
 
@@ -55,7 +56,7 @@ export default function AllTicketsPage() {
                     </h1>
                 </div>
 
-                <div className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border">
+                <div className="glass-panel p-6 rounded-none bg-app-surface-soft border border-app-border">
                     <table className="w-full text-left text-sm">
                         <thead className="text-app-text-muted uppercase font-medium text-xs border-b border-app-border">
                             <tr>

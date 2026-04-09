@@ -145,7 +145,7 @@ const AssetRequestsList = () => {
                                         </div>
                                         <Link
                                             href="/"
-                                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 hover:brightness-110 active:scale-95 text-app-text text-sm font-semibold rounded-xl transition-all duration-200"
+                                            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 hover:brightness-110 active:scale-95 text-app-text text-sm font-semibold rounded-none transition-all duration-200"
                                         >
                                             <Plus size={18} />
                                             Request an asset
@@ -195,7 +195,7 @@ const AssetRequestsList = () => {
                                                 <button
                                                     type="button"
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRow(req.id ?? req.request_id); }}
-                                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:text-slate-900 dark:hover:text-white text-app-text hover:bg-indigo-600 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-400 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-offset-slate-100 min-h-[44px] cursor-pointer"
+                                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:text-slate-900 dark:hover:text-white text-app-text hover:bg-indigo-600 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-400 rounded-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-offset-slate-100 min-h-[44px] cursor-pointer"
                                                     aria-label="View details"
                                                     title="View details"
                                                 >
@@ -208,7 +208,7 @@ const AssetRequestsList = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleManagerAction(req); }}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-app-text hover:bg-indigo-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200"
+                                                                className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-app-text hover:bg-indigo-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200"
                                                             >
                                                                 Review
                                                             </button>
@@ -217,7 +217,7 @@ const AssetRequestsList = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleITAction(req); }}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-app-text hover:bg-emerald-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200"
+                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-app-text hover:bg-emerald-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200"
                                                             >
                                                                 IT Review
                                                             </button>
@@ -226,7 +226,7 @@ const AssetRequestsList = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleComplianceCheck(req); }}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-app-text hover:bg-blue-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200"
+                                                                className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-app-text hover:bg-blue-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200"
                                                             >
                                                                 Scan
                                                             </button>
@@ -235,7 +235,7 @@ const AssetRequestsList = () => {
                                                             <Link
                                                                 href="/dashboard/procurement-manager"
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-amber-600 text-app-text hover:bg-amber-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200 flex items-center"
+                                                                className="px-3 py-1.5 text-xs font-bold bg-amber-600 text-app-text hover:bg-amber-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200 flex items-center"
                                                             >
                                                                 Action Required
                                                             </Link>
@@ -244,7 +244,7 @@ const AssetRequestsList = () => {
                                                             <Link
                                                                 href="/dashboard/finance"
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-app-text hover:bg-emerald-700 hover:brightness-110 active:scale-95 rounded-lg shadow-sm transition-all duration-200 flex items-center"
+                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-app-text hover:bg-emerald-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200 flex items-center"
                                                             >
                                                                 Action Required
                                                             </Link>
@@ -254,7 +254,7 @@ const AssetRequestsList = () => {
                                                 <button
                                                     type="button"
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRow(req.id ?? req.request_id); }}
-                                                    className="p-1.5 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-200 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-offset-slate-100 rounded"
+                                                    className="p-1.5 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-200 rounded-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-offset-slate-100 rounded"
                                                     aria-label="Toggle details"
                                                     title="Toggle details"
                                                 >
@@ -281,7 +281,7 @@ const AssetRequestsList = () => {
                                                                 <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                                                                 Request Context
                                                             </h5>
-                                                            <div className="bg-app-surface-soft p-4 rounded-xl border border-app-border space-y-3">
+                                                            <div className="bg-app-surface-soft p-4 rounded-none border border-app-border space-y-3">
                                                                 <div className="flex justify-between text-xs">
                                                                     <span className="text-app-text-muted text-app-text-muted">Justification:</span>
                                                                     <span className="font-medium text-slate-900 dark:text-slate-200">{req.justification || 'N/A'}</span>
@@ -304,7 +304,7 @@ const AssetRequestsList = () => {
                                                                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                                                 Audit Trail
                                                             </h5>
-                                                            <div className="bg-app-surface-soft p-4 rounded-xl border border-app-border space-y-3">
+                                                            <div className="bg-app-surface-soft p-4 rounded-none border border-app-border space-y-3">
                                                                 {req.manager_approvals?.length > 0 ? (
                                                                     req.manager_approvals.map((log, i) => (
                                                                         <div key={i} className="flex gap-3 text-xs">
@@ -350,7 +350,7 @@ const AssetRequestsList = () => {
                         <FileText className="w-10 h-10 text-app-text-muted mx-auto mb-3" />
                         <p className="text-app-text-muted text-app-text-muted font-medium">No asset requests yet</p>
                         <p className="text-sm text-app-text-muted mt-1">Request an asset from your dashboard to get started.</p>
-                        <Link href="/" className="inline-flex items-center gap-2 mt-4 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-app-text text-sm font-semibold rounded-xl min-h-[44px] items-center justify-center">
+                        <Link href="/" className="inline-flex items-center gap-2 mt-4 px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-app-text text-sm font-semibold rounded-none min-h-[44px] items-center justify-center">
                             <Plus size={18} /> Request an asset
                         </Link>
                     </div>
@@ -378,33 +378,33 @@ const AssetRequestsList = () => {
                                 <button
                                     type="button"
                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRow(req.id ?? req.request_id); }}
-                                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:text-slate-900 dark:hover:text-white text-app-text hover:bg-indigo-600 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-400 rounded-lg min-h-[44px] cursor-pointer"
+                                    className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:text-slate-900 dark:hover:text-white text-app-text hover:bg-indigo-600 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-400 rounded-none min-h-[44px] cursor-pointer"
                                     aria-label="View details"
                                 >
                                     <Eye className="w-4 h-4" /> View details
                                 </button>
                                 {canAct(req) && isManagerial && (
-                                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleManagerAction(req); }} className="px-3 py-2.5 text-xs font-bold bg-indigo-600 text-app-text rounded-lg min-h-[44px]">
+                                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleManagerAction(req); }} className="px-3 py-2.5 text-xs font-bold bg-indigo-600 text-app-text rounded-none min-h-[44px]">
                                         Review
                                     </button>
                                 )}
                                 {canAct(req) && isITStaff && !isManagerial && req.status === 'MANAGER_APPROVED' && (
-                                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleITAction(req); }} className="px-3 py-2.5 text-xs font-bold bg-emerald-600 text-app-text rounded-lg min-h-[44px]">
+                                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleITAction(req); }} className="px-3 py-2.5 text-xs font-bold bg-emerald-600 text-app-text rounded-none min-h-[44px]">
                                         IT Review
                                     </button>
                                 )}
                                 {canAct(req) && isITStaff && !isManagerial && req.status === 'BYOD_COMPLIANCE_CHECK' && (
-                                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleComplianceCheck(req); }} className="px-3 py-2.5 text-xs font-bold bg-blue-600 text-app-text rounded-lg min-h-[44px]">
+                                    <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleComplianceCheck(req); }} className="px-3 py-2.5 text-xs font-bold bg-blue-600 text-app-text rounded-none min-h-[44px]">
                                         Scan
                                     </button>
                                 )}
                                 {canAct(req) && isProcurementStaff && req.status === 'PROCUREMENT_REQUIRED' && (
-                                    <Link href="/dashboard/procurement-manager" onClick={(e) => e.stopPropagation()} className="px-3 py-2.5 text-xs font-bold bg-amber-600 text-app-text rounded-lg min-h-[44px] flex items-center">
+                                    <Link href="/dashboard/procurement-manager" onClick={(e) => e.stopPropagation()} className="px-3 py-2.5 text-xs font-bold bg-amber-600 text-app-text rounded-none min-h-[44px] flex items-center">
                                         Action Required
                                     </Link>
                                 )}
                                 {canAct(req) && isFinanceStaff && req.status === 'PO_VALIDATED' && (
-                                    <Link href="/dashboard/finance" onClick={(e) => e.stopPropagation()} className="px-3 py-2.5 text-xs font-bold bg-emerald-600 text-app-text rounded-lg min-h-[44px] flex items-center">
+                                    <Link href="/dashboard/finance" onClick={(e) => e.stopPropagation()} className="px-3 py-2.5 text-xs font-bold bg-emerald-600 text-app-text rounded-none min-h-[44px] flex items-center">
                                         Action Required
                                     </Link>
                                 )}

@@ -8,14 +8,14 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.database import get_db
-from app.models.port_policies import (
+from ..database.database import get_db
+from ..models.port_policies import (
     PortPolicy,
     PolicyTarget,
     PortPolicyEnforcementState,
 )
-from app.models.models import AuditLog
-from app.schemas.port_policy_schema import (
+from ..models.models import AuditLog
+from ..schemas.port_policy_schema import (
     PortPolicyCreate,
     PortPolicyUpdate,
     PortPolicyResponse,
@@ -24,9 +24,9 @@ from app.schemas.port_policy_schema import (
     AgentPortPolicyDesiredResponse,
     AgentPortPolicyReport,
 )
-from app.services import port_policy_service
-from app.routers.auth import get_current_user, check_MANAGER, check_IT_MANAGEMENT
-from app.routers.collect import verify_agent_token
+from ..services import port_policy_service
+from .auth import get_current_user, check_MANAGER, check_IT_MANAGEMENT
+from .collect import verify_agent_token
 
 
 router = APIRouter(prefix="", tags=["port-policies"])

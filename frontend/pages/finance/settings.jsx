@@ -31,63 +31,63 @@ export default function FinanceSettingsPage() {
                     Manager / account information
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <User size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Name</p>
                             <p className="text-sm font-medium text-app-text">{user?.name ?? '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <Mail size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Email</p>
                             <p className="text-sm font-medium text-app-text">{user?.email ?? '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <Briefcase size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Role</p>
                             <p className="text-sm font-medium text-app-text">{currentRole?.label ?? '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <Briefcase size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Position</p>
                             <p className="text-sm font-medium text-app-text">{user?.position ?? '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <Building2 size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Department</p>
                             <p className="text-sm font-medium text-app-text">{user?.department ?? '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <Building2 size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Domain / team</p>
                             <p className="text-sm font-medium text-app-text">{user?.domain || user?.department || '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <MapPin size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Location</p>
                             <p className="text-sm font-medium text-app-text">{user?.location ?? '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <Building2 size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Company</p>
                             <p className="text-sm font-medium text-app-text">{user?.company ?? '—'}</p>
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="flex items-start gap-3 p-3 rounded-none bg-app-surface-soft border border-app-border">
                         <Calendar size={18} className="text-app-text-muted mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-app-text-muted uppercase tracking-wider">Member since</p>

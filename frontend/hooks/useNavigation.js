@@ -10,6 +10,7 @@ export const useNavigation = () => {
     const router = useRouter();
     const { 
         currentRole, 
+        user,
         isAdmin, 
         isITStaff, 
         isAssetStaff, 
@@ -20,7 +21,7 @@ export const useNavigation = () => {
     } = useRole();
 
     const dashboardPath = useMemo(() => 
-        ROLE_DASHBOARD_MAP[currentRole?.slug] || '/dashboard/end-user'
+        ROLE_DASHBOARD_MAP[currentRole?.slug] || '/'
     , [currentRole]);
 
     const filteredNavItems = useMemo(() => {
@@ -33,18 +34,28 @@ export const useNavigation = () => {
                 if (item.label === 'Procurement') return { ...item, href: '/dashboard/system-admin/procurement' };
                 if (item.label === 'Finance') return { ...item, href: '/dashboard/system-admin/finance' };
             }
+
+            // Support/Manager: "Unit Command Hub" routes directly to their specific department portal
+            if (item.label === 'Unit Command Hub' && !isAdmin) {
+                const deptSlug = user?.dept_obj?.slug || (user?.department ? user.department.toLowerCase().replace(/\s+/g, '_') : null);
+                if (deptSlug) {
+                    return { ...item, href: `/support/${deptSlug}` };
+                }
+            }
+            
             return item;
         });
 
         if (isAdmin) return items;
 
         return items.filter(item => {
-            const basicItems = ['Dashboard', 'Assets', 'Software', 'Support & Tickets'];
+            const basicItems = ['Dashboard', 'Assets', 'Software', 'Support & Tickets', 'Unit Command Hub'];
             if (basicItems.includes(item.label)) {
                 if (item.label === 'Dashboard' && (currentRole?.slug === 'CEO' || currentRole?.slug === 'CFO')) return false;
                 return true;
             }
 
+            if (item.label === 'Support Queue' && isManagerial) return true;
             if (item.label === 'Strategic Hub' && isManagerial) return true;
             if (item.label === 'Patch Management' && isITStaff) return true;
 

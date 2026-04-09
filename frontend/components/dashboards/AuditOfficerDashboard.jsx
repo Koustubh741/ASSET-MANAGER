@@ -122,21 +122,21 @@ export default function AuditOfficerDashboard() {
                             <div className="glass-card p-6 flex items-center justify-center relative">
                                 <button
                                     onClick={() => setReportModalOpen(!reportModalOpen)}
-                                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-app-text px-4 py-3 rounded-xl w-full justify-center transition-all shadow-lg shadow-indigo-500/20"
+                                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-app-text px-4 py-3 rounded-none w-full justify-center transition-all shadow-lg shadow-indigo-500/20"
                                 >
                                     <FileCheck size={20} />
                                     Generate Report
                                 </button>
                                 {reportModalOpen && (
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-50 dark:bg-slate-800 border border-app-border rounded-xl shadow-2xl p-2 z-20 animate-in fade-in zoom-in-95">
+                                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-50 dark:bg-slate-800 border border-app-border rounded-none shadow-2xl p-2 z-20 animate-in fade-in zoom-in-95">
                                         <p className="px-3 py-2 text-xs font-semibold text-app-text-muted text-app-text-muted uppercase tracking-wider border-b border-app-border border-slate-200 mb-1">Include Sections</p>
                                         {reportOptions.map((opt, i) => (
-                                            <div key={i} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-lg cursor-pointer text-sm text-slate-900 dark:text-slate-200">
+                                            <div key={i} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-none cursor-pointer text-sm text-slate-900 dark:text-slate-200">
                                                 <input type="checkbox" defaultChecked className="rounded border-slate-600 bg-slate-200 dark:bg-slate-700 text-indigo-500" />
                                                 {opt}
                                             </div>
                                         ))}
-                                        <button className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-app-text py-2 rounded-lg text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2">
+                                        <button className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-app-text py-2 rounded-none text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2">
                                             <Download size={14} /> Download PDF
                                         </button>
                                     </div>
@@ -149,7 +149,7 @@ export default function AuditOfficerDashboard() {
                             <h3 className="text-lg font-bold text-app-text mb-4 flex items-center gap-2">
                                 <AlertTriangle className="text-amber-400" size={20} /> Asset Risk Overview
                             </h3>
-                            <div className="flex w-full h-12 rounded-lg overflow-hidden border border-app-border shadow-sm dark:shadow-inner">
+                            <div className="flex w-full h-12 rounded-none overflow-hidden border border-app-border shadow-sm dark:shadow-inner">
                                 {assetRiskData.map((item) => (
                                     <div
                                         key={item.id}
@@ -159,7 +159,7 @@ export default function AuditOfficerDashboard() {
                                     >
                                         <span className="text-app-text font-black text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">{item.count}</span>
                                         {/* Tooltip */}
-                                        <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-white dark:bg-slate-900 border border-app-border p-3 rounded-xl shadow-2xl left-1/2 -translate-x-1/2 z-10 animate-in fade-in zoom-in-95">
+                                        <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-white dark:bg-slate-900 border border-app-border p-3 rounded-none shadow-2xl left-1/2 -translate-x-1/2 z-10 animate-in fade-in zoom-in-95">
                                             <p className="text-xs font-bold text-app-text">{item.label}</p>
                                             <p className="text-[10px] text-app-text-muted mt-1">{item.hover}</p>
                                         </div>
@@ -182,7 +182,7 @@ export default function AuditOfficerDashboard() {
                                 <h3 className="text-lg font-bold text-app-text">System vs Physical Mismatch (Legacy)</h3>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-2.5 text-app-text-muted" size={16} />
-                                    <input type="text" placeholder="Search asset tag..." className="bg-slate-50 dark:bg-slate-800 border border-app-border rounded-lg pl-9 pr-4 py-2 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium" />
+                                    <input type="text" placeholder="Search asset tag..." className="bg-slate-50 dark:bg-slate-800 border border-app-border rounded-none pl-9 pr-4 py-2 text-sm text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium" />
                                 </div>
                             </div>
 
@@ -227,7 +227,7 @@ export default function AuditOfficerDashboard() {
                     <div className="space-y-6 animate-in fade-in">
                         <div className="flex justify-between items-center">
                             <h3 className="text-xl font-bold text-app-text">Audit Planning & Scope</h3>
-                            <button className="btn bg-blue-600 hover:bg-blue-500 text-app-text px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all font-bold">
+                            <button className="btn bg-blue-600 hover:bg-blue-500 text-app-text px-4 py-2 rounded-none text-sm flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all font-bold">
                                 <CheckCircle2 size={16} /> Inititate New Audit
                             </button>
                         </div>
@@ -337,8 +337,8 @@ export default function AuditOfficerDashboard() {
                                     <AlertOctagon className="text-rose-500" /> Active Violations & CAPA
                                 </h3>
                                 <div className="flex gap-2">
-                                    <span className="px-3 py-1 bg-rose-500/20 text-rose-400 rounded-lg text-xs font-bold">3 Critical</span>
-                                    <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-xs font-bold">5 Open CAPA</span>
+                                    <span className="px-3 py-1 bg-rose-500/20 text-rose-400 rounded-none text-xs font-bold">3 Critical</span>
+                                    <span className="px-3 py-1 bg-amber-500/20 text-amber-400 rounded-none text-xs font-bold">5 Open CAPA</span>
                                 </div>
                             </div>
 
@@ -371,7 +371,7 @@ export default function AuditOfficerDashboard() {
                                                 </td>
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-bold text-app-text-muted bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-app-border">{v.capa}</span>
+                                                        <span className="text-xs font-bold text-app-text-muted bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-none border border-app-border">{v.capa}</span>
                                                         {v.capaStatus === 'Verified' && <CheckCircle2 size={14} className="text-emerald-500" />}
                                                     </div>
                                                 </td>
@@ -400,7 +400,7 @@ export default function AuditOfficerDashboard() {
                                 <h3 className="text-lg font-bold text-app-text mb-4">Department Risk Analysis</h3>
                                 <div className="grid grid-cols-2 gap-2">
                                     {departmentRisk.map((dept, i) => (
-                                        <div key={i} className={`${dept.color} bg-opacity-10 dark:bg-opacity-20 p-4 rounded-xl border border-app-border hover:bg-opacity-20 transition-all cursor-crosshair`}>
+                                        <div key={i} className={`${dept.color} bg-opacity-10 dark:bg-opacity-20 p-4 rounded-none border border-app-border hover:bg-opacity-20 transition-all cursor-crosshair`}>
                                             <h4 className="text-app-text font-bold">{dept.dept}</h4>
                                             <p className="text-app-text/60 text-xs mt-1 font-bold">Score: {dept.riskScore}</p>
                                         </div>
@@ -415,7 +415,7 @@ export default function AuditOfficerDashboard() {
                                     {locationRisk.map((loc, i) => (
                                         <div key={i} className="flex items-center gap-3">
                                             <div className={`w-3 h-3 rounded-full ${loc.color} shadow-lg shadow-current/20`}></div>
-                                            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-10 relative overflow-hidden shadow-sm dark:shadow-inner">
+                                            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-none h-10 relative overflow-hidden shadow-sm dark:shadow-inner">
                                                 <div className={`absolute left-0 top-0 h-full ${loc.color} opacity-10 dark:opacity-20 w-full`}></div>
                                                 <div className="absolute inset-0 flex items-center justify-between px-4">
                                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{loc.loc}</span>
@@ -448,7 +448,7 @@ export default function AuditOfficerDashboard() {
                                 {auditLogs.map((log, i) => (
                                     <div key={i} className="ml-6 mb-6 relative">
                                         <div className="absolute -left-[33px] top-1.5 w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-900 border border-slate-300 dark:border-slate-500"></div>
-                                        <div className="bg-slate-50 dark:bg-slate-800/40 border border-app-border p-4 rounded-xl flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800/60 transition-all group">
+                                        <div className="bg-slate-50 dark:bg-slate-800/40 border border-app-border p-4 rounded-none flex justify-between items-center hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800/60 transition-all group">
                                             <div>
                                                 <p className="text-sm text-app-text font-bold group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{log.action}</p>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-app-text-muted mt-1">{log.target}</p>
@@ -478,7 +478,7 @@ export default function AuditOfficerDashboard() {
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="bg-white/40 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-app-border backdrop-blur-md flex gap-1 overflow-x-auto no-scrollbar shadow-sm">
+                <div className="bg-white/40 dark:bg-slate-900/80 p-1.5 rounded-none border border-app-border backdrop-blur-md flex gap-1 overflow-x-auto no-scrollbar shadow-sm">
                     {[
                         { id: 'overview', label: 'Overview', icon: BarChart3 },
                         { id: 'planning', label: 'Planning', icon: ClipboardList },
@@ -489,7 +489,7 @@ export default function AuditOfficerDashboard() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text hover:bg-slate-100 dark:hover:bg-app-surface-soft'
+                            className={`flex items-center gap-2 px-4 py-2 rounded-none text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-indigo-600 text-app-text shadow-lg shadow-indigo-500/30 ring-2 ring-indigo-500/20' : 'text-app-text-muted hover:text-slate-900 dark:hover:text-app-text hover:bg-slate-100 dark:hover:bg-app-surface-soft'
                                 }`}
                         >
                             <tab.icon size={16} />

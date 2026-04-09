@@ -4,26 +4,25 @@ import apiClient from '../lib/apiClient';
 const RoleContext = createContext();
 
 export const ROLES = [
-    { label: 'System Admin', slug: 'ADMIN', dept: 'IT Dept' },
-    { label: 'Asset & Inventory Manager', slug: 'ASSET_MANAGER', dept: 'Asset Mgmt' },
-    { label: 'Procurement Manager', slug: 'PROCUREMENT', dept: 'Procurement' },
-    { label: 'Finance', slug: 'FINANCE', dept: 'Finance' },
-    { label: 'IT Management', slug: 'IT_MANAGEMENT', dept: 'IT Dept' },
-    { label: 'IT Support', slug: 'IT_SUPPORT', dept: 'IT Dept' },
-    { label: 'Manager', slug: 'MANAGER', dept: 'Management' },
-    { label: 'CEO', slug: 'CEO', dept: 'Executive' },
-    { label: 'CFO', slug: 'CFO', dept: 'Finance' },
-    { label: 'End User', slug: 'END_USER', dept: 'Employee' },
+    { label: 'End User', slug: 'END_USER' },
+    { label: 'Support Unit', slug: 'SUPPORT' },
+    { label: 'Department Manager', slug: 'MANAGER' },
+    { label: 'System Admin', slug: 'ADMIN' }
 ];
 
-/** Map backend role strings to frontend role slug so Finance users always get Finance portal, not Procurement. */
+/** Map backend role strings to frontend base role slugs. */
 function normalizeBackendRole(backendRole) {
-    if (backendRole == null || backendRole === '') return null;
-    const r = String(backendRole).trim().toUpperCase().replace(/\s+/g, '_');
+    if (backendRole == null || backendRole === '') return 'END_USER';
+    const r = String(backendRole).trim().toUpperCase();
 
-    // Direct slug matching (legacy fallbacks handled by the migration)
+    // Map specialized/legacy slugs to base categories
+    if (r === 'ADMIN' || r === 'SYSTEM_ADMIN') return 'ADMIN';
+    if (r.includes('SUPPORT') || r === 'SUPPORT_SPECIALIST') return 'SUPPORT';
+    if (r === 'MANAGER' || r === 'CEO' || r === 'CFO' || r === 'FINANCE' || r === 'ASSET_MANAGER' || r === 'PROCUREMENT' || r === 'IT_MANAGEMENT') return 'MANAGER';
+    
+    // Direct match if it's already a base role
     const match = ROLES.find(role => role.slug === r);
-    return match ? match.slug : r;
+    return match ? match.slug : 'END_USER';
 }
 
 export function RoleProvider({ children }) {
@@ -43,6 +42,7 @@ export function RoleProvider({ children }) {
         onboarding_dismissed: false
     });
     const [isLoading, setIsLoading] = useState(true);
+    const [isVerified, setIsVerified] = useState(false);
 
     const applyTheme = useCallback((themeName) => {
         if (typeof window === 'undefined') return;
@@ -106,12 +106,19 @@ export function RoleProvider({ children }) {
 
     // Fetch preferences when authenticated
     useEffect(() => {
+        let isMounted = true;
+        
         const syncUserWithBackend = async () => {
+            // Root Fix: Pulse isVerified to false when we start a sync to capture latest remote role
+            setIsVerified(false);
+            
             if (isAuthenticated) {
                 try {
                     console.log('RoleContext: Syncing user metadata with backend...');
                     const freshUser = await apiClient.getCurrentUser();
                     
+                    if (!isMounted) return;
+
                     // Update state if data has changed (e.g. department or role updated in DB)
                     setUser(prev => ({
                         ...prev,
@@ -119,6 +126,8 @@ export function RoleProvider({ children }) {
                         email: freshUser.email,
                         position: freshUser.position,
                         department: freshUser.department,
+                        department_id: freshUser.department_id,
+                        dept_obj: freshUser.dept_obj,
                         domain: freshUser.domain,
                         persona: freshUser.persona,
                         plan: freshUser.plan
@@ -134,7 +143,11 @@ export function RoleProvider({ children }) {
                     console.log('RoleContext: Metadata sync complete.');
                 } catch (e) {
                     console.warn('RoleContext: Background sync failed', e);
+                } finally {
+                    if (isMounted) setIsVerified(true);
                 }
+            } else {
+                if (isMounted) setIsVerified(true);
             }
         };
 
@@ -231,8 +244,10 @@ export function RoleProvider({ children }) {
     const logout = () => {
         setIsAuthenticated(false);
         setUser(null);
+        setIsVerified(true);
         setCurrentRole(ROLES.find(r => r.slug === 'END_USER') || ROLES[0]);
         localStorage.removeItem('auth_session');
+        console.log('RoleContext: Session terminated.');
     };
 
     const updatePlan = (plan) => {
@@ -259,12 +274,22 @@ export function RoleProvider({ children }) {
     };
 
     const isAdmin = currentRole?.slug === 'ADMIN';
-    const isITStaff = ['ADMIN', 'IT_MANAGEMENT', 'IT_SUPPORT'].includes(currentRole?.slug);
-    const isAssetStaff = ['ADMIN', 'ASSET_MANAGER', 'IT_MANAGEMENT'].includes(currentRole?.slug);
-    const isFinanceStaff = ['ADMIN', 'FINANCE'].includes(currentRole?.slug);
-    const isProcurementStaff = ['ADMIN', 'PROCUREMENT'].includes(currentRole?.slug);
-    const isStaff = ['ADMIN', 'ASSET_MANAGER', 'IT_MANAGEMENT', 'IT_SUPPORT', 'PROCUREMENT', 'FINANCE'].includes(currentRole?.slug);
-    const isManagerial = isAdmin || currentRole?.slug === 'IT_MANAGEMENT' || currentRole?.slug === 'CEO' || currentRole?.slug === 'CFO' || user?.position === 'MANAGER';
+    const isStaff = isAdmin || currentRole?.slug === 'MANAGER' || currentRole?.slug === 'SUPPORT';
+    const isManagerial = isAdmin || currentRole?.slug === 'MANAGER' || user?.position === 'MANAGER';
+
+    // Helper to check if user is staff of a specific department
+    const isDeptStaff = (deptName) => {
+        if (isAdmin) return true;
+        if (!isStaff || !user?.department) return false;
+        return user.department.toLowerCase() === deptName.toLowerCase();
+    };
+
+    const isITStaff = isDeptStaff('IT');
+    const isAssetStaff = isDeptStaff('Asset Management');
+    const isFinanceStaff = isDeptStaff('Finance');
+    const isProcurementStaff = isDeptStaff('Procurement');
+    const isEngineeringStaff = isDeptStaff('Engineering');
+    const isHRStaff = isDeptStaff('HR');
 
     // Permission aliases
     const canManageAutomation = isManagerial;
@@ -309,8 +334,11 @@ export function RoleProvider({ children }) {
             isAssetStaff,
             isFinanceStaff,
             isProcurementStaff,
+            isEngineeringStaff,
+            isHRStaff,
             isStaff,
             isManagerial,
+            isVerified,
             // Action Aliases
             canManageAutomation,
             canManageSystem,

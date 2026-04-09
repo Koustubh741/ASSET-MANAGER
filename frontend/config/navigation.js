@@ -21,13 +21,17 @@ import {
     LifeBuoy, 
     RotateCcw, 
     ShoppingBag, 
-    Trash2 
+    Trash2,
+    HeartHandshake,
+    LayoutGrid
 } from 'lucide-react';
 
 export const ALL_NAV_ITEMS = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Dashboard', href: '/', icon: LayoutDashboard },
     { label: 'Strategic Hub', href: '/executive-dashboard', icon: Sparkles },
     { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
+    { label: 'Unit Command Hub', href: '/support', icon: HeartHandshake },
+    { label: 'Support Queue', href: '/support-dashboard', icon: LayoutGrid },
     { label: 'Enterprise', href: '/enterprise', icon: Sparkles },
     { label: 'Topology', href: '/network-topology', icon: Network },
     { label: 'Assets', href: '/assets', icon: Server },
@@ -61,5 +65,7 @@ export const ROLE_DASHBOARD_MAP = {
     'CEO': '/executive-dashboard',
     'CFO': '/executive-dashboard',
     'FINANCE': '/finance',
-    'END_USER': '/dashboard/end-user'
+    'SUPPORT': '/support',
+    'MANAGER': '/',
+    'END_USER': '/'
 };

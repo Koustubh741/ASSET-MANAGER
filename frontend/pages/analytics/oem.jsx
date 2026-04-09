@@ -30,7 +30,7 @@ function MetricCard({ label, value, subtext, icon: Icon, color = 'indigo', trend
             <div className={`absolute -right-8 -top-8 w-24 h-24 opacity-0 group-hover:opacity-10 blur-[40px] transition-opacity bg-${color}-500`} />
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
-                    <div className={`p-2.5 rounded-xl bg-${color}-500/10 border border-${color}-500/20 text-${color}-400`}>
+                    <div className={`p-2.5 rounded-none bg-${color}-500/10 border border-${color}-500/20 text-${color}-400`}>
                         <Icon size={20} />
                     </div>
                     {trend && (
@@ -59,7 +59,7 @@ function ReliabilityBadge({ rating }) {
     const Icon = cfg.icon;
 
     return (
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${cfg.bg} ${cfg.border} ${cfg.color} text-[10px] font-black uppercase tracking-widest`}>
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-none border ${cfg.bg} ${cfg.border} ${cfg.color} text-[10px] font-black uppercase tracking-widest`}>
             <Icon size={12} />
             {rating}
         </div>
@@ -79,7 +79,7 @@ function EvidenceDrawer({ oem, onClose }) {
             <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl z-[70] border-l border-app-border p-8 overflow-y-auto animate-in slide-in-from-right duration-500">
                 <div className="flex items-center justify-between mb-10">
                     <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                        <div className="p-3 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                             <Search size={22} />
                         </div>
                         <div>
@@ -91,7 +91,7 @@ function EvidenceDrawer({ oem, onClose }) {
 
                 <div className="space-y-8">
                     {/* Step 1: Base Identity */}
-                    <div className="relative p-6 rounded-2xl bg-app-surface-soft border border-app-border group">
+                    <div className="relative p-6 rounded-none bg-app-surface-soft border border-app-border group">
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[10px] font-black">1</div>
                         <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Base Fleet Identity</h4>
                         <div className="flex justify-between items-end">
@@ -107,7 +107,7 @@ function EvidenceDrawer({ oem, onClose }) {
                     </div>
 
                     {/* Step 2: Incident Velocity & Type Breakdown */}
-                    <div className="relative p-6 rounded-2xl bg-app-surface-soft border border-app-border group">
+                    <div className="relative p-6 rounded-none bg-app-surface-soft border border-app-border group">
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[10px] font-black">2</div>
                         <h4 className="text-[10px] font-black text-rose-400 uppercase tracking-widest mb-3">Incident Velocity & Type Breakdown</h4>
                         <div className="space-y-4">
@@ -149,7 +149,7 @@ function EvidenceDrawer({ oem, onClose }) {
                                 <h5 className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Severity-Weighted Impact</h5>
                                 <div className="grid grid-cols-3 gap-2">
                                     {Object.entries(oem.severity_breakdown).map(([sev, count]) => (
-                                        <div key={sev} className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-app-border text-center">
+                                        <div key={sev} className="p-2 rounded-none bg-white dark:bg-slate-900 border border-app-border text-center">
                                             <p className="text-[10px] font-black text-app-text">{count}</p>
                                             <p className={`text-[8px] font-bold uppercase tracking-tighter ${
                                                 sev === 'High' ? 'text-rose-400' :
@@ -168,7 +168,7 @@ function EvidenceDrawer({ oem, onClose }) {
                     </div>
 
                     {/* Step 3: Resolution Efficiency Penalty */}
-                    <div className="relative p-6 rounded-2xl bg-app-surface-soft border border-app-border group">
+                    <div className="relative p-6 rounded-none bg-app-surface-soft border border-app-border group">
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[10px] font-black">3</div>
                         <h4 className="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-3">Resolution Efficiency Penalty</h4>
                         <div className="space-y-4">
@@ -184,7 +184,7 @@ function EvidenceDrawer({ oem, onClose }) {
                     </div>
 
                     {/* Step 4: Audited TCO Derivation */}
-                    <div className="relative p-6 rounded-2xl bg-app-surface-soft border border-app-border group">
+                    <div className="relative p-6 rounded-none bg-app-surface-soft border border-app-border group">
                         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[10px] font-black">4</div>
                         <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-3">Total Cost of Ownership (Audited)</h4>
                         <div className="space-y-4">
@@ -208,7 +208,7 @@ function EvidenceDrawer({ oem, onClose }) {
                     </div>
 
                     {/* Step 5: Final Derivation */}
-                    <div className="p-8 rounded-2xl bg-indigo-600 shadow-xl shadow-indigo-500/20 text-white relative overflow-hidden">
+                    <div className="p-8 rounded-none bg-indigo-600 shadow-xl shadow-indigo-500/20 text-white relative overflow-hidden">
                         <div className="absolute -right-4 -bottom-4 opacity-10">
                             <Activity size={80} />
                         </div>
@@ -218,7 +218,7 @@ function EvidenceDrawer({ oem, onClose }) {
                             <ReliabilityBadge rating={oem.investment_rating} />
                         </div>
                         <div className="space-y-3">
-                            <div className="p-3 bg-white/10 border border-white/10 rounded-xl font-mono text-[9px] leading-relaxed">
+                            <div className="p-3 bg-white/10 border border-white/10 rounded-none font-mono text-[9px] leading-relaxed">
                                 <span className="block text-indigo-200 mb-1">// Phase 3: Severity-Weighted & Time-Normalized</span>
                                 REL_SCORE = MAX(100 - (W_Penalty / (AssetDays/30) * 5) - (MTTR * 0.5), 0)
                             </div>
@@ -233,7 +233,7 @@ function EvidenceDrawer({ oem, onClose }) {
 
                 <button 
                     onClick={onClose}
-                    className="w-full mt-10 py-4 rounded-2xl border border-app-border text-app-text-muted text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
+                    className="w-full mt-10 py-4 rounded-none border border-app-border text-app-text-muted text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 dark:hover:bg-white/5 transition-all"
                 >
                     Close Audit Trail
                 </button>
@@ -272,13 +272,13 @@ export default function OEMAnalytics() {
         <div className="min-h-screen p-6 lg:p-10 space-y-10">
             {/* ── Data Quality Layer (Phase 4) ────────────────────────────── */}
             {data && data.data_quality_score < 100 && (
-                <div className={`relative overflow-hidden p-6 rounded-3xl border animate-in fade-in slide-in-from-top-4 duration-700 ${
+                <div className={`relative overflow-hidden p-6 rounded-none border animate-in fade-in slide-in-from-top-4 duration-700 ${
                     data.data_quality_score < 70 
                     ? 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400' 
                     : 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400'
                 }`}>
                     <div className="flex items-start gap-5">
-                        <div className={`p-3 rounded-2xl ${
+                        <div className={`p-3 rounded-none ${
                             data.data_quality_score < 70 ? 'bg-rose-500' : 'bg-amber-500'
                         } text-white shadow-lg`}>
                             <AlertTriangle size={24} />
@@ -311,7 +311,7 @@ export default function OEMAnalytics() {
                     <div className="flex items-center gap-6">
                         <div className="relative">
                             <div className="absolute -inset-2 bg-indigo-500/20 blur-xl rounded-full group-hover:bg-indigo-500/30 transition-all" />
-                            <div className="relative p-4 rounded-2xl bg-indigo-600 shadow-lg shadow-indigo-500/20 text-white">
+                            <div className="relative p-4 rounded-none bg-indigo-600 shadow-lg shadow-indigo-500/20 text-white">
                                 <Award size={32} />
                             </div>
                         </div>
@@ -336,12 +336,12 @@ export default function OEMAnalytics() {
                                 placeholder="Search OEM Matrix..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-12 pr-6 py-3 bg-app-surface-soft border border-app-border rounded-2xl text-xs font-bold text-app-text w-64 focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 transition-all"
+                                className="pl-12 pr-6 py-3 bg-app-surface-soft border border-app-border rounded-none text-xs font-bold text-app-text w-64 focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/5 transition-all"
                             />
                         </div>
                         <button 
                             onClick={fetchData}
-                            className={`p-3 rounded-2xl bg-white bg-app-surface-soft border border-app-border text-slate-500 hover:text-indigo-400 transition-all active:scale-95 ${loading ? 'animate-spin' : ''}`}
+                            className={`p-3 rounded-none bg-white bg-app-surface-soft border border-app-border text-slate-500 hover:text-indigo-400 transition-all active:scale-95 ${loading ? 'animate-spin' : ''}`}
                         >
                             <RefreshCw size={20} />
                         </button>
@@ -388,7 +388,7 @@ export default function OEMAnalytics() {
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none" />
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                            <div className="p-3 rounded-none bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                                 <LayoutGrid size={22} />
                             </div>
                             <div>
@@ -444,7 +444,7 @@ export default function OEMAnalytics() {
                                             <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">${Math.round(m.maintenance_cost).toLocaleString()} maint.</p>
                                         </td>
                                         <td className="py-4 text-right">
-                                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-app-surface-soft border border-app-border">
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-none bg-app-surface-soft border border-app-border">
                                                 <div className={`w-1.5 h-1.5 rounded-full ${
                                                     m.primary_impact === 'Hardware' ? 'bg-rose-500' :
                                                     m.primary_impact === 'Software' ? 'bg-indigo-500' :
@@ -474,7 +474,7 @@ export default function OEMAnalytics() {
                              <Zap size={64} className="text-rose-500" />
                         </div>
                         <div className="flex items-center gap-3 mb-6 relative z-10">
-                            <div className="p-2.5 rounded-xl bg-rose-500 shadow-lg shadow-rose-500/20 text-white">
+                            <div className="p-2.5 rounded-none bg-rose-500 shadow-lg shadow-rose-500/20 text-white">
                                 <Zap size={18} />
                             </div>
                             <h2 className="text-sm font-black text-app-text font-['Outfit'] uppercase tracking-widest">Intelligence Recommendation</h2>
@@ -491,7 +491,7 @@ export default function OEMAnalytics() {
                                 </p>
                             </div>
                             
-                            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-app-border space-y-3">
+                            <div className="p-4 rounded-none bg-white dark:bg-slate-900 border border-app-border space-y-3">
                                 <div className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest">
                                     <AlertTriangle size={12} /> Procument Warning
                                 </div>
@@ -500,7 +500,7 @@ export default function OEMAnalytics() {
                                 </p>
                             </div>
                             
-                            <button className="w-full py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                            <button className="w-full py-4 rounded-none bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
                                 <Activity size={14} /> Generate Detailed ROI Report
                             </button>
                         </div>
@@ -510,7 +510,7 @@ export default function OEMAnalytics() {
                     <div className="glass-panel p-8 relative overflow-hidden border border-slate-300 border-app-border">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em]">Fleet Reliability Spectrum</h3>
-                            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                            <div className="p-2 rounded-none bg-indigo-500/10 text-indigo-400">
                                 <Target size={14} />
                             </div>
                         </div>

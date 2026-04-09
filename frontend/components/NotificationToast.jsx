@@ -45,7 +45,7 @@ export default function NotificationToast() {
                 <div className="absolute -top-10 -right-10 w-24 h-24 bg-primary/20 blur-2xl rounded-full pointer-events-none"></div>
                 
                 <div className="flex gap-3 relative z-10">
-                    <div className="shrink-0 p-2 rounded-xl bg-app-surface-soft border border-app-border">
+                    <div className="shrink-0 p-2 rounded-none bg-app-surface-soft border border-app-border">
                         {getIcon(notification.type)}
                     </div>
                     <div className="flex-1 min-w-0">

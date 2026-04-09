@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, text, delete, or_
 import logging
+import os
+import shutil
 from typing import List, Optional, Dict, Any, TypedDict, cast
 from uuid import UUID
 from datetime import datetime, timezone
@@ -13,14 +15,18 @@ from ..schemas.ticket_schema import (
     ITDiagnosisRequest, ResolutionUpdate, 
     TicketCategorySummaryResponse, TicketCategoryStat,
     WorkflowRuleCreate, WorkflowRuleUpdate, WorkflowRuleResponse,
-    SLAPolicyCreate, SLAPolicyResponse, SLAPolicyUpdate
+    SLAPolicyCreate, SLAPolicyResponse, SLAPolicyUpdate,
+    TicketCommentCreate, TicketCommentResponse, TicketAttachmentResponse,
+    TicketAssignmentRequest
 )
+from ..schemas.common_schema import PaginatedResponse
 from ..schemas.user_schema import UserResponse
-from ..models.models import User, Asset, ByodDevice, Ticket, AssignmentGroup, PatchDeployment, AgentCommand, SystemPatch
+from ..models.models import User, Asset, ByodDevice, Ticket, AssignmentGroup, PatchDeployment, AgentCommand, SystemPatch, TicketComment, TicketAttachment, Department
 from ..models.automation import WorkflowRule, SLAPolicy
 from ..services import ticket_service, asset_request_service
 from ..services.notification_service import send_notification
 from ..services.automation_service import AutomationService
+from ..services.timeline_service import timeline_service
 from ..utils.auth_utils import get_current_user, STAFF_ROLES
 
 logger = logging.getLogger(__name__)
@@ -48,11 +54,15 @@ router = APIRouter(
 
 # HELPER DEPENDENCIES
 
-async def verify_it_management(user: UserResponse) -> UserResponse:
-    if user.role not in STAFF_ROLES and user.role != "MANAGER":
+async def verify_staff_access(user: UserResponse) -> UserResponse:
+    """
+    ROOT FIX: Check if user has STAFF clearance (ADMIN, SUPPORT, or MANAGER).
+    Managers are considered staff for their own departmental operations.
+    """
+    if user.role not in STAFF_ROLES:
         raise HTTPException(
             status_code=403,
-            detail=f"Unauthorized: Role {user.role} does not have IT access",
+            detail=f"Unauthorized: Role {user.role} does not have elevated access",
         )
     if user.status != "ACTIVE":
         raise HTTPException(
@@ -62,14 +72,36 @@ async def verify_it_management(user: UserResponse) -> UserResponse:
     return user
 
 async def verify_it_allocation(user: UserResponse) -> UserResponse:
+    """
+    ROOT FIX: Unified Allocation Check.
+    Admins see everything. Staff (SUPPORT/MANAGER) can allocate within their department.
+    """
     if user.role == "ADMIN":
         return user
-    it_roles = ["IT_MANAGEMENT", "IT_SUPPORT", "ASSET_MANAGER"]
-    if user.role in it_roles and user.position == "MANAGER":
+    
+    # Staff roles (SUPPORT/MANAGER) can allocate within their department scope.
+    if user.role in STAFF_ROLES:
         return user
+        
     raise HTTPException(
         status_code=403,
-        detail="Unauthorized: Only IT Managers or Admins can allocate tickets to others",
+        detail="Unauthorized: Elevated clearance required for ticket allocation",
+    )
+
+async def verify_it_management(user: UserResponse) -> UserResponse:
+    """
+    ROOT FIX: Missing dependency fix.
+    Validates if a user has staff privileges to manage ticket lifecycle (Assign, Resolve, etc.)
+    """
+    if user.role == "ADMIN":
+        return user
+    
+    if user.role in STAFF_ROLES:
+        return user
+        
+    raise HTTPException(
+        status_code=403,
+        detail="Unauthorized: Staff clearance required for ticket management",
     )
 
 # --- Powerful Workflow Automation Endpoints ---
@@ -210,30 +242,47 @@ async def get_ticket_stats_by_category(
     current_user = Depends(get_current_user)
 ):
     # Base query for stats - joining User for department info
-    u_dept = func.trim(User.department)
-    g_dept = func.trim(AssignmentGroup.department)
+    from ..models.models import Department
     
-    query = select(Ticket.category, Ticket.status, Ticket.created_at, Ticket.updated_at, Ticket.subject, Ticket.description, User.department, Ticket.requestor_id).outerjoin(User, Ticket.requestor_id == User.id).outerjoin(AssignmentGroup, Ticket.assignment_group_id == AssignmentGroup.id)
+    query = (
+        select(
+            Ticket.category, 
+            Ticket.status, 
+            Ticket.created_at, 
+            Ticket.updated_at, 
+            Ticket.subject, 
+            Ticket.description, 
+            Department.name.label("department_name"), 
+            Ticket.requestor_id
+        )
+        .outerjoin(User, Ticket.requestor_id == User.id)
+        .outerjoin(Department, User.department_id == Department.id)
+        .outerjoin(AssignmentGroup, Ticket.assignment_group_id == AssignmentGroup.id)
+    )
     
     # Apply Time Range
     query = query.where(Ticket.created_at >= func.now() - text(f"INTERVAL '{range_days} days'"))
     
-    # ROOT FIX: Role-Based "Wall of Privacy"
+    # ROOT FIX: Unified Departmental Scope for Stats
     # 1. End Users (non-managers) only see their own tickets
     if current_user.role == "END_USER" and current_user.position != "MANAGER":
         query = query.where(Ticket.requestor_id == current_user.id)
     
-    # 2. Managers (except IT/Admins) only see their department
-    elif current_user.position == "MANAGER" and current_user.role not in STAFF_ROLES:
-        dept = current_user.department or "Unknown"
-        query = query.where(or_(func.lower(u_dept) == dept.lower(), func.lower(g_dept) == dept.lower()))
+    # 2. Staff (SUPPORT/MANAGER) see their department ONLY
+    elif current_user.role != "ADMIN":
+        user_dept_id = current_user.department_id
+        if not user_dept_id:
+             # Fallback: if no dept_id, they can't see departmental stats (security safety)
+             query = query.where(Ticket.requestor_id == current_user.id)
+        else:
+             query = query.where(or_(User.department_id == user_dept_id, AssignmentGroup.department_id == user_dept_id))
 
     # Apply Internal/External Switcher Logic
     if is_internal is not None:
         if is_internal:
-            query = query.where(User.department != None, AssignmentGroup.department != None, func.lower(u_dept) == func.lower(g_dept))
+            query = query.where(User.department_id != None, AssignmentGroup.department_id != None, User.department_id == AssignmentGroup.department_id)
         else:
-            query = query.where(or_(func.lower(u_dept) != func.lower(g_dept), User.department == None, AssignmentGroup.department == None))
+            query = query.where(or_(User.department_id != AssignmentGroup.department_id, User.department_id == None, AssignmentGroup.department_id == None))
     result = await db.execute(query)
     tickets = result.all()
     
@@ -263,7 +312,7 @@ async def get_ticket_stats_by_category(
             if t.updated_at and t.created_at:
                 diff = t.updated_at - t.created_at
                 sm["mttr_list"].append(diff.total_seconds() / 3600.0)
-        if t.department: sm["depts"][t.department] = sm["depts"].get(t.department, 0) + 1
+        if t.department_name: sm["depts"][t.department_name] = sm["depts"].get(t.department_name, 0) + 1
         sm["estimated_cost"] += 150.0
 
     final_stats = []
@@ -282,7 +331,8 @@ async def get_ticket_stats_by_category(
 @router.get("/stats/solvers")
 async def get_ticket_solver_stats(range_days: Optional[int] = None, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
     from sqlalchemy import and_
-    IT_ROLES = ["IT_SUPPORT", "SUPPORT_SPECIALIST", "IT_MANAGEMENT", "ADMIN"]
+    # Build join conditions: only count RESOLVED tickets (+ optional date filter)
+    STAFF_ROLES_LIST = list(STAFF_ROLES)
 
     # Build join conditions: only count RESOLVED tickets (+ optional date filter)
     join_conditions = [Ticket.assigned_to_id == User.id, Ticket.status == "RESOLVED"]
@@ -302,7 +352,7 @@ async def get_ticket_solver_stats(range_days: Optional[int] = None, db: AsyncSes
         )
         .select_from(User)
         .outerjoin(Ticket, and_(*join_conditions))
-        .where(User.role.in_(IT_ROLES), User.status != "DISABLED")
+        .where(User.role.in_(STAFF_ROLES_LIST), User.status != "DISABLED")
     )
 
     result = await db.execute(query)
@@ -358,7 +408,7 @@ async def get_ticket_analytics_summary(
         raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
     
     user_id = current_user.id
-    department = current_user.department
+    department = current_user.dept_obj.name if current_user.dept_obj else None
     if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
         user_id = None
         department = None
@@ -393,7 +443,7 @@ async def get_ticket_trend(
     target_year = year or datetime.now().year
 
     user_id = current_user.id
-    department = current_user.department
+    department = current_user.dept_obj.name if current_user.dept_obj else None
     if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
         user_id = None
         department = None
@@ -421,7 +471,7 @@ async def get_ticket_period_comparison(
         raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
 
     user_id = current_user.id
-    department = current_user.department
+    department = current_user.dept_obj.name if current_user.dept_obj else None
     if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
         user_id = None
         department = None
@@ -451,12 +501,86 @@ async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db)
     await send_notification(db, res.id, "ticket_created")
     return res
 
-@router.get("/", response_model=List[TicketResponse])
-async def read_tickets(skip: int = 0, limit: int = 100, department: Optional[str] = None, search: Optional[str] = None, is_internal: Optional[bool] = None, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
-    eff_id = current_user.id if current_user.role == "END_USER" and current_user.position != "MANAGER" else None
-    if current_user.position == "MANAGER" and current_user.role not in STAFF_ROLES:
-        department = department or current_user.department or current_user.domain
-    return await ticket_service.get_tickets(db, requestor_id=eff_id, department=department, skip=skip, limit=limit, search=search, is_internal=is_internal)
+@router.post("/{ticket_id}/comments", response_model=TicketCommentResponse, tags=["comments"])
+async def add_ticket_comment(
+    ticket_id: UUID, 
+    comment: TicketCommentCreate, 
+    db: AsyncSession = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    db_ticket = await ticket_service.get_ticket(db, ticket_id)
+    if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # RBAC: Check visibility
+    await read_ticket(ticket_id, db, current_user)
+    
+    new_comment = TicketComment(
+        id=uuid.uuid4(),
+        ticket_id=ticket_id,
+        user_id=current_user.id,
+        content=comment.content,
+        is_internal=comment.is_internal
+    )
+    db.add(new_comment)
+    await db.commit()
+    await db.refresh(new_comment)
+    
+    # Map author name for response
+    new_comment.author_name = current_user.full_name
+    return new_comment
+
+@router.get("/{ticket_id}/comments", response_model=List[TicketCommentResponse], tags=["comments"])
+async def get_ticket_comments(
+    ticket_id: UUID, 
+    db: AsyncSession = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    await read_ticket(ticket_id, db, current_user)
+    res = await db.execute(select(TicketComment).where(TicketComment.ticket_id == ticket_id).order_by(TicketComment.created_at.asc()))
+    comments = res.scalars().all()
+    
+    # Enrichment
+    output = []
+    for c in comments:
+        user_res = await db.execute(select(User).where(User.id == c.user_id))
+        user = user_res.scalar_one_or_none()
+        c.author_name = user.full_name if user else "System"
+        output.append(c)
+    return output
+
+@router.get("/", response_model=PaginatedResponse[TicketResponse])
+async def read_tickets(
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=100),
+    department: Optional[str] = None, 
+    search: Optional[str] = None, 
+    is_internal: Optional[bool] = None, 
+    db: AsyncSession = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    """
+    ROOT FIX: Departmental Scope Enforcement with Server-Side Pagination.
+    Admins see everything. Support/Managers see their department ONLY.
+    """
+    eff_id = None
+    if current_user.role == "END_USER" and current_user.position != "MANAGER":
+        eff_id = current_user.id
+        department = None # End users can only see their own tickets, department filter ignored
+    elif current_user.role != "ADMIN":
+        # Force departmental filter for Support and Managers
+        # Note: ticket_service.get_tickets handles the lookup by department name string, 
+        # so we pass the name if available.
+        department = current_user.dept_obj.name if current_user.dept_obj else "Unknown"
+        
+    skip = (page - 1) * size
+    data, total = await ticket_service.get_tickets(db, requestor_id=eff_id, department=department, skip=skip, limit=size, search=search, is_internal=is_internal)
+    
+    return PaginatedResponse(
+        total=total,
+        page=page,
+        size=size,
+        data=data
+    )
 
 @router.get("/{ticket_id}", response_model=TicketResponse)
 async def read_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
@@ -464,22 +588,21 @@ async def read_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db), curre
     if not db_ticket: 
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    # ROOT FIX: Security & Privacy Wall
-    # 1. Admins and IT staff see everything
-    if current_user.role in STAFF_ROLES:
+    # ROOT FIX: Unified Departmental Security Wall
+    # 1. Admins see everything
+    if current_user.role == "ADMIN":
         return db_ticket
 
-    # 2. Managers see their own tickets OR tickets within their department/domain
-    if current_user.position == "MANAGER":
-        is_owner = db_ticket.requestor_id == current_user.id
-        # Check if the ticket's requestor is in the manager's department
-        # We need the requestor object for this. ticket_service.get_ticket usually loads it.
-        in_dept = db_ticket.requestor and db_ticket.requestor.department == current_user.department
-        in_group_dept = db_ticket.assignment_group and db_ticket.assignment_group.department == current_user.department
+    # 2. Staff (SUPPORT/MANAGER) see their department ONLY
+    if current_user.role in STAFF_ROLES:
+        user_dept_id = current_user.department_id
+        # Check if ticket belongs to staff user's department (via requestor or group)
+        in_dept = db_ticket.requestor and db_ticket.requestor.department_id == user_dept_id
+        in_group_dept = db_ticket.assignment_group and db_ticket.assignment_group.department_id == user_dept_id
         
-        if not (is_owner or in_dept or in_group_dept):
-            logger.warning(f"Manager {current_user.email} attempted unauthorized access to ticket {ticket_id} (Dept Mismatch)")
-            raise HTTPException(status_code=403, detail="Unauthorized: Ticket belongs to a different department")
+        if not (in_dept or in_group_dept):
+            logger.warning(f"Staff {current_user.email} (DeptID: {user_dept_id}) attempted unauthorized access to ticket {ticket_id}")
+            raise HTTPException(status_code=403, detail=f"Unauthorized: Ticket belongs to a different department")
         return db_ticket
 
     # 3. Regular End Users ONLY see their own personal tickets
@@ -497,12 +620,12 @@ async def update_ticket(ticket_id: UUID, ticket_update: TicketUpdate, db: AsyncS
         if ticket_update.status or ticket_update.priority or ticket_update.assigned_to_id: raise HTTPException(status_code=403, detail="Unauthorized field update")
     if ticket_update.assigned_to_id:
         if ticket_update.assigned_to_id != current_user.id: await verify_it_allocation(current_user)
-        else: await verify_it_management(current_user)
+        else: await verify_staff_access(current_user)
     return await ticket_service.update_ticket(db, ticket_id=ticket_id, ticket_update=ticket_update)
 
 @router.post("/{ticket_id}/it/diagnose", response_model=TicketResponse)
 async def it_diagnose_ticket(ticket_id: UUID, payload: ITDiagnosisRequest, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
-    await verify_it_management(current_user)
+    await verify_staff_access(current_user)
     db_ticket = await ticket_service.get_ticket(db, ticket_id)
     if not db_ticket or not db_ticket.related_asset_id: raise HTTPException(status_code=404, detail="Ticket or linked asset not found")
     res_asset = await db.execute(select(Asset).filter(Asset.id == db_ticket.related_asset_id))
@@ -525,21 +648,68 @@ async def it_diagnose_ticket(ticket_id: UUID, payload: ITDiagnosisRequest, db: A
 
 @router.post("/{ticket_id}/acknowledge", response_model=TicketResponse)
 async def acknowledge_ticket(ticket_id: UUID, payload: ITDiagnosisRequest, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
-    reviewer = await verify_it_management(current_user)
+    reviewer = await verify_staff_access(current_user)
     db_ticket = await ticket_service.get_ticket(db, ticket_id)
     if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
     if db_ticket.status and db_ticket.status.upper() == "OPEN":
-        db_ticket.status, db_ticket.assigned_to_id = "IN_PROGRESS", reviewer.id
-        tm = list(db_ticket.timeline) if db_ticket.timeline else []
-        tm.append({"action": "ACKNOWLEDGED", "byRole": "IT_MANAGEMENT", "byUser": reviewer.full_name, "timestamp": datetime.now(timezone.utc).isoformat(), "comment": payload.notes or "Ticket acknowledged"})
-        db_ticket.timeline = tm
+        db_ticket.status, db_ticket.assigned_to_id = "ACKNOWLEDGED", reviewer.id
+        await timeline_service.log_ticket_event(
+            db, db_ticket, "ACKNOWLEDGED", 
+            payload.notes or "Ticket acknowledged and moved to queue.", 
+            current_user
+        )
         if payload.notes: db_ticket.resolution_notes = payload.notes
     if db_ticket.status == "IN_PROGRESS":
         await AutomationService.mark_sla_responded(db, db_ticket.id)
         
     await db.commit()
     await db.refresh(db_ticket)
-    await send_notification(db, db_ticket.id, "ticket_updated", status="IN_PROGRESS", updated_by=reviewer.full_name, comment=payload.notes or "Acknowledged")
+    await send_notification(db, db_ticket.id, "ticket_updated", status="ACKNOWLEDGED", updated_by=reviewer.full_name, comment=payload.notes or "Acknowledged")
+    return db_ticket
+
+@router.post("/{ticket_id}/assign", response_model=TicketResponse)
+async def assign_ticket(ticket_id: UUID, payload: TicketAssignmentRequest, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
+    agent_id = payload.agent_id
+    reviewer = await verify_it_management(current_user)
+    db_ticket = await ticket_service.get_ticket(db, ticket_id)
+    if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    agent_res = await db.execute(select(User).where(User.id == agent_id))
+    agent = agent_res.scalar_one_or_none()
+    if not agent: raise HTTPException(status_code=404, detail="Agent not found")
+    
+    db_ticket.assigned_to_id = agent_id
+    db_ticket.status = "ASSIGNED"
+    
+    await timeline_service.log_ticket_event(
+        db, db_ticket, "ASSIGNED", 
+        f"Ticket assigned to {agent.full_name}", 
+        current_user
+    )
+    
+    await db.commit()
+    await db.refresh(db_ticket)
+    return db_ticket
+
+@router.post("/{ticket_id}/start", response_model=TicketResponse)
+async def start_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
+    db_ticket = await ticket_service.get_ticket(db, ticket_id)
+    if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Only the assignee or a manager can start work
+    if db_ticket.assigned_to_id != current_user.id and current_user.role not in STAFF_ROLES and current_user.position != "MANAGER":
+        raise HTTPException(status_code=403, detail="Unauthorized to start work on this ticket")
+        
+    db_ticket.status = "IN_PROGRESS"
+    
+    await timeline_service.log_ticket_event(
+        db, db_ticket, "START_WORK", 
+        "Work started on ticket", 
+        current_user
+    )
+    
+    await db.commit()
+    await db.refresh(db_ticket)
     return db_ticket
 
 @router.post("/{ticket_id}/progress", response_model=TicketResponse)
@@ -549,10 +719,11 @@ async def update_ticket_progress(ticket_id: UUID, payload: ResolutionUpdate, db:
     if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
     db_ticket.resolution_notes, db_ticket.resolution_checklist, db_ticket.resolution_percentage = payload.notes, payload.checklist, payload.percentage
     if db_ticket.status not in ["IN_PROGRESS", "RESOLVED"]: db_ticket.status = "IN_PROGRESS"
-    tm = list(db_ticket.timeline) if db_ticket.timeline else []
-    if not tm or tm[-1].get("comment") != f"Resolution progress updated to {payload.percentage}%":
-        tm.append({"action": "PROGRESS_UPDATE", "byRole": "IT_MANAGEMENT", "byUser": str(reviewer.full_name), "timestamp": datetime.now(timezone.utc).isoformat(), "comment": f"Resolution progress updated to {payload.percentage}%"})
-        db_ticket.timeline = tm
+    await timeline_service.log_ticket_event(
+        db, db_ticket, "PROGRESS_UPDATE", 
+        f"Resolution progress updated to {payload.percentage}%", 
+        current_user
+    )
     await db.commit()
     await db.refresh(db_ticket)
     await send_notification(db, db_ticket.id, "ticket_updated", status="IN_PROGRESS", updated_by=reviewer.full_name, comment=f"Progress: {payload.percentage}%")
@@ -565,9 +736,12 @@ async def resolve_ticket(ticket_id: UUID, payload: ResolutionUpdate, db: AsyncSe
     if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
     db_ticket.resolution_notes, db_ticket.resolution_checklist, db_ticket.resolution_percentage, db_ticket.status = payload.notes, payload.checklist, 100.0, "RESOLVED"
     if not db_ticket.assigned_to_id: db_ticket.assigned_to_id = reviewer.id
-    tm = list(db_ticket.timeline) if db_ticket.timeline else []
-    tm.append({"action": "RESOLVED", "byRole": "IT_MANAGEMENT", "byUser": reviewer.full_name, "timestamp": datetime.now(timezone.utc).isoformat(), "comment": payload.notes or "Resolved"})
-    db_ticket.timeline = tm
+    
+    await timeline_service.log_ticket_event(
+        db, db_ticket, "RESOLVED", 
+        payload.notes or "Resolved", 
+        current_user
+    )
     if db_ticket.status == "RESOLVED":
         await AutomationService.mark_sla_resolved(db, db_ticket.id)
 
@@ -590,7 +764,15 @@ async def get_solver_portfolio(user_id: UUID, db: AsyncSession = Depends(get_db)
     cat_res = await db.execute(select(Ticket.category, func.count(Ticket.id)).where(Ticket.assigned_to_id == user_id, Ticket.status == "RESOLVED").group_by(Ticket.category))
     recent_res = await db.execute(select(Ticket).where(Ticket.assigned_to_id == user_id, Ticket.status == "RESOLVED").order_by(text("updated_at DESC")).limit(10))
     return {
-        "profile": {"id": str(db_user.id), "full_name": db_user.full_name, "email": db_user.email, "role": db_user.role.replace("_", " ").title(), "department": db_user.department or "IT", "persona": db_user.persona, "join_date": db_user.created_at.date().isoformat()},
+        "profile": {
+            "id": str(db_user.id), 
+            "full_name": db_user.full_name, 
+            "email": db_user.email, 
+            "role": db_user.role.replace("_", " ").title(), 
+            "department": db_user.dept_obj.name if db_user.dept_obj else "IT", 
+            "persona": db_user.persona, 
+            "join_date": db_user.created_at.date().isoformat()
+        },
         "stats": {"lifetime_resolved": lifetime_count, "month_resolved": month_count, "mttr_hours": round(float(total_h / lifetime_count) if lifetime_count > 0 else 0.0, 1), "global_rank": 1},
         "expertise": [{"category": r[0] or "General", "count": r[1]} for r in cat_res.all()],
         "recent_work": [{"id": str(t.id), "subject": t.subject, "category": t.category or "General", "resolved_at": t.updated_at.isoformat(), "priority": t.priority} for t in recent_res.scalars().all()]
@@ -616,15 +798,11 @@ async def approve_change_request(
     
     # 1. Approve Ticket
     db_ticket.status = "APPROVED"
-    tm = list(db_ticket.timeline) if db_ticket.timeline else []
-    tm.append({
-        "action": "CAB_APPROVED", 
-        "byRole": current_user.role, 
-        "byUser": current_user.full_name, 
-        "timestamp": datetime.now(timezone.utc).isoformat(), 
-        "comment": payload.notes or "Change Request Approved by CAB"
-    })
-    db_ticket.timeline = tm
+    await timeline_service.log_ticket_event(
+        db, db_ticket, "CAB_APPROVED", 
+        payload.notes or "Change Request Approved by CAB", 
+        current_user
+    )
     
     # 2. Find pending PatchDeployments for this asset (since related_asset_id ties it)
     if db_ticket.related_asset_id:
@@ -664,3 +842,99 @@ async def approve_change_request(
     from ..services.notification_service import send_notification
     await send_notification(db, db_ticket.id, "ticket_updated", status="APPROVED", updated_by=current_user.full_name, comment=payload.notes or "CAB Approved")
     return db_ticket
+
+# TICKET ATTACHMENTS
+UPLOAD_DIR = "uploads/tickets"
+
+@router.post("/{ticket_id}/attachments", response_model=TicketAttachmentResponse)
+async def upload_attachment(
+    ticket_id: UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """Upload a file attachment for a ticket."""
+    db_ticket = await ticket_service.get_ticket(db, ticket_id)
+    if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
+
+    # Access Control: Staff or Requestor
+    if current_user.role not in STAFF_ROLES and db_ticket.requestor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    file_id = str(uuid.uuid4())
+    file_ext = os.path.splitext(file.filename)[1]
+    safe_name = "".join([c for c in file.filename if c.isalnum() or c in ('.', '_', '-')]).strip()
+    file_path = os.path.join(UPLOAD_DIR, f"{ticket_id}_{file_id}{file_ext}")
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    attachment = TicketAttachment(
+        id=uuid.uuid4(),
+        ticket_id=ticket_id,
+        uploader_id=current_user.id,
+        file_name=safe_name,
+        file_path=file_path,
+        file_type=file.content_type,
+        file_size=0 # We could get size but let's keep it simple for now
+    )
+    db.add(attachment)
+    
+    await timeline_service.log_ticket_event(
+        db, db_ticket, "ATTACHMENT_ADDED", 
+        f"File '{safe_name}' attached by {current_user.full_name}.", 
+        current_user,
+        metadata={"file_name": safe_name, "file_id": str(attachment.id)}
+    )
+    
+    await db.commit()
+    await db.refresh(attachment)
+    return attachment
+
+@router.get("/{ticket_id}/attachments", response_model=List[TicketAttachmentResponse])
+async def list_attachments(ticket_id: UUID, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
+    """List all attachments for a ticket."""
+    db_ticket = await ticket_service.get_ticket(db, ticket_id)
+    if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Access Control: Staff or Requestor
+    if current_user.role not in STAFF_ROLES and db_ticket.requestor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    result = await db.execute(select(TicketAttachment).where(TicketAttachment.ticket_id == ticket_id))
+    return result.scalars().all()
+
+@router.get("/attachments/{attachment_id}")
+async def download_attachment(attachment_id: UUID, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
+    """Download/View an attachment."""
+    result = await db.execute(select(TicketAttachment).where(TicketAttachment.id == attachment_id))
+    attachment = result.scalar_one_or_none()
+    if not attachment: raise HTTPException(status_code=404, detail="Attachment not found")
+
+    # Authorization Check
+    db_ticket = await ticket_service.get_ticket(db, attachment.ticket_id)
+    if current_user.role not in STAFF_ROLES and db_ticket.requestor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    from fastapi.responses import FileResponse
+    return FileResponse(attachment.file_path, filename=attachment.file_name)
+
+@router.delete("/attachments/{attachment_id}")
+async def delete_attachment(attachment_id: UUID, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
+    """Delete an attachment."""
+    result = await db.execute(select(TicketAttachment).where(TicketAttachment.id == attachment_id))
+    attachment = result.scalar_one_or_none()
+    if not attachment: raise HTTPException(status_code=404, detail="Attachment not found")
+
+    # Only uploader or Staff can delete
+    if current_user.role not in STAFF_ROLES and attachment.uploader_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    # Remove file from disk
+    if os.path.exists(attachment.file_path):
+        os.remove(attachment.file_path)
+
+    await db.delete(attachment)
+    await db.commit()
+    return {"status": "success", "message": "Attachment removed"}

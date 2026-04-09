@@ -114,10 +114,10 @@ function buildHistoricalOptions(tfId) {
 }
 
 const TIMEFRAMES = [
-    { id: '1W', label: '1 Week',    short: '1W', color: '#10b981', mult: 0.95 },
-    { id: '1M', label: '1 Month',   short: '1M', color: '#3b82f6', mult: 1.0  },
-    { id: '1Q', label: '1 Quarter', short: '1Q', color: '#6366f1', mult: 0.88 },
-    { id: '1Y', label: '1 Year',    short: '1Y', color: '#f59e0b', mult: 0.75 },
+    { id: '1W', label: '1 Week',    short: '1W', color: 'var(--color-kinetic-secondary)', mult: 0.95 },
+    { id: '1M', label: '1 Month',   short: '1M', color: 'var(--color-kinetic-primary)',   mult: 1.0  },
+    { id: '1Q', label: '1 Quarter', short: '1Q', color: 'var(--color-kinetic-cyan)',      mult: 0.88 },
+    { id: '1Y', label: '1 Year',    short: '1Y', color: 'var(--color-kinetic-gold)',      mult: 0.75 },
 ];
 
 /**
@@ -171,99 +171,83 @@ const BusinessRiskRadar = ({ horizon, selectedYear, onOpenAudit, load, complianc
         return { ...dim, load: adj, compliance: Math.max(0, adj - 10) };
     });
 
-    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-    const tickColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)';
-    const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    const tickColor = 'var(--text-muted)';
+    const gridColor = 'var(--border-main)';
 
     if (data.length === 0) return null;
 
-    return (
-        <div className="glass p-8 relative overflow-hidden group h-full flex flex-col">
-            <div className="absolute top-0 left-0 w-full h-1 opacity-40 transition-all duration-700"
-                 style={{ backgroundColor: activeTf.color, boxShadow: `0 0 20px ${activeTf.color}80` }} />
-            <div className="absolute inset-0 pointer-events-none opacity-[0.03] transition-colors duration-700"
-                 style={{ backgroundImage: `radial-gradient(${activeTf.color} 1px, transparent 1px)`, backgroundSize: '20px 20px' }} />
+    return (        <div className="bg-app-surface ring-1 ring-black/5 dark:ring-white/5 p-8 relative overflow-hidden group h-full flex flex-col rounded-2xl border border-transparent shadow-sm">
+            <div className="kinetic-scan-line" />
+            <div className="absolute top-0 left-0 w-full h-[2px] opacity-40 transition-all duration-700 shadow-[0_0_15px_rgba(var(--color-app-primary-rgb),0.5)]"
+                 style={{ backgroundColor: activeTf.color }} />
+            <div className="absolute inset-0 pointer-events-none opacity-[0.05] transition-colors duration-700"
+                 style={{ backgroundImage: `radial-gradient(${activeTf.color} 1px, transparent 1px)`, backgroundSize: '30px 30px' }} />
 
             {/* Header Row */}
-            <div className="flex items-start justify-between mb-4 relative z-10 w-full gap-4">
+            <div className="flex items-start justify-between mb-8 relative z-10 w-full gap-6">
                 <div className="flex-shrink-0">
-                    <h4 className="text-xl font-['Outfit'] font-black flex items-center gap-3 text-app-text tracking-tight italic">
-                        <div className="p-2 rounded-xl border transition-colors duration-500"
-                             style={{ backgroundColor: `${activeTf.color}15`, borderColor: `${activeTf.color}30`, color: activeTf.color }}>
-                            <Target size={22} className="animate-pulse" />
+                    <h4 className="text-2xl font-bold flex items-center gap-4 text-app-text tracking-tight uppercase">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500"
+                             style={{ backgroundColor: `${activeTf.color}1A`, color: activeTf.color }}>
+                            <Target size={20} className="animate-pulse" />
                         </div>
-                        Strategic Risk Radar
+                        Strategic <span style={{ color: activeTf.color }} className="ml-2">Risk</span> Radar
                     </h4>
-                    <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.4em] mt-2 opacity-50">
-                        Global Performance Topology · v5.0
+                    <p className="text-xs font-medium text-app-text-muted mt-2">
+                        Global Performance Topology
                     </p>
                 </div>
 
                 {/* Controls */}
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    {/* Signal status */}
-                    <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase tracking-widest transition-colors duration-500" style={{ color: activeTf.color }}>Signal Stable</span>
-                        <div className="flex gap-1">
-                            {[1, 0.4, 0.2].map((op, i) => (
-                                <div key={i} className="w-1.5 h-1.5 rounded-full transition-colors duration-500" 
-                                     style={{ backgroundColor: activeTf.color, opacity: op }} />
-                            ))}
-                        </div>
-                    </div>
-                    {/* Timeframe Control Moved to Header */}
-                    {/* Historical Period Dropdown */}
-                    <div className="relative w-full min-w-[180px]">
+                <div className="flex items-center flex-shrink-0">
+                    <div className="relative min-w-[160px]">
                         <select
                             value={selectedPeriodIdx}
                             onChange={e => handlePeriodChange(Number(e.target.value))}
-                            className="w-full appearance-none bg-app-bg/80 border border-app-border/40 rounded-xl px-3 py-1.5 text-[10px] font-black text-app-text-muted pr-7 focus:outline-none focus:border-opacity-60 transition-colors"
-                            style={{ borderColor: `${activeTf.color}40`, color: activeTf.color }}
+                            className="w-full appearance-none bg-app-surface/50 ring-1 ring-black/5 dark:ring-white/5 rounded-md border-none px-3 py-1.5 text-xs font-semibold text-app-text pr-8 focus:outline-none focus:ring-2 transition-all cursor-pointer"
+                            style={{ color: activeTf.color }}
                         >
-                            {periodOptions.map((o, i) => <option key={i} value={i} style={{ color: 'inherit' }}>{o.label}</option>)}
+                            {periodOptions.map((o, i) => <option key={i} value={i} className="bg-app-surface text-app-text font-sans">{o.label}</option>)}
                         </select>
-                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: activeTf.color }} />
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: activeTf.color }} />
                     </div>
                 </div>
             </div>
 
             {/* Radar Chart */}
-            <div className="relative flex-grow flex items-center justify-center min-h-[310px]">
+            <div className="relative flex-grow flex items-center justify-center min-h-[340px]">
                 {/* Central Score Node */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
-                    <div className="w-28 h-28 rounded-full bg-app-bg/80 backdrop-blur-3xl border border-app-border/40 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(0,0,0,0.2)] scale-90 group-hover:scale-100 transition-all duration-700">
-                        <div className="absolute inset-0 rounded-full animate-ping opacity-15 transition-colors duration-700" style={{ backgroundColor: activeTf.color }} />
-                        <span className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.3em] mb-1">Health</span>
+                    <div className="w-24 h-24 rounded-full bg-app-obsidian/90 backdrop-blur-3xl border border-app-border flex flex-col items-center justify-center shadow-2xl scale-90 group-hover:scale-100 transition-all duration-700 relative overflow-hidden">
+                        <div className="absolute inset-0 rounded-full animate-ping opacity-10 transition-colors duration-700" style={{ backgroundColor: activeTf.color }} />
+                        <span className="text-[8px] font-semibold text-app-text-muted uppercase tracking-widest mb-1">Health</span>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-4xl font-black text-app-text leading-none">{safeCompliance.toFixed(0)}</span>
-                            <span className="text-sm font-black transition-colors duration-700" style={{ color: activeTf.color }}>%</span>
+                            <span className="text-3xl font-bold text-app-text leading-none">{safeCompliance.toFixed(0)}</span>
+                            <span className="text-sm font-bold transition-colors duration-700" style={{ color: activeTf.color }}>%</span>
                         </div>
-                        <span className="text-[8px] font-bold text-app-text-muted mt-0.5 opacity-60 max-w-[80px] text-center leading-tight">
-                            {selectedPeriod?.label}
-                        </span>
                     </div>
                 </div>
 
                 <div className="absolute inset-0 z-10">
                     <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
-                            <PolarGrid stroke={gridColor} strokeDasharray="3 3" />
-                            <PolarAngleAxis dataKey="subject"
-                                onClick={(data) => onOpenAudit && onOpenAudit(data.value)}
-                                style={{ cursor: 'pointer' }}
-                                tick={{ fill: tickColor, fontSize: 10, fontWeight: 900, letterSpacing: '0.05em' }} />
+                        <RadarChart cx="50%" cy="50%" outerRadius="80%" data={data}>
+                            <PolarGrid stroke={gridColor} strokeDasharray="4 4" strokeOpacity={0.3} />
+                             <PolarAngleAxis dataKey="subject"
+                                 onClick={(data) => onOpenAudit && onOpenAudit(data.value)}
+                                 style={{ cursor: 'pointer' }}
+                                 tick={{ fill: tickColor, fontSize: 11, fontWeight: 600 }} />
                             <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                            <Radar name="Benchmark" dataKey="fullMark" stroke={gridColor} fill="transparent" strokeWidth={1} strokeDasharray="4 4" />
+                            <Radar name="Benchmark" dataKey="fullMark" stroke={gridColor} fill="transparent" strokeWidth={1} strokeDasharray="6 6" strokeOpacity={0.4} />
                             <Radar name="Health" dataKey="load"
-                                stroke={activeTf.color} fill="url(#radarGradient)" fillOpacity={0.5} strokeWidth={3}
-                                dot={{ r: 4, fill: activeTf.color, stroke: 'var(--app-bg)', strokeWidth: 2 }}
-                                activeDot={{ r: 6, fill: activeTf.color, stroke: '#fff', strokeWidth: 2 }}
-                                animationDuration={900}
+                                stroke={activeTf.color} fill="url(#radarGradient)" fillOpacity={0.6} strokeWidth={4}
+                                dot={{ r: 5, fill: activeTf.color, stroke: 'var(--bg-app-obsidian)', strokeWidth: 2 }}
+                                activeDot={{ r: 8, fill: activeTf.color, stroke: '#fff', strokeWidth: 2 }}
+                                animationDuration={1000}
                                 style={{ transition: 'stroke 700ms ease, fill 700ms ease' }} />
                             <defs>
                                 <linearGradient id="radarGradient" x1="0" y1="0" x2="1" y2="1">
                                     <stop offset="5%"  stopColor={activeTf.color} stopOpacity={1} style={{ transition: 'stop-color 700ms ease' }} />
-                                    <stop offset="95%" stopColor={activeTf.color} stopOpacity={0.2} style={{ transition: 'stop-color 700ms ease' }} />
+                                    <stop offset="95%" stopColor={activeTf.color} stopOpacity={0.1} style={{ transition: 'stop-color 700ms ease' }} />
                                 </linearGradient>
                             </defs>
                         </RadarChart>
@@ -272,18 +256,18 @@ const BusinessRiskRadar = ({ horizon, selectedYear, onOpenAudit, load, complianc
             </div>
 
             {/* Bottom Signal Grid */}
-            <div className="mt-6 grid grid-cols-3 gap-2 border-t border-app-border/20 pt-6 relative z-10">
+            <div className="mt-8 grid grid-cols-3 gap-4 border-t border-app-border/20 pt-8 relative z-10">
                 {[
                     { icon: Zap,    label: 'Velocity',  value: `${Math.floor(92 * activeTf.mult)}%`, animated: true },
-                    { icon: Shield, label: 'Trust',     value: { '1W': 'A+', '1M': 'A', '1Q': 'B+', '1Y': 'B' }[activeTf.id] },
-                    { icon: Shield, label: 'Stability', value: `${(Math.floor(99.9 * activeTf.mult * 10) / 10)}` },
+                    { icon: Shield, label: 'Trust_Sig', value: { '1W': 'A++', '1M': 'A+', '1Q': 'A', '1Y': 'B+' }[activeTf.id] },
+                    { icon: Shield, label: 'Stability', value: `${(Math.floor(99.9 * activeTf.mult * 10) / 10)}%` },
                 ].map(({ icon: Icon, label, value, animated }) => (
-                    <div key={label} className="flex flex-col items-center p-3 rounded-2xl hover:bg-app-bg/50 transition-all duration-300">
-                        <div className="flex items-center gap-2 mb-1 transition-colors duration-500" style={{ color: activeTf.color }}>
-                            <Icon size={14} className={`opacity-70 ${animated ? 'animate-pulse' : ''}`} />
-                            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-app-text-muted">{label}</span>
+                    <div key={label} className="flex flex-col items-center p-4 rounded-none hover:bg-app-surface/40 transition-all duration-500 border border-transparent hover:border-app-border group/detail">
+                        <div className="flex items-center gap-3 mb-2 transition-colors duration-500" style={{ color: activeTf.color }}>
+                            <Icon size={16} className={`opacity-80 ${animated ? 'animate-pulse' : ''}`} />
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-app-text-muted italic group-hover/detail:text-app-text transition-colors">{label}</span>
                         </div>
-                        <span className="text-lg font-black text-app-text tabular-nums transition-all duration-500">{value}</span>
+                        <span className="text-2xl font-bold text-app-text tabular-nums tracking-tight transition-all duration-500">{value}</span>
                     </div>
                 ))}
             </div>

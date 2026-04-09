@@ -58,11 +58,11 @@ export default function BulkImport({ isOpen, onClose }) {
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 border border-app-border rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 border border-app-border rounded-none shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
                 {/* Header */}
                 <div className="p-6 border-b border-app-border bg-gradient-to-r from-blue-600/10 to-purple-600/10 flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                        <div className="p-2.5 rounded-none bg-blue-500/20 text-blue-400 border border-blue-500/30">
                             <Database size={22} />
                         </div>
                         <div>
@@ -72,7 +72,7 @@ export default function BulkImport({ isOpen, onClose }) {
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-app-text-muted hover:text-app-text hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-xl transition-colors"
+                        className="p-2 text-app-text-muted hover:text-app-text hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft rounded-none transition-colors"
                     >
                         <X size={20} />
                     </button>
@@ -85,7 +85,7 @@ export default function BulkImport({ isOpen, onClose }) {
                             <div
                                 onClick={() => fileInputRef.current?.click()}
                                 className={`
-                                    relative group cursor-pointer border-2 border-dashed rounded-2xl p-10 transition-all text-center
+                                    relative group cursor-pointer border-2 border-dashed rounded-none p-10 transition-all text-center
                                     ${file ? 'border-blue-500/50 bg-blue-500/5' : 'border-app-border hover:border-blue-500/30 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft'}
                                 `}
                             >
@@ -100,7 +100,7 @@ export default function BulkImport({ isOpen, onClose }) {
                                 <div className="flex flex-col items-center gap-4">
                                     {file ? (
                                         <div className="flex flex-col items-center">
-                                            <div className="p-4 rounded-2xl bg-emerald-500/20 text-emerald-400 mb-2">
+                                            <div className="p-4 rounded-none bg-emerald-500/20 text-emerald-400 mb-2">
                                                 <FileText size={40} />
                                             </div>
                                             <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">{file.name}</span>
@@ -108,7 +108,7 @@ export default function BulkImport({ isOpen, onClose }) {
                                         </div>
                                     ) : (
                                         <>
-                                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 text-app-text-muted group-hover:scale-110 transition-transform">
+                                            <div className="p-4 rounded-none bg-slate-50 dark:bg-slate-800 text-app-text-muted group-hover:scale-110 transition-transform">
                                                 <Upload size={32} />
                                             </div>
                                             <div>
@@ -121,7 +121,7 @@ export default function BulkImport({ isOpen, onClose }) {
                             </div>
 
                             {error && (
-                                <div className="flex items-start gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 animate-in slide-in-from-top-2">
+                                <div className="flex items-start gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-none text-rose-400 animate-in slide-in-from-top-2">
                                     <AlertCircle size={18} className="shrink-0 mt-0.5" />
                                     <p className="text-sm">{error}</p>
                                 </div>
@@ -130,7 +130,7 @@ export default function BulkImport({ isOpen, onClose }) {
                             <div className="flex gap-3">
                                 <button
                                     onClick={onClose}
-                                    className="flex-1 px-6 py-3 rounded-xl border border-app-border text-app-text-muted font-semibold hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft transition-colors"
+                                    className="flex-1 px-6 py-3 rounded-none border border-app-border text-app-text-muted font-semibold hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -138,7 +138,7 @@ export default function BulkImport({ isOpen, onClose }) {
                                     onClick={handleUpload}
                                     disabled={!file || isUploading}
                                     className={`
-                                        flex-[2] px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all
+                                        flex-[2] px-6 py-3 rounded-none font-semibold flex items-center justify-center gap-2 transition-all
                                         ${!file || isUploading
                                             ? 'bg-slate-50 dark:bg-slate-800 text-app-text-muted cursor-not-allowed'
                                             : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-app-text shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:scale-[1.02]'}
@@ -171,22 +171,22 @@ export default function BulkImport({ isOpen, onClose }) {
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-950/50 border border-app-border">
+                                <div className="p-4 rounded-none bg-slate-100 dark:bg-slate-950/50 border border-app-border">
                                     <span className="block text-2xl font-bold text-blue-400">{result.asset_requests_created || 0}</span>
                                     <span className="text-xs text-app-text-muted uppercase tracking-wider font-semibold">Asset Requests</span>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-950/50 border border-app-border">
+                                <div className="p-4 rounded-none bg-slate-100 dark:bg-slate-950/50 border border-app-border">
                                     <span className="block text-2xl font-bold text-purple-400">{result.procurement_requests_created || 0}</span>
                                     <span className="text-xs text-app-text-muted uppercase tracking-wider font-semibold">Procurement</span>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-slate-100 dark:bg-slate-950/50 border border-app-border">
+                                <div className="p-4 rounded-none bg-slate-100 dark:bg-slate-950/50 border border-app-border">
                                     <span className="block text-2xl font-bold text-emerald-400">{result.users_imported || 0}</span>
                                     <span className="text-xs text-app-text-muted uppercase tracking-wider font-semibold">Staff Records</span>
                                 </div>
                             </div>
 
                             {result.errors && result.errors.length > 0 && (
-                                <div className="text-left max-h-40 overflow-y-auto p-4 bg-slate-100 dark:bg-slate-950/50 border border-app-border rounded-xl space-y-2">
+                                <div className="text-left max-h-40 overflow-y-auto p-4 bg-slate-100 dark:bg-slate-950/50 border border-app-border rounded-none space-y-2">
                                     <h4 className="text-xs font-bold text-rose-500 uppercase flex items-center gap-2">
                                         <AlertCircle size={14} /> Issues encountered:
                                     </h4>
@@ -201,7 +201,7 @@ export default function BulkImport({ isOpen, onClose }) {
 
                             <button
                                 onClick={reset}
-                                className="w-full px-6 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-app-text font-semibold hover:bg-slate-200 dark:bg-slate-700 transition-colors"
+                                className="w-full px-6 py-3 rounded-none bg-slate-50 dark:bg-slate-800 text-app-text font-semibold hover:bg-slate-200 dark:bg-slate-700 transition-colors"
                             >
                                 Import Another File
                             </button>

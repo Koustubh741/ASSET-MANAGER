@@ -6,14 +6,10 @@
         "**/node_modules",
         "**/__pycache__"
     ],
-    "executionEnvironments": [
-        {
-            "root": "backend",
-            "extraPaths": [
-                "D:/ASSET-MANAGER/backend",
-                "C:/Users/Admin/AppData/Local/Programs/Python/Python311/Lib/site-packages"
-            ]
-        }
+    "extraPaths": [
+        "backend",
+        "backend/scripts",
+        "C:/Users/Admin/AppData/Local/Programs/Python/Python311/Lib/site-packages"
     ],
     "useLibraryCodeForTypes": true,
     "typeCheckingMode": "basic"

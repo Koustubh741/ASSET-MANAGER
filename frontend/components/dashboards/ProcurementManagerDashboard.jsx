@@ -119,13 +119,13 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => window.location.href = '/tickets/new'}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-sm font-medium transition-all active:scale-95"
+                            className="flex items-center gap-2 px-4 py-2 rounded-none bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-sm font-medium transition-all active:scale-95"
                         >
                             <LifeBuoy size={18} /> Get Support
                         </button>
                         <button
                             onClick={exportProcurementSummary}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
+                            className="flex items-center gap-2 px-4 py-2 rounded-none bg-app-surface-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface border border-slate-200 dark:border-white/20 text-app-text text-sm font-medium"
                         >
                             <Download size={18} /> Export PO & Delivery Summary
                         </button>
@@ -151,7 +151,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                     <div className="glass-card p-5">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-blue-500/20 text-blue-400">
+                            <div className="p-3 rounded-none bg-blue-500/20 text-blue-400">
                                 <ShoppingCart size={24} />
                             </div>
                             <div>
@@ -162,7 +162,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                     </div>
                     <div className="glass-card p-5">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-amber-500/20 text-amber-400">
+                            <div className="p-3 rounded-none bg-amber-500/20 text-amber-400">
                                 <FileText size={24} />
                             </div>
                             <div>
@@ -173,7 +173,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                     </div>
                     <div className="glass-card p-5">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-emerald-500/20 text-emerald-400">
+                            <div className="p-3 rounded-none bg-emerald-500/20 text-emerald-400">
                                 <DollarSign size={24} />
                             </div>
                             <div>
@@ -186,7 +186,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                     </div>
                     <div className="glass-card p-5">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-purple-500/20 text-purple-400">
+                            <div className="p-3 rounded-none bg-purple-500/20 text-purple-400">
                                 <Calendar size={24} />
                             </div>
                             <div>
@@ -197,7 +197,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                     </div>
                     <div className="glass-card p-5">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-lg bg-rose-500/20 text-rose-400">
+                            <div className="p-3 rounded-none bg-rose-500/20 text-rose-400">
                                 <CreditCard size={24} />
                             </div>
                             <div>
@@ -243,13 +243,13 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                         </h3>
                         <button
                             onClick={() => setShowPoAudit(!showPoAudit)}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-app-surface-soft border border-app-border-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface"
+                            className="text-xs px-3 py-1.5 rounded-none bg-app-surface-soft border border-app-border-soft hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface"
                         >
                             {showPoAudit ? 'Hide' : 'Show'} audit table
                         </button>
                     </div>
                     {showPoAudit && (
-                        <div className="overflow-x-auto rounded-xl border border-app-border">
+                        <div className="overflow-x-auto rounded-none border border-app-border">
                             <table className="w-full text-sm text-left">
                                 <thead className="text-app-text-muted text-app-text-muted border-b border-app-border text-xs uppercase font-bold">
                                     <tr>
@@ -359,7 +359,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                         </h3>
 
                         {awaitingPO.length === 0 ? (
-                            <div className="p-8 text-center bg-app-surface-soft rounded-xl border border-dashed border-app-border">
+                            <div className="p-8 text-center bg-app-surface-soft rounded-none border border-dashed border-app-border">
                                 <p className="text-app-text-muted font-medium">No requests awaiting PO creation</p>
                                 <p className="text-sm text-app-text-muted mt-1">Approved requests will appear here for purchase order creation.</p>
                             </div>
@@ -401,13 +401,13 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                                                 const reason = prompt("Enter rejection reason:");
                                                                 if (reason && reason.trim()) procurementReject(req.id, reason.trim());
                                                             }}
-                                                            className="bg-rose-600 hover:bg-rose-500 text-app-text text-xs px-3 py-2 rounded-lg font-medium shadow-lg shadow-rose-500/10 transition-all flex items-center gap-2"
+                                                            className="bg-rose-600 hover:bg-rose-500 text-app-text text-xs px-3 py-2 rounded-none font-medium shadow-lg shadow-rose-500/10 transition-all flex items-center gap-2"
                                                         >
                                                             <XCircle size={14} /> Reject
                                                         </button>
                                                         <button
                                                             onClick={() => setSelectedRequest(req)}
-                                                            className="bg-blue-600 hover:bg-blue-500 text-app-text text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2"
+                                                            className="bg-blue-600 hover:bg-blue-500 text-app-text text-xs px-4 py-2 rounded-none font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2"
                                                         >
                                                             <Eye size={14} /> Review & Approve
                                                         </button>
@@ -470,14 +470,14 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                                                     <div className="flex justify-end gap-2">
                                                         <button
                                                             onClick={() => setSelectedRequest(req)}
-                                                            className="p-2 text-app-text-muted text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg transition-all"
+                                                            className="p-2 text-app-text-muted text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none transition-all"
                                                             title="View Details"
                                                         >
                                                             <Eye size={18} />
                                                         </button>
                                                         <button
                                                             onClick={() => setSelectedRequest(req)}
-                                                            className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-xs px-4 py-2 rounded-lg font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
+                                                            className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-xs px-4 py-2 rounded-none font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
                                                         >
                                                             <CheckCircle size={14} /> Confirm Delivery → Inventory
                                                         </button>

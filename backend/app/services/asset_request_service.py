@@ -48,24 +48,34 @@ def sync_request_state(db_request: AssetRequest):
 
 from sqlalchemy.orm import joinedload
 
+
+
+
 async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, user_role: str = None) -> AssetRequestResponse:
-    """Helper to add requester name/email and procurement info (role-sensitive)"""
-    # Note: requester relationship should be pre-loaded for efficiency
-    res = AssetRequestResponse.model_validate(db_request)
+    """Helper to add requester name/email and procurement info (role-sensitive) without triggering lazy-loads"""
+    # Map basic fields from model to dict
+    data = {c.name: getattr(db_request, c.name) for c in db_request.__table__.columns}
+    data['id'] = db_request.id
+    # Handle fields that might have different names or logic
+    data['created_at'] = db_request.created_at
+    data['updated_at'] = db_request.updated_at
     
+    # Instantiate Response with only base fields first
+    res = AssetRequestResponse.model_validate(data)
+    
+    # Manually populate requester fields with safety
     if db_request.requester:
         res.requester_name = db_request.requester.full_name
         res.requester_email = db_request.requester.email
-        res.requester_department = db_request.requester.department
-    
-    # Step 6: Role-Based Visibility (Backend Enforced)
-    if user_role in ["PROCUREMENT", "FINANCE", "ADMIN"]:
-        # Fetch current PO
-        po_query = select(PurchaseOrder).filter(PurchaseOrder.asset_request_id == db_request.id).order_by(desc(PurchaseOrder.created_at))
-        po_result = await db.execute(po_query)
-        po = po_result.scalars().first()
-        
-        if po:
+        if db_request.requester.dept_obj:
+            res.requester_department = db_request.requester.dept_obj.name
+        else:
+            res.requester_department = "N/A"
+            
+    # Populate PO/Invoice
+    if db_request.purchase_orders:
+        po = db_request.purchase_orders[0]
+        if user_role in ["PROCUREMENT", "FINANCE", "ADMIN"]:
             res.purchase_order = {
                 "id": po.id,
                 "vendor_name": po.vendor_name,
@@ -74,43 +84,23 @@ async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, u
                 "po_pdf_path": po.po_pdf_path,
                 "extracted_data": po.extracted_data
             }
-            
-            # Fetch Invoice linked to this PO
-            inv_query = select(PurchaseInvoice).filter(PurchaseInvoice.purchase_order_id == po.id)
-            inv_result = await db.execute(inv_query)
-            invoice = inv_result.scalars().first()
-            
-            if invoice:
+            if po.invoice:
+                inv = po.invoice
                 res.purchase_invoice = {
-                    "purchase_date": invoice.purchase_date.isoformat() if invoice.purchase_date else None,
-                    "total_amount": invoice.total_amount,
-                    "invoice_pdf_path": invoice.invoice_pdf_path
+                    "purchase_date": inv.purchase_date.isoformat() if inv.purchase_date else None,
+                    "total_amount": inv.total_amount,
+                    "invoice_pdf_path": inv.invoice_pdf_path
                 }
-        
-        # Fetch detailed procurement logs
-        logs_query = select(ProcurementLog).filter(ProcurementLog.reference_id == db_request.id).order_by(desc(ProcurementLog.created_at))
-        logs_result = await db.execute(logs_query)
-        logs = logs_result.scalars().all()
-        
-        res.procurement_logs = [
-            {"action": l.action, "performed_by": l.performed_by, "timestamp": l.created_at.isoformat(), "metadata": l.metadata_} 
-            for l in logs
-        ]
-        
-    elif user_role == "IT_MANAGEMENT":
-        po_query = select(PurchaseOrder).filter(PurchaseOrder.asset_request_id == db_request.id)
-        po_result = await db.execute(po_query)
-        po = po_result.scalars().first()
-        if po:
+        elif user_role == "IT_MANAGEMENT":
             res.purchase_order = {
                 "status": po.status,
                 "vendor_name": po.vendor_name
             }
-            
-    # --- Virtual Field Enrichment from DB (or fallback to map) ---
+
+    # Virtual/Audit fields (already loaded or computed)
     res.current_owner_role = db_request.current_owner_role or STATUS_MAP.get(db_request.status, (None, None))[0]
     res.procurement_stage = db_request.procurement_stage or STATUS_MAP.get(db_request.status, (None, None))[1]
-            
+    
     return res
 
 
@@ -119,7 +109,7 @@ async def get_asset_request_by_id(db: AsyncSession, request_id: UUID, user_role:
     Get an asset request by ID with the requester relationship pre-loaded
     """
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     request = result.scalars().first()
     if request:
@@ -132,7 +122,7 @@ async def get_asset_request_by_id_db(db: AsyncSession, request_id: UUID) -> Opti
     Get an asset request by ID (returns DB model, not response) with requester pre-loaded
     """
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     return result.scalars().first()
 
@@ -165,7 +155,7 @@ async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate,
     async with _asset_request_creation_locks[requester_id_str]:
         # 1. Check for recent identical request (Duplicate Prevention)
         since = datetime.now(timezone.utc) - timedelta(seconds=60)
-        dup_query = select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(
+        dup_query = select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(
             AssetRequest.requester_id == requester_id,
             AssetRequest.asset_name == request.asset_name,
             AssetRequest.asset_type == request.asset_type,
@@ -202,7 +192,7 @@ async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate,
         db.add(db_request)
         await db.commit()
         # Pre-fetch requester for the response
-        query = select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == db_request.id)
+        query = select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
         result = await db.execute(query)
         db_request = result.scalars().first()
         return await _populate_requester_info(db, db_request)
@@ -222,7 +212,7 @@ async def update_asset_request_status_with_validation(
     Update asset request status with state machine validation
     """
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     db_request = result.scalars().first()
     if not db_request:
@@ -234,6 +224,13 @@ async def update_asset_request_status_with_validation(
         raise ValueError(f"Rejection reason is mandatory when transitioning to {new_status}")
     
     # Validate state transition
+    try:
+        with open(r"D:\ASSET-MANAGER\backend\state_debug.log", "a") as f:
+            f.write(f"--- TRANSITION START ---\n")
+            f.write(f"ID: {db_request.id} | From: {db_request.status} | To: {new_status} | Role: {user_role} | Type: {db_request.asset_ownership_type}\n")
+    except:
+        pass
+    
     is_valid, error_msg = validate_state_transition(
         current_status=db_request.status,
         new_status=new_status,
@@ -242,7 +239,21 @@ async def update_asset_request_status_with_validation(
     )
     
     if not is_valid:
+        try:
+            with open(r"D:\ASSET-MANAGER\backend\state_debug.log", "a") as f:
+                f.write(f"INVALID: {error_msg}\n")
+        except:
+            pass
         raise ValueError(error_msg)
+    
+    try:
+        with open(r"D:\ASSET-MANAGER\backend\state_debug.log", "a") as f:
+            f.write(f"VALID\n")
+    except:
+        pass
+
+
+
     
     # Update status
     db_request.status = new_status
@@ -263,8 +274,13 @@ async def update_asset_request_status_with_validation(
     
     sync_request_state(db_request)
     await db.commit()
-    await db.refresh(db_request)
+    # Re-fetch with joinedload to ensure relationships are loaded for serialization
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
+    )
+    db_request = result.scalars().first()
     return await _populate_requester_info(db, db_request, user_role=user_role)
+
 
 
 async def update_it_review_status(
@@ -286,7 +302,7 @@ async def update_it_review_status(
     """
     print(f"[DEBUG] update_it_review_status: Looking for request_id={request_id}, new_status={new_status}")
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     db_request = result.scalars().first()
     if not db_request:
@@ -326,8 +342,13 @@ async def update_it_review_status(
 
     sync_request_state(db_request)
     await db.commit()
-    await db.refresh(db_request)
+    # Re-fetch with joinedload to ensure relationships are loaded for serialization
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
+    )
+    db_request = result.scalars().first()
     return await _populate_requester_info(db, db_request, user_role="IT_MANAGEMENT")
+
 
 
 async def update_procurement_finance_status(
@@ -344,7 +365,7 @@ async def update_procurement_finance_status(
     Finance approve/reject is handled by procurement_service.validate_finance_budget.
     """
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     db_request = result.scalars().first()
     if not db_request:
@@ -402,7 +423,8 @@ async def update_procurement_finance_status(
     db.add(log)
     
     await db.commit()
-    await db.refresh(db_request)
+    result = await db.execute(select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)) 
+    db_request = result.scalars().first()
     return await _populate_requester_info(db, db_request, user_role=user_role)
 
 
@@ -418,7 +440,7 @@ async def perform_qc_check(
     Perform quality check on received asset
     """
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     db_request = result.scalars().first()
     if not db_request:
@@ -453,7 +475,11 @@ async def perform_qc_check(
     })
     
     await db.commit()
-    await db.refresh(db_request)
+    # Re-fetch with joinedload to ensure relationships are loaded for serialization
+    result = await db.execute(
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
+    )
+    db_request = result.scalars().first()
     if qc_status == "FAILED":
         await NotificationService(db).notify_qc_failed(request_id)
     return await _populate_requester_info(db, db_request)
@@ -469,7 +495,7 @@ async def update_user_acceptance(
     Update user acceptance status
     """
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     db_request = result.scalars().first()
     if not db_request:
@@ -521,7 +547,8 @@ async def update_user_acceptance(
     
     sync_request_state(db_request)
     await db.commit()
-    await db.refresh(db_request)
+    result = await db.execute(select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)) 
+    db_request = result.scalars().first()
     return await _populate_requester_info(db, db_request)
 
 
@@ -538,7 +565,7 @@ async def register_byod_device_service(
     Service to register a BYOD device and update request status.
     """
     result = await db.execute(
-        select(AssetRequest).options(joinedload(AssetRequest.requester)).filter(AssetRequest.id == request_id)
+        select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
     )
     db_request = result.scalars().first()
     # Accept both IT_APPROVED (quick path) and BYOD_COMPLIANCE_CHECK (full compliance flow)
@@ -558,7 +585,7 @@ async def register_byod_device_service(
     )
     db.add(byod)
     
-    # 2. Update status: IT_APPROVED → IN_USE (quick path); BYOD_COMPLIANCE_CHECK → keep for compliance check
+    # 2. Update status: IT_APPROVED â†’ IN_USE (quick path); BYOD_COMPLIANCE_CHECK â†’ keep for compliance check
     if db_request.status == "IT_APPROVED":
         db_request.status = "IN_USE"
     db_request.updated_at = datetime.now()
@@ -576,7 +603,8 @@ async def register_byod_device_service(
     
     sync_request_state(db_request)
     await db.commit()
-    await db.refresh(db_request)
+    result = await db.execute(select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)) 
+    db_request = result.scalars().first()
     return await _populate_requester_info(db, db_request)
 
 
@@ -609,9 +637,12 @@ async def get_all_asset_requests(
     if department:
         # Resolve users in this department or domain
         query = query.join(User, AssetRequest.requester_id == User.id)
+        from ..models.models import Department
         filters.append(
             or_(
-                User.department.ilike(f"%{department}%"),
+                User.department_id.in_(
+                    select(Department.id).filter(Department.name.ilike(f"%{department}%"))
+                ),
                 User.domain.ilike(f"%{department}%")
             )
         )
@@ -623,8 +654,13 @@ async def get_all_asset_requests(
     if filters:
         query = query.filter(or_(*filters))
     
-    # Eager load requester for the entire list
-    query = query.options(joinedload(AssetRequest.requester))
+    # Root Fix: selectinload requester, purchase_orders, and their invoices in just 3 bulk queries 
+    # instead of 900+ sequential queries per dashboard load.
+    from sqlalchemy.orm import selectinload
+    query = query.options(
+        selectinload(AssetRequest.requester).selectinload(User.dept_obj),
+        selectinload(AssetRequest.purchase_orders).selectinload(PurchaseOrder.invoice)
+    )
     
     # Order by newest first so pending requests appear at top
     query = query.order_by(desc(AssetRequest.created_at))
@@ -691,3 +727,5 @@ async def apply_root_fix(db: AsyncSession) -> dict:
 
     await db.commit()
     return {"updated": updated, "errors": errors}
+
+

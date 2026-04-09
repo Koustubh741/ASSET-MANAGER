@@ -58,7 +58,7 @@ export default function AssignAsset() {
             </div>
 
             <div className="glass-panel p-8">
-                <div className="mb-8 p-6 bg-white dark:bg-slate-900/50 rounded-xl border border-app-border">
+                <div className="mb-8 p-6 bg-white dark:bg-slate-900/50 rounded-none border border-app-border">
                     <p className="text-sm text-app-text-muted mb-1">Selected Asset</p>
                     <div className="flex justify-between items-center">
                         <p className="font-bold text-xl text-app-text">{asset.name}</p>

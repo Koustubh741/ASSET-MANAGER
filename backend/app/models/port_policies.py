@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.sql import func
 import uuid
 
-from app.database.database import Base
+from ..database.database import Base
 
 
 class PortPolicy(Base):

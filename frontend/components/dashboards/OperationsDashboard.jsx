@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import apiClient from '@/lib/apiClient'
 import { useRole } from '@/contexts/RoleContext'
+import QuickActionGrid from './QuickActionGrid'
 
 export default function OperationsDashboard() {
     const { user } = useRole()
@@ -24,7 +25,7 @@ export default function OperationsDashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const data = await apiClient.get('/api/v1/departments/stats')
+                const data = await apiClient.get('/departments/stats')
                 setStats(data)
                 setLoading(false)
             } catch (error) {
@@ -46,7 +47,7 @@ export default function OperationsDashboard() {
             <div className={`absolute -right-8 -top-8 w-24 h-24 rounded-full bg-${color}-500 opacity-5 blur-2xl group-hover:opacity-10 transition-opacity`}></div>
             <div className="relative z-10">
                 <div className="flex justify-between items-start mb-4">
-                    <div className={`p-3 rounded-xl bg-${color}-500/10 border border-${color}-500/20 text-${color}-500`}>
+                    <div className={`p-3 rounded-none bg-${color}-500/10 border border-${color}-500/20 text-${color}-500`}>
                         <Icon size={24} />
                     </div>
                 </div>
@@ -79,6 +80,8 @@ export default function OperationsDashboard() {
                 <OpsStat label="Inventory Level" value="High" icon={Box} color="emerald" />
             </div>
 
+            <QuickActionGrid />
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Logistics & Movement */}
                 <div className="lg:col-span-2 glass-panel p-8 border border-app-border shadow-2xl relative overflow-hidden group">
@@ -86,7 +89,7 @@ export default function OperationsDashboard() {
                     
                     <div className="flex justify-between items-center mb-8 relative z-10">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500">
+                            <div className="p-2 rounded-none bg-amber-500/10 text-amber-500">
                                 <ArrowRightLeft size={20} />
                             </div>
                             <h3 className="text-xl font-black text-app-text uppercase tracking-tight">Active Logistics</h3>
@@ -103,7 +106,7 @@ export default function OperationsDashboard() {
                             { item: 'Server Rack Rails', route: 'Warehouse -> DC-1', status: 'Out for Delivery', progress: 92, color: 'emerald' },
                             { item: 'Workstation Monitors', route: 'Local Store -> Office', status: 'Delivered', progress: 100, color: 'slate' },
                         ].map((log, i) => (
-                            <div key={i} className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all">
+                            <div key={i} className="p-4 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-all">
                                 <div className="flex justify-between items-center mb-3">
                                     <div>
                                         <div className="text-sm font-black text-app-text uppercase tracking-tight">{log.item}</div>
@@ -131,9 +134,9 @@ export default function OperationsDashboard() {
                             { site: 'DC-1', task: 'UPS Testing', date: 'Oct 25', icon: Settings, color: 'blue' },
                             { site: 'Site B', task: 'Office Upgrade', date: 'Nov 02', icon: Layers, color: 'amber' },
                         ].map((task, i) => (
-                            <div key={i} className="group p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:border-amber-500/30 transition-all">
+                            <div key={i} className="group p-5 rounded-none bg-slate-50 dark:bg-white/[0.02] border border-app-border hover:border-amber-500/30 transition-all">
                                 <div className="flex items-center gap-4 mb-3">
-                                    <div className={`p-2 rounded-xl bg-${task.color}-500/10 text-${task.color}-500`}>
+                                    <div className={`p-2 rounded-none bg-${task.color}-500/10 text-${task.color}-500`}>
                                         <task.icon size={20} />
                                     </div>
                                     <div>
@@ -142,7 +145,7 @@ export default function OperationsDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-end">
-                                    <div className="text-[10px] font-black text-app-text uppercase tracking-widest bg-slate-200 bg-app-surface-soft px-2 py-1 rounded-lg">Due {task.date}</div>
+                                    <div className="text-[10px] font-black text-app-text uppercase tracking-widest bg-slate-200 bg-app-surface-soft px-2 py-1 rounded-none">Due {task.date}</div>
                                     <button className="text-amber-500 hover:scale-110 transition-transform">
                                         <Navigation size={18} />
                                     </button>
@@ -155,13 +158,13 @@ export default function OperationsDashboard() {
 
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-4">
-                <button className="px-6 py-3 rounded-2xl bg-amber-600 text-app-text text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-600/30 hover:shadow-amber-600/50 hover:scale-105 active:scale-95 transition-all">
+                <button className="px-6 py-3 rounded-none bg-amber-600 text-app-text text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-600/30 hover:shadow-amber-600/50 hover:scale-105 active:scale-95 transition-all">
                     New Dispatch
                 </button>
-                <button className="px-6 py-3 rounded-2xl bg-app-surface-soft text-app-text text-[10px] font-black uppercase tracking-widest border border-app-border hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
+                <button className="px-6 py-3 rounded-none bg-app-surface-soft text-app-text text-[10px] font-black uppercase tracking-widest border border-app-border hover:bg-slate-200 dark:hover:bg-white/10 transition-all">
                     Schedule Audit
                 </button>
-                <button className="px-6 py-3 rounded-2xl bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest border border-blue-500/20 hover:bg-blue-500/20 transition-all">
+                <button className="px-6 py-3 rounded-none bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-widest border border-blue-500/20 hover:bg-blue-500/20 transition-all">
                     Track Containers
                 </button>
             </div>

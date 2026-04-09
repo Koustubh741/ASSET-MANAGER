@@ -53,7 +53,7 @@ export default function BarcodeScanPage() {
                         <p className="text-app-text-muted text-xs mt-0.5">Use your device camera to scan a QR or barcode</p>
                     </div>
                     <button
-                        className="ml-auto px-4 py-2 rounded-lg text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-not-allowed opacity-60"
+                        className="ml-auto px-4 py-2 rounded-none text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 cursor-not-allowed opacity-60"
                         disabled
                     >Coming Soon</button>
                 </div>
@@ -67,12 +67,12 @@ export default function BarcodeScanPage() {
                             placeholder="Enter serial number or barcode…"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
-                            className="flex-1 bg-app-surface-soft border border-white/15 rounded-xl px-4 py-3 text-sm text-app-text placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
+                            className="flex-1 bg-app-surface-soft border border-white/15 rounded-none px-4 py-3 text-sm text-app-text placeholder-slate-500 focus:outline-none focus:border-indigo-500/50"
                         />
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-3 rounded-xl bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 font-semibold text-sm transition-all"
+                            className="px-6 py-3 rounded-none bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/30 font-semibold text-sm transition-all"
                         >{loading ? '…' : '🔍 Search'}</button>
                     </form>
                 </div>
@@ -101,7 +101,7 @@ export default function BarcodeScanPage() {
                                 ['Cost', result.cost != null ? `₹${Number(result.cost).toLocaleString()}` : '—'],
                                 ['Segment', result.segment || '—'],
                             ].map(([k, v]) => (
-                                <div key={k} className="bg-white/4 rounded-lg p-3 border border-white/8">
+                                <div key={k} className="bg-white/4 rounded-none p-3 border border-white/8">
                                     <p className="text-app-text-muted text-xs mb-0.5">{k}</p>
                                     <p className="text-app-text font-medium truncate">{v}</p>
                                 </div>
@@ -109,7 +109,7 @@ export default function BarcodeScanPage() {
                         </div>
                         <a
                             href={`/assets/${result.id}`}
-                            className="block text-center py-2.5 rounded-xl bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/30 text-sm font-semibold transition-all"
+                            className="block text-center py-2.5 rounded-none bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/30 text-sm font-semibold transition-all"
                         >View Full Asset →</a>
                     </div>
                 )}

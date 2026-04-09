@@ -15,7 +15,7 @@ const AssetDistribution = ({ distribution, statusDistribution }) => {
             <div className="flex items-center justify-between mb-10 relative z-10">
                 <div>
                     <h4 className="text-xl font-['Outfit'] font-black flex items-center gap-3 text-app-text uppercase tracking-tighter">
-                        <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
+                        <div className="p-2 rounded-none bg-primary/10 text-primary border border-primary/20">
                             <Shield size={20} />
                         </div>
                         Fleet Inventory & Status

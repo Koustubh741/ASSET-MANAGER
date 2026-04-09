@@ -3,10 +3,10 @@
 {
     selectedAgentDetails && AGENT_DETAILS[selectedAgentDetails.id] && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white dark:bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-app-border rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10">
+            <div className="w-full max-w-3xl bg-white dark:bg-slate-900 border border-app-border rounded-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border-blue-500/20 shadow-blue-500/10">
                 <div className="p-6 border-b border-app-border flex justify-between items-center bg-gradient-to-r from-blue-500/10 to-transparent from-blue-50">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
+                        <div className="p-2 rounded-none bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400">
                             <FileText size={20} />
                         </div>
                         <div>
@@ -14,14 +14,14 @@
                             <p className="text-app-text-muted text-[10px] font-black uppercase tracking-widest">{selectedAgentDetails.role} • Technical Documentation</p>
                         </div>
                     </div>
-                    <button onClick={() => setSelectedAgentDetails(null)} className="p-2 rounded-xl hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <button onClick={() => setSelectedAgentDetails(null)} className="p-2 rounded-none hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
                 <div className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar space-y-6">
                     {/* Purpose */}
-                    <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-2 mb-3">
                             <Target className="text-blue-400" size={18} />
                             <h4 className="text-sm font-bold text-app-text uppercase tracking-tight">Purpose</h4>
@@ -30,14 +30,14 @@
                     </div>
 
                     {/* Discovery Methods */}
-                    <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-2 mb-3">
                             <Layers className="text-emerald-400" size={18} />
                             <h4 className="text-sm font-bold text-app-text uppercase tracking-tight">Discovery Methods</h4>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {AGENT_DETAILS[selectedAgentDetails.id].discoveryMethods.map((method, idx) => (
-                                <span key={idx} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
+                                <span key={idx} className="px-3 py-1.5 rounded-none bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
                                     {method}
                                 </span>
                             ))}
@@ -45,7 +45,7 @@
                     </div>
 
                     {/* Data Sources */}
-                    <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-2 mb-3">
                             <Database className="text-purple-600 dark:text-purple-400" size={18} />
                             <h4 className="text-sm font-bold text-app-text uppercase tracking-tight">Data Sources</h4>
@@ -61,7 +61,7 @@
                     </div>
 
                     {/* Capabilities */}
-                    <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-2 mb-3">
                             <Zap className="text-amber-600 dark:text-amber-400" size={18} />
                             <h4 className="text-sm font-bold text-app-text uppercase tracking-tight">Capabilities</h4>
@@ -77,7 +77,7 @@
                     </div>
 
                     {/* Schedule */}
-                    <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-2 mb-3">
                             <Calendar className="text-cyan-600 dark:text-cyan-400" size={18} />
                             <h4 className="text-sm font-bold text-app-text uppercase tracking-tight">Execution Schedule</h4>
@@ -86,7 +86,7 @@
                     </div>
 
                     {/* Output */}
-                    <div className="p-5 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="p-5 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-2 mb-3">
                             <FileText className="text-indigo-600 dark:text-indigo-400" size={18} />
                             <h4 className="text-sm font-bold text-app-text uppercase tracking-tight">Output Format</h4>
@@ -98,7 +98,7 @@
                 <div className="p-6 bg-slate-100 dark:bg-slate-800/20 border-t border-app-border">
                     <button
                         onClick={() => setSelectedAgentDetails(null)}
-                        className="w-full py-3 bg-app-surface-soft hover:bg-app-surface hover:bg-slate-300 text-app-text rounded-xl font-bold transition-all active:scale-95 text-sm"
+                        className="w-full py-3 bg-app-surface-soft hover:bg-app-surface hover:bg-slate-300 text-app-text rounded-none font-bold transition-all active:scale-95 text-sm"
                     >
                         Close Documentation
                     </button>

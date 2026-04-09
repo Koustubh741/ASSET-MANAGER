@@ -12,7 +12,7 @@ const FinancialRiskPanel = ({ upcomingRenewals, totalSpend }) => {
                 <div className="flex items-center justify-between mb-10">
                     <div>
                         <h4 className="text-xl font-['Outfit'] font-black mb-1 flex items-center gap-3 text-app-text uppercase tracking-tighter">
-                            <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-lg animate-pulse-slow">
+                            <div className="p-3 rounded-none bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-lg animate-pulse-slow">
                                 <AlertTriangle size={24} />
                             </div>
                             Strategic Financial Risk
@@ -36,7 +36,7 @@ const FinancialRiskPanel = ({ upcomingRenewals, totalSpend }) => {
                 </div>
                 
                 <div className="grid grid-cols-2 gap-6 mt-auto">
-                    <div className="p-6 rounded-2xl glass-interactive shadow-inner">
+                    <div className="p-6 rounded-none glass-interactive shadow-inner">
                         <div className="flex items-center justify-between mb-3">
                             <span className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] opacity-40">Exceptions</span>
                             <TrendingUp size={14} className="text-indigo-400" />
@@ -44,7 +44,7 @@ const FinancialRiskPanel = ({ upcomingRenewals, totalSpend }) => {
                         <span className="block text-3xl font-black text-app-text tracking-tighter">14.2%</span>
                         <div className="mt-2 h-1 w-12 bg-indigo-500/40 rounded-full" />
                     </div>
-                    <div className="p-6 rounded-2xl glass-interactive shadow-inner">
+                    <div className="p-6 rounded-none glass-interactive shadow-inner">
                         <div className="flex items-center justify-between mb-3">
                             <span className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em] opacity-40">ROI Matrix</span>
                             <ArrowUpRight size={14} className="text-emerald-400" />

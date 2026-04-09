@@ -60,7 +60,7 @@ export function SkeletonCard() {
         <div className="glass-card p-6 space-y-4">
             <div className="flex justify-between">
                 <Skeleton className="h-4 w-24" variant="line" />
-                <Skeleton className="h-10 w-10 rounded-lg" />
+                <Skeleton className="h-10 w-10 rounded-none" />
             </div>
             <Skeleton className="h-8 w-16" variant="line" />
             <Skeleton className="h-3 w-full" variant="line" />

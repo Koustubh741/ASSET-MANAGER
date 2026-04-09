@@ -126,12 +126,12 @@ export default function AssetsPage() {
                         onClick={handleRefresh}
                         disabled={isRefreshing}
                         title="Refresh inventory (picks up newly discovered assets)"
-                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-app-surface hover:bg-white/20 text-app-text-muted hover:text-app-text border border-app-border backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
+                        className="px-4 py-2 rounded-none font-medium transition-all duration-200 active:scale-95 bg-app-surface hover:bg-white/20 text-app-text-muted hover:text-app-text border border-app-border backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
                     >
                         <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
                         <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
                     </button>
-                    <Link href="/assets/add" className="px-4 py-2 rounded-lg font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
+                    <Link href="/assets/add" className="px-4 py-2 rounded-none font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
                         <Plus size={20} />
                         <span>Add Asset</span>
                     </Link>
@@ -139,13 +139,13 @@ export default function AssetsPage() {
             </div>
 
             {/* Filters */}
-            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-xl transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-app-text-muted" size={20} />
                     <input
                         type="text"
                         placeholder="Search by anything (Name, Spec, Location, Cost...)"
-                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-xl py-3 pl-10 pr-4 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-app-text-muted"
+                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none py-3 pl-10 pr-4 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-app-text-muted"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -157,7 +157,7 @@ export default function AssetsPage() {
                     </div>
 
                     <select
-                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-lg text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
                         value={filterSegment}
                         onChange={(e) => setFilterSegment(e.target.value)}
                     >
@@ -167,7 +167,7 @@ export default function AssetsPage() {
                     </select>
 
                     <select
-                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-lg text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                     >
@@ -179,7 +179,7 @@ export default function AssetsPage() {
                     </select>
 
                     <select
-                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-lg text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-50 dark:bg-slate-800/50"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
@@ -193,7 +193,7 @@ export default function AssetsPage() {
                     </select>
 
                     {/* Results Count */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg border border-app-border text-xs text-app-text-muted text-app-text-muted font-medium">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-none border border-app-border text-xs text-app-text-muted text-app-text-muted font-medium">
                         Showing <span className="text-app-text">{filteredAssets.length}</span> assets
                     </div>
                 </div>

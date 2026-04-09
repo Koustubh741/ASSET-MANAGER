@@ -27,11 +27,11 @@ export default function AuditStartPage() {
 
     return (
         <div className="min-h-screen p-8 bg-slate-100 dark:bg-slate-950 text-app-text flex flex-col items-center justify-center">
-            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-app-border rounded-2xl overflow-hidden glass-panel shadow-2xl">
+            <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-app-border rounded-none overflow-hidden glass-panel shadow-2xl">
                 {/* Header */}
                 <div className="bg-white dark:bg-slate-900/50 p-6 border-b border-app-border flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Link href="/audit/overview" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-lg text-app-text-muted">
+                        <Link href="/audit/overview" className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none text-app-text-muted">
                             <ArrowLeft size={20} />
                         </Link>
                         <h1 className="text-xl font-bold">New Asset Audit</h1>
@@ -56,7 +56,7 @@ export default function AuditStartPage() {
                                     <button
                                         key={loc}
                                         onClick={() => setLocation(loc)}
-                                        className={`p-4 rounded-xl border text-left transition-all ${location === loc
+                                        className={`p-4 rounded-none border text-left transition-all ${location === loc
                                                 ? 'bg-orange-600/20 border-orange-500 text-orange-300'
                                                 : 'bg-app-surface-soft border-app-border hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface'
                                             }`}
@@ -71,7 +71,7 @@ export default function AuditStartPage() {
                                 <button
                                     disabled={!location}
                                     onClick={handleStart}
-                                    className="btn btn-primary bg-orange-600 hover:bg-orange-500 text-app-text px-8 py-3 rounded-xl disabled:opacity-50 font-bold"
+                                    className="btn btn-primary bg-orange-600 hover:bg-orange-500 text-app-text px-8 py-3 rounded-none disabled:opacity-50 font-bold"
                                 >
                                     Continue
                                 </button>
@@ -86,14 +86,14 @@ export default function AuditStartPage() {
                                     <h2 className="text-xl font-bold">Scanning Assets</h2>
                                     <p className="text-app-text-muted text-sm">Location: {location}</p>
                                 </div>
-                                <button className="px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-lg text-sm text-app-text-muted hover:bg-slate-200 dark:bg-slate-700 flex items-center gap-2">
+                                <button className="px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-none text-sm text-app-text-muted hover:bg-slate-200 dark:bg-slate-700 flex items-center gap-2">
                                     <Camera size={16} /> Open Scanner
                                 </button>
                             </div>
 
                             <div className="space-y-3">
                                 {assets.map(asset => (
-                                    <div key={asset.id} className="flex items-center justify-between p-4 bg-app-surface-soft rounded-xl border border-app-border">
+                                    <div key={asset.id} className="flex items-center justify-between p-4 bg-app-surface-soft rounded-none border border-app-border">
                                         <div>
                                             <div className="font-medium">{asset.name}</div>
                                             <div className="text-xs text-app-text-muted">{asset.id}</div>
@@ -105,7 +105,7 @@ export default function AuditStartPage() {
                                         ) : (
                                             <button
                                                 onClick={() => handleScan(asset.id)}
-                                                className="px-3 py-1.5 bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 rounded-lg text-sm font-medium border border-blue-500/30"
+                                                className="px-3 py-1.5 bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 rounded-none text-sm font-medium border border-blue-500/30"
                                             >
                                                 Mark Scanned
                                             </button>
@@ -120,7 +120,7 @@ export default function AuditStartPage() {
                                 </div>
                                 <button
                                     onClick={() => setStep(3)}
-                                    className="btn btn-primary bg-emerald-600 hover:bg-emerald-500 text-app-text px-8 py-3 rounded-xl font-bold"
+                                    className="btn btn-primary bg-emerald-600 hover:bg-emerald-500 text-app-text px-8 py-3 rounded-none font-bold"
                                 >
                                     Finish Audit
                                 </button>
@@ -138,7 +138,7 @@ export default function AuditStartPage() {
                                 The audit for <strong>{location}</strong> has been submitted successfully.
                                 Report #AUD-2023-089 generated.
                             </p>
-                            <Link href="/audit/overview" className="inline-block bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-app-text px-8 py-3 rounded-xl font-medium transition-colors">
+                            <Link href="/audit/overview" className="inline-block bg-slate-50 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-app-text px-8 py-3 rounded-none font-medium transition-colors">
                                 Return to Overview
                             </Link>
                         </div>

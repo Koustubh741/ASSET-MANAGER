@@ -44,10 +44,10 @@ function AuditPOModal({ po, onClose, onSave }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/60">
-            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-2xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
                 <div className="p-6 border-b border-app-border flex items-center justify-between">
                     <h3 className="text-xl font-bold text-app-text">Audit PO Financials</h3>
-                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-500 transition-colors">✕</button>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-none text-slate-500 transition-colors">✕</button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
@@ -56,7 +56,7 @@ function AuditPOModal({ po, onClose, onSave }) {
                             type="number"
                             value={data.total_cost}
                             onChange={e => setData({ ...data, total_cost: parseFloat(e.target.value) })}
-                            className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                            className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                             required
                         />
                     </div>
@@ -67,7 +67,7 @@ function AuditPOModal({ po, onClose, onSave }) {
                                 type="number"
                                 value={data.tax_amount}
                                 onChange={e => setData({ ...data, tax_amount: parseFloat(e.target.value) })}
-                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                             />
                         </div>
                         <div>
@@ -76,14 +76,14 @@ function AuditPOModal({ po, onClose, onSave }) {
                                 type="number"
                                 value={data.shipping_handling}
                                 onChange={e => setData({ ...data, shipping_handling: parseFloat(e.target.value) })}
-                                className="w-full bg-app-surface-soft border border-app-border rounded-xl py-2 px-4 text-sm"
+                                className="w-full bg-app-surface-soft border border-app-border rounded-none py-2 px-4 text-sm"
                             />
                         </div>
                     </div>
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-app-text font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-app-text font-bold rounded-none transition-all shadow-lg shadow-emerald-500/20"
                     >
                         {saving ? 'Saving...' : 'Confirm Audit'}
                     </button>
@@ -167,20 +167,20 @@ export default function PurchaseOrdersPage() {
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => setSelectedAudit(po)}
-                                                    className="text-xs px-3 py-1 rounded-lg bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/30 transition-all font-bold"
+                                                    className="text-xs px-3 py-1 rounded-none bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 border border-blue-500/30 transition-all font-bold"
                                                 >
                                                     Audit
                                                 </button>
                                                 {po.status !== 'VALIDATED' && po.status !== 'RECEIVED' && (
                                                     <button
                                                         onClick={() => updateStatus(po.id, 'VALIDATED')}
-                                                        className="text-xs px-3 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all"
+                                                        className="text-xs px-3 py-1 rounded-none bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition-all"
                                                     >Validate</button>
                                                 )}
                                                 {po.status !== 'REJECTED' && po.status !== 'RECEIVED' && (
                                                     <button
                                                         onClick={() => updateStatus(po.id, 'REJECTED')}
-                                                        className="text-xs px-3 py-1 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 transition-all"
+                                                        className="text-xs px-3 py-1 rounded-none bg-red-500/15 text-red-400 hover:bg-red-500/25 border border-red-500/30 transition-all"
                                                     >Reject</button>
                                                 )}
                                             </div>

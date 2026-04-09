@@ -24,23 +24,23 @@ const data = [
 const MultiLayerRadarChart = () => {
     // Colors matching the ethereal, varied look in the original image
     const colors = {
-        bg: '#002543',          // deep navy background
-        layer1: '#3b82f6',      // medium blue
-        layer2: '#10b981',      // green
-        layer3: '#8b5cf6',      // purple
-        layer4: '#1e3a8a',      // dark blue
-        layer5: '#6366f1',      // indigo
-        focus: '#cffafe',       // bright cyan/white center star
-        grid: 'rgba(255,255,255,0.4)',
-        text: '#93c5fd'
+        bg: 'var(--bg-app-obsidian)',          // Kinetic Obsidian
+        layer1: 'var(--color-kinetic-primary)',    // mission-primary
+        layer2: 'var(--color-kinetic-secondary)',  // mission-secondary
+        layer3: 'var(--color-kinetic-gold)',       // mission-gold
+        layer4: 'var(--color-kinetic-rose)',       // mission-rose
+        layer5: 'var(--color-kinetic-cyan)',       // mission-cyan
+        focus: 'var(--color-kinetic-accent)',      // mission-accent
+        grid: 'var(--border-main)',
+        text: 'var(--text-muted)'
     };
 
     return (
-        <div style={{ backgroundColor: colors.bg }} className="w-full h-full min-h-[500px] p-8 rounded-2xl relative shadow-2xl flex flex-col">
+        <div style={{ backgroundColor: colors.bg }} className="w-full h-full min-h-[500px] p-8 rounded-none relative shadow-2xl flex flex-col">
             
-            {/* Header matches bottom-left/top formatting */}
+            {/* Header matches mission-critical formatting */}
             <div className="absolute top-4 w-full text-center pointer-events-none z-10">
-                <h3 className="text-[#a5f3fc] text-xl font-light tracking-widest uppercase opacity-90">Attribute Comparison</h3>
+                <h3 className="text-app-primary text-xl font-black tracking-[0.4em] uppercase opacity-90 font-['Space_Grotesk']">Neural Attribute Matrix</h3>
             </div>
 
             <div className="flex-grow flex items-center justify-center relative mt-6">
@@ -48,12 +48,12 @@ const MultiLayerRadarChart = () => {
                     <RadarChart cx="50%" cy="50%" outerRadius="75%" data={data}>
                         
                         {/* The Grid mapping to multi-polygon shapes */}
-                        <PolarGrid stroke={colors.grid} strokeDasharray="2 2" />
+                        <PolarGrid stroke={colors.grid} strokeDasharray="3 3" strokeOpacity={0.4} />
                         
                         {/* Axes and Labels */}
                         <PolarAngleAxis 
                             dataKey="subject" 
-                            tick={{ fill: colors.text, fontSize: 11, fontWeight: 500, letterSpacing: '0.02em' }} 
+                            tick={{ fill: colors.text, fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', fontFamily: 'Space Grotesk' }} 
                         />
                         <PolarRadiusAxis 
                             angle={90} 
@@ -71,22 +71,22 @@ const MultiLayerRadarChart = () => {
                         
                         {/* Prominent Foreground Layer (Focus) */}
                         <Radar 
-                            name="Focus Target"
+                            name="Operational Baseline"
                             dataKey="Focus" 
-                            stroke="#ffffff" 
+                            stroke="var(--color-kinetic-accent)" 
                             fill={colors.focus} 
-                            fillOpacity={0.85} 
-                            strokeWidth={1}
-                            dot={{ r: 2.5, fill: '#ffffff', stroke: 'none' }} 
-                            activeDot={{ r: 5, fill: '#000', stroke: '#fff', strokeWidth: 2 }}
+                            fillOpacity={0.65} 
+                            strokeWidth={2}
+                            dot={{ r: 3, fill: 'var(--color-kinetic-accent)', stroke: 'var(--bg-app-obsidian)', strokeWidth: 2 }} 
+                            activeDot={{ r: 6, fill: '#fff', stroke: 'var(--color-kinetic-accent)', strokeWidth: 3 }}
                         />
                     </RadarChart>
                 </ResponsiveContainer>
             </div>
 
-            {/* Footer watermark matching the image */}
-            <div className="absolute bottom-4 left-6 text-[#60a5fa] text-[10px] font-mono tracking-widest opacity-70">
-                Ellen Blackburn | Data: ESPN (Demo)
+            {/* Footer watermark matching the mission-critical identity */}
+            <div className="absolute bottom-4 left-6 text-app-primary/40 text-[9px] font-mono tracking-[0.4em] uppercase font-black">
+                Kinetic Ops Intelligence Hub | NODE_SYNC::SECURE
             </div>
         </div>
     );

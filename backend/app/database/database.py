@@ -13,7 +13,15 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres
 SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
 
 # 1. Asynchronous Configuration (for FastAPI)
-async_engine = create_async_engine(DATABASE_URL, echo=False)
+# Root Fix: tuned for 100,000+ users with robust connection pooling
+async_engine = create_async_engine(
+    DATABASE_URL, 
+    echo=False,
+    pool_size=20,          # Standard connections
+    max_overflow=10,       # Burst capacity
+    pool_recycle=3600,     # Cycle every hour
+    pool_pre_ping=True     # Check connections before use
+)
 AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
     class_=AsyncSession,

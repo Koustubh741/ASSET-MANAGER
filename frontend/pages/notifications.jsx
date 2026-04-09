@@ -78,7 +78,7 @@ export default function NotificationsPage() {
                 <div className="flex items-center gap-5">
                     <button 
                         onClick={() => router.back()}
-                        className="p-3 rounded-2xl bg-app-surface border border-app-border text-app-text-muted hover:text-app-text hover:shadow-lg transition-all active:scale-95"
+                        className="p-3 rounded-none bg-app-surface border border-app-border text-app-text-muted hover:text-app-text hover:shadow-lg transition-all active:scale-95"
                     >
                         <ChevronLeft size={22} />
                     </button>
@@ -91,12 +91,12 @@ export default function NotificationsPage() {
                 </div>
                 
                 <div className="flex items-center gap-4">
-                    <div className="flex bg-app-surface-soft p-1.5 rounded-2xl border border-app-border shadow-inner">
+                    <div className="flex bg-app-surface-soft p-1.5 rounded-none border border-app-border shadow-inner">
                         {['all', 'unread'].map(f => (
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === f ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105' : 'text-app-text-muted hover:text-app-text'}`}
+                                className={`px-6 py-2 rounded-none text-xs font-black uppercase tracking-widest transition-all ${filter === f ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105' : 'text-app-text-muted hover:text-app-text'}`}
                             >
                                 {f}
                             </button>
@@ -105,7 +105,7 @@ export default function NotificationsPage() {
                     <button 
                         onClick={markAllAsRead}
                         disabled={!notifications.some(n => !n.is_read)}
-                        className="flex items-center gap-2 px-6 py-3 bg-app-surface border border-app-border hover:border-emerald-500/50 hover:bg-emerald-500/5 text-app-text rounded-2xl text-xs font-black uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed group shadow-sm hover:shadow-emerald-500/10"
+                        className="flex items-center gap-2 px-6 py-3 bg-app-surface border border-app-border hover:border-emerald-500/50 hover:bg-emerald-500/5 text-app-text rounded-none text-xs font-black uppercase tracking-widest transition-all disabled:opacity-30 disabled:cursor-not-allowed group shadow-sm hover:shadow-emerald-500/10"
                     >
                         <CheckCircle2 size={16} className="group-hover:text-emerald-400 transition-colors" />
                         Mark All Read
@@ -122,7 +122,7 @@ export default function NotificationsPage() {
                     </div>
                 ) : filteredNotifications.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-32 rounded-[2.5rem] border border-dashed border-app-border bg-app-surface/30 animate-in zoom-in-95 duration-500">
-                        <div className="w-20 h-20 rounded-3xl bg-app-surface flex items-center justify-center mb-6 shadow-xl shadow-black/5">
+                        <div className="w-20 h-20 rounded-none bg-app-surface flex items-center justify-center mb-6 shadow-xl shadow-black/5">
                             <Bell className="text-app-text-muted" size={40} />
                         </div>
                         <h3 className="text-2xl font-black text-app-text">Zero Unread Alerts</h3>
@@ -146,7 +146,7 @@ export default function NotificationsPage() {
                                     )}
 
                                     <div className="flex items-start gap-6">
-                                        <div className={`shrink-0 p-4 rounded-2xl ${meta.bg} ${meta.color} border border-white/5 shadow-inner`}>
+                                        <div className={`shrink-0 p-4 rounded-none ${meta.bg} ${meta.color} border border-white/5 shadow-inner`}>
                                             <Icon size={24} />
                                         </div>
                                         

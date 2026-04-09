@@ -100,7 +100,7 @@ export default function AddAsset() {
                     <div className="flex items-center justify-between mb-6">
                         <div>
                             <h3 className="text-xl font-bold text-app-text flex items-center gap-2">
-                                <span className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg">
+                                <span className="p-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-none">
                                     <Save size={18} className="text-app-text" />
                                 </span>
                                 Smart Import (CSV / Excel)
@@ -374,7 +374,7 @@ export default function AddAsset() {
                                         <button
                                             type="button"
                                             onClick={() => removeSpecField(index)}
-                                            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg opacity-50 hover:opacity-100 transition-all"
+                                            className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-none opacity-50 hover:opacity-100 transition-all"
                                             title="Remove Field"
                                         >
                                             <CloseIcon size={16} />

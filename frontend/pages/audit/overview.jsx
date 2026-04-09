@@ -77,7 +77,7 @@ export default function AuditOverviewPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
-                        <Link href="/enterprise" className="p-2 rounded-xl hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
+                        <Link href="/enterprise" className="p-2 rounded-none hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface text-app-text-muted hover:text-app-text transition-colors">
                             <ArrowLeft size={24} />
                         </Link>
                         <div>
@@ -88,7 +88,7 @@ export default function AuditOverviewPage() {
                     <button 
                         onClick={handleSync}
                         disabled={syncing}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shadow-lg ${
+                        className={`flex items-center gap-2 px-6 py-3 rounded-none font-bold transition-all shadow-lg ${
                             syncing 
                             ? 'bg-slate-50 dark:bg-slate-800 text-app-text-muted cursor-not-allowed' 
                             : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-app-text hover:scale-105 active:scale-95 shadow-blue-500/20'
@@ -101,9 +101,9 @@ export default function AuditOverviewPage() {
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="glass-panel p-6 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
+                            <div className="p-3 rounded-none bg-blue-500/10 text-blue-400">
                                 <History size={24} />
                             </div>
                             <div>
@@ -112,9 +112,9 @@ export default function AuditOverviewPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="glass-panel p-6 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+                            <div className="p-3 rounded-none bg-emerald-500/10 text-emerald-400">
                                 <CheckCircle size={24} />
                             </div>
                             <div>
@@ -123,9 +123,9 @@ export default function AuditOverviewPage() {
                             </div>
                         </div>
                     </div>
-                    <div className="glass-panel p-6 rounded-2xl bg-app-surface-soft border border-app-border">
+                    <div className="glass-panel p-6 rounded-none bg-app-surface-soft border border-app-border">
                         <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-red-500/10 text-red-400">
+                            <div className="p-3 rounded-none bg-red-500/10 text-red-400">
                                 <AlertOctagon size={24} />
                             </div>
                             <div>
@@ -137,7 +137,7 @@ export default function AuditOverviewPage() {
                 </div>
 
                 {/* History Table */}
-                <div className="glass-panel rounded-2xl bg-white dark:bg-slate-900 border border-app-border overflow-hidden shadow-2xl">
+                <div className="glass-panel rounded-none bg-white dark:bg-slate-900 border border-app-border overflow-hidden shadow-2xl">
                     <div className="p-6 border-b border-app-border flex justify-between items-center bg-app-surface-soft">
                         <h3 className="font-bold text-lg">Discovery & Ingestion History</h3>
                         <div className="flex gap-2">
@@ -168,7 +168,7 @@ export default function AuditOverviewPage() {
                                             <td className="px-6 py-4 text-app-text-muted">{item.date}</td>
                                             <td className="px-6 py-4 text-app-text-muted font-medium">{item.auditor}</td>
                                             <td className="px-6 py-4">
-                                                <span className="text-xs font-mono text-blue-400 px-2 py-1 bg-blue-500/10 rounded-md border border-blue-500/20">
+                                                <span className="text-xs font-mono text-blue-400 px-2 py-1 bg-blue-500/10 rounded-none border border-blue-500/20">
                                                     {item.action}
                                                 </span>
                                             </td>
@@ -181,7 +181,7 @@ export default function AuditOverviewPage() {
                                             <td className="px-6 py-4 text-right">
                                                 <button 
                                                     onClick={() => setSelectedLog(item)}
-                                                    className="px-4 py-1.5 text-xs font-bold bg-app-surface-soft hover:bg-blue-600 text-app-text-muted hover:text-app-text rounded-lg transition-all border border-app-border"
+                                                    className="px-4 py-1.5 text-xs font-bold bg-app-surface-soft hover:bg-blue-600 text-app-text-muted hover:text-app-text rounded-none transition-all border border-app-border"
                                                 >
                                                     View Details
                                                 </button>
@@ -197,10 +197,10 @@ export default function AuditOverviewPage() {
                 {/* Log Details Modal */}
                 {selectedLog && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-100 dark:bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-300">
-                        <div className="bg-white dark:bg-slate-900 border border-app-border rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                        <div className="bg-white dark:bg-slate-900 border border-app-border rounded-none w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.5)]">
                             <div className="p-8 border-b border-app-border flex justify-between items-center bg-slate-50 dark:bg-white/[0.02]">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-3 rounded-2xl bg-blue-600/20 text-blue-400">
+                                    <div className="p-3 rounded-none bg-blue-600/20 text-blue-400">
                                         <History size={24} />
                                     </div>
                                     <div>
@@ -208,18 +208,18 @@ export default function AuditOverviewPage() {
                                         <p className="text-xs text-app-text-muted mt-0.5 font-mono opacity-60 overflow-hidden truncate max-w-[300px]">{selectedLog.id}</p>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedLog(null)} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-xl text-app-text-muted hover:text-app-text transition-all">
+                                <button onClick={() => setSelectedLog(null)} className="p-2 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none text-app-text-muted hover:text-app-text transition-all">
                                     <XCircle size={28} />
                                 </button>
                             </div>
                             
                             <div className="p-8 overflow-y-auto custom-scrollbar bg-white dark:bg-slate-900/50">
                                 <div className="grid grid-cols-2 gap-6 mb-8">
-                                    <div className="p-4 bg-app-surface-soft rounded-2xl border border-app-border">
+                                    <div className="p-4 bg-app-surface-soft rounded-none border border-app-border">
                                         <p className="text-[10px] text-app-text-muted uppercase font-black tracking-widest mb-1.5">Ingestion Source</p>
                                         <p className="text-sm text-app-text font-semibold">{selectedLog.auditor}</p>
                                     </div>
-                                    <div className="p-4 bg-app-surface-soft rounded-2xl border border-app-border">
+                                    <div className="p-4 bg-app-surface-soft rounded-none border border-app-border">
                                         <p className="text-[10px] text-app-text-muted uppercase font-black tracking-widest mb-1.5">Capture Date</p>
                                         <p className="text-sm text-app-text font-semibold">{selectedLog.date}</p>
                                     </div>
@@ -230,7 +230,7 @@ export default function AuditOverviewPage() {
                                         <p className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.2em]">Raw JSON Metadata</p>
                                         <span className="text-[10px] text-blue-500 font-bold px-2 py-0.5 bg-blue-500/10 rounded border border-blue-500/20 uppercase tracking-widest">application/json</span>
                                     </div>
-                                    <div className="bg-slate-100 dark:bg-slate-950 p-6 rounded-3xl border border-app-border font-mono text-[11px] text-blue-300/90 leading-relaxed overflow-x-auto whitespace-pre shadow-sm dark:shadow-inner">
+                                    <div className="bg-slate-100 dark:bg-slate-950 p-6 rounded-none border border-app-border font-mono text-[11px] text-blue-300/90 leading-relaxed overflow-x-auto whitespace-pre shadow-sm dark:shadow-inner">
                                         {JSON.stringify(selectedLog.details || { message: "No payload details captured for this event." }, null, 4)}
                                     </div>
                                 </div>
@@ -239,7 +239,7 @@ export default function AuditOverviewPage() {
                             <div className="p-6 border-t border-app-border flex justify-end gap-3 bg-slate-50 dark:bg-white/[0.02]">
                                 <button 
                                     onClick={() => setSelectedLog(null)}
-                                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-app-text rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                                    className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-app-text rounded-none text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                                 >
                                     Dismiss
                                 </button>

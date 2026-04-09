@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "development-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    REDIS_URL: str = "redis://127.0.0.1:6379/0"
     
     # External Integrations
     COLLECT_API_TOKEN: Optional[str] = None
@@ -37,6 +38,8 @@ class Settings(BaseSettings):
     # Server
     PORT: int = 8000
     HOST: str = "0.0.0.0"
+    FRONTEND_URL: str = "http://localhost:3000"
+    ADDITIONAL_CORS_ORIGINS: Optional[str] = None
     
     # Agent Configuration Encryption
     ENCRYPTION_KEY: str = "wYt4J9IKbzURuQd95aiUVdR3jdhvwCyQPWIZmf0BPU0="

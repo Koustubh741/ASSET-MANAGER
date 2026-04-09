@@ -95,12 +95,12 @@ export default function PortPoliciesPage() {
         <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-50">
             <header className="border-b border-slate-800 bg-slate-100 dark:bg-slate-950/80 backdrop-blur-md px-8 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <Link href="/agents" className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-700 text-slate-700 dark:text-slate-700 hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors">
+                    <Link href="/agents" className="p-2 rounded-none bg-white dark:bg-slate-900 border border-slate-700 text-slate-700 dark:text-slate-700 hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors">
                         <ArrowLeft size={18} />
                     </Link>
                     <div>
                         <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+                            <div className="w-8 h-8 rounded-none bg-indigo-500/20 flex items-center justify-center text-indigo-400">
                                 <Shield size={18} />
                             </div>
                             <h1 className="text-xl font-bold tracking-tight">Port Policies</h1>
@@ -119,7 +119,7 @@ export default function PortPoliciesPage() {
                     )}
                     <button
                         onClick={fetchPolicies}
-                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors"
+                        className="inline-flex items-center gap-2 px-3 py-2 rounded-none bg-white dark:bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-900 dark:text-slate-200 hover:bg-slate-100 dark:bg-slate-800 transition-colors"
                     >
                         <RefreshCcw size={14} />
                         Refresh
@@ -131,7 +131,7 @@ export default function PortPoliciesPage() {
                 {/* Create / Filter Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Create Policy */}
-                    <div className="lg:col-span-2 bg-white dark:bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+                    <div className="lg:col-span-2 bg-white dark:bg-slate-900/70 border border-slate-800 rounded-none p-5">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
                                 <Plus size={16} className="text-indigo-400" />
@@ -149,7 +149,7 @@ export default function PortPoliciesPage() {
                                     required
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     placeholder="Block RDP on endpoints"
                                 />
                             </div>
@@ -159,7 +159,7 @@ export default function PortPoliciesPage() {
                                     type="text"
                                     value={form.description}
                                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     placeholder="e.g., Block inbound RDP (3389) for all laptops"
                                 />
                             </div>
@@ -168,7 +168,7 @@ export default function PortPoliciesPage() {
                                 <select
                                     value={form.scope_type}
                                     onChange={(e) => setForm({ ...form, scope_type: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="HOST">Host</option>
                                     <option value="NETWORK_DEVICE">Network Device</option>
@@ -180,7 +180,7 @@ export default function PortPoliciesPage() {
                                 <select
                                     value={form.direction}
                                     onChange={(e) => setForm({ ...form, direction: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="INBOUND">Inbound</option>
                                     <option value="OUTBOUND">Outbound</option>
@@ -191,7 +191,7 @@ export default function PortPoliciesPage() {
                                 <select
                                     value={form.protocol}
                                     onChange={(e) => setForm({ ...form, protocol: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="TCP">TCP</option>
                                     <option value="UDP">UDP</option>
@@ -204,7 +204,7 @@ export default function PortPoliciesPage() {
                                     type="number"
                                     value={form.port}
                                     onChange={(e) => setForm({ ...form, port: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                     placeholder="e.g., 3389"
                                 />
                             </div>
@@ -215,7 +215,7 @@ export default function PortPoliciesPage() {
                                         type="number"
                                         value={form.port_range_start}
                                         onChange={(e) => setForm({ ...form, port_range_start: e.target.value })}
-                                        className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                        className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                         placeholder="e.g., 1000"
                                     />
                                 </div>
@@ -225,7 +225,7 @@ export default function PortPoliciesPage() {
                                         type="number"
                                         value={form.port_range_end}
                                         onChange={(e) => setForm({ ...form, port_range_end: e.target.value })}
-                                        className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                        className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                         placeholder="e.g., 2000"
                                     />
                                 </div>
@@ -235,7 +235,7 @@ export default function PortPoliciesPage() {
                                 <select
                                     value={form.action}
                                     onChange={(e) => setForm({ ...form, action: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="BLOCK">Block</option>
                                     <option value="ALLOW">Allow</option>
@@ -247,7 +247,7 @@ export default function PortPoliciesPage() {
                                     type="number"
                                     value={form.priority}
                                     onChange={(e) => setForm({ ...form, priority: Number(e.target.value) || 100 })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 />
                             </div>
                             <div className="flex items-center gap-2">
@@ -266,7 +266,7 @@ export default function PortPoliciesPage() {
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-app-text shadow-lg shadow-indigo-500/30"
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-app-text shadow-lg shadow-indigo-500/30"
                                 >
                                     {creating ? 'Creating...' : 'Create Policy'}
                                 </button>
@@ -275,7 +275,7 @@ export default function PortPoliciesPage() {
                     </div>
 
                     {/* Filters */}
-                    <div className="bg-white dark:bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+                    <div className="bg-white dark:bg-slate-900/70 border border-slate-800 rounded-none p-5">
                         <div className="flex items-center gap-2 mb-4">
                             <Filter size={16} className="text-app-text-muted" />
                             <h2 className="text-sm font-semibold text-app-text">Filter Policies</h2>
@@ -286,7 +286,7 @@ export default function PortPoliciesPage() {
                                 <select
                                     value={filters.scope_type}
                                     onChange={(e) => setFilters({ ...filters, scope_type: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="">All</option>
                                     <option value="HOST">Host</option>
@@ -299,7 +299,7 @@ export default function PortPoliciesPage() {
                                 <select
                                     value={filters.direction}
                                     onChange={(e) => setFilters({ ...filters, direction: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="">All</option>
                                     <option value="INBOUND">Inbound</option>
@@ -311,7 +311,7 @@ export default function PortPoliciesPage() {
                                 <select
                                     value={filters.enabled}
                                     onChange={(e) => setFilters({ ...filters, enabled: e.target.value })}
-                                    className="w-full rounded-lg bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
+                                    className="w-full rounded-none bg-slate-100 dark:bg-slate-950 border border-slate-700 px-3 py-2 text-app-text text-sm"
                                 >
                                     <option value="">All</option>
                                     <option value="true">Enabled</option>
@@ -323,7 +323,7 @@ export default function PortPoliciesPage() {
                 </div>
 
                 {/* Policies Table */}
-                <section className="bg-white dark:bg-slate-900/70 border border-slate-800 rounded-xl p-5">
+                <section className="bg-white dark:bg-slate-900/70 border border-slate-800 rounded-none p-5">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-sm font-semibold text-app-text">Defined Policies</h2>
                         <p className="text-xs text-app-text-muted">

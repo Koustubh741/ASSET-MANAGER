@@ -28,7 +28,7 @@
     "html5-qrcode": "^2.3.8",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.294.0",
-    "next": "14.0.3",
+    "next": "^14.2.3",
     "react": "^18",
     "react-barcode": "^1.6.1",
     "react-dom": "^18",

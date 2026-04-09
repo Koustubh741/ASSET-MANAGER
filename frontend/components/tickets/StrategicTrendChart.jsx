@@ -39,8 +39,8 @@ function buildFallback(granularity) {
 const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     return (
-        <div className="glass p-4 border border-app-border/40 shadow-xl rounded-xl min-w-[160px]">
-            <p className="text-[10px] font-black uppercase tracking-widest text-app-text-muted mb-2">{label}</p>
+        <div className="bg-app-obsidian p-4 border border-app-border shadow-2xl rounded-none min-w-[160px] backdrop-blur-md">
+            <p className="text-[10px] font-black uppercase tracking-widest text-app-primary mb-3 border-b border-app-border pb-2">{label}</p>
             {payload.map((p) => (
                 <div key={p.dataKey} className="flex justify-between gap-4">
                     <span className="text-[11px] font-bold" style={{ color: p.color }}>{p.name}</span>
@@ -98,34 +98,35 @@ const StrategicTrendChart = ({ horizon = 30, selectedYear = new Date().getFullYe
     }, [activeGran, selectedYear]);
 
     const barColor = (sla) => {
-        if (!sla) return '#6b7280';
-        if (sla >= 95) return '#10b981';
-        if (sla >= 80) return '#f59e0b';
-        return '#ef4444';
+        if (!sla) return 'var(--text-muted)';
+        if (sla >= 95) return 'var(--color-kinetic-secondary)';
+        if (sla >= 80) return 'var(--color-kinetic-gold)';
+        return 'var(--color-kinetic-rose)';
     };
 
     const barSize = useMemo(() => {
-        if (activeGran === 'weekly')   return 6;
-        if (activeGran === 'monthly')  return 20;
-        if (activeGran === 'quarterly') return 40;
-        return 40; // Default/Annual
+        if (activeGran === 'weekly')   return 16;
+        if (activeGran === 'monthly')  return 36;
+        if (activeGran === 'quarterly') return 60;
+        return 60; // Default/Annual
     }, [activeGran]);
 
     return (
-        <div className="glass p-8 relative overflow-hidden flex flex-col h-full min-h-[400px] rounded-2xl border border-app-border/30">
-            <div className="absolute top-0 left-0 w-full h-1 opacity-30 bg-primary" />
+        <div className="bg-app-surface ring-1 ring-black/5 dark:ring-white/5 p-8 relative overflow-hidden flex flex-col h-full min-h-[400px] rounded-2xl border border-transparent shadow-sm">
+            <div className="kinetic-scan-line" />
+            <div className="absolute top-0 left-0 w-full h-[2px] opacity-40 bg-app-primary shadow-[0_0_15px_rgba(var(--color-app-primary-rgb),0.5)]" />
 
-            <div className="flex items-center justify-between mb-6 relative z-10">
+            <div className="flex items-center justify-between mb-8 relative z-10">
                 <div>
-                    <h4 className="text-xl font-light tracking-widest text-app-text uppercase flex items-center gap-3">
-                        <div className="p-2 rounded-xl border border-primary/30 bg-primary/10 text-primary">
+                    <h4 className="text-2xl font-bold tracking-tight text-app-text uppercase flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-app-primary/10 text-app-primary flex flex-shrink-0 items-center justify-center">
                             <BarChart2 size={20} />
                         </div>
-                        Strategic Performance Trend
+                        Strategic <span className="text-app-primary ml-1">Performance</span> Trend
                     </h4>
-                    <p className="text-[10px] text-app-text-muted font-mono tracking-[0.3em] font-black mt-1 opacity-60 uppercase">
-                        {config.label} Volume &amp; SLA · FY{selectedYear}
-                        {usedFallback && <span className="ml-2 opacity-50">(Simulated)</span>}
+                    <p className="text-xs font-medium text-app-text-muted mt-2 block">
+                        {config.label} Volume &amp; SLA Compliance
+                        {usedFallback && <span className="ml-3 text-app-gold opacity-60">!!_SIMULATED_FEED_!!</span>}
                     </p>
                 </div>
             </div>
@@ -133,24 +134,24 @@ const StrategicTrendChart = ({ horizon = 30, selectedYear = new Date().getFullYe
             <div className="flex-grow min-h-[300px] relative z-10">
                 {loading ? (
                     <div className="flex items-center justify-center h-full">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                        <div className="animate-spin rounded-none h-8 w-8 border-b-2 border-app-primary" />
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
                         <ComposedChart data={data} margin={{ top: 10, right: 20, bottom: 0, left: -20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" vertical={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-main)" vertical={false} strokeOpacity={0.4} />
                             <XAxis
                                 dataKey="label"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: 'rgba(128,128,128,0.6)', fontSize: 9, fontWeight: 900 }}
+                                tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }}
                                 interval="preserveStartEnd"
                             />
                             <YAxis
                                 yAxisId="left"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: 'rgba(128,128,128,0.6)', fontSize: 9 }}
+                                tick={{ fill: 'var(--text-muted)', fontSize: 11, fontWeight: 600 }}
                             />
                             <YAxis
                                 yAxisId="right"
@@ -158,7 +159,7 @@ const StrategicTrendChart = ({ horizon = 30, selectedYear = new Date().getFullYe
                                 domain={[0, 100]}
                                 hide
                             />
-                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(128,128,128,0.05)' }} />
+                            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--bg-app-obsidian)', fillOpacity: 0.2 }} />
                             <Bar
                                 yAxisId="left"
                                 dataKey="volume"
@@ -175,10 +176,10 @@ const StrategicTrendChart = ({ horizon = 30, selectedYear = new Date().getFullYe
                                 type="monotone"
                                 dataKey="sla_compliance"
                                 name="SLA %"
-                                stroke="var(--color-primary)"
-                                strokeWidth={2.5}
+                                stroke="var(--color-kinetic-primary)"
+                                strokeWidth={3}
                                 dot={{ r: 0 }}
-                                activeDot={{ r: 4, fill: 'var(--color-primary)' }}
+                                activeDot={{ r: 4, fill: 'var(--color-kinetic-primary)', stroke: 'var(--bg-app-obsidian)', strokeWidth: 2 }}
                             />
                         </ComposedChart>
                     </ResponsiveContainer>
@@ -186,22 +187,22 @@ const StrategicTrendChart = ({ horizon = 30, selectedYear = new Date().getFullYe
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-6 mt-4 pt-4 border-t border-app-border/20 relative z-10">
-                <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-sm inline-block bg-emerald-500 opacity-80" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-app-text-muted">SLA ≥ 95%</span>
+            <div className="flex items-center gap-8 mt-6 pt-6 border-t border-app-border/20 relative z-10">
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full inline-block shadow-[0_0_10px_rgba(78,222,163,0.3)]" style={{ backgroundColor: 'var(--color-kinetic-secondary)' }} />
+                    <span className="text-xs font-medium text-app-text-muted">SLA Optimal (≥ 95%)</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-sm inline-block bg-amber-500 opacity-80" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-app-text-muted">80–95%</span>
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full inline-block shadow-[0_0_10px_rgba(251,191,36,0.3)]" style={{ backgroundColor: 'var(--color-kinetic-gold)' }} />
+                    <span className="text-xs font-medium text-app-text-muted">SLA Stable (80–95%)</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-3 rounded-sm inline-block bg-red-500 opacity-80" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-app-text-muted">&lt; 80%</span>
+                <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full inline-block shadow-[0_0_10px_rgba(248,113,113,0.3)]" style={{ backgroundColor: 'var(--color-kinetic-rose)' }} />
+                    <span className="text-xs font-medium text-app-text-muted">SLA Critical (&lt; 80%)</span>
                 </div>
-                <div className="flex items-center gap-1.5 ml-auto">
-                    <span className="w-6 h-0.5 inline-block bg-primary rounded-full" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-app-text-muted">SLA Trend</span>
+                <div className="flex items-center gap-3 ml-auto">
+                    <span className="w-8 h-[2px] inline-block rounded-full bg-app-primary shadow-[0_0_10px_rgba(var(--color-app-primary-rgb),0.5)]" />
+                    <span className="text-xs font-medium text-app-text-muted">Trend</span>
                 </div>
             </div>
         </div>

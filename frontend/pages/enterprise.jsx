@@ -112,7 +112,7 @@ function WorkflowFlowchart({ workflow }) {
     }
 
     return (
-        <div className="overflow-x-auto overflow-y-auto rounded-lg bg-white dark:bg-slate-900/60 border border-app-border p-4">
+        <div className="overflow-x-auto overflow-y-auto rounded-none bg-white dark:bg-slate-900/60 border border-app-border p-4">
             <svg viewBox={`0 0 ${Number(width) || 400} ${Number(height) || 200}`} className="min-w-full" style={{ minHeight: 200 }}>
                 <defs>
                     <marker id={`arrow-${workflow.id}`} markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
@@ -310,16 +310,16 @@ export default function EnterpriseFeatures() {
                         </p>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-xl border border-app-border">
+                        <div className="flex bg-white dark:bg-slate-900/50 p-1 rounded-none border border-app-border">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-app-text shadow-lg shadow-blue-500/20' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
+                                className={`px-4 py-1.5 rounded-none text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-app-text shadow-lg shadow-blue-500/20' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
                             >
                                 Features Grid
                             </button>
                             <button
                                 onClick={() => setViewMode('hierarchy')}
-                                className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${viewMode === 'hierarchy' ? 'bg-purple-600 text-app-text shadow-lg shadow-purple-500/20' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
+                                className={`px-4 py-1.5 rounded-none text-xs font-semibold transition-all ${viewMode === 'hierarchy' ? 'bg-purple-600 text-app-text shadow-lg shadow-purple-500/20' : 'text-app-text-muted hover:text-slate-900 dark:text-slate-200'}`}
                             >
                                 Org Hierarchy
                             </button>
@@ -354,13 +354,13 @@ export default function EnterpriseFeatures() {
                             <div className="flex gap-2 mb-6">
                                 <button
                                     onClick={() => setWorkflowView('list')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'list' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted text-app-text-muted border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
+                                    className={`px-4 py-2 rounded-none text-sm font-medium transition-colors ${workflowView === 'list' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted text-app-text-muted border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
                                 >
                                     List view
                                 </button>
                                 <button
                                     onClick={() => setWorkflowView('flowchart')}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${workflowView === 'flowchart' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted text-app-text-muted border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
+                                    className={`px-4 py-2 rounded-none text-sm font-medium transition-colors ${workflowView === 'flowchart' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-50 dark:bg-slate-800 text-app-text-muted text-app-text-muted border border-slate-600 hover:bg-slate-200 dark:bg-slate-700'}`}
                                 >
                                     Flowchart view
                                 </button>
@@ -374,9 +374,9 @@ export default function EnterpriseFeatures() {
                                         const colorMap = { blue: 'border-blue-500/30', rose: 'border-rose-500/30', amber: 'border-amber-500/30', sky: 'border-sky-500/30' };
                                         const iconColorMap = { blue: 'text-blue-400', rose: 'text-rose-400', amber: 'text-amber-400', sky: 'text-sky-400' };
                                         return (
-                                            <div key={wf.id} className={`rounded-xl border ${colorMap[wf.color] || colorMap.blue} bg-white dark:bg-slate-900/30 overflow-hidden`}>
+                                            <div key={wf.id} className={`rounded-none border ${colorMap[wf.color] || colorMap.blue} bg-white dark:bg-slate-900/30 overflow-hidden`}>
                                                 <div className="flex items-center gap-3 p-4 border-b border-app-border">
-                                                    <div className={`p-2 rounded-lg bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
+                                                    <div className={`p-2 rounded-none bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
                                                         <Icon size={20} />
                                                     </div>
                                                     <span className="font-semibold text-slate-900 dark:text-slate-200">{wf.title}</span>
@@ -401,14 +401,14 @@ export default function EnterpriseFeatures() {
                                         return (
                                             <div
                                                 key={wf.id}
-                                                className={`rounded-xl border ${colorMap[wf.color] || colorMap.blue} overflow-hidden transition-all`}
+                                                className={`rounded-none border ${colorMap[wf.color] || colorMap.blue} overflow-hidden transition-all`}
                                             >
                                                 <button
                                                     onClick={() => setExpandedWorkflow(isExpanded ? null : wf.id)}
                                                     className="w-full flex items-center justify-between p-4 text-left hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-100 transition-colors"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <div className={`p-2 rounded-lg bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
+                                                        <div className={`p-2 rounded-none bg-white dark:bg-slate-900/50 ${iconColorMap[wf.color] || iconColorMap.blue}`}>
                                                             <Icon size={20} />
                                                         </div>
                                                         <span className="font-semibold text-slate-900 dark:text-slate-200">{wf.title}</span>
@@ -445,9 +445,9 @@ export default function EnterpriseFeatures() {
                                     <div key={idx} onClick={() => {
                                         if (feature.actionType === 'ai-assistant') setIsAIStillOpen(true);
                                         if (feature.actionType === 'bulk-import') setIsBulkImportOpen(true);
-                                    }} className={`h-full p-6 rounded-2xl border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm group`}>
+                                    }} className={`h-full p-6 rounded-none border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm group`}>
                                         <div className="flex items-center justify-between mb-4">
-                                            <div className={`p-3 rounded-xl bg-slate-100 dark:bg-slate-950/50 ${feature.color}`}>
+                                            <div className={`p-3 rounded-none bg-slate-100 dark:bg-slate-950/50 ${feature.color}`}>
                                                 <feature.icon size={24} />
                                             </div>
                                         </div>
@@ -460,9 +460,9 @@ export default function EnterpriseFeatures() {
                                     </div>
                                 ) : (
                                     <Link key={idx} href={feature.href} className="group">
-                                        <div className={`h-full p-6 rounded-2xl border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm`}>
+                                        <div className={`h-full p-6 rounded-none border ${feature.border} ${feature.bg} hover:bg-opacity-20 transition-all duration-300 hover:scale-[1.02] cursor-pointer backdrop-blur-sm`}>
                                             <div className="flex items-center justify-between mb-4">
-                                                <div className={`p-3 rounded-xl bg-slate-100 dark:bg-slate-950/50 ${feature.color}`}>
+                                                <div className={`p-3 rounded-none bg-slate-100 dark:bg-slate-950/50 ${feature.color}`}>
                                                     <feature.icon size={24} />
                                                 </div>
                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -481,7 +481,7 @@ export default function EnterpriseFeatures() {
                             ))}
                         </div>
 
-                        <div className="mt-12 p-6 rounded-2xl bg-white dark:bg-slate-900/50 border border-app-border">
+                        <div className="mt-12 p-6 rounded-none bg-white dark:bg-slate-900/50 border border-app-border">
                             <h4 className="text-sm font-semibold text-app-text-muted uppercase tracking-wider mb-4">
                                 Implementation Status
                             </h4>
