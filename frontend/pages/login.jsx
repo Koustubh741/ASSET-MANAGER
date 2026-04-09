@@ -284,7 +284,7 @@ export default function Login() {
                     <div>ALT: 42.0m</div>
                 </div>
                 <div className="absolute top-10 right-10 text-[10px] text-success/50 uppercase tracking-tight font-mono text-right">
-                    <div>SYSTEM: AEGIS-V4</div>
+                    <div>SYSTEM: CACHE-SERVE V1</div>
                     <div>ENCRYPTION: AES-256-GCM</div>
                     <div>STATUS: OPERATIONAL</div>
                 </div>
@@ -308,11 +308,11 @@ export default function Login() {
                             <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-app-text"></div>
                         </div>
                         <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] uppercase text-primary">
-                            Aegis Command
+                            Cache Serve
                         </h1>
                     </div>
                     <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
-                    <p className="mt-3 text-app-text-muted text-xs tracking-widest uppercase font-medium">Strategic Asset Intelligence & Control</p>
+                    <p className="mt-3 text-app-text-muted text-xs tracking-widest uppercase font-medium">Distributed Asset Serving & Digital Logistics</p>
                 </div>
 
                 {/* MAIN AUTH CONTAINER */}
@@ -343,7 +343,7 @@ export default function Login() {
                         <div className="flex items-center gap-2 mb-8 animate-in fade-in slide-in-from-left-4 duration-500">
                             <div className={`w-2 h-2 rounded-full ${isLoginMode ? 'bg-primary shadow-[0_0_8px_var(--color-primary)]' : 'bg-success shadow-[0_0_8px_var(--color-success)]'}`}></div>
                             <span className="text-[10px] font-bold tracking-widest uppercase text-app-text-muted">
-                                {isLoginMode ? 'Sector: Authentication Gateway' : 'Sector: Agent Onboarding'}
+                                {isLoginMode ? 'Sector: Access Gateway' : 'Sector: Node Onboarding'}
                             </span>
                         </div>
 
@@ -361,7 +361,7 @@ export default function Login() {
                                                     name="name"
                                                     value={formData.name}
                                                     onChange={handleInputChange}
-                                                    placeholder="AGENT_IDENTIFIER"
+                                                    placeholder="IDENTITY_NODE"
                                                     className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-success focus:ring-1 focus:ring-success/20 transition-all font-mono placeholder:text-app-text-muted/30"
                                                 />
                                             </div>
@@ -471,7 +471,7 @@ export default function Login() {
                                                     name="support_id"
                                                     value={formData.support_id}
                                                     onChange={handleInputChange}
-                                                    placeholder="AEGIS-STF-XXXX"
+                                                    placeholder="CS-STF-XXXX"
                                                     className="w-full bg-app-surface-soft border border-warning/30 rounded-none py-3 px-4 text-sm text-warning focus:outline-none focus:border-warning transition-all font-mono placeholder:text-warning/20"
                                                 />
                                             </div>
@@ -492,7 +492,7 @@ export default function Login() {
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
-                                            placeholder="USER@AEGIS.CMD"
+                                            placeholder="USER@CACHE.SRV"
                                             className={`w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 pl-12 pr-4 text-sm focus:outline-none transition-all font-mono ${isLoginMode ? 'focus:border-primary' : 'focus:border-indigo-500'}`}
                                         />
                                     </div>
@@ -566,7 +566,7 @@ export default function Login() {
                                     className={`w-full py-4 rounded-none font-bold text-sm tracking-[0.3em] uppercase transition-all transform active:scale-[0.98] relative overflow-hidden group ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} ${isLoginMode ? 'bg-primary text-white dark:text-[#122f5f] hover:bg-app-text hover:text-app-bg shadow-[0_0_20px_var(--color-primary)/30]' : 'bg-success text-white dark:text-[#003824] hover:bg-app-text hover:text-app-bg shadow-[0_0_20px_var(--color-success)/30]'}`}
                                 >
                                     <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                                    {isLoading ? 'Processing Signal...' : (isLoginMode ? 'Initiate Sequence' : 'Enlist Agent')}
+                                    {isLoading ? 'Relaying Pulse...' : (isLoginMode ? 'Authorize Node' : 'Register Node')}
                                     {!isLoading && <ArrowRight size={18} className="inline ml-2 transition-transform group-hover:translate-x-1" />}
                                 </button>
                             </div>

@@ -51,7 +51,7 @@ export default function RFIDPage() {
 
     return (
         <>
-            <Head><title>RFID Management – Asset Manager Pro</title></Head>
+            <Head><title>RFID Management – Cache Serve</title></Head>
             <div className="space-y-6">
                 <header>
                     <h1 className="text-xl font-bold text-app-text flex items-center gap-2">📡 RFID Management</h1>

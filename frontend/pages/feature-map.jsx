@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useState } from 'react';
 
 const featureData = {
-    platform: 'Asset Manager Pro',
+    platform: 'Cache Serve',
     departments: [
         {
             id: 'it',
@@ -98,8 +98,8 @@ export default function FeatureMap() {
     return (
         <>
             <Head>
-                <title>Platform Feature Map – Asset Manager Pro</title>
-                <meta name="description" content="Complete feature map of Asset Manager Pro platform across all departments." />
+                <title>Platform Feature Map – Cache Serve</title>
+                <meta name="description" content="Complete feature map of Cache Serve platform across all departments." />
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -472,7 +472,7 @@ export default function FeatureMap() {
                         Platform Overview
                     </div>
                     <h1 className="main-title">
-                        <span>Asset Manager Pro</span>
+                        <span>Cache Serve</span>
                         <br />
                         Feature Map
                     </h1>
@@ -485,7 +485,7 @@ export default function FeatureMap() {
                 <div className="root-container">
                     {/* Root Node */}
                     <div className="root-node">
-                        🏢 Asset Manager Pro (AMP)
+                        🏢 Cache Serve (CS)
                     </div>
 
                     {/* Horizontal connector */}

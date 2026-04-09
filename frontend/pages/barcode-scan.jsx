@@ -38,7 +38,7 @@ export default function BarcodeScanPage() {
 
     return (
         <>
-            <Head><title>Barcode / QR Scan – Asset Manager Pro</title></Head>
+            <Head><title>Barcode / QR Scan – Cache Serve</title></Head>
             <div className="max-w-2xl mx-auto space-y-6">
                 <header className="text-center">
                     <h1 className="text-xl font-bold text-app-text">📷 Barcode / QR Scan</h1>

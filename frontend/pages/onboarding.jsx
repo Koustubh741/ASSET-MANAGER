@@ -74,7 +74,7 @@ export default function OnboardingPage() {
 
     return (
         <>
-            <Head><title>Onboarding – Asset Manager Pro</title></Head>
+            <Head><title>Onboarding – Cache Serve</title></Head>
             <style>{`
                 body { background: radial-gradient(ellipse at 20% 0%,#0d1330 0%,#07070f 60%); }
                 .ob-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 40px; }
@@ -91,7 +91,7 @@ export default function OnboardingPage() {
                 <div style={{ width: '100%', maxWidth: 680 }}>
                     <div style={{ textAlign: 'center', marginBottom: 32 }}>
                         <div style={{ fontSize: 32, marginBottom: 8 }}>🏢</div>
-                        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', margin: 0 }}>Welcome to Asset Manager Pro</h1>
+                        <h1 style={{ fontSize: 28, fontWeight: 800, color: '#fff', margin: 0 }}>Welcome to Cache Serve</h1>
                         <p style={{ color: '#64748b', marginTop: 8 }}>Let's get your platform set up in a few minutes</p>
                     </div>
 

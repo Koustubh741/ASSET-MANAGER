@@ -40,7 +40,7 @@ export default function DeliveriesPage() {
 
     return (
         <>
-            <Head><title>Deliveries – Asset Manager Pro</title></Head>
+            <Head><title>Deliveries – Cache Serve</title></Head>
             <div className="space-y-6">
                 <header>
                     <h1 className="text-xl font-bold text-app-text flex items-center gap-2">🚚 Deliveries Tracking</h1>

@@ -93,7 +93,7 @@ export default function WorkflowsPage() {
 
     return (
         <>
-            <Head><title>Workflows – Asset Manager Pro</title></Head>
+            <Head><title>Workflows – Cache Serve</title></Head>
             <div className="space-y-6">
                 <header className="flex justify-between items-start">
                     <div>

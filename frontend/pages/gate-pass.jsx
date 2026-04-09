@@ -59,7 +59,7 @@ export default function GatePassPage() {
 
     return (
         <>
-            <Head><title>Gate Pass – Asset Manager Pro</title></Head>
+            <Head><title>Gate Pass – Cache Serve</title></Head>
             <div className="space-y-6">
                 <header className="flex justify-between items-center flex-wrap gap-4">
                     <div>

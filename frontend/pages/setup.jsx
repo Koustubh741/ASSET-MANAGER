@@ -152,7 +152,7 @@ export default function Setup() {
                     {/* Step 1: Welcome */}
                     {step === 1 && (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                            <h1 className="text-2xl font-bold text-emerald-400">Welcome to ITSM Asset Manager</h1>
+                            <h1 className="text-2xl font-bold text-emerald-400">Welcome to Cache Serve</h1>
                             <p className="text-app-text-muted text-app-text-muted">
                                 Let's configure your organization. This platform helps you manage:
                             </p>

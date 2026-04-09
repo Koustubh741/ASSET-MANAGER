@@ -41,7 +41,7 @@ export default function BudgetQueuePage() {
 
     return (
         <>
-            <Head><title>Budget Queue – Asset Manager Pro</title></Head>
+            <Head><title>Budget Queue – Cache Serve</title></Head>
             {rejectModal && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
                     <div className="glass-card w-full max-w-md p-6 space-y-4">

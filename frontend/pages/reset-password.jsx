@@ -65,7 +65,7 @@ export default function ResetPassword() {
 
             {/* BACKGROUND TELEMETRY LAYER: SYSTEM STATUS */}
             <div className="absolute top-8 right-8 text-right space-y-1 opacity-20 hidden md:block select-none pointer-events-none">
-                <div className="text-[10px] font-mono tracking-widest uppercase">SYSTEM: AEGIS-V4</div>
+                <div className="text-[10px] font-mono tracking-widest uppercase">SYSTEM: CACHE-SERVE V1</div>
                 <div className="text-[10px] font-mono tracking-widest uppercase">ENCRYPTION: AES-256-GCM</div>
                 <div className="text-[10px] font-mono tracking-widest uppercase flex items-center justify-end gap-2">
                     STATUS: <span className="text-success animate-pulse">OPERATIONAL</span>
@@ -98,7 +98,7 @@ export default function ResetPassword() {
                             <div className="absolute top-0 left-0 w-2 h-2 border-t-2 border-l-2 border-app-text"></div>
                         </div>
                         <h1 className="text-3xl md:text-4xl font-bold tracking-[0.2em] uppercase text-primary">
-                            Aegis Command
+                            Cache Serve
                         </h1>
                     </div>
                     <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>

@@ -117,7 +117,7 @@ export default function PurchaseOrdersPage() {
 
     return (
         <>
-            <Head><title>Purchase Orders – Asset Manager Pro</title></Head>
+            <Head><title>Purchase Orders – Cache Serve</title></Head>
             <div className="space-y-6">
                 <header>
                     <h1 className="text-xl font-bold text-app-text flex items-center gap-2">

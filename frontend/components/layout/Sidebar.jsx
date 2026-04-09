@@ -50,7 +50,7 @@ const Sidebar = ({
                         <div className="flex items-center gap-3">
                             <img src="/assets/itsm-logo.png" alt="Logo" className="w-8 h-8 shrink-0" />
                             <h1 className="text-xl font-bold bg-gradient-to-r from-app-text via-primary to-indigo-500 bg-clip-text text-transparent truncate uppercase tracking-tighter">
-                                {currentRole?.label || 'Asset Manager'}
+                                {currentRole?.label || 'Cache Serve'}
                             </h1>
                         </div>
                     </div>

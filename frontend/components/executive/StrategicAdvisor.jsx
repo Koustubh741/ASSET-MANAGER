@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { Brain, Zap, Activity, Shield, CheckCircle, Target, ShieldAlert, Cpu } from 'lucide-react';
 
 /**
- * Aegis Command: Strategic AI Advisor v3.0
+ * Cache Serve: Strategic AI Advisor v3.0
  * Specification: Digital Brutalism + Layered Glassmorphism.
  */
 const NeuralBackgroundGrid = () => (
@@ -309,7 +309,7 @@ const StrategicAdvisor = ({ insights, isExecuting, onOpenAudit }) => {
                     )}
                 </div>
 
-                {/* Aegis Command: Tactical Grids */}
+                {/* Cache Serve: Tactical Grids */}
                 <ExecutiveDecisionMatrix />
                 <TacticalAnomalyGrid />
                 <StrategicForecastCharts />
