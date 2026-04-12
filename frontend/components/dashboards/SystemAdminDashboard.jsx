@@ -518,7 +518,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                     icon={Clock}
                                     colorClass="text-rose-500"
                                     gradient="bg-gradient-to-br from-rose-500 to-pink-600"
-                                    trend="+2"
+                                    trend={stats?.warranty_risk > 0 ? "Urgent" : "Stable"}
                                 />
                             </Link>
                             <Link href="/assets?status=Discovered">
@@ -621,7 +621,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                     <Link href="/dashboard/system-admin/finance">
                                         <StatCard
                                             title="Budget Queue"
-                                            value={stats?.budget_queue_count || "0"}
+                                            value={stats?.budget_queue_count || 0}
                                             subtext="Finance step updates"
                                             icon={Wallet}
                                             colorClass="text-emerald-400"
@@ -862,7 +862,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                             </td>
                                                             <td className="py-5">
                                                                 <div className="text-[11px] font-bold text-app-text/90 uppercase">{req.requestedBy?.name}</div>
-                                                                <div className="text-[8px] text-app-text-muted/50 font-mono uppercase tracking-tighter">{req.requestedBy?.department || 'REGISTRY_VOID'}</div>
+                                                                <div className="text-[8px] text-app-text-muted/50 font-mono uppercase tracking-tighter">{req.requestedBy?.dept_obj?.name || 'REGISTRY_VOID'}</div>
                                                             </td>
                                                             <td className="py-5">
                                                                 <div className="flex items-center gap-3">
@@ -948,7 +948,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                             </td>
                                                             <td className="py-5">
                                                                 <div className="text-[10px] font-bold text-app-text/80 uppercase">{user.location || 'SITE_UNKNOWN'}</div>
-                                                                <div className="text-[8px] text-app-text-muted/50 font-mono uppercase tracking-tighter mt-0.5">{user.department || 'REGISTRY_VOID'}</div>
+                                                                <div className="text-[8px] text-app-text-muted/50 font-mono uppercase tracking-tighter mt-0.5">{user.dept_obj?.name || 'REGISTRY_VOID'}</div>
                                                             </td>
                                                             <td className="px-8 py-5 text-right">
                                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1104,59 +1104,109 @@ export default function SystemAdminDashboard({ forceView }) {
                                     <p className="text-app-text-muted text-sm italic">Registry is currently empty (excluding system accounts).</p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto glass-panel border border-app-border shadow-2xl">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-app-border">
-                                                <th className="px-8 py-5 text-[10px] font-black text-app-text-muted uppercase tracking-widest">Operator Identity</th>
-                                                <th className="py-5 text-[10px] font-black text-app-text-muted uppercase tracking-widest">Platform Role</th>
-                                                <th className="py-5 text-[10px] font-black text-app-text-muted uppercase tracking-widest">Operational Hub</th>
-                                                <th className="px-8 py-5 text-[10px] font-black text-app-text-muted uppercase tracking-widest text-right">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5">
-                                            {activeUsers.map((user) => (
-                                                <tr key={user.id} className="group hover:bg-white/5 transition-all duration-300 border-b border-white/5 last:border-0">
-                                                    <td className="px-8 py-5">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 border border-success/20 bg-success/5 flex items-center justify-center text-[10px] font-bold text-success/70 shadow-lg group-hover:scale-105 transition-transform">
-                                                                {user.full_name?.charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-[11px] font-bold text-app-text uppercase tracking-tight group-hover:text-success transition-colors">{user.full_name}</p>
-                                                                <p className="text-[8px] font-mono text-app-text-muted/60 mt-0.5 tracking-tighter">{user.email?.toLowerCase()}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-5">
-                                                        <div className="px-2 py-0.5 border border-success/30 bg-success/5 text-[8px] font-bold text-success uppercase tracking-widest w-fit">
-                                                            {ROLES ? (ROLES.find(r => r.slug === user.role)?.label || user.role) : user.role}
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-5">
-                                                        <div className="text-[10px] font-bold text-app-text/80 uppercase">{user.location || 'HUB_CENTRAL'}</div>
-                                                        <div className="text-[8px] text-app-text-muted/40 font-mono uppercase tracking-tighter mt-0.5">LATENCY_SYNC_OK</div>
-                                                    </td>
-                                                    <td className="px-8 py-5 text-right">
-                                                        <div className="flex justify-end gap-2">
-                                                            <button
-                                                                onClick={() => handleInitiateExit(user.id)}
-                                                                className="px-4 py-1.5 border border-orange-500/20 bg-orange-500/5 text-orange-400 text-[9px] font-bold uppercase tracking-widest hover:bg-orange-500/20 hover:text-white transition-all"
-                                                            >
-                                                                INITIATE_EXIT
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDeactivateUser(user.id)}
-                                                                className="px-4 py-1.5 border border-white/10 bg-white/5 text-app-text-muted/60 text-[9px] font-bold uppercase tracking-widest hover:bg-rose-500/20 hover:text-rose-500 hover:border-rose-500/40 transition-all"
-                                                            >
-                                                                DEACTIVATE
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                <div className="space-y-12">
+                                    {Object.entries(
+                                        activeUsers.reduce((groups, user) => {
+                                            const dept = user.dept_obj?.name || 'UNMAPPED_ENTITIES';
+                                            if (!groups[dept]) groups[dept] = [];
+                                            groups[dept].push(user);
+                                            return groups;
+                                        }, {})
+                                    )
+                                    .sort(([deptA], [deptB]) => deptA.localeCompare(deptB))
+                                    .map(([department, users]) => {
+                                        // Role priority map
+                                        const rolePriority = {
+                                            'ADMIN': 1,
+                                            'SYSTEM_ADMIN': 1,
+                                            'SUPPORT': 2,
+                                            'IT_SUPPORT': 2,
+                                            'MANAGER': 3,
+                                            'DEPT_MANAGER': 3,
+                                            'FINANCE': 4,
+                                            'PROCUREMENT': 5,
+                                            'END_USER': 6,
+                                            'TEAM_MEMBER': 6
+                                        };
+
+                                        const sortedUsers = [...users].sort((a, b) => {
+                                            const priorityA = rolePriority[a.role] || 99;
+                                            const priorityB = rolePriority[b.role] || 99;
+                                            if (priorityA !== priorityB) return priorityA - priorityB;
+                                            return (a.full_name || '').localeCompare(b.full_name || '');
+                                        });
+
+                                        return (
+                                            <div key={department} className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                <div className="flex items-center gap-4 mb-4">
+                                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+                                                    <h4 className="text-[10px] font-black text-emerald-500/60 uppercase tracking-[0.5em] px-4 py-1 border border-emerald-500/10 bg-emerald-500/5">
+                                                        {department}
+                                                    </h4>
+                                                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent"></div>
+                                                </div>
+
+                                                <div className="overflow-x-auto glass-panel border border-app-border shadow-2xl">
+                                                    <table className="w-full text-left">
+                                                        <thead>
+                                                            <tr className="border-b border-app-border bg-white/[0.01]">
+                                                                <th className="px-8 py-4 text-[9px] font-black text-app-text-muted uppercase tracking-widest">Operator Identity</th>
+                                                                <th className="py-4 text-[9px] font-black text-app-text-muted uppercase tracking-widest">Platform Role</th>
+                                                                <th className="py-4 text-[9px] font-black text-app-text-muted uppercase tracking-widest">Operational Hub</th>
+                                                                <th className="px-8 py-4 text-[9px] font-black text-app-text-muted uppercase tracking-widest text-right">Action</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {sortedUsers.map((user) => (
+                                                                <tr key={user.id} className="group hover:bg-white/5 transition-all duration-300 border-b border-white/5 last:border-0">
+                                                                    <td className="px-8 py-5">
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className="w-10 h-10 border border-success/20 bg-success/5 flex items-center justify-center text-[10px] font-bold text-success/70 shadow-lg group-hover:scale-105 transition-transform">
+                                                                                {user.full_name?.charAt(0).toUpperCase()}
+                                                                            </div>
+                                                                            <div>
+                                                                                <p className="text-[11px] font-bold text-app-text uppercase tracking-tight group-hover:text-success transition-colors">{user.full_name}</p>
+                                                                                <p className="text-[8px] font-mono text-app-text-muted/60 mt-0.5 tracking-tighter">{user.email?.toLowerCase()}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-5">
+                                                                        <div className={`px-2 py-0.5 border text-[8px] font-bold uppercase tracking-widest w-fit ${
+                                                                            user.role === 'ADMIN' || user.role === 'SYSTEM_ADMIN' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
+                                                                            user.role === 'MANAGER' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                                                                            'bg-success/5 text-success border-success/20'
+                                                                        }`}>
+                                                                            {ROLES ? (ROLES.find(r => r.slug === user.role)?.label || user.role) : user.role}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="py-5">
+                                                                        <div className="text-[10px] font-bold text-app-text/80 uppercase">{user.location || 'HUB_CENTRAL'}</div>
+                                                                        <div className="text-[8px] text-app-text-muted/40 font-mono uppercase tracking-tighter mt-0.5">LATENCY_SYNC_OK</div>
+                                                                    </td>
+                                                                    <td className="px-8 py-5 text-right">
+                                                                        <div className="flex justify-end gap-2">
+                                                                            <button
+                                                                                onClick={() => handleInitiateExit(user.id)}
+                                                                                className="px-4 py-1.5 border border-orange-500/20 bg-orange-500/5 text-orange-400 text-[9px] font-bold uppercase tracking-widest hover:bg-orange-500/20 hover:text-white transition-all"
+                                                                            >
+                                                                                INITIATE_EXIT
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleDeactivateUser(user.id)}
+                                                                                className="px-4 py-1.5 border border-white/10 bg-white/5 text-app-text-muted/60 text-[9px] font-bold uppercase tracking-widest hover:bg-rose-500/20 hover:text-rose-500 hover:border-rose-500/40 transition-all"
+                                                                            >
+                                                                                DEACTIVATE
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -1225,7 +1275,7 @@ export default function SystemAdminDashboard({ forceView }) {
                                                     </div>
                                                     <div className="p-4 border border-white/10 bg-white/[0.02]">
                                                         <div className="text-app-text-muted/40 text-[8px] font-bold uppercase tracking-widest mb-1">Department_Grid</div>
-                                                        <div className="text-app-text font-bold text-sm uppercase">{selectedItem?.requestedBy?.department || 'Registry_Central'}</div>
+                                                        <div className="text-app-text font-bold text-sm uppercase">{selectedItem?.requestedBy?.dept_obj?.name || 'Registry_Central'}</div>
                                                     </div>
                                                 </div>
                                             </section>
