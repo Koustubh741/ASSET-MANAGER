@@ -48,10 +48,12 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         finally:
             await session.close()
 
-def test_connection():
-    """Simple synchronous connection test for status checks"""
+async def test_async_connection():
+    """Simple asynchronous connection test for status checks"""
+    from sqlalchemy import text
     try:
-        with engine.connect() as conn:
+        async with async_engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
             return True
     except Exception as e:
         print(f"Database connection error: {e}")

@@ -9,6 +9,7 @@ import io
 import os
 import uuid
 import shutil
+from ..utils.uuid_gen import get_uuid
 import re
 from ..database.database import get_db
 from ..models.models import PurchaseOrder, AssetRequest, User, SystemPatch, AuditLog, Department, Asset
@@ -239,7 +240,7 @@ async def upload_po(
 
     procurement_service.ensure_upload_dir()
     
-    file_id = str(uuid.uuid4())
+    file_id = str(get_uuid())
     file_ext = os.path.splitext(file.filename)[1]
     file_path = os.path.join(procurement_service.UPLOAD_DIR, f"PO_{request_id}_{file_id}{file_ext}")
     
@@ -267,7 +268,7 @@ async def upload_invoice(
 
     procurement_service.ensure_upload_dir()
     
-    file_id = str(uuid.uuid4())
+    file_id = str(get_uuid())
     file_path = os.path.join(procurement_service.UPLOAD_DIR, f"INV_{po_id}_{file_id}.pdf")
     
     with open(file_path, "wb") as f:
@@ -389,7 +390,7 @@ async def upload_patch_binary(
     os.makedirs(patch_dir, exist_ok=True)
 
     # 3. Save file (Support both Multipart and Raw Body)
-    file_id = str(uuid.uuid4())[:8]
+    file_id = str(get_uuid())[:8]
     
     if file and file.filename:
         # Standard Multipart
@@ -422,7 +423,7 @@ async def upload_patch_binary(
     
     # Audit Log
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         action="PATCH_BINARY_UPLOAD",
         entity_type="SystemPatch",
         entity_id=str(patch_id),

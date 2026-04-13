@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Users, ChevronRight, ChevronDown, User, Shield, Briefcase, Zap } from 'lucide-react';
 import apiClient from '@/lib/apiClient';
 
-const HierarchyNode = ({ node, level = 0 }) => {
+const HierarchyNode = ({ node, level = 0, viewMode = 'users' }) => {
     const [isExpanded, setIsExpanded] = useState(true);
     const hasChildren = node.children && node.children.length > 0;
 
     const getRoleIcon = (role) => {
+        if (viewMode === 'departments') return <Briefcase size={14} className="text-indigo-400" />;
         switch (role?.toUpperCase()) {
             case 'ADMIN': return <Shield size={14} className="text-rose-400" />;
             case 'MANAGER': return <Briefcase size={14} className="text-blue-400" />;
@@ -38,9 +39,15 @@ const HierarchyNode = ({ node, level = 0 }) => {
 
                 <div className="flex-1">
                     <h4 className="text-sm font-semibold text-app-text group-hover:text-app-text">{node.name}</h4>
-                    <p className="text-[10px] text-app-text-muted uppercase tracking-wider font-medium">
-                        {node.position || node.role} • <span className="text-app-text-muted">{node.department || 'General'}</span>
-                    </p>
+                    {viewMode === 'users' ? (
+                        <p className="text-[10px] text-app-text-muted uppercase tracking-wider font-medium">
+                            {node.position || node.role} • <span className="text-app-text-muted">{node.department || 'General'}</span>
+                        </p>
+                    ) : (
+                        <p className="text-[10px] text-app-text-muted uppercase tracking-wider font-medium">
+                            ID: {node.slug || 'root'} • Department
+                        </p>
+                    )}
                 </div>
 
                 {hasChildren && (
@@ -58,7 +65,7 @@ const HierarchyNode = ({ node, level = 0 }) => {
                         style={{ marginLeft: `${level * 24}px` }}
                     />
                     {node.children.map((child) => (
-                        <HierarchyNode key={child.id} node={child} level={level + 1} />
+                        <HierarchyNode key={child.id} node={child} level={level + 1} viewMode={viewMode} />
                     ))}
                 </div>
             )}
@@ -70,11 +77,14 @@ export default function OrganizationHierarchy() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [viewMode, setViewMode] = useState('users'); // 'users' | 'departments'
 
     useEffect(() => {
         const fetchHierarchy = async () => {
+            setLoading(true);
             try {
-                const result = await apiClient.get('/users/hierarchy');
+                const endpoint = viewMode === 'departments' ? '/departments/hierarchy' : '/users/hierarchy';
+                const result = await apiClient.get(endpoint);
                 setData(result);
             } catch (err) {
                 console.error('Error fetching hierarchy:', err);
@@ -118,7 +128,7 @@ export default function OrganizationHierarchy() {
         };
 
         fetchHierarchy();
-    }, []);
+    }, [viewMode]);
 
     if (loading) {
         return (
@@ -134,11 +144,22 @@ export default function OrganizationHierarchy() {
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-xl font-bold text-slate-900 dark:text-slate-200">Organization Structure</h3>
-                    <p className="text-sm text-app-text-muted">Visual hierarchy of all active personnel.</p>
+                    <p className="text-sm text-app-text-muted">Visual hierarchy of personnel and departments.</p>
                 </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-none bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-                    <Zap size={14} />
-                    LIVE VIEW
+                
+                <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <button 
+                        onClick={() => setViewMode('users')} 
+                        className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${viewMode === 'users' ? 'bg-white dark:bg-slate-700 shadow text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                    >
+                        Personnel
+                    </button>
+                    <button 
+                        onClick={() => setViewMode('departments')} 
+                        className={`px-4 py-1.5 text-xs font-semibold rounded-md transition-all ${viewMode === 'departments' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                    >
+                        Departments
+                    </button>
                 </div>
             </div>
 
@@ -146,7 +167,7 @@ export default function OrganizationHierarchy() {
                 {data.length > 0 ? (
                     <div className="flex flex-col gap-2">
                         {data.map((root) => (
-                            <HierarchyNode key={root.id} node={root} />
+                            <HierarchyNode key={root.id} node={root} viewMode={viewMode} />
                         ))}
                     </div>
                 ) : (

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from datetime import datetime, timezone
 import uuid
+from ..utils.uuid_gen import get_uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -91,7 +92,7 @@ async def create_port_policy(
     )
     # Audit Log
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         entity_type="PortPolicy",
         entity_id=str(policy.id),
         action="CREATE",
@@ -153,7 +154,7 @@ async def update_port_policy(
     policy = await port_policy_service.update_policy(db, policy, payload)
     # Audit Log
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         entity_type="PortPolicy",
         entity_id=str(policy.id),
         action="UPDATE",
@@ -195,7 +196,7 @@ async def delete_port_policy(
     await port_policy_service.delete_policy(db, policy)
     # Audit Log
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         entity_type="PortPolicy",
         entity_id=str(policy_id),
         action="DELETE",
@@ -233,7 +234,7 @@ async def assign_targets(
     await port_policy_service.assign_targets_to_policy(db, policy, payload, current_user=current_user)
     # Audit Log
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         entity_type="PortPolicy",
         entity_id=str(policy_id),
         action="ASSIGN_TARGETS",
@@ -366,10 +367,8 @@ async def report_port_policy_enforcement(
     # Simple audit log entry
     async with db:
         from datetime import datetime, timezone
-        import uuid as uuid_lib
-
         audit = AuditLog(
-            id=uuid_lib.uuid4(),
+            id=get_uuid(),
             entity_type="Agent",
             entity_id=str(agent_id),
             action="PORT_POLICY_ENFORCEMENT_REPORT",

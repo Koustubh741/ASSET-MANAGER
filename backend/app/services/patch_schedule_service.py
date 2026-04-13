@@ -4,6 +4,7 @@ Manages maintenance windows and executes scheduled patch deployments.
 """
 import uuid
 import logging
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -73,7 +74,7 @@ async def execute_scheduled_patch(schedule_id: str) -> dict:
                 dep = dep_result.scalars().first()
                 if not dep:
                     dep = PatchDeployment(
-                        id=uuid.uuid4(),
+                        id=get_uuid(),
                         patch_id=schedule.patch_id,
                         asset_id=asset.id,
                     )
@@ -84,7 +85,7 @@ async def execute_scheduled_patch(schedule_id: str) -> dict:
 
                 # Queue agent command
                 cmd = AgentCommand(
-                    id=uuid.uuid4(),
+                    id=get_uuid(),
                     asset_id=asset.id,
                     command="INSTALL_PATCH",
                     payload={

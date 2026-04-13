@@ -5,6 +5,7 @@ import WorkflowGuideModal from '@/components/WorkflowGuideModal';
 import { HelpCircle, RefreshCw } from 'lucide-react';
 
 const TABS = [
+    { id: 'approvals', label: '✅ Approvals', statusField: 'status', filterNonNull: true },
     { id: 'renewals', label: '🔄 Renewals', statusField: 'status', filterNonNull: true },
     { id: 'procurement', label: '📦 Procurement', statusField: 'status', filterNonNull: true },
     { id: 'disposal', label: '🗑 Disposal', statusField: 'status', filterNonNull: true },
@@ -51,7 +52,7 @@ function UrgencyBadge({ urgency }) {
 }
 
 export default function WorkflowsPage() {
-    const [tab, setTab] = useState('renewals');
+    const [tab, setTab] = useState('approvals');
     const [assets, setAssets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actioning, setActioning] = useState({});
@@ -138,6 +139,7 @@ export default function WorkflowsPage() {
                             <thead>
                                 <tr className="border-b border-app-border text-app-text-muted text-left">
                                     <th className="px-5 py-4 font-black uppercase tracking-widest text-[10px]">Asset Identity</th>
+                                    {tab === 'approvals' && <th className="px-5 py-4 font-black uppercase tracking-widest text-[10px]">Requester</th>}
                                     <th className="px-5 py-4 font-black uppercase tracking-widest text-[10px]">Type</th>
                                     <th className="px-5 py-4 font-black uppercase tracking-widest text-[10px]">Workflow Status</th>
                                     {tab === 'renewals' && <th className="px-5 py-4 font-black uppercase tracking-widest text-[10px]">Mkt Est. Cost</th>}
@@ -152,6 +154,11 @@ export default function WorkflowsPage() {
                                     return (
                                         <tr key={aid} className="border-b border-app-border hover:bg-white/3 transition-colors">
                                             <td className="px-5 py-4 text-app-text font-bold">{a.name}</td>
+                                            {tab === 'approvals' && (
+                                                <td className="px-5 py-4 text-app-primary font-black uppercase tracking-[0.1em] text-[11px]">
+                                                    {a.requester_name || 'N/A'}
+                                                </td>
+                                            )}
                                             <td className="px-5 py-4">
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-app-text-muted bg-app-void py-1.5 px-3 rounded-none border border-app-border">
                                                     {a.type}

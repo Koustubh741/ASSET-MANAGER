@@ -80,13 +80,10 @@ export const NotificationProvider = ({ children }) => {
                 eventSourceRef.current.close();
             }
 
-            // ROOT FIX: Read the token fresh on every connect attempt.
-            // If the token was refreshed since the last connect, we must use the new one.
-            const freshToken = localStorage.getItem('accessToken');
-            if (!freshToken) return; // Not logged in
-
-            const streamUrl = `${API_URL}/notifications/stream?token=${freshToken}`;
-            const es = new EventSource(streamUrl);
+            // ROOT FIX: Switch to secure cookie-based auth for SSE.
+            // Since we are now using the "Double-Cookie" model, we don't need a query param.
+            const streamUrl = `${API_URL}/notifications/stream`;
+            const es = new EventSource(streamUrl, { withCredentials: true });
             eventSourceRef.current = es;
 
             es.onopen = () => {

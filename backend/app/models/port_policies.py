@@ -11,6 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.sql import func
 import uuid
+from ..utils.uuid_gen import get_uuid
 
 from ..database.database import Base
 
@@ -26,7 +27,7 @@ class PortPolicy(Base):
     id = Column(
         PGUUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        default=get_uuid,
         index=True,
     )
 
@@ -97,7 +98,7 @@ class PolicyTarget(Base):
     id = Column(
         PGUUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        default=get_uuid,
         index=True,
     )
 
@@ -134,7 +135,7 @@ class PortPolicyAssignment(Base):
     id = Column(
         PGUUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        default=get_uuid,
         index=True,
     )
 
@@ -183,7 +184,7 @@ class PortPolicyEnforcementState(Base):
     id = Column(
         PGUUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        default=get_uuid,
         index=True,
     )
 

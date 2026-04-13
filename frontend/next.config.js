@@ -79,12 +79,6 @@ const nextConfig = {
                 destination: '/tickets/new',
                 permanent: true, // 308 — updates bookmarks and browser history
             },
-            // Old /support shortcut (in case it was ever linked)
-            {
-                source: '/support',
-                destination: '/tickets',
-                permanent: true,
-            },
             // Legacy ticket creation route (old naming convention)
             {
                 source: '/tickets/create',
@@ -96,6 +90,12 @@ const nextConfig = {
                 source: '/help',
                 destination: '/tickets',
                 permanent: true,
+            },
+            // Recover from poisoned /support redirect (break browser cache)
+            {
+                source: '/support',
+                destination: '/unit-command',
+                permanent: false, // 307 temporary redirect
             },
         ]
     },

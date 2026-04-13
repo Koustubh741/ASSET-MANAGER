@@ -4,6 +4,7 @@ from sqlalchemy.future import select
 from typing import List, Optional
 from uuid import UUID
 import uuid
+from ..utils.uuid_gen import get_uuid
 from ..database.database import get_db
 from ..models.models import RemoteSession, Asset
 from ..utils import auth_utils
@@ -47,7 +48,7 @@ async def request_remote_assistance(
         raise HTTPException(status_code=404, detail="Asset not found")
     
     session = RemoteSession(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         asset_id=request.asset_id,
         initiated_by=admin.id,
         status="PENDING",

@@ -74,10 +74,10 @@ export default function OperationsDashboard() {
 
             {/* Core Ops Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <OpsStat label="Total Site Assets" value={stats?.total_assets || 0} icon={Home} color="amber" />
-                <OpsStat label="Active Shipments" value="8" icon={Truck} color="blue" />
-                <OpsStat label="Maintenance Due" value="14" icon={Settings} color="rose" />
-                <OpsStat label="Inventory Level" value="High" icon={Box} color="emerald" />
+                <OpsStat label="Total Site Assets" value={stats?.total_assets ?? 0} icon={Home} color="amber" />
+                <OpsStat label="Active Shipments" value={stats?.active_shipments ?? 0} icon={Truck} color="blue" />
+                <OpsStat label="Maintenance Due" value={stats?.maintenance_due ?? 0} icon={Settings} color="rose" />
+                <OpsStat label="Inventory Level" value={stats?.inventory_level ?? 'N/A'} icon={Box} color="emerald" />
             </div>
 
             <QuickActionGrid />

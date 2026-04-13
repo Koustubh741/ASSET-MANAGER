@@ -17,7 +17,7 @@ router = APIRouter(
 
 @router.get("")
 async def list_alerts(
-    limit: int = Query(20, ge=1, le=50),
+    limit: int = Query(20, ge=0),
     days_warranty: int = Query(30, ge=1, le=365),
     days_procurement: int = Query(7, ge=1, le=90),
     types: Optional[str] = Query(None, description="Comma-separated: warranty,request,procurement_approved"),

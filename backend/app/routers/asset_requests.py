@@ -31,8 +31,9 @@ from ..schemas.user_schema import UserResponse
 from ..models.models import AssetRequest, ByodDevice, Asset, AssetAssignment, PurchaseRequest, User, PurchaseOrder, AssetInventory
 from ..services import asset_service
 from ..schemas.asset_schema import AssetCreate
-import uuid as _uuid
+import uuid
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime, date
 
 router = APIRouter(
@@ -70,9 +71,12 @@ async def get_asset_requests(
     
     # CRITICAL: Check role FIRST before checking position
     # IT managers have position=MANAGER but role=IT_MANAGEMENT, they should see ALL requests
-    if current_user.role not in exclude_roles and current_user.position == "MANAGER":
+    is_manager = str(current_user.position).upper() == "MANAGER" or str(current_user.role).upper() == "MANAGER"
+    
+    if current_user.role not in exclude_roles and is_manager:
         if not department:
-            department = current_user.dept_obj.name if current_user.dept_obj else current_user.domain
+            # Root Fix: Use dept_obj name for scoping
+            department = current_user.dept_obj.name if current_user.dept_obj else None
         # Unified scoping: Managers see Dept OR Domain OR their OWN requests
         # We pass effective_requester_id to the service to enable this OR logic
         effective_requester_id = current_user.id
@@ -110,10 +114,10 @@ async def get_asset_request_by_id(
 
         is_owner = asset_request.requester_id == current_user.id
         # Root Fix: Compare requester_department from response with manager's dept_obj name
-        user_dept_name = str(current_user.department).strip().lower() if current_user.department else ""
+        user_dept_name = current_user.dept_obj.name.lower() if current_user.dept_obj else ""
 
         req_dept_name = str(asset_request.requester_department).strip().lower() if asset_request.requester_department else ""
-        in_dept = req_dept_name == user_dept_name
+        in_dept = user_dept_name and req_dept_name == user_dept_name
 
         
         if not (is_owner or in_dept):
@@ -127,19 +131,19 @@ async def get_asset_request_by_id(
     return asset_request
 
 
-async def verify_active_end_user(
+async def verify_active_requester(
     requester_id: UUID,
     db: AsyncSession
 ):
     """
-    Verify that the user is an ACTIVE END_USER (Asynchronous).
+    Verify that the requester is an ACTIVE user (Asynchronous).
+    Any employee (regardless of role) should be able to request an asset.
     """
     user = await asset_request_service.get_user_by_id_db(db, requester_id)
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    if user.role != "END_USER":
-        raise HTTPException(status_code=403, detail="Only END_USER can create requests")
+    
     if user.status != "ACTIVE":
         raise HTTPException(status_code=403, detail="User account is not active")
     
@@ -157,7 +161,7 @@ async def create_asset_request(
     # Security: Derive requester_id from JWT
     requester_id = current_user.id
     
-    await verify_active_end_user(requester_id, db)
+    await verify_active_requester(requester_id, db)
     
     res = await asset_request_service.create_asset_request_v2(db, request, requester_id, initial_status="SUBMITTED")
     if res:
@@ -205,8 +209,12 @@ async def approve_asset_request(
         raise HTTPException(status_code=404, detail="Requester not found")
     
     # Verify domain match
-    if not (manager.department == requester.department or manager.domain == requester.domain):
-        raise HTTPException(status_code=403, detail="Manager/Requester domain mismatch")
+    # Root Fix: Use dept_obj name for strictly matched departments
+    manager_dept = manager.dept_obj.name if manager.dept_obj else ""
+    requester_dept = requester.dept_obj.name if requester.dept_obj else ""
+    
+    if not (manager_dept == requester_dept or manager.domain == requester.domain):
+        raise HTTPException(status_code=403, detail="Manager/Requester departmental mismatch")
     
     res = await asset_request_service.update_asset_request_status_with_validation(
         db, request_id, "MANAGER_APPROVED", current_user.role, current_user.id, current_user.full_name, decision="APPROVED"
@@ -234,7 +242,11 @@ async def reject_asset_request(
         raise HTTPException(status_code=403, detail="Already processed")
     
     requester = await asset_request_service.get_user_by_id_db(db, db_request.requester_id)
-    if not (manager.department == requester.department or manager.domain == requester.domain):
+    # Root Fix: Use dept_obj name for strictly matched departments
+    manager_dept = manager.dept_obj.name if manager.dept_obj else ""
+    requester_dept = requester.dept_obj.name if requester.dept_obj else ""
+    
+    if not (manager_dept == requester_dept or manager.domain == requester.domain):
         raise HTTPException(status_code=403, detail="Mismatch")
     
     res = await asset_request_service.update_asset_request_status_with_validation(
@@ -335,6 +347,11 @@ async def it_reject_request(
         raise
     except ValueError as e:
         # Handle state transition validation errors
+        # Root Fix: Use dept_obj name for scoping instead of brittle department string
+        department = current_user.dept_obj.name if current_user.dept_obj else None
+        
+        # Standardize empty strings to None for service layer
+        if not status: status = None
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         # Handle any other unexpected errors
@@ -400,7 +417,7 @@ async def fulfill_company_owned_request(
     # Procurement fallback
     db_request.status = "PROCUREMENT_REQUESTED"
     pr = PurchaseRequest(
-        id=_uuid.uuid4(),
+        id=get_uuid(),
         asset_request_id=db_request.id,
         requester_id=db_request.requester_id,
         asset_name=db_request.asset_name,
@@ -575,7 +592,7 @@ async def procurement_confirm_delivery(
         requester = await get_user_by_id_db(db, db_request.requester_id)
         
         new_asset = Asset(
-            id=_uuid.uuid4(),
+            id=get_uuid(),
             name=delivery_info.asset_name,
             type=db_request.asset_type,
             model=delivery_info.asset_model or db_request.asset_model or "Standard",
@@ -595,7 +612,7 @@ async def procurement_confirm_delivery(
         
         # Also add to asset.asset_inventory for the stock dashboard
         inventory_item = AssetInventory(
-            id=_uuid.uuid4(),
+            id=get_uuid(),
             asset_id=new_asset.id,
             location=new_asset.location,
             status="Available"

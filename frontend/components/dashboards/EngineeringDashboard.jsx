@@ -15,7 +15,8 @@ import {
     Layers,
     Monitor,
     MousePointer,
-    ExternalLink
+    ExternalLink,
+    CheckSquare
 } from 'lucide-react'
 import apiClient from '@/lib/apiClient'
 import { useRole } from '@/contexts/RoleContext'
@@ -26,13 +27,18 @@ export default function EngineeringDashboard() {
     const { user } = useRole()
     const toast = useToast()
     const [stats, setStats] = useState(null)
+    const [approvalsCount, setApprovalsCount] = useState(0)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const data = await apiClient.get('/departments/stats')
-                setStats(data)
+                const [statsData, approvalsData] = await Promise.all([
+                    apiClient.get('/departments/stats'),
+                    apiClient.get('/workflows/approvals')
+                ])
+                setStats(statsData)
+                setApprovalsCount(Array.isArray(approvalsData) ? approvalsData.length : 0)
                 setLoading(false)
             } catch (error) {
                 console.error('Failed to fetch engineering stats:', error)
@@ -76,12 +82,14 @@ export default function EngineeringDashboard() {
                 </p>
             </div>
 
-            {/* Core Tech Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <TechStat label="Dev Workstations" value={stats?.total_assets || 0} icon={Monitor} color="blue" />
                 <TechStat label="Cloud Instances" value="128" icon={Cloud} color="sky" />
                 <TechStat label="Deployment Health" value={`${stats?.health_score || 0}%`} icon={Zap} color="emerald" />
                 <TechStat label="Critical Alerts" value={stats?.open_tickets || 0} icon={Activity} color="rose" />
+                <div onClick={() => window.location.href = '/workflows'} className="cursor-pointer">
+                    <TechStat label="Pending Approvals" value={approvalsCount} icon={CheckSquare} color="amber" />
+                </div>
             </div>
 
             <QuickActionGrid />

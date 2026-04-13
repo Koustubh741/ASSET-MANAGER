@@ -14,7 +14,7 @@ export default function AuditOverviewPage() {
         try {
             setLoading(true);
             // Fetch real audit logs
-            const logs = await apiClient.getAuditLogs({ limit: 20, entity_type: 'API' });
+            const logs = await apiClient.getAuditLogs({ size: 0, entity_type: 'API' });
             
             // Map real logs to table format
             const formattedHistory = logs.map(log => ({

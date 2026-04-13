@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, Request, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Form, Request, BackgroundTasks, Response, Cookie
 import logging
 logger_auth = logging.getLogger(__name__)
 from pydantic import BaseModel
 from uuid import UUID
 import uuid
+from ..utils.uuid_gen import get_uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import cast, String
@@ -170,6 +171,7 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 @router.post("/login", response_model=LoginResponse)
 async def login(
     background_tasks: BackgroundTasks,
+    response: Response,
     username: str = Form(...),
     password: str = Form(...),
     db: AsyncSession = Depends(get_db)
@@ -192,7 +194,7 @@ async def login(
         async def log_failure():
             async with AsyncSessionLocal() as audit_db:
                 audit_log = AuditLog(
-                    id=uuid.uuid4(),
+                    id=get_uuid(),
                     entity_type="USER",
                     entity_id=clean_username,
                     action="LOGIN_FAILED",
@@ -219,7 +221,7 @@ async def login(
     async def log_success(u_id, u_email, u_role):
         async with AsyncSessionLocal() as audit_db:
             audit_log = AuditLog(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 entity_type="USER",
                 entity_id=str(u_id),
                 action="LOGIN_SUCCESS",
@@ -236,54 +238,93 @@ async def login(
     access_token = auth_utils.create_access_token(data=token_data)
     refresh_token = auth_utils.create_refresh_token(data=token_data)
     
+    # ROOT FIX: Set refresh token and access token as httpOnly cookies
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        max_age=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        expires=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        samesite="lax", # Required for cross-origin localhost development
+        secure=False    # Set to True in production with HTTPS
+    )
+    
     return {
         "access_token": access_token,
-        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user": user
     }
 
 
-@router.post("/refresh", response_model=dict)
-async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
-    """
-    Refresh the access token using a valid refresh token.
-    """
-    payload = auth_utils.verify_refresh_token(request.refresh_token)
-    if payload is None:
+@router.post("/refresh")
+async def refresh_token_endpoint(
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    refresh_token: str = Cookie(None)
+):
+    if not refresh_token:
+        # Explicitly clear the cookie if it was sent but is null/empty
+        response.delete_cookie("refresh_token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    try:
+        user_id = auth_utils.verify_refresh_token(refresh_token)
+    except Exception:
+        # ROOT FIX: Explicitly clear the invalid cookie on failure
+        response.delete_cookie("refresh_token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user_id = payload.get("user_id")
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token payload",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Verify user still exists and is active
     user = await user_service.get_user(db, user_id)
-    if not user:
+    if not user or user.status != "ACTIVE":
+        response.delete_cookie("refresh_token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="User not found or inactive",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if user.status != "ACTIVE":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User account is not active",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # Create new tokens (Rotation)
+    token_data = {"sub": user.email, "user_id": str(user.id), "role": user.role}
+    new_access_token = auth_utils.create_access_token(data=token_data)
+    new_refresh_token = auth_utils.create_refresh_token(data=token_data)
     
-    # Create new access token
-    new_access_token = auth_utils.create_access_token(
-        data={"sub": user.email, "user_id": str(user.id), "role": user.role}
+    # ROOT FIX: Rotate the access and refresh tokens by setting new cookies
+    response.set_cookie(
+        key="access_token",
+        value=new_access_token,
+        httponly=True,
+        max_age=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        httponly=True,
+        max_age=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        expires=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        samesite="lax",
+        secure=False
     )
     
     return {
@@ -292,16 +333,17 @@ async def refresh_access_token(request: RefreshTokenRequest, db: AsyncSession = 
     }
 
 
+
 @router.post("/logout")
-async def logout(current_user = Depends(get_current_user)):
+async def logout(response: Response, current_user = Depends(get_current_user)):
     """
-    Logout endpoint. Since JWT tokens are stateless, the client should
-    remove the token from storage. This endpoint confirms the logout action.
-    For production, consider implementing a token blacklist using Redis.
+    Logout endpoint. Clears the authentication cookies.
     """
+    response.delete_cookie("refresh_token")
+    response.delete_cookie("access_token")
     return {
         "status": "success",
-        "message": "Successfully logged out. Please remove the token from client storage."
+        "message": "Successfully logged out. Session cookies cleared."
     }
 
 
@@ -439,6 +481,7 @@ async def sso_login(provider: str):
 @router.get("/sso/{provider}/callback", response_model=LoginResponse)
 async def sso_callback(
     provider: str,
+    response: Response,
     code: str = Query(..., description="Authorization code from the OAuth provider"),
     state: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db)
@@ -478,9 +521,29 @@ async def sso_callback(
     access_token  = auth_utils.create_access_token(data=token_data)
     refresh_token = auth_utils.create_refresh_token(data=token_data)
 
+    # ROOT FIX: Set tokens as httpOnly cookies for SSO
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires=auth_utils.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        samesite="lax",
+        secure=False
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        max_age=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        expires=auth_utils.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        samesite="lax",
+        secure=False
+    )
+
     return {
         "access_token":  access_token,
-        "refresh_token": refresh_token,
         "token_type":    "bearer",
         "user":          user,
     }
@@ -573,7 +636,7 @@ async def initiate_exit(
         ]
 
         exit_request = ExitRequest(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             user_id=user_id,
             status="OPEN",
             assets_snapshot=assets_snapshot,
@@ -827,7 +890,7 @@ async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Dep
     # Check for existing valid tokens and mark them as used/inactive? 
     # For now, just create a new one.
     reset_token = PasswordResetToken(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         user_id=user.id,
         token=token,
         expires_at=expires_at

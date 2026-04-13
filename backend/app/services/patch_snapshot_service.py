@@ -5,6 +5,7 @@ Called by APScheduler every day at 23:59.
 """
 import uuid
 import logging
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +45,7 @@ async def snapshot_daily_compliance() -> dict:
                     continue  # Already snapshotted today
 
                 snap = PatchComplianceSnapshot(
-                    id=uuid.uuid4(),
+                    id=get_uuid(),
                     snapshot_date=datetime.now(timezone.utc),
                     asset_id=row["asset_id"],
                     compliance_score=row["compliance_score"],

@@ -6,6 +6,7 @@ from ..utils.auth_utils import get_current_user
 from ..models.models import ChatMessage
 from ..schemas.chat_message_schema import ChatMessageResponse, ChatMessageCreate
 import uuid
+from ..utils.uuid_gen import get_uuid
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -30,7 +31,7 @@ async def save_chat_message(
 ):
     """Save a new chat message to history."""
     db_msg = ChatMessage(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         user_id=current_user.id,
         role=message.role,
         content=message.content,

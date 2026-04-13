@@ -1,23 +1,78 @@
 import Link from 'next/link';
-import { ArrowLeft, Plus, Ticket, CheckCircle, Clock, AlertCircle, Settings, Zap, ChevronUp, Cpu, Activity, X } from 'lucide-react';
+import { ArrowLeft, Plus, Ticket, CheckCircle, Clock, AlertCircle, Settings, Zap, ChevronUp, Cpu, Activity, X, Timer, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import apiClient from '@/lib/apiClient';
 import TicketCategorySummary from '@/components/tickets/TicketCategorySummary';
-import TicketExecutiveBrief from '@/components/tickets/TicketExecutiveBrief';
 import DepartmentalTicketLoad from '@/components/tickets/DepartmentalTicketLoad';
-import ExecutiveIntelligenceOverlay from '@/components/tickets/ExecutiveIntelligenceOverlay';
+
 import { useRole } from '@/contexts/RoleContext';
+
+// ── SLA Helper ────────────────────────────────────────────────────────────────
+function getSLAStatus(slaDeadline) {
+    if (!slaDeadline) return null;
+    
+    let deadlineDate;
+    try {
+        let dateStr = String(slaDeadline);
+        if (!dateStr.includes('Z') && !dateStr.includes('+')) {
+            dateStr += 'Z';
+        }
+        deadlineDate = new Date(dateStr);
+    } catch (e) {
+        return null;
+    }
+
+    const now = new Date();
+    const diffMs = deadlineDate - now;
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffMs < 0) {
+        const overdueH = Math.abs(diffHours);
+        const label = overdueH >= 24
+            ? `${Math.floor(overdueH / 24)}d overdue`
+            : `${Math.floor(overdueH)}h overdue`;
+        return { label, color: 'bg-red-500/15 text-red-500 border border-red-500/30', icon: 'breached' };
+    }
+    if (diffHours <= 4) {
+        const h = Math.floor(diffHours);
+        const m = Math.round((diffHours % 1) * 60);
+        return { label: `${h}h ${m}m left`, color: 'bg-amber-500/15 text-amber-400 border border-amber-500/30', icon: 'soon' };
+    }
+    const days = Math.floor(diffHours / 24);
+    if (days > 0) return { label: `${days}d left`, color: 'bg-emerald-500/10 text-emerald-400 border border-emerald-400/20', icon: 'ok' };
+    return { label: `${Math.floor(diffHours)}h left`, color: 'bg-emerald-500/10 text-emerald-400 border border-emerald-400/20', icon: 'ok' };
+}
+
+function SLABadge({ slaDeadline, status }) {
+    const resolved = ['CLOSED', 'RESOLVED'].includes(status?.toUpperCase());
+    if (resolved) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[8px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-400/20">
+                <CheckCircle size={10} /> Met
+            </span>
+        );
+    }
+    
+    const sla = getSLAStatus(slaDeadline);
+    if (!sla) return null;
+
+    return (
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-none text-[8px] font-black uppercase tracking-widest ${sla.color}`}>
+            {sla.icon === 'breached' ? <AlertTriangle size={10} /> : <Timer size={10} />}
+            {sla.label}
+        </span>
+    );
+}
 
 export default function TicketsDashboard() {
     const router = useRouter();
     const { user, isManagerial, isITStaff, isStaff } = useRole();
     const [stats, setStats] = useState({ open: 0, pending: 0, closed: 0 });
+    const [statsLoading, setStatsLoading] = useState(false);
     const [recentTickets, setRecentTickets] = useState([]);
     const [categoryStats, setCategoryStats] = useState([]);
-    const [executiveSummary, setExecutiveSummary] = useState(null);
-    const [statsLoading, setStatsLoading] = useState(true);
-    const [isExecutiveHUDOpen, setIsExecutiveHUDOpen] = useState(false);
+
     const [dashboardMode, setDashboardMode] = useState('external'); 
     const [isKBSearchOpen, setIsKBSearchOpen] = useState(false);
     const [kbQuery, setKbQuery] = useState('');
@@ -40,7 +95,7 @@ export default function TicketsDashboard() {
             setStatsLoading(true);
             try {
                 const isInternal = dashboardMode === 'internal';
-                const ticketResponse = await apiClient.getTickets(0, 100, null, null, isInternal);
+                const ticketResponse = await apiClient.getTickets(0, 0, null, null, isInternal);
                 const tickets = ticketResponse.data || [];
 
                 if (!active) return;
@@ -55,12 +110,21 @@ export default function TicketsDashboard() {
                 }));
 
                 const counts = {
-                    open: mappedTickets.filter(t => t.status?.toUpperCase() === 'OPEN' || t.status?.toUpperCase() === 'IN_PROGRESS').length,
-                    pending: mappedTickets.filter(t => t.status?.toUpperCase() === 'PENDING').length,
-                    closed: mappedTickets.filter(t => t.status?.toUpperCase() === 'CLOSED' || t.status?.toUpperCase() === 'RESOLVED').length
+                    open: mappedTickets.filter(t => {
+                        const s = t.status?.toUpperCase() || '';
+                        return ['OPEN', 'IN_PROGRESS', 'NEW', 'ASSIGNED', 'ACKNOWLEDGED'].includes(s);
+                    }).length,
+                    pending: mappedTickets.filter(t => {
+                        const s = t.status?.toUpperCase() || '';
+                        return ['PENDING', 'PENDING APPROVAL', 'PENDING_APPROVAL', 'APPROVED'].includes(s);
+                    }).length,
+                    closed: mappedTickets.filter(t => {
+                        const s = t.status?.toUpperCase() || '';
+                        return ['CLOSED', 'RESOLVED'].includes(s);
+                    }).length
                 };
                 setStats(counts);
-                setRecentTickets(mappedTickets.slice(0, 5)); 
+                setRecentTickets(mappedTickets);
             } catch (error) {
                 console.error('Failed to load tickets:', error);
                 if (active) {
@@ -82,19 +146,10 @@ export default function TicketsDashboard() {
             }
         };
 
-        const loadExecutiveSummary = async (days = 30) => {
-            if (!isManagerial && !isITStaff) return;
-            try {
-                const data = await apiClient.getTicketExecutiveSummary(days);
-                if (active) setExecutiveSummary(data);
-            } catch (error) {
-                console.error('Failed to load executive summary:', error);
-            }
-        };
+
 
         loadTickets();
         loadCategoryStats();
-        loadExecutiveSummary();
 
         return () => {
             active = false;
@@ -132,15 +187,7 @@ export default function TicketsDashboard() {
                     <div className="flex items-center gap-4">
                         {(isStaff || isManagerial) && (
                             <>
-                                {isManagerial && (
-                                    <button
-                                        onClick={() => setIsExecutiveHUDOpen(true)}
-                                        className="px-4 py-2 rounded-none bg-app-primary/10 text-app-primary border border-app-primary/20 text-[10px] font-black uppercase tracking-widest hover:bg-app-primary/20 transition-all flex items-center gap-2 group"
-                                    >
-                                        <Cpu size={14} className="group-hover:rotate-12 transition-transform" />
-                                        Executive HUD
-                                    </button>
-                                )}
+
                                 <div className="flex bg-app-surface-soft p-1 rounded-none border border-app-border shadow-inner">
                                     <button
                                         onClick={() => setDashboardMode('external')}
@@ -163,11 +210,7 @@ export default function TicketsDashboard() {
                     </div>
                 </div>
 
-                <ExecutiveIntelligenceOverlay 
-                    isOpen={isExecutiveHUDOpen} 
-                    onClose={() => setIsExecutiveHUDOpen(false)}
-                    summary={executiveSummary} 
-                />
+
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -256,9 +299,12 @@ export default function TicketsDashboard() {
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2">
-                                                    <span className={`px-2 py-0.5 rounded-none text-[8px] font-black uppercase tracking-widest border ${getPriorityColor(ticket.priority)}`}>
-                                                        {ticket.priority}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <SLABadge slaDeadline={ticket.sla_deadline} status={ticket.status} />
+                                                        <span className={`px-2 py-0.5 rounded-none text-[8px] font-black uppercase tracking-widest border ${getPriorityColor(ticket.priority)}`}>
+                                                            {ticket.priority}
+                                                        </span>
+                                                    </div>
                                                     <span className="text-[9px] text-app-text-muted font-black uppercase tracking-widest">{ticket.status}</span>
                                                 </div>
                                             </div>

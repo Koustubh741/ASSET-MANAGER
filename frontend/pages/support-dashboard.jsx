@@ -29,14 +29,20 @@ export default function SupportDashboard() {
     const loadTickets = async () => {
         setLoading(true);
         try {
-            // Fetch tickets targeting the user's department
-            const data = await apiClient.get('/tickets', { 
-                department: user?.department,
-                status: filter !== 'ALL' ? filter : null 
-            });
-            setTickets(data || []);
+            // ROOT FIX: Use standardized getTickets with size=0 for full queue visibility
+            // getTickets(skip, limit, department, search, isInternal)
+            const resp = await apiClient.getTickets(0, 0, user?.department, null, null);
+            const rawTickets = resp.data || [];
+            
+            // Apply client-side status filtering if needed (backend doesn't support it yet)
+            const statusFiltered = filter !== 'ALL' 
+                ? rawTickets.filter(t => t.status?.toUpperCase() === filter.toUpperCase())
+                : rawTickets;
+                
+            setTickets(statusFiltered);
         } catch (error) {
             console.error('Failed to load tickets:', error);
+            setTickets([]);
         } finally {
             setLoading(false);
         }

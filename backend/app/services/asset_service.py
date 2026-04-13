@@ -3,6 +3,7 @@ Asset service layer - Database operations using SQLAlchemy (Asynchronous)
 """
 import uuid
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Any, Dict
 import asyncio
@@ -10,7 +11,8 @@ import random
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, and_, select, delete, update, or_, extract, text
 from sqlalchemy.orm import selectinload, joinedload
-from ..models.models import Asset, ByodDevice, User, AssetAssignment, AssetInventory, PurchaseOrder, AssetRequest, Ticket, MaintenanceRecord, DiscoveryAgent
+from ..models.models import Asset, ByodDevice, User, AssetAssignment, AssetInventory, PurchaseOrder, AssetRequest, Ticket, MaintenanceRecord, DiscoveryAgent, FinanceRecord
+from ..models.port_policies import PortPolicy
 from ..schemas.asset_schema import AssetCreate, AssetUpdate, AssetResponse
 from ..utils.cache import dashboard_cache
 
@@ -103,16 +105,20 @@ async def get_all_assets_scoped(
     # 2. Fetch Paginated Assets
     results = []
     if skip < total_assets:
-        query = select(Asset).join(User, Asset.assigned_to_id == User.id).options(joinedload(Asset.assigned_user)).filter(or_(*asset_filters)).offset(skip).limit(limit)
+        query = select(Asset).join(User, Asset.assigned_to_id == User.id).options(joinedload(Asset.assigned_user)).filter(or_(*asset_filters)).offset(skip)
+        if limit > 0:
+            query = query.limit(limit)
         result = await db.execute(query)
         for asset in result.unique().scalars().all():
             asset_data = _populate_asset_data(asset)
             results.append(AssetResponse.model_validate(asset_data))
     
     remaining_limit = limit - len(results)
-    if remaining_limit > 0:
+    if remaining_limit > 0 or limit == 0:
         byod_skip = max(0, skip - total_assets)
-        byod_query = select(ByodDevice, User).join(User, ByodDevice.owner_id == User.id).filter(or_(*byod_filters)).offset(byod_skip).limit(remaining_limit)
+        byod_query = select(ByodDevice, User).join(User, ByodDevice.owner_id == User.id).filter(or_(*byod_filters)).offset(byod_skip)
+        if limit > 0:
+            byod_query = byod_query.limit(remaining_limit)
         byod_result = await db.execute(byod_query)
         for byod, owner in byod_result.all():
             results.append(AssetResponse(
@@ -212,15 +218,20 @@ async def get_all_assets(db: AsyncSession, skip: int = 0, limit: int = 100) -> t
 
     results = []
     if skip < total_assets:
-        result = await db.execute(select(Asset).options(joinedload(Asset.assigned_user)).offset(skip).limit(limit))
+        query = select(Asset).options(joinedload(Asset.assigned_user)).offset(skip)
+        if limit > 0:
+            query = query.limit(limit)
+        result = await db.execute(query)
         for asset in result.unique().scalars().all():
             asset_data = _populate_asset_data(asset)
             results.append(AssetResponse.model_validate(asset_data))
     
     remaining_limit = limit - len(results)
-    if remaining_limit > 0:
+    if remaining_limit > 0 or limit == 0:
         byod_skip = max(0, skip - total_assets)
-        byod_query = select(ByodDevice, User).join(User, ByodDevice.owner_id == User.id).offset(byod_skip).limit(remaining_limit)
+        byod_query = select(ByodDevice, User).join(User, ByodDevice.owner_id == User.id).offset(byod_skip)
+        if limit > 0:
+            byod_query = byod_query.limit(remaining_limit)
         byod_result = await db.execute(byod_query)
         for byod, owner in byod_result.all():
             results.append(AssetResponse(
@@ -299,12 +310,12 @@ async def get_assets_by_agent(db: AsyncSession, agent_id: str) -> List[AssetResp
 
 async def create_asset(db: AsyncSession, asset: AssetCreate, performed_by_id: Optional[UUID] = None, performed_by_name: str = "System") -> AssetResponse:
     asset_dict = asset.model_dump(exclude_unset=True)
-    db_asset = Asset(id=uuid.uuid4(), **asset_dict)
+    db_asset = Asset(id=get_uuid(), **asset_dict)
     db.add(db_asset)
     
     if db_asset.status == "In Stock":
         inventory_item = AssetInventory(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             asset_id=db_asset.id,
             location=db_asset.location,
             status="Available",
@@ -377,67 +388,88 @@ async def assign_asset(db: AsyncSession, asset_id: UUID, user: str, location: st
 @dashboard_cache.cache(ttl=600, key_prefix="dashboard") # 10min TTL for auto-refresh
 async def get_asset_stats(db: AsyncSession):
     """
-    EVOLUTION V4: Hybrid Dashboard Stats Architecture.
-    Utilizes Pre-Aggregation View (MV), Smart Composite Indexes, and Hybrid Caching.
+    EVOLUTION V5: Integrated Multi-Module Dashboard Stats.
+    Calculates real trends, warranty risks, and budget/policy telemetry.
     """
     now = datetime.now()
+    today_date = now.date()
+    # Boundaries for trend calculation
     first_this_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     first_last_month = (first_this_month - timedelta(days=1)).replace(day=1)
     
+    # Boundary for warranty risk (30 days)
+    warranty_risk_boundary = today_date + timedelta(days=30)
+    
     # 1. READ FROM PRE-AGGREGATION LAYER (Materialized View)
-    # This hits a sub-1ms pre-calculated summary of the entire 100k+ dataset.
+    # This hits a sub-1ms pre-calculated summary of the entire dataset.
     mv_res = await db.execute(text("SELECT grouping_type, grouping_name, count FROM asset.dashboard_stats_mv"))
     mv_data = mv_res.all()
     
-    # 2. Group logical results from MV
+    # Group logical results from MV
     by_status = [{"name": r[1] or "Unknown", "value": r[2]} for r in mv_data if r[0] == 'status']
     by_segment = [{"name": r[1] or "Unknown", "value": r[2]} for r in mv_data if r[0] == 'segment']
-    by_type = sorted([{"name": r[1] or "Unknown", "value": r[2]} for r in mv_data if r[0] == 'type'], key=lambda x: x['value'], reverse=True)[:5]
-    by_location = sorted([{"name": r[1] or "Unknown", "value": r[2]} for r in mv_data if r[0] == 'location'], key=lambda x: x['value'], reverse=True)[:5]
-
+    
     total = sum(item["value"] for item in by_status)
-    active = next((item["value"] for item in by_status if item["name"] in ["Active", "In Use", "In_Use"]), 0)
+    active = next((item["value"] for item in by_status if str(item["name"]).lower() in ["active", "in use", "in_use"]), 0)
 
-    # 3. REAL-TIME TRENDS (Optimized with Composite Indexes: created_at, status)
-    # In V4, we've moved Trend and Finance to a highly grouped query using our new composite indexes.
-    # In V4, we've moved Trend and Finance to a highly grouped second query.
-    trend_q = select(
+    # 2. ADDITIONAL REAL-TIME METRICS (Cross-Module Integration)
+    # Perform a single efficient composite query for non-aggregated metrics
+    metrics_q = select(
+        # Trends & Totals
         func.count(Asset.id).filter(Asset.created_at >= first_this_month).label("c_curr"),
         func.count(Asset.id).filter(Asset.created_at >= first_last_month, Asset.created_at < first_this_month).label("c_prev"),
         func.sum(Asset.cost).label("total_value"),
+        func.sum(Asset.cost).filter(Asset.created_at >= first_this_month).label("v_curr"),
+        func.sum(Asset.cost).filter(Asset.created_at >= first_last_month, Asset.created_at < first_this_month).label("v_prev"),
+        
+        # Risk & Budget Subqueries
+        select(func.count(Asset.id)).filter(and_(Asset.warranty_expiry >= today_date, Asset.warranty_expiry <= warranty_risk_boundary)).scalar_subquery().label("warranty_risk"),
+        select(func.count(FinanceRecord.id)).filter(FinanceRecord.finance_status == "FINANCE_REVIEW_PENDING").scalar_subquery().label("budget_queue_count"),
+        select(func.count(PortPolicy.id)).filter(PortPolicy.enabled == True).scalar_subquery().label("policies_count"),
         select(func.sum(PurchaseOrder.total_cost)).filter(PurchaseOrder.status == "RECEIVED").scalar_subquery().label("ytd_purchases"),
-        select(func.count(MaintenanceRecord.id)).filter(MaintenanceRecord.status == "Completed").scalar_subquery().label("repaired_count")
+        select(func.sum(PurchaseOrder.total_cost)).filter(and_(PurchaseOrder.status == "RECEIVED", PurchaseOrder.created_at >= first_this_month)).scalar_subquery().label("p_curr"),
+        select(func.sum(PurchaseOrder.total_cost)).filter(and_(PurchaseOrder.status == "RECEIVED", PurchaseOrder.created_at >= first_last_month, PurchaseOrder.created_at < first_this_month)).scalar_subquery().label("p_prev")
     )
-    res_trend = await db.execute(trend_q)
-    trend = res_trend.one()
+    res_metrics = await db.execute(metrics_q)
+    metrics = res_metrics.one()
 
-    def calc_trend(curr, prev, default="+0.0%"):
+    # 3. TREND CALCULATION LOGIC
+    def calc_trend(curr, prev):
         curr = curr or 0
         prev = prev or 0
-        if prev == 0: return "+1.2%" if curr > 0 else default
-        return f"{((curr - prev) / prev * 100):+.1f}%"
+        if prev == 0: return "+0.0%" if curr == 0 else f"+{curr*100:.1f}%"
+        delta = ((curr - prev) / prev) * 100
+        return f"{delta:+.1f}%"
 
     total_non_zero = total if total > 0 else 1
+    
     return {
         "total": total,
-        "total_value": trend.total_value or 0.0,
+        "total_value": metrics.total_value or 0.0,
         "active": active,
         "in_stock": next((item["value"] for item in by_status if item["name"] == "In Stock"), 0),
         "repair": next((item["value"] for item in by_status if item["name"] == "Repair"), 0),
-        "maintenance": next((item["value"] for item in by_status if "Maintenance" in item["name"]), 0),
+        "maintenance": next((item["value"] for item in by_status if "Maintenance" in str(item["name"])), 0),
         "retired": next((item["value"] for item in by_status if item["name"] == "Retired"), 0),
         "discovered": next((item["value"] for item in by_status if item["name"] == "Discovered"), 0),
-        "it": next((item["value"] for item in by_segment if item["name"] == "IT"), 0),
-        "non_it": next((item["value"] for item in by_segment if "Non" in item["name"]), 0),
-        "policies_count": 0,
-        "ytd_purchases": trend.ytd_purchases or 0.0,
-        "asset_trend": calc_trend(trend.c_curr, trend.c_prev, "Stable"),
-        "active_trend": "+4.2%", # Cached or simplified in V4 logic
-        "value_trend": "+0.8%",
-        "procurement_trend": "+2.5%",
+        "it": next((item["value"] for item in by_segment if str(item["name"]).upper() == "IT"), 0),
+        "non_it": next((item["value"] for item in by_segment if "NON" in str(item["name"]).upper()), 0),
+        
+        # New True Metrics
+        "warranty_risk": metrics.warranty_risk or 0,
+        "budget_queue_count": metrics.budget_queue_count or 0,
+        "policies_count": metrics.policies_count or 0,
+        "ytd_purchases": metrics.ytd_purchases or 0.0,
+        
+        # Calculated Trends
+        "asset_trend": calc_trend(metrics.c_curr, metrics.c_prev),
+        "active_trend": calc_trend(metrics.c_curr, metrics.c_prev), # Proxied to growth for now
+        "value_trend": calc_trend(metrics.v_curr, metrics.v_prev),
+        "procurement_trend": calc_trend(metrics.p_curr, metrics.p_prev),
+        
         "ticket_trend": "Stable",
         "trends": {"monthly": [], "quarterly": []},
-        "health_score": int(((active / total_non_zero) * 70) + (min((trend.repaired_count or 0) * 2, 30))),
+        "health_score": int(((active / total_non_zero) * 100)),
         "policy_compliance": min(100, int((active / total_non_zero) * 100)),
-        "cloud_sync_active": "Standby"
+        "cloud_sync_active": "Connected" if metrics.policies_count > 0 else "Standby"
     }

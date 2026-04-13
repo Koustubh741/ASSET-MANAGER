@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import {
     Laptop, Briefcase, ChevronUp, ChevronLeft, CheckCircle,
@@ -60,10 +60,20 @@ export default function AssetRequestPage() {
     const { createAssetRequest } = useAssetContext();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedAsset, setSelectedAsset] = useState(ASSET_CATALOG[0]);
+    const [selectedAsset, setSelectedAsset] = useState(null); // ROOT FIX: Initialize as null to prevent pre-filled default
     const [reason, setReason] = useState('');
     const [urgency, setUrgency] = useState('Standard');
+    const [specs, setSpecs] = useState(''); // New state for custom hardware requirements
     const [searchQuery, setSearchQuery] = useState('');
+
+    // ROOT FIX: Reset fields when selection changes to prevent cross-contamination
+    useEffect(() => {
+        if (selectedAsset) {
+            setReason('');
+            setUrgency('Standard');
+            setSpecs(''); // User must enter what he/she wants
+        }
+    }, [selectedAsset?.id]);
 
     const filteredCatalog = ASSET_CATALOG.filter(item =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,11 +86,20 @@ export default function AssetRequestPage() {
         setIsSubmitting(true);
 
         try {
+            if (!selectedAsset) {
+                toast.error("Please select an asset from the catalog first.");
+                return;
+            }
+
             const requestData = {
                 asset_name: selectedAsset.name,
                 asset_type: selectedAsset.id,
-                justification: reason || `Standard request for ${selectedAsset.name}`,
-                urgency: urgency
+                justification: reason, // Root Fix: No longer injects "Standard request for..."
+                urgency: urgency,
+                specifications: { 
+                    requested_config: specs, // Root Fix: No longer falls back to catalog specs
+                    is_custom: !!specs
+                }
             };
 
             await createAssetRequest(requestData);
@@ -129,7 +148,7 @@ export default function AssetRequestPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {filteredCatalog.map((item) => {
                             const Icon = item.icon;
-                            const isSelected = selectedAsset.id === item.id;
+                            const isSelected = selectedAsset?.id === item.id;
                             return (
                                 <div
                                     key={item.id}
@@ -170,83 +189,108 @@ export default function AssetRequestPage() {
 
                 {/* Configuration Panel */}
                 <div className="lg:col-span-4">
-                    <form onSubmit={handleSubmit} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-8 md:p-10 border border-app-border shadow-2xl rounded-[2.5rem] transition-all sticky top-8">
-                        <div className="space-y-8">
-                            <div>
-                                <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-4">Request Configuration</h4>
-                                <div className="p-5 rounded-none bg-slate-50/50 bg-app-surface-soft border border-slate-200/50 border-app-border flex items-center gap-4 group/item">
-                                    <div className="w-14 h-14 rounded-none bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover/item:scale-110 transition-transform">
-                                        {selectedAsset.icon && (
-                                            <selectedAsset.icon size={28} />
-                                        )}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black text-app-text uppercase tracking-tight">{selectedAsset.name}</p>
-                                        <p className="text-[10px] text-blue-500 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">{selectedAsset.specs}</p>
-                                    </div>
+                    <form onSubmit={handleSubmit} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl p-8 md:p-10 border border-app-border shadow-2xl rounded-[2.5rem] transition-all sticky top-8 min-h-[500px] flex flex-col justify-center">
+                        {!selectedAsset ? (
+                            <div className="text-center space-y-6 py-10 animate-in fade-in duration-500">
+                                <div className="w-24 h-24 rounded-none bg-blue-500/5 flex items-center justify-center mx-auto border border-dashed border-blue-500/20 shadow-inner">
+                                    <Package size={40} className="text-blue-500/20" />
+                                </div>
+                                <div>
+                                    <h4 className="text-[10px] font-black text-app-text-muted uppercase tracking-[0.4em] mb-2">Selection Required</h4>
+                                    <p className="text-xs text-app-text-muted italic max-w-xs mx-auto leading-loose">Tap an asset card from the catalog to initiate the provisioning transmission.</p>
                                 </div>
                             </div>
-
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Business Goal</label>
-                                <textarea
-                                    required
-                                    value={reason}
-                                    onChange={(e) => setReason(e.target.value)}
-                                    rows="4"
-                                    className="w-full bg-slate-50 dark:bg-black/20 border border-app-border rounded-none px-6 py-4 text-sm text-app-text focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium resize-none shadow-inner"
-                                    placeholder="Enter business justification for this hardware..."
-                                ></textarea>
-                            </div>
-
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Operational Urgency</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    {['Standard', 'High'].map((u) => (
-                                        <button
-                                            key={u}
-                                            type="button"
-                                            onClick={() => setUrgency(u)}
-                                            className={`py-4 rounded-none border text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden
-                                                ${urgency === u
-                                                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
-                                                    : 'bg-white dark:bg-slate-900 border-app-border text-slate-400 dark:text-slate-500 hover:border-blue-300 dark:hover:border-blue-500/30'}`}
-                                        >
-                                            <span className="relative z-10">{u}</span>
-                                            {urgency === u && (
-                                                <div className="absolute inset-0 bg-white/10 pointer-events-none"></div>
+                        ) : (
+                            <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+                                <div>
+                                    <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-4">Request Configuration</h4>
+                                    <div className="p-5 rounded-none bg-slate-50/50 bg-app-surface-soft border border-slate-200/50 border-app-border flex items-center gap-4 group/item">
+                                        <div className="w-14 h-14 rounded-none bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover/item:scale-110 transition-transform">
+                                            {selectedAsset.icon && (
+                                                <selectedAsset.icon size={28} />
                                             )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="pt-4 space-y-4">
-                                <div className="p-4 rounded-none bg-amber-500/5 border border-amber-500/10 flex gap-4">
-                                    <Info size={18} className="text-amber-500 shrink-0" />
-                                    <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 leading-relaxed italic">
-                                        High urgency requires managerial override and may bypass standard procurement cycles.
-                                    </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-app-text uppercase tracking-tight">{selectedAsset.name}</p>
+                                            <p className="text-[10px] text-blue-500 dark:text-blue-400 font-bold uppercase tracking-widest mt-0.5">{selectedAsset.specs}</p>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full py-5 rounded-[1.5rem] bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black uppercase tracking-[0.3em] text-xs shadow-2xl shadow-blue-500/40 transition-all hover:scale-[1.02] active:scale-[0.98] active:translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-3 group"
-                                >
-                                    {isSubmitting ? (
-                                        <RefreshCw className="animate-spin" size={18} />
-                                    ) : (
-                                        <>
-                                            <Zap size={18} className="group-hover:scale-125 transition-transform fill-current" />
-                                            Transmission Request
-                                        </>
-                                    )}
-                                </button>
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Configuration Specifications</label>
+                                    <textarea
+                                        required
+                                        value={specs}
+                                        onChange={(e) => setSpecs(e.target.value)}
+                                        rows="3"
+                                        className="w-full bg-slate-50 dark:bg-black/20 border border-app-border rounded-none px-6 py-4 text-sm text-app-text focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium resize-none shadow-inner"
+                                        placeholder={`Target: ${selectedAsset.specs}`}
+                                    ></textarea>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Business Goal</label>
+                                    <textarea
+                                        required
+                                        value={reason}
+                                        onChange={(e) => setReason(e.target.value)}
+                                        rows="4"
+                                        className="w-full bg-slate-50 dark:bg-black/20 border border-app-border rounded-none px-6 py-4 text-sm text-app-text focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium resize-none shadow-inner"
+                                        placeholder="Enter business justification for this hardware..."
+                                    ></textarea>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-app-text-muted uppercase tracking-widest">Operational Urgency</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {['Standard', 'High'].map((u) => (
+                                            <button
+                                                key={u}
+                                                type="button"
+                                                onClick={() => setUrgency(u)}
+                                                className={`py-4 rounded-none border text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden
+                                                    ${urgency === u
+                                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 border-blue-400 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
+                                                        : 'bg-white dark:bg-slate-900 border-app-border text-slate-400 dark:text-slate-500 hover:border-blue-300 dark:hover:border-blue-500/30'}`}
+                                            >
+                                                <span className="relative z-10">{u}</span>
+                                                {urgency === u && (
+                                                    <div className="absolute inset-0 bg-white/10 pointer-events-none"></div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 space-y-4">
+                                    <div className="p-4 rounded-none bg-amber-500/5 border border-amber-500/10 flex gap-4">
+                                        <Info size={18} className="text-amber-500 shrink-0" />
+                                        <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 leading-relaxed italic">
+                                            High urgency requires managerial override and may bypass standard procurement cycles.
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting || !selectedAsset}
+                                        className="w-full py-5 rounded-[1.5rem] bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black uppercase tracking-[0.3em] text-xs shadow-2xl shadow-blue-500/40 transition-all hover:scale-[1.02] active:scale-[0.98] active:translate-y-0.5 disabled:opacity-50 flex items-center justify-center gap-3 group"
+                                    >
+                                        {isSubmitting ? (
+                                            <RefreshCw className="animate-spin" size={18} />
+                                        ) : (
+                                            <>
+                                                <Zap size={18} className="group-hover:scale-125 transition-transform fill-current" />
+                                                Transmission Request
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </form>
                 </div>
+
             </div>
         </div>
     );

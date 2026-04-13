@@ -110,6 +110,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
     const [expandedPoLogs, setExpandedPoLogs] = useState({});
     const [financialSummary, setFinancialSummary] = useState(null);
     const [depreciationData, setDepreciationData] = useState(null);
+    const [softwareCompliance, setSoftwareCompliance] = useState(null);
     const [chartData, setChartData] = useState(DEFAULT_CHART_DATA);
 
     const handleEditToggle = (requestId, po) => {
@@ -194,6 +195,9 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
         apiClient.getDepreciation('straight-line', 5)
             .then(res => setDepreciationData(res))
             .catch(() => setDepreciationData(null));
+        apiClient.getSoftwareReconciliation()
+            .then(res => setSoftwareCompliance(res))
+            .catch(() => setSoftwareCompliance(null));
     }, []);
 
     const totalBookValue = financialSummary?.total_asset_value ?? 0;
@@ -300,7 +304,7 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
             />
 
             {showDashboard && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="group relative glass-panel p-8 overflow-hidden border border-app-border shadow-lg hover:shadow-2xl transition-all duration-500 rounded-[32px]">
                         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
                         <div className="flex items-center justify-between mb-6">
@@ -361,6 +365,36 @@ export default function FinanceDashboard({ activeView: initialView = 'dashboard'
                             <Activity size={18} className="text-indigo-400" />
                             Open Budget Registry
                         </button>
+                    </div>
+
+                    <div className="group relative glass-panel p-8 overflow-hidden border border-app-border shadow-lg hover:shadow-2xl transition-all duration-500 rounded-[32px]">
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-cyan-500 to-blue-400"></div>
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="p-4 rounded-none bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-500 shadow-sm dark:shadow-inner">
+                                    <ShieldCheck size={24} />
+                                </div>
+                                <h3 className="text-app-text-muted text-[10px] font-black uppercase tracking-[0.2em]">Software Audit</h3>
+                            </div>
+                            <TrendSparkline data={[85, 82, 88, 90, 87, 92]} color="#06b6d4" />
+                        </div>
+                        <p className="text-xl font-black text-app-text tracking-tighter">
+                            {softwareCompliance?.compliance_score != null ? `${(softwareCompliance.compliance_score * 100).toFixed(1)}%` : '--'}
+                            <span className="text-xl text-app-text-muted ml-1 font-bold">Health</span>
+                        </p>
+                        {softwareCompliance && (
+                            <div className="mt-4 space-y-2">
+                                <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-rose-500">
+                                    <span>License Risk</span>
+                                    <span>{softwareCompliance.unlicensed_installs || 0} Issues</span>
+                                </div>
+                                <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-emerald-500">
+                                    <span>Savings potential</span>
+                                    <span>₹{((softwareCompliance.unused_licenses || 0) * 1200).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        )}
+                        {!softwareCompliance && <div className="mt-4 text-[10px] text-app-text-muted italic">Awaiting scanner heartbeat...</div>}
                     </div>
                 </div>
             )}

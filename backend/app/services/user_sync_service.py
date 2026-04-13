@@ -4,6 +4,7 @@ from ..schemas.discovery_schema import UserSyncPayload
 from .user_service import get_password_hash
 import uuid
 import logging
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -55,10 +56,10 @@ async def sync_ad_users(db: AsyncSession, payload: UserSyncPayload) -> dict:
                     dept_id = dept_obj.id
                     dept_name = dept_obj.name
             db_user = User(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 email=user_data.email.lower(),
                 full_name=user_data.full_name,
-                password_hash=get_password_hash(str(uuid.uuid4())), # Random secure password
+                password_hash=get_password_hash(str(get_uuid())), # Random secure password
                 department_id=dept_id,
                 role=user_data.role or "END_USER",
                 position=user_data.position,
@@ -71,7 +72,7 @@ async def sync_ad_users(db: AsyncSession, payload: UserSyncPayload) -> dict:
             
     # Add Audit Log
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         action="directory_sync",
         entity_type="User",
         entity_id="BULK_SYNC",

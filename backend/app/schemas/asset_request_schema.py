@@ -69,6 +69,7 @@ class AssetRequestResponse(AssetRequestBase):
     
     created_at: datetime
     updated_at: datetime
+    days_in_current_status: Optional[int] = None
     
     # Validator to ensure Any fields are serialized to str
     @field_validator('requester_id', 'id', 'it_reviewed_by', 'procurement_finance_reviewed_by', 'qc_performed_by', mode='before')

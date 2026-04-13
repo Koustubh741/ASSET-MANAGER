@@ -3,6 +3,8 @@ Asset CRUD endpoints (Asynchronous)
 """
 from fastapi import APIRouter, HTTPException, Query, Depends
 from uuid import UUID
+import uuid
+from ..utils.uuid_gen import get_uuid
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -24,7 +26,7 @@ router = APIRouter(
 @router.get("", response_model=PaginatedResponse[AssetResponse])
 async def get_all_assets(
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=100),
+    size: int = Query(50, ge=0),
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -449,7 +451,7 @@ async def delete_asset(
             
             # Create audit log
             audit_log = AuditLog(
-                id=str(_uuid.uuid4()),
+                id=str(get_uuid()),
                 entity_type="Asset",
                 entity_id=str(asset_id),
                 action="HARD_DELETED",
@@ -470,7 +472,7 @@ async def delete_asset(
         
         # Create audit log
         audit_log = AuditLog(
-            id=str(_uuid.uuid4()),
+            id=str(get_uuid()),
             entity_type="Asset",
             entity_id=str(asset_id),
             action="SOFT_DELETED",
@@ -640,7 +642,7 @@ async def create_asset_relationship(
         raise HTTPException(status_code=400, detail="Relationship already exists")
     
     new_relationship = AssetRelationship(
-        id=_uuid.uuid4(),
+        id=get_uuid(),
         source_asset_id=asset_id,
         target_asset_id=request.target_asset_id,
         relationship_type=request.relationship_type,

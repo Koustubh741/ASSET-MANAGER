@@ -8,6 +8,7 @@ import uuid
 import enum
 from datetime import datetime
 from ..database.database import Base
+from ..utils.uuid_gen import get_uuid
 
 class Asset(Base):
     """
@@ -20,9 +21,12 @@ class Asset(Base):
     id = Column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        default=get_uuid,
         index=True
     )
+    
+    company_id = Column(UUID(as_uuid=True), ForeignKey("public.companies.id", ondelete="CASCADE"), nullable=True, index=True)
+    company = relationship("Company", foreign_keys=[company_id], lazy='selectin')
 
     # Basic Asset Information
     name = Column(String(255), nullable=False, index=True)
@@ -89,6 +93,9 @@ class Asset(Base):
     
     request_id = Column(UUID(as_uuid=True), nullable=True)
 
+    # Enterprise Patching (Phase 1 Root Fix)
+    is_pilot = Column(Boolean, nullable=False, default=False)
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True, nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -110,7 +117,7 @@ class AssetAssignment(Base):
     __tablename__ = "asset_assignments"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
     assigned_by = Column(String, nullable=True)
@@ -126,7 +133,7 @@ class AssetInventory(Base):
     __tablename__ = "asset_inventory"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, unique=True, index=True) # One entry per asset while in stock
     location = Column(String(255), nullable=True)
     status = Column(String(50), default="Available") # Available, Reserved, Inspection
@@ -142,8 +149,14 @@ class Department(Base):
     __tablename__ = "departments"
     __table_args__ = {"schema": "auth"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     slug = Column(String(50), nullable=False, unique=True, index=True) # eng, hr, fin, etc.
+    
+    # Hierarchy and Multi-Tenant
+    company_id = Column(UUID(as_uuid=True), ForeignKey("public.companies.id", ondelete="CASCADE"), nullable=True, index=True)
+    parent_id = Column(UUID(as_uuid=True), ForeignKey("auth.departments.id", ondelete="SET NULL"), nullable=True, index=True)
+    company = relationship("Company", backref="departments", lazy='selectin')
+    parent = relationship("Department", remote_side=[id], backref="sub_departments", lazy='selectin')
     name = Column(String(100), nullable=False, unique=True, index=True) # Full Name
     description = Column(Text, nullable=True)
     
@@ -170,7 +183,7 @@ class User(Base):
     __tablename__ = "users"
     __table_args__ = {"schema": "auth"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
@@ -182,7 +195,9 @@ class User(Base):
     location = Column(String(100), nullable=True)
 
     phone = Column(String(20), nullable=True)
-    company = Column(String(255), nullable=True) # New field
+    company = Column(String(255), nullable=True) # Legacy string field
+    company_id = Column(UUID(as_uuid=True), ForeignKey("public.companies.id", ondelete="CASCADE"), nullable=True, index=True)
+    company_obj = relationship("Company", foreign_keys=[company_id], lazy='selectin')
     manager_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     persona = Column(String(100), nullable=True) # Functional Persona (e.g. IT_GOVERNANCE)
 
@@ -215,7 +230,11 @@ class Ticket(Base):
     __tablename__ = "tickets"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
+    
+    # Hierarchy and Multi-Tenant
+    company_id = Column(UUID(as_uuid=True), ForeignKey("public.companies.id", ondelete="CASCADE"), nullable=True, index=True)
+    company = relationship("Company", foreign_keys=[company_id], lazy='selectin')
     display_id = Column(String(20), unique=True, index=True, nullable=True) # e.g., TCK-1001
     
     subject = Column(String(255), nullable=False)
@@ -259,7 +278,7 @@ class TicketComment(Base):
     __tablename__ = "ticket_comments"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     ticket_id = Column(UUID(as_uuid=True), ForeignKey("support.tickets.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     content = Column(Text, nullable=False)
@@ -277,7 +296,7 @@ class TicketAttachment(Base):
     __tablename__ = "ticket_attachments"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     ticket_id = Column(UUID(as_uuid=True), ForeignKey("support.tickets.id", ondelete="CASCADE"), nullable=False, index=True)
     uploader_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     
@@ -298,7 +317,7 @@ class AssignmentGroup(Base):
     __tablename__ = "assignment_groups"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     name = Column(String(100), unique=True, nullable=False, index=True)
     department_id = Column(UUID(as_uuid=True), ForeignKey("auth.departments.id", ondelete="SET NULL"), nullable=True)
     description = Column(Text, nullable=True)
@@ -321,7 +340,7 @@ class AssignmentGroupMember(Base):
     __tablename__ = "assignment_group_members"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     group_id = Column(UUID(as_uuid=True), ForeignKey("support.assignment_groups.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False)
     
@@ -340,7 +359,7 @@ class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     ticket_id = Column(UUID(as_uuid=True), ForeignKey("support.tickets.id", ondelete="CASCADE"), nullable=False, index=True)
     subject = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -373,7 +392,7 @@ class CategoryConfig(Base):
     __tablename__ = "category_configs"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     name = Column(String(100), unique=True, nullable=False, index=True) # e.g. "Software"
     icon_name = Column(String(50), nullable=False, default="HelpCircle") # Lucide icon name
     color = Column(String(50), nullable=False, default="#64748b") # Hex color
@@ -394,7 +413,11 @@ class AssetRequest(Base):
     __tablename__ = "asset_requests"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
+    
+    # Hierarchy and Multi-Tenant
+    company_id = Column(UUID(as_uuid=True), ForeignKey("public.companies.id", ondelete="CASCADE"), nullable=True, index=True)
+    company = relationship("Company", foreign_keys=[company_id], lazy='selectin')
     
     # Requester information
     requester_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -466,7 +489,7 @@ class ByodDevice(Base):
     __tablename__ = "byod_devices"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     request_id = Column(UUID(as_uuid=True), ForeignKey("asset.asset_requests.id", ondelete="CASCADE"), nullable=False, index=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
 
@@ -495,7 +518,7 @@ class PurchaseRequest(Base):
     __tablename__ = "purchase_requests"
     __table_args__ = {"schema": "procurement"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_request_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     asset_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
@@ -518,7 +541,7 @@ class PurchaseOrder(Base):
     __tablename__ = "purchase_orders"
     __table_args__ = {"schema": "procurement"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_request_id = Column(UUID(as_uuid=True), ForeignKey("asset.asset_requests.id"), nullable=False, index=True)
     uploaded_by = Column(UUID(as_uuid=True), nullable=False)
     po_pdf_path = Column(String(500), nullable=False)
@@ -543,7 +566,7 @@ class PurchaseInvoice(Base):
     __tablename__ = "purchase_invoices"
     __table_args__ = {"schema": "procurement"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("procurement.purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True)
     
     # Root Fix: Direct relationship for optimized fetching
@@ -563,7 +586,7 @@ class FinanceRecord(Base):
     __tablename__ = "finance_records"
     __table_args__ = {"schema": "finance"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_request_id = Column(UUID(as_uuid=True), ForeignKey("asset.asset_requests.id"), nullable=False, index=True)
     purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("procurement.purchase_orders.id"), nullable=True, index=True)
 
@@ -589,7 +612,7 @@ class ExitRequest(Base):
     __tablename__ = "exit_requests"
     __table_args__ = {"schema": "exit"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
     status = Column(String(50), nullable=False, default="OPEN")  # OPEN | ASSETS_PROCESSED | BYOD_PROCESSED | COMPLETED
 
@@ -607,7 +630,7 @@ class Location(Base):
     __tablename__ = "locations"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     parent_id = Column(UUID(as_uuid=True), ForeignKey("asset.locations.id"), nullable=True)
     name = Column(String(255), nullable=False)
     address = Column(String(500), nullable=True)
@@ -624,7 +647,7 @@ class SoftwareLicense(Base):
     __tablename__ = "software_licenses"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     name = Column(String(255), nullable=False)
     vendor = Column(String(255), nullable=False)
     license_key = Column(String(500), nullable=True)
@@ -647,7 +670,7 @@ class MaintenanceRecord(Base):
     __tablename__ = "maintenance_records"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, index=True)
     maintenance_type = Column(String(100), nullable=False) # Repair, Preventive, Upgrade
     description = Column(Text, nullable=False)
@@ -667,7 +690,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
     __table_args__ = {"schema": "system"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     entity_type = Column(String(50), nullable=False, index=True) # Asset, Ticket, User
     entity_id = Column(String(255), nullable=False, index=True)
     action = Column(String(50), nullable=False, index=True) # Created, Updated, Deleted, Login
@@ -687,7 +710,7 @@ class ApiToken(Base):
     __tablename__ = "api_tokens"
     __table_args__ = {"schema": "system"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     token = Column(String(255), nullable=False, unique=True, index=True)
     name = Column(String(255), nullable=False)  # Descriptive name (e.g., "RHEL Server 192.168.1.146")
     created_by = Column(UUID(as_uuid=True), nullable=True)  # User ID who created the token
@@ -704,7 +727,7 @@ class ProcurementLog(Base):
     __tablename__ = "procurement_logs"
     __table_args__ = {"schema": "audit"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     reference_id = Column(UUID(as_uuid=True), nullable=False, index=True) # PO / Invoice / Request ID
     action = Column(String(50), nullable=False, index=True) # PO_UPLOADED / PO_APPROVED / PO_REJECTED / INVOICE_UPLOADED
     performed_by = Column(String(255), nullable=False, index=True)
@@ -726,7 +749,7 @@ class AssetRelationship(Base):
     __tablename__ = "asset_relationships"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     
     # Source asset (the "from" side of the relationship)
     source_asset_id = Column(
@@ -772,7 +795,7 @@ class DiscoveredSoftware(Base):
     __tablename__ = "discovered_software"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, index=True) # Linked to Asset ID
     name = Column(String(255), nullable=False, index=True)
     version = Column(String(100), nullable=True)
@@ -787,7 +810,7 @@ class AgentConfiguration(Base):
     """
     __tablename__ = "agent_configurations"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid)
     agent_id = Column(String(100), nullable=False, index=True)
     config_key = Column(String(100), nullable=False)
     config_value = Column(Text, nullable=False)  # Encrypted if sensitive
@@ -811,7 +834,7 @@ class AgentSchedule(Base):
     # Run migration: alembic upgrade migrate_agent_tables_system
     __table_args__ = {"schema": "system"}
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid)
     agent_id = Column(String(100), nullable=False, unique=True)
     cron_expression = Column(String(100), nullable=False)
     is_enabled = Column(Boolean, default=True, nullable=False)
@@ -829,7 +852,7 @@ class Company(Base):
     __tablename__ = "companies"
     __table_args__ = {"schema": "public"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     name = Column(String(255), nullable=False)
     legal_name = Column(String(255), nullable=True)
     tax_id = Column(String(100), nullable=True)
@@ -855,7 +878,7 @@ class PasswordResetToken(Base):
     __tablename__ = "password_reset_tokens"
     __table_args__ = {"schema": "auth"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
     token = Column(String(255), unique=True, nullable=False, index=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)
@@ -873,7 +896,7 @@ class DiscoveryScan(Base):
     __tablename__ = "discovery_scans"
     __table_args__ = {"schema": "system"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     agent_id = Column(String(100), nullable=False, index=True)
     scan_type = Column(String(50), nullable=False) # local, snmp, cloud, saas, user_sync
     status = Column(String(50), default="STARTED") # STARTED, COMPLETED, FAILED
@@ -891,7 +914,7 @@ class DiscoveryDiff(Base):
     __tablename__ = "discovery_diffs"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     scan_id = Column(UUID(as_uuid=True), ForeignKey("system.discovery_scans.id"), nullable=False)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False)
     field_name = Column(String(100), nullable=False) # e.g. "RAM", "OS Version", "Software: Adobe Reader"
@@ -907,7 +930,7 @@ class GatePass(Base):
     __tablename__ = "gate_passes"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # People
@@ -938,7 +961,7 @@ class SystemPatch(Base):
     __tablename__ = "system_patches"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     patch_id = Column(String(100), unique=True, nullable=False, index=True) # e.g. KB5031354
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)
@@ -952,6 +975,8 @@ class SystemPatch(Base):
     cvss_score = Column(Float, nullable=True)                  # 0.0 - 10.0
     # Enterprise Metadata (Phase 1)
     kb_article_id = Column(String(50), nullable=True, index=True) # e.g. 5031354
+    kb_article_url = Column(String(500), nullable=True)
+    vendor_advisory = Column(String(500), nullable=True)
     superseded_by_id = Column(UUID(as_uuid=True), ForeignKey("asset.system_patches.id"), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -968,7 +993,7 @@ class VulnerabilityMapping(Base):
         {"schema": "asset"}
     )
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id", ondelete="CASCADE"), nullable=False, index=True)
     patch_id = Column(UUID(as_uuid=True), ForeignKey("asset.system_patches.id", ondelete="CASCADE"), nullable=False, index=True)
     
@@ -984,7 +1009,7 @@ class PatchDeployment(Base):
     __tablename__ = "patch_deployments"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     patch_id = Column(UUID(as_uuid=True), ForeignKey("asset.system_patches.id"), nullable=False, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
     
@@ -1002,7 +1027,7 @@ class RemoteSession(Base):
     __tablename__ = "remote_sessions"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
     initiated_by = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False)
     
@@ -1027,7 +1052,7 @@ class AgentCommand(Base):
     __tablename__ = "agent_commands"
     __table_args__ = {"schema": "system"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
     # Command types: INSTALL_PATCH | ROLLBACK_PATCH | SCAN_PATCHES
     command = Column(String(50), nullable=False, index=True)
@@ -1047,7 +1072,7 @@ class PatchComplianceSnapshot(Base):
     __tablename__ = "patch_compliance_snapshots"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid)
     snapshot_date = Column(DateTime(timezone=True), nullable=False, index=True)   # date of snapshot
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
     compliance_score = Column(Float, nullable=False)
@@ -1065,7 +1090,7 @@ class PatchSchedule(Base):
     __tablename__ = "patch_schedules"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     patch_id = Column(UUID(as_uuid=True), ForeignKey("asset.system_patches.id"), nullable=False, index=True)
     # Target groups: ALL | PILOT | SERVERS | WORKSTATIONS
     target_group = Column(String(50), default="ALL", nullable=False)
@@ -1089,7 +1114,7 @@ class PatchDeploymentJob(Base):
     __tablename__ = "patch_deployment_jobs"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     patch_id = Column(UUID(as_uuid=True), ForeignKey("asset.system_patches.id"), nullable=False, index=True)
     created_by = Column(UUID(as_uuid=True), ForeignKey("auth.users.id"), nullable=False)
     
@@ -1113,7 +1138,7 @@ class PatchLog(Base):
     __tablename__ = "patch_logs"
     __table_args__ = {"schema": "asset"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     deployment_id = Column(UUID(as_uuid=True), ForeignKey("asset.patch_deployments.id"), nullable=False, index=True)
     asset_id = Column(UUID(as_uuid=True), ForeignKey("asset.assets.id"), nullable=False, index=True)
     
@@ -1133,7 +1158,7 @@ class UserPreference(Base):
     __tablename__ = "user_preferences"
     __table_args__ = {"schema": "auth"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     
     # JSON storage for flexible settings
@@ -1159,7 +1184,7 @@ class AiAgentConfig(Base):
     __tablename__ = "ai_agent_configs"
     __table_args__ = {"schema": "system"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     agent_type = Column(String(50), unique=True, nullable=False, index=True) # STARTER | PROFESSIONAL | BUSINESS
     title = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
@@ -1182,7 +1207,7 @@ class ChatMessage(Base):
     __tablename__ = "chat_messages"
     __table_args__ = {"schema": "auth"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False, index=True)
     
     role = Column(String(20), nullable=False) # user | assistant
@@ -1211,7 +1236,7 @@ class Notification(Base):
     __tablename__ = "notifications"
     __table_args__ = {"schema": "system"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=True, index=True) # Null for global broadcast
     
     type = Column(String(50), nullable=False) # discovery, warranty, renewal, procurement, asset, maintenance, system
@@ -1258,3 +1283,35 @@ class DiscoveryAgent(Base):
     def __repr__(self):
         return f"<DiscoveryAgent(id={self.id}, name={self.name}, status={self.status})>"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# MULTI-TENANT & HIERARCHY LISTENERS (Phase 6)
+# ─────────────────────────────────────────────────────────────────────────────
+
+from sqlalchemy import inspect
+
+@event.listens_for(Department, 'before_insert')
+@event.listens_for(Department, 'before_update')
+def inherit_company_id_department(mapper, connection, target):
+    """
+    Sub-departments must inherit their company_id from their parent.
+    """
+    if target.parent_id:
+        # Avoid query if company_id is already matching
+        session = inspect(target).session
+        if session:
+            parent = session.get(Department, target.parent_id)
+            if parent and parent.company_id:
+                target.company_id = parent.company_id
+
+@event.listens_for(User, 'before_insert')
+@event.listens_for(User, 'before_update')
+def inherit_company_id_user(mapper, connection, target):
+    """
+    Users should inherit company_id from their department if assigned.
+    """
+    if target.department_id and not target.company_id:
+        session = inspect(target).session
+        if session:
+            dept = session.get(Department, target.department_id)
+            if dept and dept.company_id:
+                target.company_id = dept.company_id

@@ -92,7 +92,7 @@ export function AssetProvider({ children }) {
 
     // Persistence for Demo/Fallback mode - REMOVED for Root Fix
 
-    const { isAuthenticated, isLoading: authLoading, user, currentRole, isAdmin, isITStaff, isAssetStaff, isFinanceStaff, isProcurementStaff, isManagerial } = useRole();
+    const { isAuthenticated, isLoading: authLoading, user, currentRole, isAdmin, isITStaff, isAssetStaff, isFinanceStaff, isProcurementStaff, isManagerial, isStaff } = useRole();
     const toast = useToast();
 
     const loadData = async () => {
@@ -107,22 +107,22 @@ export function AssetProvider({ children }) {
             // 2) Load asset requests & tickets
             try {
                 // Domain-based filtering logic
-                console.log(`[AssetContext] User position: ${user?.position}, Domain: ${user?.domain}, RoleSlug: ${currentRole?.slug}`);
-                if (isAdmin || isAssetStaff || isFinanceStaff || isProcurementStaff || isITStaff) {
-                    // Admin-level/Centralized roles see EVERYTHING (higher limit so pending requests aren't cut off)
-                    apiAssetRequests = await apiClient.getAssetRequests({ limit: 300 });
-                    const assetResponse = await apiClient.getAssets();
+                console.log(`[AssetContext] User position: ${user?.position}, Domain: ${user?.domain}, RoleSlug: ${currentRole?.slug}, isStaff: ${isStaff}`);
+                if (isAdmin || isAssetStaff || isFinanceStaff || isProcurementStaff || isITStaff || isStaff) {
+                    // Admin-level/Centralized roles see EVERYTHING (size=0 for unlimited)
+                    apiAssetRequests = await apiClient.getAssetRequests({ limit: 0 });
+                    const assetResponse = await apiClient.getAssets({ size: 0 });
                     apiAssets = assetResponse.data || [];
-                    const ticketResponse = await apiClient.getTickets(0, 300);
+                    const ticketResponse = await apiClient.getTickets(0, 0);
                     apiTickets = ticketResponse.data || [];
                     console.log(`[AssetContext] Admin fetch: ${apiAssetRequests.length} requests, ${apiAssets.length} assets, ${apiTickets.length} tickets`);
                 } else if (isManagerial) {
                     if (!user.department && !user.domain) {
                         console.warn(`[AssetContext] Manager ${user.name} has no department or domain assigned. Falling back to personal requests only.`);
-                        apiAssetRequests = await apiClient.getAssetRequests({ mine: true });
-                        const assetResponse = await apiClient.getAssets();
+                        apiAssetRequests = await apiClient.getAssetRequests({ mine: true, limit: 0 });
+                        const assetResponse = await apiClient.getAssets({ size: 0 });
                         apiAssets = assetResponse.data || [];
-                        const ticketResponse = await apiClient.getTickets();
+                        const ticketResponse = await apiClient.getTickets(0, 0);
                         apiTickets = ticketResponse.data || [];
                     } else {
                         console.log(`[AssetContext] Fetching for manager: Dept=${user.department}, Domain=${user.domain}`);
@@ -140,14 +140,14 @@ export function AssetProvider({ children }) {
                             deptTickets,
                             domainTickets
                         ] = await Promise.all([
-                            user.department ? apiClient.getAssetRequests({ department: user.department }) : Promise.resolve([]),
-                            shouldFetchDomain ? apiClient.getAssetRequests({ domain: user.domain }) : Promise.resolve([]),
-                            apiClient.getAssetRequests({ mine: true }),
-                            user.department ? apiClient.getAssets({ department: user.department }).then(r => r.data || []) : Promise.resolve([]),
-                            shouldFetchDomain ? apiClient.getAssets({ domain: user.domain }).then(r => r.data || []) : Promise.resolve([]),
-                            apiClient.getMyAssets(),
-                            user.department ? apiClient.getTickets(0, 100, user.department).then(r => r.data || []) : Promise.resolve([]),
-                            shouldFetchDomain ? apiClient.getTickets(0, 100, user.domain).then(r => r.data || []) : Promise.resolve([])
+                            user.department ? apiClient.getAssetRequests({ department: user.department, limit: 0 }) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getAssetRequests({ domain: user.domain, limit: 0 }) : Promise.resolve([]),
+                            apiClient.getAssetRequests({ mine: true, limit: 0 }),
+                            user.department ? apiClient.getAssets({ department: user.department, size: 0 }).then(r => r.data || []) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getAssets({ domain: user.domain, size: 0 }).then(r => r.data || []) : Promise.resolve([]),
+                            apiClient.getMyAssets(), // My assets endpoint usually returns all anyway
+                            user.department ? apiClient.getTickets(0, 0, user.department).then(r => r.data || []) : Promise.resolve([]),
+                            shouldFetchDomain ? apiClient.getTickets(0, 0, user.domain).then(r => r.data || []) : Promise.resolve([])
                         ]);
 
                         console.log(`[AssetContext] Dept fetches: reqs=${deptReqs.length}, assets=${deptAssets.length}, tickets=${deptTickets.length}`);
@@ -187,9 +187,9 @@ export function AssetProvider({ children }) {
                 } else {
                     // Regular Employees only see their OWN requests
                     console.log(`[AssetContext] Fetching for regular employee: ${user?.id}`);
-                    apiAssetRequests = await apiClient.getAssetRequests({ mine: true });
+                    apiAssetRequests = await apiClient.getAssetRequests({ mine: true, limit: 0 });
                     apiAssets = await apiClient.getMyAssets();
-                    const ticketResponse = await apiClient.getTickets();
+                    const ticketResponse = await apiClient.getTickets(0, 0);
                     apiTickets = ticketResponse.data || [];
                 }
 

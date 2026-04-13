@@ -28,9 +28,8 @@ import {
 
 export const ALL_NAV_ITEMS = [
     { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { label: 'Strategic Hub', href: '/executive-dashboard', icon: Sparkles },
     { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
-    { label: 'Unit Command Hub', href: '/support', icon: HeartHandshake },
+    { label: 'Unit Command Hub', href: '/unit-command', icon: HeartHandshake },
     { label: 'Support Queue', href: '/support-dashboard', icon: LayoutGrid },
     { label: 'Enterprise', href: '/enterprise', icon: Sparkles },
     { label: 'Topology', href: '/network-topology', icon: Network },
@@ -49,8 +48,8 @@ export const ALL_NAV_ITEMS = [
     { label: 'Agents', href: '/agents', icon: Cpu },
     { label: 'Port Policies', href: '/security/port-policies', icon: Shield },
     { label: 'Renewals', href: '/renewals', icon: RotateCcw },
-    { label: 'Procurement', href: '/procurement', icon: ShoppingBag },
-    { label: 'Finance', href: '/finance', icon: Wallet },
+    { label: 'Logistics Hub', href: '/procurement', icon: ShoppingBag },
+    { label: 'Financial Governance', href: '/finance', icon: Wallet },
     { label: 'Budget Queue', href: '/finance/budget-queue', icon: DollarSign },
     { label: 'Disposal', href: '/disposal', icon: Trash2 },
     { label: 'Pricing', href: '/pricing', icon: DollarSign },
@@ -61,11 +60,11 @@ export const ROLE_DASHBOARD_MAP = {
     'ADMIN': '/dashboard/system-admin',
     'ASSET_MANAGER': '/dashboard/asset-inventory-manager',
     'PROCUREMENT': '/procurement',
-    'IT_MANAGEMENT': '/executive-dashboard',
-    'CEO': '/executive-dashboard',
-    'CFO': '/executive-dashboard',
+    'IT_MANAGEMENT': '/dashboard/system-admin',
+    'CEO': '/dashboard/system-admin',
+    'CFO': '/dashboard/system-admin',
     'FINANCE': '/finance',
-    'SUPPORT': '/support',
+    'SUPPORT': '/',
     'MANAGER': '/',
     'END_USER': '/'
 };

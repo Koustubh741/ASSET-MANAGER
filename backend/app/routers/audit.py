@@ -48,7 +48,7 @@ class AuditLogResponse(BaseModel):
 @router.get("/logs", response_model=PaginatedResponse[AuditLogResponse])
 async def get_audit_logs(
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=100),
+    size: int = Query(50, ge=0),
     after_id: Optional[UUID] = None,
     entity_type: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
@@ -93,7 +93,9 @@ async def get_audit_logs(
 
     # 3. Execution
     skip = (page - 1) * size
-    query = query.order_by(AuditLog.timestamp.desc(), AuditLog.id.desc()).offset(skip).limit(size)
+    query = query.order_by(AuditLog.timestamp.desc(), AuditLog.id.desc()).offset(skip)
+    if size > 0:
+        query = query.limit(size)
     result = await db.execute(query)
     data = result.scalars().all()
     

@@ -4,6 +4,7 @@ from ..models.models import Location
 from ..schemas.location_schema import LocationCreate, LocationUpdate
 from uuid import UUID
 import uuid
+from ..utils.uuid_gen import get_uuid
 
 async def get_locations(db: AsyncSession):
     result = await db.execute(select(Location))
@@ -15,7 +16,7 @@ async def get_location(db: AsyncSession, location_id: UUID):
 
 async def create_location(db: AsyncSession, location: LocationCreate):
     db_location = Location(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         **location.model_dump()
     )
     db.add(db_location)

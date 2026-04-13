@@ -7,6 +7,7 @@ from ..models.models import User
 from ..schemas.user_schema import UserCreate, UserUpdate
 import uuid
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 
 from passlib.context import CryptContext
 import bcrypt
@@ -52,7 +53,7 @@ async def create_user(db: AsyncSession, user: UserCreate):
     role_value = "ADMIN" if is_first_user else raw_role
 
     db_user = User(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         email=normalized_email,
         full_name=user.full_name,
         password_hash=hashed_password,
@@ -174,7 +175,10 @@ async def get_users(
     total = (await db.execute(count_query)).scalar() or 0
 
     # 3. Pagination & Execution
-    query = query.offset(skip).limit(limit).order_by(User.full_name)
+    query = query.offset(skip)
+    if limit > 0:
+        query = query.limit(limit)
+    query = query.order_by(User.full_name)
     result = await db.execute(query)
     return result.scalars().all(), total
 
@@ -214,10 +218,10 @@ async def sync_sso_user(db: AsyncSession, sso_provider: str, sso_id: str, email:
         else:
             # 3. Create new user
             user = User(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 email=normalized_email,
                 full_name=full_name,
-                password_hash="SSO_MANAGED_" + str(uuid.uuid4()), # Placeholder
+                password_hash="SSO_MANAGED_" + str(get_uuid()), # Placeholder
                 sso_provider=sso_provider,
                 sso_id=sso_id,
                 status="ACTIVE", # SSO users are usually pre-authenticated

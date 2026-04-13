@@ -6,6 +6,7 @@ from ..schemas.discovery_schema import DiscoveryPayload
 from datetime import datetime, timezone
 import uuid
 import logging
+from ..utils.uuid_gen import get_uuid
 from ..routers.notifications import create_notification # Real-time alerts
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ async def _record_diff(
     if str(old) == str(new):
         return
     diff = DiscoveryDiff(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         scan_id=scan_id,
         asset_id=asset_id,
         field_name=field,
@@ -397,7 +398,7 @@ async def process_discovery_payload(
 
             # Record Audit Log for Data Collection (Update)
             audit = AuditLog(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 entity_type="Asset",
                 entity_id=str(db_asset.id),
                 action="DATA_COLLECT",
@@ -420,7 +421,7 @@ async def process_discovery_payload(
             pass
 
             db_asset = Asset(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 name=payload.hostname,
                 type=payload.hardware.type or "Desktop",
                 model=payload.hardware.model or "Unknown Model",
@@ -435,7 +436,7 @@ async def process_discovery_payload(
             db.add(db_asset)
             
             audit = AuditLog(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 entity_type="Asset",
                 entity_id=str(db_asset.id),
                 action="CREATED",
@@ -495,7 +496,7 @@ async def process_discovery_payload(
 
             for soft in payload.software:
                 db.add(DiscoveredSoftware(
-                    id=uuid.uuid4(),
+                    id=get_uuid(),
                     asset_id=db_asset.id,
                     name=soft.name[:SOFTWARE_NAME_MAX],
                     version=(soft.version or "Unknown")[:SOFTWARE_VERSION_MAX],
@@ -532,7 +533,7 @@ async def process_discovery_payload(
                     # Create a "Stub" asset for the discovered neighbor
                     logger.info("Creating stub asset for discovered neighbor: %s", neighbor_name)
                     target_asset = Asset()
-                    target_asset.id = uuid.uuid4()
+                    target_asset.id = get_uuid()
                     target_asset.name = neighbor_name
                     target_asset.type = "Networking"
                     target_asset.model = "Neighbor Node"
@@ -572,7 +573,7 @@ async def process_discovery_payload(
 
                 if target_asset and target_asset.id != db_asset.id:
                     db.add(AssetRelationship(
-                        id=uuid.uuid4(),
+                        id=get_uuid(),
                         source_asset_id=db_asset.id,
                         target_asset_id=target_asset.id,
                         relationship_type="connected_to",

@@ -6,6 +6,7 @@ from ..models.models import Asset, AuditLog
 from ..utils import auth_utils
 import uuid
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime
 
 router = APIRouter(
@@ -59,7 +60,7 @@ async def initiate_disposal(
     asset.status = "Scrap"
     
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         entity_type="Asset",
         entity_id=asset.id,
         action="DISPOSAL_INITIATED",
@@ -106,7 +107,7 @@ async def record_wipe(
     asset.disposal_status = "WIPED"
     
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         entity_type="Asset",
         entity_id=asset.id,
         action="DATA_WIPE_COMPLETED",
@@ -137,7 +138,7 @@ async def finalize_disposal(
     asset.location = "Disposal Archive"
     
     audit = AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         entity_type="Asset",
         entity_id=asset.id,
         action="ASSET_RETIRED",

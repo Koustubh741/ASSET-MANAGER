@@ -71,18 +71,18 @@ const WorkflowProgressBar = ({ currentStatus, isByod = false, compact = false })
                             <div className={`flex-shrink-0 border transition-all duration-500 relative flex items-center justify-center
                                 ${compact ? 'w-5 h-5' : 'w-7 h-7'} 
                                 ${isCompleted 
-                                    ? (isError ? 'bg-danger border-danger text-white' : 'bg-primary border-primary text-white shadow-[0_0_10px_rgba(var(--color-primary),0.4)]') 
+                                    ? (isError ? 'bg-danger border-danger text-white' : 'bg-primary border-primary text-white shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.3)]') 
                                     : isActive 
-                                        ? (isError ? 'bg-danger/20 border-danger text-danger scale-110 animate-pulse' : 'bg-primary/20 border-primary text-primary scale-110 shadow-[0_0_15px_rgba(var(--color-primary),0.3)] animate-glow') 
+                                        ? (isError ? 'bg-danger/20 border-danger text-danger scale-110 animate-pulse' : 'bg-primary/20 border-primary text-primary scale-110 shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.4)] animate-glow') 
                                         : 'bg-app-surface border-white/10 text-app-text-muted hover:border-white/30'
                                 }
                                 !rounded-none
                             `}>
-                                {/* Corner Accents for Active */}
+                                {/* Sharp Corner Accents for Active */}
                                 {isActive && (
                                     <>
-                                        <div className="absolute -top-1 -left-1 w-1.5 h-1.5 border-t border-l border-primary"></div>
-                                        <div className="absolute -bottom-1 -right-1 w-1.5 h-1.5 border-b border-r border-primary"></div>
+                                        <div className="absolute -top-1.5 -left-1.5 w-2 h-2 border-t-2 border-l-2 border-primary"></div>
+                                        <div className="absolute -bottom-1.5 -right-1.5 w-2 h-2 border-b-2 border-r-2 border-primary"></div>
                                     </>
                                 )}
 

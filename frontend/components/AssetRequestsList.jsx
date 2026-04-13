@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import apiClient from '../lib/apiClient';
 import { useToast } from '@/components/common/Toast';
-import ManagerApprovalModal from './ManagerApprovalModal';
-import ComplianceCheckModal from './ComplianceCheckModal';
-import ITApprovalModal from './ITApprovalModal';
+import WorkflowActionPanel from './WorkflowActionPanel';
 import WorkflowProgressBar from './WorkflowProgressBar';
 import Skeleton from '@/components/common/Skeleton';
 import { getStatusLabel } from '@/lib/statusLabels';
@@ -16,9 +14,7 @@ const AssetRequestsList = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedRequest, setSelectedRequest] = useState(null);
-    const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
-    const [isComplianceModalOpen, setIsComplianceModalOpen] = useState(false);
-    const [isITModalOpen, setIsITModalOpen] = useState(false);
+    const [isActionPanelOpen, setIsActionPanelOpen] = useState(false);
     const { 
         user, 
         currentRole, 
@@ -57,19 +53,9 @@ const AssetRequestsList = () => {
         setExpandedRows(newExpanded);
     };
 
-    const handleManagerAction = (request) => {
+    const handleAction = (request) => {
         setSelectedRequest(request);
-        setIsApprovalModalOpen(true);
-    };
-
-    const handleComplianceCheck = (request) => {
-        setSelectedRequest(request);
-        setIsComplianceModalOpen(true);
-    };
-
-    const handleITAction = (request) => {
-        setSelectedRequest(request);
-        setIsITModalOpen(true);
+        setIsActionPanelOpen(true);
     };
 
     // Determine if the current user can perform an action on a request
@@ -111,15 +97,16 @@ const AssetRequestsList = () => {
             {/* Desktop: Table */}
             <div className="overflow-x-auto hidden md:block">
                 <table className="w-full text-left text-sm text-slate-900 dark:text-slate-200">
-                    <thead className="bg-app-surface-soft text-app-text-muted bg-slate-100 text-app-text-muted font-semibold border-b border-app-border">
+                    <thead className="text-[10px] font-bold uppercase tracking-[0.2em] border-b border-white/10 bg-white/5">
                         <tr>
                             <th className="px-6 py-4 w-10"></th>
-                            <th className="px-6 py-4">Asset / User</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
+                            <th className="px-6 py-4">Object_Data</th>
+                            <th className="px-6 py-4">SLA_Status</th>
+                            <th className="px-6 py-4">Lifecycle_State</th>
+                            <th className="px-6 py-4 text-right">Command_Link</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5 divide-slate-200">
+                    <tbody className="divide-y divide-white/5">
                         {loading ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <tr key={i} className="animate-pulse">
@@ -128,7 +115,8 @@ const AssetRequestsList = () => {
                                         <Skeleton variant="line" className="h-4 w-32" />
                                         <Skeleton variant="line" className="h-3 w-24" />
                                     </td>
-                                    <td className="px-6 py-4"><Skeleton variant="line" className="h-5 w-20 rounded-full" /></td>
+                                    <td className="px-6 py-4"><Skeleton variant="line" className="h-5 w-16 rounded" /></td>
+                                    <td className="px-6 py-4"><Skeleton variant="line" className="h-5 w-20 rounded" /></td>
                                     <td className="px-6 py-4 text-right"><Skeleton variant="line" className="h-8 w-16 ml-auto rounded" /></td>
                                 </tr>
                             ))
@@ -156,110 +144,63 @@ const AssetRequestsList = () => {
                         ) : (
                             requests.map((req) => (
                                 <React.Fragment key={req.id}>
-                                    <tr className={`hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50 transition-all duration-200 cursor-pointer ${expandedRows.has(req.id ?? req.request_id) ? 'bg-indigo-500/10 ring-1 ring-indigo-500/30 bg-indigo-50 ring-indigo-200' : ''}`} onClick={() => toggleRow(req.id ?? req.request_id)}>
+                                    <tr 
+                                        className={`group hover:bg-white/5 transition-all duration-300 cursor-pointer ${expandedRows.has(req.id) ? 'bg-primary/5 border-l-2 border-primary' : ''}`} 
+                                        onClick={() => toggleRow(req.id)}
+                                    >
                                         <td className="px-6 py-4">
-                                            {expandedRows.has(req.id ?? req.request_id) ? <ChevronUp className="w-4 h-4 text-app-text-muted text-app-text-muted" /> : <ChevronDown className="w-4 h-4 text-app-text-muted text-app-text-muted" />}
+                                            {expandedRows.has(req.id) ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-app-text-muted/40" />}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
-                                                <div className="font-medium text-app-text flex items-center gap-2">
-                                                    {req.asset_name ?? '—'}
-                                                    <span className="text-xs font-mono text-app-text-muted text-app-text-muted bg-slate-200 bg-app-surface-soft px-1.5 py-0.5 rounded uppercase">
-                                                        {req.asset_ownership_type ?? '—'}
+                                                <div className="font-bold text-app-text flex items-center gap-2 uppercase tracking-widest text-xs">
+                                                    {req.asset_type ?? 'OBJECT_NULL'}
+                                                    <span className="text-[9px] font-mono text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 uppercase tracking-tighter">
+                                                        {req.asset_ownership_type ?? 'UNCERTAIN'}
                                                     </span>
                                                 </div>
-                                                <div className="flex flex-col">
-                                                    <div className="text-sm font-bold text-slate-900 dark:text-slate-200">{req.requester_name}</div>
-                                                    <div className="text-xs text-app-text-muted text-app-text-muted mb-1">{req.requester_email}</div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs text-app-text-muted">{req.domain}</span>
-                                                        {req.requester_department && (
-                                                            <span className="text-xs px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-medium">
-                                                                {req.requester_department}
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                <div className="text-[11px] text-app-text-muted mt-1 uppercase tracking-wider font-medium">
+                                                    Agent: {req.requester_name} <span className="text-white/20 mx-1">|</span> {req.requester_department}
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider border ${(req.status || '') === 'IN_USE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                (req.status || '').includes('REJECTED') || (req.status || '').includes('FAILED') ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                                                    'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                            <div className="flex flex-col gap-1">
+                                                <div className={`text-[10px] font-mono font-bold ${(req.days_in_current_status || 0) > 3 ? 'text-danger' : 'text-success'}`}>
+                                                    T+ {req.days_in_current_status || 0}d
+                                                </div>
+                                                <div className="w-16 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div className={`h-full ${(req.days_in_current_status || 0) > 3 ? 'bg-danger shadow-[0_0_5px_var(--color-danger)]' : 'bg-success shadow-[0_0_5px_var(--color-success)]'}`} style={{ width: `${Math.min(100, (req.days_in_current_status || 0) * 20)}%` }}></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border ${(req.status || '') === 'IN_USE' ? 'bg-success/10 text-success border-success/20' :
+                                                (req.status || '').includes('REJECTED') || (req.status || '').includes('FAILED') ? 'bg-danger/10 text-danger border-danger/20' :
+                                                    'bg-primary/10 text-primary border-primary/20'
                                                 }`}>
                                                 {getStatusLabel(req.status)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRow(req.id ?? req.request_id); }}
-                                                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:text-slate-900 dark:hover:text-white text-app-text hover:bg-indigo-600 hover:bg-indigo-600 border border-indigo-500/30 hover:border-indigo-400 rounded-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-offset-slate-100 min-h-[44px] cursor-pointer"
-                                                    aria-label="View details"
-                                                    title="View details"
-                                                >
-                                                    <Eye className="w-4 h-4 shrink-0" />
-                                                    View
-                                                </button>
-                                                {canAct(req) && (
-                                                    <>
-                                                        {isManagerial && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleManagerAction(req); }}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-app-text hover:bg-indigo-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200"
-                                                            >
-                                                                Review
-                                                            </button>
-                                                        )}
-                                                        {isITStaff && !isManagerial && req.status === 'MANAGER_APPROVED' && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleITAction(req); }}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-app-text hover:bg-emerald-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200"
-                                                            >
-                                                                IT Review
-                                                            </button>
-                                                        )}
-                                                        {isITStaff && !isManagerial && req.status === 'BYOD_COMPLIANCE_CHECK' && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleComplianceCheck(req); }}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-app-text hover:bg-blue-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200"
-                                                            >
-                                                                Scan
-                                                            </button>
-                                                        )}
-                                                        {isProcurementStaff && req.status === 'PROCUREMENT_REQUIRED' && (
-                                                            <Link
-                                                                href="/dashboard/procurement-manager"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-amber-600 text-app-text hover:bg-amber-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200 flex items-center"
-                                                            >
-                                                                Action Required
-                                                            </Link>
-                                                        )}
-                                                        {isFinanceStaff && req.status === 'PO_VALIDATED' && (
-                                                            <Link
-                                                                href="/dashboard/finance"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 text-app-text hover:bg-emerald-700 hover:brightness-110 active:scale-95 rounded-none shadow-sm transition-all duration-200 flex items-center"
-                                                            >
-                                                                Action Required
-                                                            </Link>
-                                                        )}
-                                                    </>
+                                                {canAct(req) ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAction(req); }}
+                                                        className="px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] bg-primary text-app-void hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.3)]"
+                                                    >
+                                                        Review_Signal
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRow(req.id); }}
+                                                        className="px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] border border-white/10 text-app-text-muted hover:text-white transition-all"
+                                                    >
+                                                        Diagnostics
+                                                    </button>
                                                 )}
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleRow(req.id ?? req.request_id); }}
-                                                    className="p-1.5 text-app-text-muted text-app-text-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface hover:bg-slate-200 rounded-none transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-offset-slate-100 rounded"
-                                                    aria-label="Toggle details"
-                                                    title="Toggle details"
-                                                >
-                                                    <Info className="w-4 h-4" />
-                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -420,23 +361,9 @@ const AssetRequestsList = () => {
                 )}
             </div>
 
-            <ManagerApprovalModal
-                isOpen={isApprovalModalOpen}
-                onClose={() => setIsApprovalModalOpen(false)}
-                request={selectedRequest}
-                onUpdate={fetchRequests}
-            />
-
-            <ComplianceCheckModal
-                isOpen={isComplianceModalOpen}
-                onClose={() => setIsComplianceModalOpen(false)}
-                request={selectedRequest}
-                onUpdate={fetchRequests}
-            />
-
-            <ITApprovalModal
-                isOpen={isITModalOpen}
-                onClose={() => setIsITModalOpen(false)}
+            <WorkflowActionPanel
+                isOpen={isActionPanelOpen}
+                onClose={() => setIsActionPanelOpen(false)}
                 request={selectedRequest}
                 onUpdate={fetchRequests}
             />

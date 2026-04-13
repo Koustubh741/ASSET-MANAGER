@@ -27,4 +27,5 @@ paramiko
 pywinrm
 ldap3
 ntlm-auth
+uuid-utils
 

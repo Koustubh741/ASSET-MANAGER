@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import { ShoppingBag, ArrowLeft, FileText, User, Package, ChevronRight, Clock, Disc } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, FileText, User, Package, ChevronRight, Clock, LayoutDashboard, Activity } from 'lucide-react';
 import { useAssetContext } from '@/contexts/AssetContext';
 import WorkflowProgressBar from '@/components/WorkflowProgressBar';
 import { getStatusLabel } from '@/lib/statusLabels';
 import AuthGuard from '@/components/AuthGuard';
+import ProcurementManagerDashboard from '@/components/dashboards/ProcurementManagerDashboard';
 
 function ProcurementUpdatesContent() {
     const router = useRouter();
     const { requests } = useAssetContext();
+    const [viewMode, setViewMode] = useState('dashboard'); // Default to dashboard for premium feel
 
     const procurementRelated = requests.filter((r) => {
         const status = r.status || '';
@@ -51,26 +54,39 @@ function ProcurementUpdatesContent() {
                         <div>ENCRYPTION: AES-256-GCM</div>
                         <div>STATUS: OPERATIONAL</div>
                     </div>
-                    <div className="absolute bottom-10 left-10 w-32 h-[1px] bg-gradient-to-r from-primary/50 to-transparent"></div>
-                    <div className="absolute bottom-10 right-10 flex gap-2">
-                        <div className="w-1 h-1 bg-success animate-pulse"></div>
-                        <div className="text-[10px] text-success/50 font-mono uppercase tracking-widest">{new Date().toISOString().split('T')[1].slice(0, 8)} UTC</div>
-                    </div>
                 </div>
 
                 {/* SCANNING LINE */}
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-primary/20 shadow-[0_0_15px_rgba(var(--color-primary),0.3)] animate-scan z-50 pointer-events-none"></div>
 
-                <div className="w-full px-4 md:px-12 flex flex-col h-screen relative z-10 pt-8">
+                <div className="w-full px-4 md:px-12 flex flex-col min-h-screen relative z-10 pt-8">
                     
                     {/* TOP NAVIGATION / HEADER */}
                     <div className="shrink-0 mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
-                        <Link
-                            href="/dashboard/system-admin"
-                            className="inline-flex items-center gap-2 text-app-text-muted hover:text-primary transition-colors text-[10px] font-bold uppercase tracking-widest border border-white/5 px-4 py-2 bg-white/5 backdrop-blur-sm"
-                        >
-                            <ArrowLeft size={16} /> [REVERT_TO_ADMIN_CONTROL]
-                        </Link>
+                        <div className="flex justify-between items-center">
+                            <Link
+                                href="/dashboard/system-admin"
+                                className="inline-flex items-center gap-2 text-app-text-muted hover:text-primary transition-colors text-[10px] font-bold uppercase tracking-widest border border-white/5 px-4 py-2 bg-white/5 backdrop-blur-sm"
+                            >
+                                <ArrowLeft size={16} /> [REVERT_TO_ADMIN_CONTROL]
+                            </Link>
+
+                            {/* VIEW TOGGLE */}
+                            <div className="flex bg-white/5 border border-white/10 p-1">
+                                <button
+                                    onClick={() => setViewMode('dashboard')}
+                                    className={`flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'dashboard' ? 'bg-primary text-app-void shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.4)]' : 'text-app-text-muted hover:text-white'}`}
+                                >
+                                    <LayoutDashboard size={14} /> Analytics
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('stream')}
+                                    className={`flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'stream' ? 'bg-primary text-app-void shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.4)]' : 'text-app-text-muted hover:text-white'}`}
+                                >
+                                    <Activity size={14} /> Signal_Stream
+                                </button>
+                            </div>
+                        </div>
                         
                         <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <header>
@@ -81,11 +97,11 @@ function ProcurementUpdatesContent() {
                                     </div>
                                     <div>
                                         <h1 className="text-3xl font-bold tracking-[0.2em] uppercase text-app-text">
-                                            Procurement_Updates
+                                            Logistics_{viewMode === 'dashboard' ? 'Command' : 'Updates'}
                                         </h1>
                                         <div className="flex items-center gap-2 mt-1">
                                             <div className="w-2 h-2 rounded-full bg-warning animate-pulse shadow-[0_0_8px_var(--color-warning)]"></div>
-                                            <p className="text-app-text-muted text-[10px] tracking-widest uppercase font-medium">Sector: Logistics / Supply_Chain_Relay</p>
+                                            <p className="text-app-text-muted text-[10px] tracking-widest uppercase font-medium">Sector: Logistics / {viewMode === 'dashboard' ? 'Supply_Chain_Intelligence' : 'Supply_Chain_Relay'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -93,17 +109,21 @@ function ProcurementUpdatesContent() {
                             
                             <div className="glass-panel !rounded-none border-warning/20 bg-warning/5 p-4 max-w-md">
                                 <p className="text-[10px] text-warning/80 leading-relaxed font-medium uppercase tracking-wider">
-                                    READ-ONLY: Monitoring active supply chain signal bursts. 
-                                    Cross-referencing Procurement/Finance status protocols. 
-                                    Unauthorized overrides disabled in this sector.
+                                    {viewMode === 'dashboard' 
+                                        ? "COMMAND_CENTER: Visualizing global procurement health and delivery telemetry." 
+                                        : "SIGNAL_MONITOR: Monitoring active supply chain signal bursts in real-time."}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* MAIN CONTENT GRID */}
-                    <div className="flex-1 min-h-0 overflow-auto pb-12 custom-scrollbar pr-2">
-                        {procurementRelated.length === 0 ? (
+                    {/* MAIN CONTENT AREA */}
+                    <div className="flex-1 pb-12 overflow-y-auto custom-scrollbar pr-2">
+                        {viewMode === 'dashboard' ? (
+                            <div className="animate-in fade-in duration-700">
+                                <ProcurementManagerDashboard />
+                            </div>
+                        ) : procurementRelated.length === 0 ? (
                             <div className="glass-panel !rounded-none border-app-border/30 bg-app-surface/40 p-16 text-center animate-in zoom-in-95 duration-700">
                                 <div className="w-16 h-16 border border-app-text/10 flex items-center justify-center mx-auto mb-6 opacity-30">
                                     <FileText size={40} className="text-app-text" />

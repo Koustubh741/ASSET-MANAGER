@@ -3,6 +3,7 @@ Asset Request service layer - Database operations for asset requests (Asynchrono
 """
 import uuid
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime, timedelta, timezone
 import asyncio
 from typing import List, Optional
@@ -62,6 +63,12 @@ async def _populate_requester_info(db: AsyncSession, db_request: AssetRequest, u
     
     # Instantiate Response with only base fields first
     res = AssetRequestResponse.model_validate(data)
+    
+    # Calculate days in current status
+    if db_request.updated_at:
+        now = datetime.now(db_request.updated_at.tzinfo) if db_request.updated_at.tzinfo else datetime.now()
+        delta = now - db_request.updated_at
+        res.days_in_current_status = max(0, delta.days)
     
     # Manually populate requester fields with safety
     if db_request.requester:
@@ -171,7 +178,7 @@ async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate,
 
         # 2. Create new request if no duplicate found
         db_request = AssetRequest(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             requester_id=requester_id,
             asset_id=request.asset_id,
             asset_name=request.asset_name,
@@ -192,9 +199,8 @@ async def create_asset_request_v2(db: AsyncSession, request: AssetRequestCreate,
         db.add(db_request)
         await db.commit()
         # Pre-fetch requester for the response
-        query = select(AssetRequest).options(joinedload(AssetRequest.requester).joinedload(User.dept_obj), joinedload(AssetRequest.purchase_orders).joinedload(PurchaseOrder.invoice)).filter(AssetRequest.id == request_id)
-        result = await db.execute(query)
-        db_request = result.scalars().first()
+        # Root Fix: Use centralized helper to re-fetch with relationships loaded
+        db_request = await get_asset_request_by_id_db(db, db_request.id)
         return await _populate_requester_info(db, db_request)
 
 
@@ -413,7 +419,7 @@ async def update_procurement_finance_status(
     
     sync_request_state(db_request)
     log = ProcurementLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         reference_id=request_id,
         action="PO_VALIDATED" if new_status == "PROCUREMENT_APPROVED" else "PO_REJECTED",
         performed_by=str(reviewer_id), # Cast to string for String column
@@ -575,7 +581,7 @@ async def register_byod_device_service(
     # 1. Create BYOD entry
     from ..models.models import ByodDevice
     byod = ByodDevice(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         request_id=db_request.id,
         owner_id=db_request.requester_id,
         device_model=device_model,

@@ -29,17 +29,17 @@ export const useNavigation = () => {
             // Special mapping for Dashboard label
             if (item.label === 'Dashboard') return { ...item, href: dashboardPath };
             
-            // System Admin: "Procurement" and "Finance" go to specialized read-only paths
+            // System Admin: "Logistics Hub" and "Financial Governance" go to specialized read-only paths
             if (isAdmin) {
-                if (item.label === 'Procurement') return { ...item, href: '/dashboard/system-admin/procurement' };
-                if (item.label === 'Finance') return { ...item, href: '/dashboard/system-admin/finance' };
+                if (item.label === 'Logistics Hub') return { ...item, href: '/dashboard/system-admin/procurement' };
+                if (item.label === 'Financial Governance') return { ...item, href: '/dashboard/system-admin/finance' };
             }
 
             // Support/Manager: "Unit Command Hub" routes directly to their specific department portal
             if (item.label === 'Unit Command Hub' && !isAdmin) {
                 const deptSlug = user?.dept_obj?.slug || (user?.department ? user.department.toLowerCase().replace(/\s+/g, '_') : null);
                 if (deptSlug) {
-                    return { ...item, href: `/support/${deptSlug}` };
+                    return { ...item, href: `/unit-command/${deptSlug}` };
                 }
             }
             
@@ -52,6 +52,9 @@ export const useNavigation = () => {
             const basicItems = ['Dashboard', 'Assets', 'Software', 'Support & Tickets', 'Unit Command Hub'];
             if (basicItems.includes(item.label)) {
                 if (item.label === 'Dashboard' && (currentRole?.slug === 'CEO' || currentRole?.slug === 'CFO')) return false;
+                // ROOT FIX: Prevent 'Unit Command Hub' and 'Support Queue' redundancy for Managers.
+                // Managers should use the dedicated 'Support Queue' dashboard for operational oversight.
+                if (item.label === 'Unit Command Hub' && isManagerial) return false;
                 return true;
             }
 

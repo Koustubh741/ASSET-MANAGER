@@ -2,7 +2,7 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy.future import select
-from sqlalchemy import update, and_
+from sqlalchemy import update, and_, or_
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from ..models.models import Ticket, User, AssignmentGroup
@@ -139,12 +139,20 @@ class AutomationService:
             print(f"DEBUG: Selected Policy: {policy.name}")
             logger.info(f"Ticket {ticket_id} assigned SLA Policy: {policy.name}")
             
-            now = datetime.now(timezone.utc)
+            # ROOT FIX: Normalize base_time to UTC
+            base_time = ticket.created_at
+            if base_time.tzinfo is None:
+                # If naive, assume UTC as per app standard
+                base_time = base_time.replace(tzinfo=timezone.utc)
+            else:
+                # If aware, convert to UTC
+                base_time = base_time.astimezone(timezone.utc)
+
             response_time: int | None = policy.response_time_limit
             resolution_time: int = policy.resolution_time_limit
             
-            res_deadline = now + timedelta(minutes=response_time) if response_time else None
-            rem_deadline = now + timedelta(minutes=resolution_time)
+            res_deadline = base_time + timedelta(minutes=response_time) if response_time else None
+            rem_deadline = base_time + timedelta(minutes=resolution_time)
 
             # Check for existing SLA to update
             sla_query = select(TicketSLA).where(TicketSLA.ticket_id == ticket.id)
@@ -167,6 +175,93 @@ class AutomationService:
                 db.add(new_sla)
             
             await db.commit()
+
+        else:
+            # ── FALLBACK: No matching SLA policy found — use priority-based defaults ──
+            # Ensures every ticket always gets an SLA record, even without configured policies.
+            PRIORITY_RESOLUTION_HOURS = {
+                "critical": 4,
+                "high": 8,
+                "medium": 24,
+                "low": 72,
+            }
+            PRIORITY_RESPONSE_HOURS = {
+                "critical": 1,
+                "high": 2,
+                "medium": 8,
+                "low": 24,
+            }
+            priority_key = (ticket.priority or "medium").lower()
+            resolution_hours = PRIORITY_RESOLUTION_HOURS.get(priority_key, 24)
+            response_hours = PRIORITY_RESPONSE_HOURS.get(priority_key, 8)
+
+            # ROOT FIX: Normalize base_time to UTC
+            base_time = ticket.created_at
+            if base_time.tzinfo is None:
+                base_time = base_time.replace(tzinfo=timezone.utc)
+            else:
+                base_time = base_time.astimezone(timezone.utc)
+
+            res_deadline = base_time + timedelta(hours=response_hours)
+            rem_deadline = base_time + timedelta(hours=resolution_hours)
+
+            logger.info(
+                f"Ticket {ticket_id}: No SLA policy matched. "
+                f"Applying default SLA — Priority={ticket.priority}, "
+                f"Response in {response_hours}h, Resolution in {resolution_hours}h"
+            )
+
+            # Check for existing SLA record
+            sla_query = select(TicketSLA).where(TicketSLA.ticket_id == ticket.id)
+            existing_sla_res = await db.execute(sla_query)
+            existing_sla = existing_sla_res.scalars().first()
+
+            if existing_sla is not None:
+                existing_sla.sla_policy_id = None  # No formal policy
+                existing_sla.response_deadline = res_deadline
+                existing_sla.resolution_deadline = rem_deadline
+                existing_sla.response_status = "IN_PROGRESS"
+                existing_sla.resolution_status = "IN_PROGRESS"
+            else:
+                new_sla = TicketSLA(
+                    ticket_id=ticket.id,
+                    sla_policy_id=None,  # Fallback — no policy record
+                    response_deadline=res_deadline,
+                    resolution_deadline=rem_deadline
+                )
+                db.add(new_sla)
+
+            await db.commit()
+
+
+    @staticmethod
+    async def recalculate_open_ticket_slas(db: AsyncSession):
+        """
+        ROOT FIX: Re-evaluates SLAs for all open tickets when SLA Policies are changed.
+        Ensures existing tickets instantly inherit newly created policies targeting them.
+        """
+        logger.info("Starting background SLA recalculation for all open tickets...")
+        # Get all tickets that are not explicitly closed/resolved
+        query = select(Ticket.id).where(
+            or_(
+                Ticket.status.notin_(["CLOSED", "RESOLVED", "Closed", "Resolved"]),
+                Ticket.status == None
+            )
+        )
+        res = await db.execute(query)
+        open_ticket_ids = res.scalars().all()
+
+        count = 0
+        for tid in open_ticket_ids:
+            try:
+                # initialize_ticket_sla is safe because it only updates active policies,
+                # and we anchored time calculations to ticket.created_at
+                await AutomationService.initialize_ticket_sla(db, tid)
+                count += 1
+            except Exception as e:
+                logger.error(f"Failed to recalculate SLA for ticket {tid}: {e}")
+        
+        logger.info(f"Completed SLA recalculation. Re-evaluated {count} open tickets.")
 
     @staticmethod
     async def check_slas(db: AsyncSession):

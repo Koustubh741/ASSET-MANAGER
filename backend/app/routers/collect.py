@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Header, Backgroun
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.database import get_db, get_db_context
 from ..models.models import AuditLog
-import uuid as uuid_lib
+import uuid
+from ..utils.uuid_gen import get_uuid
 from ..services import discovery_service, snmp_service, software_service, user_sync_service, barcode_service
 from ..schemas.discovery_schema import DiscoveryPayload, SaaSDiscoveryPayload, UserSyncPayload, BarcodeScanPayload
 from .auth import check_ADMIN
@@ -147,7 +148,7 @@ async def collect_agent_metrics(
         
         async with get_db_context() as db:
             audit = AuditLog(
-                id=uuid_lib.uuid4(),
+                id=get_uuid(),
                 action="AGENT_METRICS",
                 entity_type="Agent",
                 entity_id=str(agent_id),
@@ -216,7 +217,7 @@ async def collect_discovery_data(
         asset = await discovery_service.process_discovery_payload(db, payload)
         
         audit = AuditLog(
-            id=uuid_lib.uuid4(),
+            id=get_uuid(),
             action="asset_discovered",
             entity_type="Asset",
             entity_id=str(asset.id),
@@ -446,7 +447,7 @@ async def trigger_network_scan(
         logger.info(f"Admin {admin_user.email} triggered SNMP scan on {cidr} (Version: {'v3' if v3_data else 'v2c'})")
         
         # Launch scan in background
-        scan_id = str(uuid_lib.uuid4())
+        scan_id = str(get_uuid())
         SCAN_JOBS[scan_id] = {
             "scan_id": scan_id,
             "cidr": cidr,
@@ -864,7 +865,7 @@ async def collect_patch_status(
                 )
                 dep = dep_result.scalars().first()
                 if not dep:
-                    dep = PatchDeployment(id=_u.uuid4(), patch_id=patch.id, asset_id=asset.id)
+                    dep = PatchDeployment(id=get_uuid(), patch_id=patch.id, asset_id=asset.id)
                     db.add(dep)
                 dep.status = new_status
                 dep.last_check_at = datetime.now(timezone.utc)

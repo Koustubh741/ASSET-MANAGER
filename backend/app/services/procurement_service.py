@@ -8,6 +8,7 @@ import asyncio
 import os
 import uuid
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime
 
 UPLOAD_DIR = "uploads/procurement"
@@ -41,7 +42,7 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
         unit_price = round(total_cost / quantity, 2)
 
     po = PurchaseOrder(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         asset_request_id=asset_request_id,
         uploaded_by=uploader_id,
         po_pdf_path=file_path,
@@ -62,7 +63,7 @@ async def handle_po_upload(db: AsyncSession, asset_request_id: UUID, uploader_id
         print(f"WARNING: Low confidence extraction ({confidence_score}) for request {asset_request_id}")
     
     log = ProcurementLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         reference_id=po.id,
         action="PO_UPLOADED",
         performed_by=str(uploader_id),
@@ -133,7 +134,7 @@ async def validate_po_completeness(db: AsyncSession, po_id: UUID, reviewer_id: U
         
     # Audit Log
     log = ProcurementLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         reference_id=po.id,
         action=log_action,
         performed_by=str(reviewer_id),
@@ -196,7 +197,7 @@ async def validate_finance_budget(db: AsyncSession, po_id: UUID, reviewer_id: UU
     
     # Audit Log
     log = ProcurementLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         reference_id=po.id,
         action=log_action,
         performed_by=str(reviewer_id),
@@ -224,7 +225,7 @@ async def handle_invoice_upload(db: AsyncSession, po_id: UUID, uploader_id: UUID
     
     # Create PurchaseInvoice record
     invoice = PurchaseInvoice(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         purchase_order_id=po_id,
         invoice_pdf_path=file_path,
         purchase_date=datetime.now(), 
@@ -235,7 +236,7 @@ async def handle_invoice_upload(db: AsyncSession, po_id: UUID, uploader_id: UUID
     
     # Log action
     log = ProcurementLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         reference_id=invoice.id,
         action="INVOICE_UPLOADED",
         performed_by=str(uploader_id),

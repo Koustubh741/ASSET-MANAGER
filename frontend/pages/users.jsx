@@ -28,7 +28,7 @@ export default function UsersPage() {
     const fetchPendingUsers = async () => {
         if (!isAdmin) return;
         try {
-            const response = await apiClient.getUsers({ status: 'PENDING' });
+            const response = await apiClient.getUsers({ status: 'PENDING', size: 0 });
             const pending = response.data || [];
             setPendingUsers(pending);
         } catch (e) {
@@ -92,10 +92,9 @@ export default function UsersPage() {
         const loadData = async () => {
             setLoading(true);
             try {
-                // Fetch all necessary data
                 const [assetResponse, ticketResponse] = await Promise.all([
-                    apiClient.getAssets(),
-                    apiClient.getTickets()
+                    apiClient.getAssets({ size: 0 }),
+                    apiClient.getTickets(0, 0)
                 ]);
                 const apiAssets = assetResponse.data || [];
                 const apiTickets = ticketResponse.data || [];
@@ -105,9 +104,8 @@ export default function UsersPage() {
                 }
 
                 // Optional: Try to fetch real users, but fall back to discovery if 403
-                let apiUsers = [];
                 try {
-                    const userResponse = await apiClient.getUsers();
+                    const userResponse = await apiClient.getUsers({ size: 0 });
                     apiUsers = userResponse.data || [];
                 } catch (e) {
                     // console.warn('Could not fetch user list directly, using discovery from assets/tickets');

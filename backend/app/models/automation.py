@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, Date, Float, DateTime, JSON, Text, Foreig
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
+from ..utils.uuid_gen import get_uuid
 from ..database.database import Base
 
 class WorkflowRule(Base):
@@ -12,7 +13,7 @@ class WorkflowRule(Base):
     __tablename__ = "workflow_rules"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     
@@ -37,7 +38,7 @@ class SLAPolicy(Base):
     __tablename__ = "sla_policies"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     name = Column(String(255), nullable=False)
     
     # Match criteria
@@ -58,7 +59,7 @@ class TicketSLA(Base):
     __tablename__ = "ticket_slas"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     ticket_id = Column(UUID(as_uuid=True), ForeignKey("support.tickets.id", ondelete="CASCADE"), nullable=False, unique=True)
     sla_policy_id = Column(UUID(as_uuid=True), ForeignKey("support.sla_policies.id"), nullable=False)
     
@@ -84,7 +85,7 @@ class ChangeApproval(Base):
     __tablename__ = "change_approvals"
     __table_args__ = {"schema": "support"}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=get_uuid, index=True)
     entity_type = Column(String(50), nullable=False) # TICKET | ASSET_REQUEST
     entity_id = Column(UUID(as_uuid=True), nullable=False)
     

@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import text
-from .database.database import get_db, test_connection, get_connection_info
+from .database.database import get_db, test_async_connection, get_connection_info
 from .models.models import AuditLog, Asset
 import traceback
 import logging
@@ -188,7 +188,9 @@ async def health_check():
     
     # Check Database
     try:
-        if test_connection():
+        import asyncio
+        is_db_up = await asyncio.wait_for(test_async_connection(), timeout=3.0)
+        if is_db_up:
             health_status["checks"]["database"] = "connected"
         else:
             health_status["checks"]["database"] = "error"
@@ -201,7 +203,9 @@ async def health_check():
     try:
         from .utils.cache import dashboard_cache
         client = await dashboard_cache.get_client()
-        if await client.ping():
+        import asyncio
+        is_redis_up = await asyncio.wait_for(client.ping(), timeout=2.0)
+        if is_redis_up:
             health_status["checks"]["redis"] = "connected"
         else:
              health_status["checks"]["redis"] = "disconnected"

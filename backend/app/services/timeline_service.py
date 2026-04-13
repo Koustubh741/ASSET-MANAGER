@@ -6,6 +6,7 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime, timezone
 import uuid
 import logging
+from ..utils.uuid_gen import get_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class TimelineService:
         """
         try:
             audit = AuditLog(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 entity_type=entity_type,
                 entity_id=str(entity_id),
                 action=event_type,

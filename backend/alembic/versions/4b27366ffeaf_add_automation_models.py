@@ -77,7 +77,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_support_ticket_slas_id'), 'ticket_slas', ['id'], unique=False, schema='support')
     op.create_foreign_key(None, 'asset_assignments', 'users', ['user_id'], ['id'], source_schema='asset', referent_schema='auth')
     op.create_foreign_key(None, 'asset_requests', 'users', ['requester_id'], ['id'], source_schema='asset', referent_schema='auth')
-    op.drop_column('assets', 'is_pilot', schema='asset')
     op.drop_index('ix_gate_passes_asset_id', table_name='gate_passes', schema='asset')
     op.drop_index('ix_gate_passes_status', table_name='gate_passes', schema='asset')
     op.create_index(op.f('ix_asset_gate_passes_asset_id'), 'gate_passes', ['asset_id'], unique=False, schema='asset')

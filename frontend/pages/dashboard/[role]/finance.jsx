@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, FileText, User, ChevronRight, Clock, Wallet, Disc } from 'lucide-react';
+import { ArrowLeft, FileText, User, ChevronRight, Clock, Wallet, LayoutDashboard, Activity } from 'lucide-react';
 import { useAssetContext } from '@/contexts/AssetContext';
 import WorkflowProgressBar from '@/components/WorkflowProgressBar';
 import { getStatusLabel } from '@/lib/statusLabels';
 import AuthGuard from '@/components/AuthGuard';
+import FinanceDashboard from '@/components/dashboards/FinanceDashboard';
 
 function FinanceUpdatesContent() {
     const { requests } = useAssetContext();
+    const [viewMode, setViewMode] = useState('dashboard'); // Default to dashboard for premium feel
 
     const financeRelated = requests.filter((r) => {
         const role = r.currentOwnerRole || '';
@@ -50,16 +53,34 @@ function FinanceUpdatesContent() {
                 {/* SCANNING LINE */}
                 <div className="absolute top-0 left-0 w-full h-[2px] bg-app-secondary/20 shadow-[0_0_15px_rgba(var(--color-kinetic-secondary-rgb),0.3)] animate-scan z-50 pointer-events-none"></div>
 
-                <div className="w-full px-4 md:px-12 flex flex-col h-screen relative z-10 pt-8">
+                <div className="w-full px-4 md:px-12 flex flex-col min-h-screen relative z-10 pt-8">
                     
                     {/* TOP NAVIGATION / HEADER */}
                     <div className="shrink-0 mb-8 animate-in fade-in slide-in-from-top-4 duration-700">
-                        <Link
-                            href="/dashboard/system-admin"
-                            className="inline-flex items-center gap-2 text-app-text-muted hover:text-app-secondary transition-colors text-[10px] font-bold uppercase tracking-widest border border-white/5 px-4 py-2 bg-app-surface-soft backdrop-blur-sm"
-                        >
-                            <ArrowLeft size={16} /> [REVERT_TO_ADMIN_CONTROL]
-                        </Link>
+                        <div className="flex justify-between items-center">
+                            <Link
+                                href="/dashboard/system-admin"
+                                className="inline-flex items-center gap-2 text-app-text-muted hover:text-app-secondary transition-colors text-[10px] font-bold uppercase tracking-widest border border-white/5 px-4 py-2 bg-app-surface-soft backdrop-blur-sm"
+                            >
+                                <ArrowLeft size={16} /> [REVERT_TO_ADMIN_CONTROL]
+                            </Link>
+
+                            {/* VIEW TOGGLE */}
+                            <div className="flex bg-white/5 border border-white/10 p-1">
+                                <button
+                                    onClick={() => setViewMode('dashboard')}
+                                    className={`flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'dashboard' ? 'bg-app-secondary text-app-void shadow-[0_0_15px_rgba(var(--color-kinetic-secondary-rgb),0.4)]' : 'text-app-text-muted hover:text-white'}`}
+                                >
+                                    <LayoutDashboard size={14} /> Analytics
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('stream')}
+                                    className={`flex items-center gap-2 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'stream' ? 'bg-app-secondary text-app-void shadow-[0_0_15px_rgba(var(--color-kinetic-secondary-rgb),0.4)]' : 'text-app-text-muted hover:text-white'}`}
+                                >
+                                    <Activity size={14} /> Signal_Stream
+                                </button>
+                            </div>
+                        </div>
                         
                         <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
                             <header>
@@ -70,11 +91,11 @@ function FinanceUpdatesContent() {
                                     </div>
                                     <div>
                                         <h1 className="text-3xl font-bold tracking-[0.2em] uppercase text-app-text">
-                                            Finance_Updates
+                                            Finance_{viewMode === 'dashboard' ? 'Governance' : 'Updates'}
                                         </h1>
                                         <div className="flex items-center gap-2 mt-1">
                                             <div className="w-2 h-2 rounded-full bg-app-secondary animate-pulse shadow-[0_0_8px_rgba(var(--color-kinetic-secondary-rgb),0.8)]"></div>
-                                            <p className="text-app-text-muted text-[10px] tracking-widest uppercase font-medium">Sector: Capital_Management / Budget_Relay</p>
+                                            <p className="text-app-text-muted text-[10px] tracking-widest uppercase font-medium">Sector: Capital_Management / {viewMode === 'dashboard' ? 'Strategic_Audit' : 'Budget_Relay'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -82,17 +103,21 @@ function FinanceUpdatesContent() {
                             
                             <div className="glass-panel !rounded-none border-app-secondary/20 bg-app-secondary/5 p-4 max-w-md">
                                 <p className="text-[10px] text-app-secondary/80 leading-relaxed font-medium uppercase tracking-wider">
-                                    READ-ONLY: Monitoring active budgetary signal bursts. 
-                                    Cross-referencing capital allocation protocols. 
-                                    Unauthorized fund movement disabled in this sector.
+                                    {viewMode === 'dashboard' 
+                                        ? "STRATEGIC_OVERVIEW: Visualizing capital health and license compliance telemetry." 
+                                        : "SIGNAL_MONITOR: Monitoring active budgetary signal bursts in real-time."}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* MAIN CONTENT GRID */}
-                    <div className="flex-1 min-h-0 overflow-auto pb-12 custom-scrollbar pr-2">
-                        {financeRelated.length === 0 ? (
+                    {/* MAIN CONTENT AREA */}
+                    <div className="flex-1 pb-12 overflow-y-auto custom-scrollbar pr-2">
+                        {viewMode === 'dashboard' ? (
+                            <div className="animate-in fade-in duration-700">
+                                <FinanceDashboard />
+                            </div>
+                        ) : financeRelated.length === 0 ? (
                             <div className="glass-panel !rounded-none border-app-border/30 bg-app-surface/40 p-16 text-center animate-in zoom-in-95 duration-700">
                                 <div className="w-16 h-16 border border-app-text/10 flex items-center justify-center mx-auto mb-6 opacity-30">
                                     <FileText size={40} className="text-app-text" />

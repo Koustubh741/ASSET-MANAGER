@@ -95,14 +95,7 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
             value: d.po_count,
             amount: d.total_spend || 0
         }))
-        : [
-            { name: 'Jan', value: 2, amount: 180000 },
-            { name: 'Feb', value: 4, amount: 320000 },
-            { name: 'Mar', value: 3, amount: 275000 },
-            { name: 'Apr', value: 5, amount: 410000 },
-            { name: 'May', value: 4, amount: 380000 },
-            { name: 'Jun', value: 6, amount: 520000 },
-        ];
+        : [];
 
     const showDashboard = activeView === 'dashboard';
     const showPurchaseOrders = activeView === 'purchase-orders';
@@ -131,7 +124,9 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                         </button>
                         <div className="text-right">
                             <p className="text-xs text-app-text-muted">Quarterly Budget Remaining</p>
-                            <p className="text-2xl font-bold text-emerald-400">—</p>
+                            <p className={`text-2xl font-bold ${procurementSummary?.remaining_budget < 100000 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                {procurementSummary?.remaining_budget != null ? `₹${(procurementSummary.remaining_budget / 100000).toFixed(1)}L` : '--'}
+                            </p>
                         </div>
                     </div>
                 </header>

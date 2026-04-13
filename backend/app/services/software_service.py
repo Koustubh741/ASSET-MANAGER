@@ -3,8 +3,11 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 from ..models.models import SoftwareLicense, DiscoveredSoftware, AssetRequest, Ticket, User, ProcurementLog
 from ..schemas.software_schema import SoftwareLicenseCreate, SoftwareLicenseUpdate
+from ..schemas.ticket_schema import TicketCreate
+from . import ticket_service
 from uuid import UUID
 import uuid
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime, timezone
 
 async def get_all_licenses(db: AsyncSession):
@@ -27,7 +30,7 @@ async def get_license(db: AsyncSession, license_id: UUID):
 
 async def create_license(db: AsyncSession, license: SoftwareLicenseCreate):
     db_license = SoftwareLicense(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         **license.model_dump()
     )
     db.add(db_license)
@@ -106,7 +109,7 @@ async def upsert_saas_license(db: AsyncSession, license_data: dict):
         # Remove is_discovered from license_data if it exists to avoid multiple values
         license_data.pop("is_discovered", None)
         db_license = SoftwareLicense(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             is_discovered=True,
             **license_data
         )
@@ -215,7 +218,7 @@ async def request_license_seats(db: AsyncSession, license_id: UUID, requester_id
     
     # 2. Create the AssetRequest
     asset_request = AssetRequest(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         requester_id=requester_id,
         asset_name=db_license.name,
         asset_type="SOFTWARE",
@@ -231,7 +234,7 @@ async def request_license_seats(db: AsyncSession, license_id: UUID, requester_id
     
     # Audit Log
     log = ProcurementLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         reference_id=asset_request.id,
         action="SOFTWARE_SEATS_REQUESTED",
         performed_by=str(requester_id),
@@ -271,8 +274,8 @@ async def optimize_license_usage(db: AsyncSession, license_id: UUID, requester_i
     it_user = it_user_result.scalars().first()
 
     # 3. Create the Support Ticket
-    ticket = Ticket(
-        id=uuid.uuid4(),
+    # Centralized Root Fix: Use ticket_service.create_ticket_v2
+    ticket_data = TicketCreate(
         subject=f"RECLAIM: Underutilized Software - {db_license.name}",
         description=(
             f"The software '{db_license.name}' by {db_license.vendor} is currently underutilized.\n\n"
@@ -282,19 +285,28 @@ async def optimize_license_usage(db: AsyncSession, license_id: UUID, requester_i
             f"Potential Annual Savings: ${round(savings, 2)}\n\n"
             f"Action Required: Identify assets where '{db_license.name}' is installed but not used, and reclaim {int(db_license.seat_count - install_count)} seats."
         ),
-        status="Open",
         priority="Medium",
         category="Software",
-        requestor_id=requester_id,
-        assigned_to_id=it_user.id if it_user else None,
-        timeline=[{
+        assigned_to_id=it_user.id if it_user else None
+    )
+    
+    ticket = await ticket_service.create_ticket_v2(
+        db, 
+        ticket=ticket_data, 
+        requestor_id=requester_id
+    )
+    
+    # Update timeline to reflect automatic management assignment
+    if it_user:
+        # Use a list copy to ensure SQLAlchemy registers the change for JSONB
+        updated_timeline = list(ticket.timeline) if ticket.timeline else []
+        updated_timeline.append({
             "action": "AUTO_ASSIGNED",
-            "note": f"Auto-assigned to IT Management on creation (Assignee: {it_user.full_name if it_user else 'None'}).",
+            "note": f"Auto-assigned to IT Management on creation (Assignee: {it_user.full_name}).",
             "actor": "System",
             "timestamp": datetime.now(timezone.utc).isoformat()
-        }]
-    )
-    db.add(ticket)
+        })
+        ticket.timeline = updated_timeline
     
     await db.commit()
     await db.refresh(ticket)

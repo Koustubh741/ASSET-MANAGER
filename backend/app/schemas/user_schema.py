@@ -16,6 +16,8 @@ class DepartmentResponse(BaseModel):
     id: UUID
     slug: str
     name: str
+    parent_id: Optional[UUID] = None
+    company_id: Optional[UUID] = None
     dept_metadata: Optional[Dict[str, Any]] = None
     
     model_config = ConfigDict(from_attributes=True)
@@ -33,6 +35,7 @@ class UserBase(BaseModel):
     location: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
+    company_id: Optional[UUID] = None
     manager_id: Optional[UUID] = None
     persona: Optional[str] = None
     plan: str = "STARTER"  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
@@ -55,6 +58,7 @@ class UserUpdate(BaseModel):
     department_id: Optional[UUID] = None
     location: Optional[str] = None
     company: Optional[str] = None
+    company_id: Optional[UUID] = None
     manager_id: Optional[UUID] = None
     persona: Optional[str] = None
     plan: Optional[str] = None

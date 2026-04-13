@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, text, delete, or_
@@ -7,9 +7,18 @@ import os
 import shutil
 from typing import List, Optional, Dict, Any, TypedDict, cast
 from uuid import UUID
+import uuid
+from ..utils.uuid_gen import get_uuid
 from datetime import datetime, timezone
 
-from ..database.database import get_db
+from ..database.database import get_db, AsyncSessionLocal
+
+# Background hook for dynamic SLA recalibration
+async def run_sla_recalculation_task():
+    from ..services.automation_service import AutomationService
+    async with AsyncSessionLocal() as db:
+        await AutomationService.recalculate_open_ticket_slas(db)
+
 from ..schemas.ticket_schema import (
     TicketCreate, TicketUpdate, TicketResponse, 
     ITDiagnosisRequest, ResolutionUpdate, 
@@ -104,6 +113,45 @@ async def verify_it_management(user: UserResponse) -> UserResponse:
         detail="Unauthorized: Staff clearance required for ticket management",
     )
 
+# ── SLA Backfill: Retroactively assign SLA to all tickets missing one ────────
+@router.post("/admin/backfill-sla", tags=["admin"])
+async def backfill_sla_for_all_tickets(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    ROOT FIX: Retroactively assigns SLA deadlines to every ticket that has no SLA record.
+    Uses the same priority-based fallback logic as ticket creation.
+    ADMIN only.
+    """
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    from ..models.automation import TicketSLA
+    from ..services.automation_service import AutomationService
+
+    # Find all ticket IDs that have no TicketSLA record
+    tickets_with_sla = select(TicketSLA.ticket_id)
+    orphan_query = select(Ticket.id).where(Ticket.id.not_in(tickets_with_sla))
+    result = await db.execute(orphan_query)
+    orphan_ids = result.scalars().all()
+
+    count = 0
+    errors = 0
+    for ticket_id in orphan_ids:
+        try:
+            await AutomationService.initialize_ticket_sla(db, ticket_id)
+            count += 1
+        except Exception as e:
+            logger.error(f"SLA backfill failed for ticket {ticket_id}: {e}")
+            errors += 1
+
+    return {
+        "message": f"SLA backfill complete. {count} tickets updated, {errors} errors.",
+        "updated": count,
+        "errors": errors
+    }
+
 # --- Powerful Workflow Automation Endpoints ---
 # NOTE: These must be BEFORE generic UUID routes like /{ticket_id} to avoid shadowing
 
@@ -176,6 +224,7 @@ async def get_all_policies(db: AsyncSession = Depends(get_db), current_user = De
 @router.post("/sla-policies", response_model=SLAPolicyResponse, tags=["automation"])
 async def create_policy(
     name: str, 
+    background_tasks: BackgroundTasks,
     priority: Optional[str] = None, 
     category: Optional[str] = None,
     res_min: Optional[int] = None, 
@@ -196,23 +245,32 @@ async def create_policy(
     db.add(new_policy)
     await db.commit()
     await db.refresh(new_policy)
+    
+    # Root Fix: Trigger global SLA recalibration asynchronously
+    background_tasks.add_task(run_sla_recalculation_task)
+    
     return new_policy
 
 @router.delete("/sla-policies/{policy_id}", tags=["automation"])
 async def delete_policy(
     policy_id: UUID,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     await verify_it_allocation(current_user)
     await db.execute(delete(SLAPolicy).where(SLAPolicy.id == policy_id))
     await db.commit()
+    
+    background_tasks.add_task(run_sla_recalculation_task)
+    
     return {"status": "deleted"}
 
 @router.patch("/sla-policies/{policy_id}", response_model=SLAPolicyResponse, tags=["automation"])
 async def update_policy(
     policy_id: UUID,
     policy_update: SLAPolicyUpdate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -228,6 +286,9 @@ async def update_policy(
     
     await db.commit()
     await db.refresh(db_policy)
+    
+    background_tasks.add_task(run_sla_recalculation_task)
+    
     return db_policy
 
 # --- Standard Ticket Endpoints ---
@@ -390,100 +451,7 @@ async def get_ticket_solver_stats(range_days: Optional[int] = None, db: AsyncSes
     output.sort(key=lambda x: x["tickets_solved"], reverse=True)
     return output
 
-@router.get("/analytics/summary", tags=["analytics"])
-async def get_ticket_analytics_summary(
-    range_days: Optional[int] = 30,
-    period_mode: Optional[str] = "rolling",
-    period_start: Optional[str] = None,
-    period_end: Optional[str] = None,
-    fiscal_year: Optional[int] = None,
-    db: AsyncSession = Depends(get_db), 
-    current_user = Depends(get_current_user)
-):
-    """
-    High-level operational metrics for CEO/Managers.
-    Supports rolling (last N days) and calendar (explicit start/end) period modes.
-    """
-    if current_user.position != "MANAGER" and current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
-    
-    user_id = current_user.id
-    department = current_user.dept_obj.name if current_user.dept_obj else None
-    if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
-        user_id = None
-        department = None
 
-    # Parse optional explicit period dates (ISO format strings)
-    parsed_start = datetime.fromisoformat(period_start) if period_start else None
-    parsed_end = datetime.fromisoformat(period_end) if period_end else None
-        
-    return await ticket_service.get_ticket_executive_summary(
-        db, user_id=user_id, department=department,
-        range_days=range_days,
-        period_start=parsed_start,
-        period_end=parsed_end,
-        fiscal_year=fiscal_year
-    )
-
-
-@router.get("/analytics/trend", tags=["analytics"])
-async def get_ticket_trend(
-    granularity: Optional[str] = "monthly",
-    year: Optional[int] = None,
-    db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """
-    Bucketed ticket volume and SLA compliance by week/month/quarter for a given year.
-    granularity: weekly | monthly | quarterly
-    """
-    if current_user.position != "MANAGER" and current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
-
-    target_year = year or datetime.now().year
-
-    user_id = current_user.id
-    department = current_user.dept_obj.name if current_user.dept_obj else None
-    if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
-        user_id = None
-        department = None
-
-    return await ticket_service.get_ticket_trend_series(
-        db, granularity=granularity, year=target_year,
-        user_id=user_id, department=department
-    )
-
-
-@router.get("/analytics/compare", tags=["analytics"])
-async def get_ticket_period_comparison(
-    period_a_start: str,
-    period_a_end: str,
-    period_b_start: str,
-    period_b_end: str,
-    db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """
-    Return two full executive summaries for side-by-side radar comparison.
-    All dates must be ISO format strings: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
-    """
-    if current_user.position != "MANAGER" and current_user.role not in STAFF_ROLES:
-        raise HTTPException(status_code=403, detail="Unauthorized: Executive access required")
-
-    user_id = current_user.id
-    department = current_user.dept_obj.name if current_user.dept_obj else None
-    if current_user.role in ["ADMIN", "IT_MANAGEMENT"]:
-        user_id = None
-        department = None
-
-    return await ticket_service.get_ticket_comparison(
-        db,
-        period_a_start=datetime.fromisoformat(period_a_start),
-        period_a_end=datetime.fromisoformat(period_a_end),
-        period_b_start=datetime.fromisoformat(period_b_start),
-        period_b_end=datetime.fromisoformat(period_b_end),
-        user_id=user_id, department=department
-    )
 
 @router.post("/", response_model=TicketResponse)
 async def create_ticket(ticket: TicketCreate, db: AsyncSession = Depends(get_db), current_user = Depends(get_current_user)):
@@ -515,7 +483,7 @@ async def add_ticket_comment(
     await read_ticket(ticket_id, db, current_user)
     
     new_comment = TicketComment(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         ticket_id=ticket_id,
         user_id=current_user.id,
         content=comment.content,
@@ -551,7 +519,7 @@ async def get_ticket_comments(
 @router.get("/", response_model=PaginatedResponse[TicketResponse])
 async def read_tickets(
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=100),
+    size: int = Query(50, ge=0),
     department: Optional[str] = None, 
     search: Optional[str] = None, 
     is_internal: Optional[bool] = None, 
@@ -560,21 +528,40 @@ async def read_tickets(
 ):
     """
     ROOT FIX: Departmental Scope Enforcement with Server-Side Pagination.
-    Admins see everything. Support/Managers see their department ONLY.
+    - Admins see everything.
+    - SUPPORT users see their department's tickets + ALL unassigned tickets (for the Shared Registry Queue).
+    - MANAGER users see their department only.
+    - END_USERs see their own tickets only.
     """
     eff_id = None
+    include_unassigned = False
+
     if current_user.role == "END_USER" and current_user.position != "MANAGER":
         eff_id = current_user.id
-        department = None # End users can only see their own tickets, department filter ignored
+        department = None
+    elif current_user.role == "SUPPORT":
+        # ROOT FIX: Support Agents prioritize the requested department filter (e.g. from portals)
+        # falling back to their home department only if no filter is provided.
+        if not department:
+            department = current_user.dept_obj.name if current_user.dept_obj else None
+        include_unassigned = True
     elif current_user.role != "ADMIN":
-        # Force departmental filter for Support and Managers
-        # Note: ticket_service.get_tickets handles the lookup by department name string, 
-        # so we pass the name if available.
-        department = current_user.dept_obj.name if current_user.dept_obj else "Unknown"
-        
+        # Pure MANAGER: departmental scope only, but respect explicit filter if provided
+        if not department:
+            department = current_user.dept_obj.name if current_user.dept_obj else "Unknown"
+
     skip = (page - 1) * size
-    data, total = await ticket_service.get_tickets(db, requestor_id=eff_id, department=department, skip=skip, limit=size, search=search, is_internal=is_internal)
-    
+    data, total = await ticket_service.get_tickets(
+        db,
+        requestor_id=eff_id,
+        department=department,
+        skip=skip,
+        limit=size,
+        search=search,
+        is_internal=is_internal,
+        include_unassigned=include_unassigned
+    )
+
     return PaginatedResponse(
         total=total,
         page=page,
@@ -593,16 +580,20 @@ async def read_ticket(ticket_id: UUID, db: AsyncSession = Depends(get_db), curre
     if current_user.role == "ADMIN":
         return db_ticket
 
-    # 2. Staff (SUPPORT/MANAGER) see their department ONLY
+    # 2. Staff (SUPPORT/MANAGER) visibility check
     if current_user.role in STAFF_ROLES:
+        # ROOT FIX: Support agents can view any ticket for cross-departmental collaboration.
+        if current_user.role == "SUPPORT":
+            return db_ticket
+
         user_dept_id = current_user.department_id
-        # Check if ticket belongs to staff user's department (via requestor or group)
+        # Managers remain scoped to their own department via requestor or group
         in_dept = db_ticket.requestor and db_ticket.requestor.department_id == user_dept_id
         in_group_dept = db_ticket.assignment_group and db_ticket.assignment_group.department_id == user_dept_id
         
         if not (in_dept or in_group_dept):
-            logger.warning(f"Staff {current_user.email} (DeptID: {user_dept_id}) attempted unauthorized access to ticket {ticket_id}")
-            raise HTTPException(status_code=403, detail=f"Unauthorized: Ticket belongs to a different department")
+            logger.warning(f"Manager {current_user.email} (DeptID: {user_dept_id}) attempted unauthorized access to ticket {ticket_id}")
+            raise HTTPException(status_code=403, detail=f"Unauthorized: Managers only have access to their own department's tickets")
         return db_ticket
 
     # 3. Regular End Users ONLY see their own personal tickets
@@ -789,7 +780,7 @@ async def approve_change_request(
     CAB Action: Approve a Change Request and automatically unblock the pending PatchDeployment.
     """
     await verify_it_management(current_user)
-    import uuid
+    # Root Fix: Consolidated uuid import at top
     db_ticket = await ticket_service.get_ticket(db, ticket_id)
     if not db_ticket: raise HTTPException(status_code=404, detail="Ticket not found")
     
@@ -822,7 +813,7 @@ async def approve_change_request(
             
             # Auto-Enqueue execution now that it's approved
             cmd = AgentCommand(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 asset_id=dep.asset_id,
                 command="INSTALL_PATCH",
                 payload={
@@ -862,7 +853,7 @@ async def upload_attachment(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     os.makedirs(UPLOAD_DIR, exist_ok=True)
-    file_id = str(uuid.uuid4())
+    file_id = str(get_uuid())
     file_ext = os.path.splitext(file.filename)[1]
     safe_name = "".join([c for c in file.filename if c.isalnum() or c in ('.', '_', '-')]).strip()
     file_path = os.path.join(UPLOAD_DIR, f"{ticket_id}_{file_id}{file_ext}")
@@ -871,7 +862,7 @@ async def upload_attachment(
         shutil.copyfileobj(file.file, buffer)
 
     attachment = TicketAttachment(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         ticket_id=ticket_id,
         uploader_id=current_user.id,
         file_name=safe_name,

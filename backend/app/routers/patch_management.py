@@ -14,6 +14,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -32,7 +33,8 @@ from ..schemas.patch_schema import (
     PatchScheduleCreate, PatchScheduleResponse, AgentPatchStatusPayload
 )
 from ..worker.celery_app import celery_app
-from ..services import patch_service
+from ..services import patch_service, ticket_service
+from ..schemas.ticket_schema import TicketCreate
 from ..utils import auth_utils
 
 logger = logging.getLogger(__name__)
@@ -122,7 +124,7 @@ async def deploy_patch(
     dep = dep_result.scalars().first()
     if not dep:
         dep = PatchDeployment(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             patch_id=deployment.patch_id,
             asset_id=deployment.asset_id,
         )
@@ -140,24 +142,26 @@ async def deploy_patch(
 
     if risk_score >= 10.0:
         # High Risk -> Require CAB Approval
-        ticket = Ticket(
-            id=uuid.uuid4(),
-            display_id=f"CR-{uuid.uuid4().hex[:6].upper()}",
+        # Centralized Root Fix: Use ticket_service.create_ticket_v2
+        ticket_data = TicketCreate(
             subject=f"Change Request: Deploy Patch {patch.patch_id}",
             description=f"Deploying {patch.title} to asset. Risk Score: {risk_score}",
-            status="Pending Approval",
             priority="High",
             category="Change Request",
-            requestor_id=user.id,
             related_asset_id=deployment.asset_id
         )
-        db.add(ticket)
+        ticket = await ticket_service.create_ticket_v2(
+            db, 
+            ticket=ticket_data, 
+            requestor_id=user.id, 
+            override_status="Pending Approval"
+        )
         dep.status = "PENDING_APPROVAL"
         audit_msg = f"Created Change Request for high-risk patch {patch.patch_id} on asset {deployment.asset_id}"
     else:
         # Low Risk -> Auto-Deploy
         cmd = AgentCommand(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             asset_id=deployment.asset_id,
             command="INSTALL_PATCH",
             status="PENDING",
@@ -170,7 +174,7 @@ async def deploy_patch(
     await db.commit()
     # Audit Log
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_DEPLOY",
         entity_type="Asset",
@@ -202,7 +206,7 @@ async def deploy_patch_bulk(
         raise HTTPException(status_code=404, detail="Patch not found")
 
     # 2. Create PatchDeploymentJob record
-    job_id = uuid.uuid4()
+    job_id = get_uuid()
     job = PatchDeploymentJob(
         id=job_id,
         patch_id=patch.id,
@@ -213,17 +217,19 @@ async def deploy_patch_bulk(
     db.add(job)
 
     # 3. ITIL Automation: Create Change Request
-    ticket = Ticket(
-        id=uuid.uuid4(),
-        display_id=f"CR-{uuid.uuid4().hex[:6].upper()}",
+    # Centralized Root Fix: Use ticket_service.create_ticket_v2
+    ticket_data = TicketCreate(
         subject=f"Enterprise Change Request: Bulk Deploy {patch.title}",
         description=f"Automated CR for patch {patch.patch_id} ({patch.severity}) targeting {body.target_group}.",
-        status="Pending Approval" if patch.severity == "Critical" else "Approved",
         priority="High" if patch.severity == "Critical" else "Medium",
-        category="Change Request",
-        requestor_id=user.id
+        category="Change Request"
     )
-    db.add(ticket)
+    ticket = await ticket_service.create_ticket_v2(
+        db, 
+        ticket=ticket_data, 
+        requestor_id=user.id, 
+        override_status="Pending Approval" if patch.severity == "Critical" else "Approved"
+    )
     
     # 4. Gating logic
     if patch.severity == "Critical":
@@ -245,7 +251,7 @@ async def deploy_patch_bulk(
     await db.commit()
     
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_BULK_DEPLOY_INIT",
         entity_type="PatchJob",
@@ -345,7 +351,7 @@ async def approve_patch_job(
     await db.commit()
     
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_JOB_APPROVE",
         entity_type="PatchJob",
@@ -394,7 +400,7 @@ async def schedule_patch(
         raise HTTPException(status_code=404, detail="Patch not found")
 
     schedule = PatchSchedule(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         patch_id=body.patch_id,
         target_group=body.target_group,
         scheduled_at=body.scheduled_at,
@@ -405,7 +411,7 @@ async def schedule_patch(
     await db.commit()
     # Audit Log
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_SCHEDULE",
         entity_type="System",
@@ -454,7 +460,7 @@ async def cancel_schedule(
         raise HTTPException(status_code=400, detail=f"Cannot cancel a schedule in '{sched.status}' state")
     sched.status = "CANCELLED"
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_SCHEDULE_CANCEL",
         entity_type="PatchSchedule",
@@ -540,7 +546,7 @@ async def retry_patch(
 
     # Re-enqueue command
     cmd = AgentCommand(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         asset_id=dep.asset_id,
         command="INSTALL_PATCH",
         payload={
@@ -558,7 +564,7 @@ async def retry_patch(
     await db.commit()
     # Audit Log
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_RETRY",
         entity_type="PatchDeployment",
@@ -590,7 +596,7 @@ async def rollback_patch(
     patch = patch_result.scalars().first()
 
     cmd = AgentCommand(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         asset_id=dep.asset_id,
         command="ROLLBACK_PATCH",
         payload={
@@ -606,7 +612,7 @@ async def rollback_patch(
     await db.commit()
     # Audit Log
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_ROLLBACK",
         entity_type="PatchDeployment",
@@ -669,7 +675,7 @@ async def trigger_snapshot(
     
     # Audit Log
     db.add(AuditLog(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         performed_by=user.id,
         action="PATCH_SNAPSHOT_TRIGGER",
         entity_type="System",

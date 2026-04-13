@@ -347,42 +347,6 @@ export default function SystemAdminDashboard({ forceView }) {
                         </p>
                     </div>
 
-                    {/* TOP ACTION BELT (Moved to top level for urgency) */}
-                    <div className="flex flex-wrap items-center gap-2 bg-white/5 p-2 border border-white/5 backdrop-blur-md">
-                        {isAdmin && (
-                            <>
-                                <button
-                                    onClick={handleAdSync}
-                                    disabled={adSyncing}
-                                    className={`px-4 py-2 text-[9px] font-bold uppercase tracking-widest transition-all border ${adSyncing ? 'bg-primary/10 text-primary/40 border-primary/10' : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10 hover:border-primary shadow-[0_0_10px_rgba(var(--color-primary),0.1)]'}`}
-                                >
-                                    <RefreshCw size={12} className={`inline-block mr-2 ${adSyncing ? 'animate-spin' : ''}`} />
-                                    {adSyncing ? 'Syncing...' : 'Sync_AD'}
-                                </button>
-                                <button
-                                    onClick={handleNetworkScan}
-                                    disabled={scanning}
-                                    className={`px-4 py-2 text-[9px] font-bold uppercase tracking-widest transition-all border ${scanning ? 'bg-success/10 text-success/40 border-success/10' : 'bg-success/5 text-success border-success/20 hover:bg-success/10 hover:border-success shadow-[0_0_10px_rgba(var(--color-success),0.1)]'}`}
-                                >
-                                    <Activity size={12} className={`inline-block mr-2 ${scanning ? 'animate-pulse' : ''}`} />
-                                    {scanning ? 'Scanning...' : 'Net_Discovery'}
-                                </button>
-                            </>
-                        )}
-                        <button
-                            onClick={() => setBarcodeScannerOpen(true)}
-                            className="px-4 py-2 text-[9px] font-bold uppercase tracking-widest bg-amber-500/5 text-amber-500 border border-amber-500/20 hover:border-amber-500 transition-all"
-                        >
-                            <Scan size={12} className="inline-block mr-2" />
-                            Hardware_Scan
-                        </button>
-                        <Link href="/assets/add" className="ml-2">
-                            <button className="px-6 py-2 text-[9px] font-bold uppercase tracking-widest bg-primary text-white border border-primary hover:bg-primary/90 shadow-[0_0_15px_rgba(var(--color-primary),0.4)] transition-all">
-                                <Plus size={14} className="inline-block mr-2" strokeWidth={3} />
-                                Init_Asset
-                            </button>
-                        </Link>
-                    </div>
                 </div>
 
                 {timeRange === 'Overview' && (
@@ -396,83 +360,81 @@ export default function SystemAdminDashboard({ forceView }) {
                     />
                 )}
 
-                {timeRange === 'Overview' && (
-                    <div className="flex flex-col xl:flex-row items-center justify-between gap-8 mb-12">
-                        {/* Unified Command Bar */}
-                        <div className="flex flex-col md:flex-row items-center gap-6 bg-slate-100/50 dark:bg-white/[0.03] p-3 border border-app-border backdrop-blur-2xl shadow-[0_30px_60px_rgba(0,0,0,0.1)] dark:shadow-[0_30px_60px_rgba(0,0,0,0.4)] w-full xl:w-auto overflow-hidden relative group">
-                            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                {/* Unified Command Bar - Universal Placement */}
+                <div className="flex flex-col xl:flex-row items-center justify-between gap-8 mb-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div className="flex flex-col md:flex-row items-center gap-6 bg-slate-100/50 dark:bg-white/[0.03] p-3 border border-app-border backdrop-blur-2xl shadow-[0_30px_60px_rgba(0,0,0,0.1)] dark:shadow-[0_30px_60px_rgba(0,0,0,0.4)] w-full xl:w-auto overflow-hidden relative group">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
-                            {/* View Toggles */}
-                            <div className="flex bg-slate-200/50 dark:bg-black/20 p-1.5 border border-app-border w-full md:w-auto relative z-10">
-                                {[
-                                    { view: 'Overview', icon: LayoutGrid, href: `/dashboard/${roleSlug}` },
-                                    { view: 'Analytics', icon: Activity, href: `/dashboard/${roleSlug}/analytics` },
-                                    { view: 'Requests', icon: Clock, href: `/dashboard/${roleSlug}/requests`, badge: pendingUsers.length }
-                                ].map((item) => (
-                                    <Link
-                                        key={item.view}
-                                        href={item.href}
-                                        className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center justify-center gap-2.5 ${timeRange === item.view
-                                            ? 'bg-indigo-600 text-app-text shadow-[0_10px_25px_rgba(79,70,229,0.4)] scale-105'
-                                            : 'text-app-text-muted hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-app-surface-soft'
-                                            }` }
-                                    >
-                                        <item.icon size={14} />
-                                        {item.view}
-                                        {item.badge > 0 && (
-                                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[8px] font-black text-app-text animate-pulse">
-                                                {item.badge}
-                                            </span>
-                                        )}
-                                    </Link>
-                                ))}
-                            </div>
-
-                            <div className="hidden md:block w-px h-10 bg-app-surface mx-2 relative z-10"></div>
-
-                            {/* Executive Actions */}
-                            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto relative z-10">
-                                {isAdmin && (
-                                    <>
-                                        <button
-                                            onClick={handleAdSync}
-                                            disabled={adSyncing}
-                                            className={`flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 border ${adSyncing ? 'bg-indigo-900/20 text-indigo-400/50 border-indigo-500/10' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]'}`}
-                                        >
-                                            <RefreshCw size={14} className={adSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'} />
-                                            <span>{adSyncing ? 'Syncing' : 'AD Sync'}</span>
-                                        </button>
-                                        <button
-                                            onClick={handleNetworkScan}
-                                            disabled={scanning}
-                                            className={`flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 border ${scanning ? 'bg-emerald-900/20 text-emerald-400/50 border-emerald-500/10' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]'}`}
-                                        >
-                                            <Activity size={14} className={scanning ? 'animate-pulse' : 'group-hover:scale-125 transition-transform'} />
-                                            <span>{scanning ? 'Scanning' : 'Net Scan'}</span>
-                                        </button>
-                                    </>
-                                )}
-                                <button onClick={handleExport} className="flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-white/[0.03] text-app-text-muted border border-app-border hover:bg-slate-200 dark:hover:bg-app-surface hover:text-slate-900 dark:hover:text-app-text hover:border-slate-300 dark:hover:border-app-border-soft transition-all">
-                                    <Download size={14} className="group-hover:-translate-y-1 transition-transform" />
-                                    <span>Export</span>
-                                </button>
-                                <button
-                                    onClick={() => setBarcodeScannerOpen(true)}
-                                    className="flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all"
+                        {/* View Toggles */}
+                        <div className="flex bg-slate-200/50 dark:bg-black/20 p-1.5 border border-app-border w-full md:w-auto relative z-10">
+                            {[
+                                { view: 'Overview', icon: LayoutGrid, href: `/dashboard/${roleSlug}` },
+                                { view: 'Analytics', icon: Activity, href: `/dashboard/${roleSlug}/analytics` },
+                                { view: 'Requests', icon: Clock, href: `/dashboard/${roleSlug}/requests`, badge: pendingUsers.length }
+                            ].map((item) => (
+                                <Link
+                                    key={item.view}
+                                    href={item.href}
+                                    className={`px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 flex items-center justify-center gap-2.5 ${timeRange === item.view
+                                        ? 'bg-indigo-600 text-app-text shadow-[0_10px_25px_rgba(79,70,229,0.4)] scale-105'
+                                        : 'text-app-text-muted hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-app-surface-soft'
+                                        }` }
                                 >
-                                    <Scan size={14} className="group-hover:scale-110 transition-transform" />
-                                    <span>Scan Barcode</span>
-                                </button>
-                                <Link href="/assets/add" className="flex-1 md:flex-none">
-                                    <button className="w-full px-8 py-3 text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-indigo-600 to-blue-600 text-app-text shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-105 active:scale-95 transition-all border border-slate-300 border-app-border">
-                                        <Plus size={16} strokeWidth={3} />
-                                        <span>Init Asset</span>
-                                    </button>
+                                    <item.icon size={14} />
+                                    {item.view}
+                                    {item.badge > 0 && (
+                                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[8px] font-black text-app-text animate-pulse">
+                                            {item.badge}
+                                        </span>
+                                    )}
                                 </Link>
-                            </div>
+                            ))}
+                        </div>
+
+                        <div className="hidden md:block w-px h-10 bg-app-surface mx-2 relative z-10"></div>
+
+                        {/* Executive Actions */}
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto relative z-10">
+                            {isAdmin && (
+                                <>
+                                    <button
+                                        onClick={handleAdSync}
+                                        disabled={adSyncing}
+                                        className={`flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 border ${adSyncing ? 'bg-indigo-900/20 text-indigo-400/50 border-indigo-500/10' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]'}`}
+                                    >
+                                        <RefreshCw size={14} className={adSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-700'} />
+                                        <span>{adSyncing ? 'Syncing' : 'AD Sync'}</span>
+                                    </button>
+                                    <button
+                                        onClick={handleNetworkScan}
+                                        disabled={scanning}
+                                        className={`flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 border ${scanning ? 'bg-emerald-900/20 text-emerald-400/50 border-emerald-500/10' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)]'}`}
+                                    >
+                                        <Activity size={14} className={scanning ? 'animate-pulse' : 'group-hover:scale-125 transition-transform'} />
+                                        <span>{scanning ? 'Scanning' : 'Net Scan'}</span>
+                                    </button>
+                                </>
+                            )}
+                            <button onClick={handleExport} className="flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-white/[0.03] text-app-text-muted border border-app-border hover:bg-slate-200 dark:hover:bg-app-surface hover:text-slate-900 dark:hover:text-app-text hover:border-slate-300 dark:hover:border-app-border-soft transition-all">
+                                <Download size={14} className="group-hover:-translate-y-1 transition-transform" />
+                                <span>Export</span>
+                            </button>
+                            <button
+                                onClick={() => setBarcodeScannerOpen(true)}
+                                className="flex-1 md:flex-none group px-5 py-3 text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all"
+                            >
+                                <Scan size={14} className="group-hover:scale-110 transition-transform" />
+                                <span>Scan Barcode</span>
+                            </button>
+                            <Link href="/assets/add" className="flex-1 md:flex-none">
+                                <button className="w-full px-8 py-3 text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-indigo-600 to-blue-600 text-app-text shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-105 active:scale-95 transition-all border border-slate-300 border-app-border">
+                                    <Plus size={16} strokeWidth={3} />
+                                    <span>Init Asset</span>
+                                </button>
+                            </Link>
                         </div>
                     </div>
-                )}
+                </div>
 
                 {timeRange === 'Overview' && isAdmin && (
                     <>

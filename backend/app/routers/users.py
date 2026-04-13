@@ -77,7 +77,7 @@ async def create_user(
 @router.get("", response_model=PaginatedResponse[UserResponse])
 async def list_users(
     page: int = Query(1, ge=1),
-    size: int = Query(50, ge=1, le=100),
+    size: int = Query(50, ge=0),
     status: Optional[str] = None,
     role: Optional[str] = None,
     db: AsyncSession = Depends(get_db),

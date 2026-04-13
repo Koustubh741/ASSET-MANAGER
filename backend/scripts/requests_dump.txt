@@ -1,6 +1,0 @@
-ID                                     | Status                         | Requester
-----------------------------------------------------------------------------------------------------
-eebec5f4-a6ff-4ddb-9481-9c339b46ac51   | SUBMITTED                      | manager
-cceb75f5-150e-43b9-a901-d93d1c11b9fb   | SUBMITTED                      | manager
-405c879b-aa28-4f27-aaa7-cc46f66d35e8   | SUBMITTED                      | manager
-240da41f-2f2a-4db2-81df-5634589c2f64   | IT_APPROVED                    | end

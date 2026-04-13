@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from ..database.database import get_db
 from ..models.models import Department
+from ..services.department_service import department_service
 from pydantic import BaseModel
 from uuid import UUID
 
@@ -29,10 +30,22 @@ async def get_departments(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Department).order_by(Department.name))
     return result.scalars().all()
 
-@router.get("/stats", include_in_schema=False)
-async def get_dept_stats_placeholder():
-    # Placeholder to avoid 404s from existing dashboard calls if any
-    return {"status": "ok", "stats": []}
+@router.get("/stats")
+async def get_dept_stats(
+    department_id: UUID = None,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get statistics for a specific department or global ops stats.
+    """
+    return await department_service.get_department_stats(db, department_id)
+
+@router.get("/hierarchy")
+async def get_department_hierarchy(db: AsyncSession = Depends(get_db)):
+    """
+    Get the deep departmental hierarchy tree.
+    """
+    return await department_service.get_department_hierarchy(db)
 
 @router.get("/{slug}", response_model=DepartmentResponse)
 async def get_department_by_slug(slug: str, db: AsyncSession = Depends(get_db)):

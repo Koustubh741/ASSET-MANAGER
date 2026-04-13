@@ -2,6 +2,7 @@ import time
 import uuid
 from uuid import UUID
 from datetime import datetime, timezone
+from ..utils.uuid_gen import get_uuid
 from sqlalchemy.orm import Session
 from sqlalchemy import text, or_
 from .celery_app import celery_app
@@ -71,7 +72,7 @@ def process_patch_job(self, job_id: str):
 
                 # Enterprise Logging
                 log = PatchLog(
-                    id=uuid.uuid4(),
+                    id=get_uuid(),
                     deployment_id=deployment.id,
                     asset_id=asset.id,
                     level="INFO",

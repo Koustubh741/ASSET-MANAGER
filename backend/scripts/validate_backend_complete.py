@@ -2,7 +2,13 @@
 Complete Backend Validation - Tests code, models, and workflow logic
 """
 import sys
+import os
 from datetime import datetime
+
+# Add the 'backend' directory to sys.path
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if base_dir not in sys.path:
+    sys.path.append(base_dir)
 
 class Colors:
     GREEN = '\033[92m'
@@ -18,10 +24,10 @@ def print_section(title):
     print(f"{Colors.BLUE}{'='*70}{Colors.END}\n")
 
 def print_success(msg):
-    print(f"{Colors.GREEN}✓ {msg}{Colors.END}")
+    print(f"{Colors.GREEN}[OK] {msg}{Colors.END}")
 
 def print_error(msg):
-    print(f"{Colors.RED}✗ {msg}{Colors.END}")
+    print(f"{Colors.RED}[FAIL] {msg}{Colors.END}")
 
 def print_info(msg):
     print(f"{Colors.CYAN}ℹ {msg}{Colors.END}")
@@ -31,14 +37,14 @@ def test_imports():
     print_section("1. MODULE IMPORTS")
     
     modules = [
-        ("main", "Main application"),
-        ("models", "Database models"),
-        ("utils.state_machine", "State machine"),
-        ("services.asset_request_service", "Asset request service"),
-        ("routers.asset_requests", "Asset requests router"),
-        ("routers.auth", "Auth router"),
-        ("routers.workflows", "Workflows router"),
-        ("schemas.asset_request_schema", "Asset request schemas"),
+        ("app.main", "Main application"),
+        ("app.models.models", "Database models"),
+        ("app.utils.state_machine", "State machine"),
+        ("app.services.asset_request_service", "Asset request service"),
+        ("app.routers.asset_requests", "Asset requests router"),
+        ("app.routers.auth", "Auth router"),
+        ("app.routers.workflows", "Workflows router"),
+        ("app.schemas.asset_request_schema", "Asset request schemas"),
     ]
     
     all_ok = True
@@ -57,7 +63,7 @@ def test_state_machine():
     print_section("2. STATE MACHINE VALIDATION")
     
     try:
-        from utils.state_machine import (
+        from app.utils.state_machine import (
             is_valid_transition,
             get_valid_next_states,
             is_terminal_state,
@@ -120,7 +126,7 @@ def test_models():
     print_section("3. DATABASE MODELS")
     
     try:
-from app.models.models import (
+        from app.models.models import (
             AssetRequest, User, Asset, ByodDevice, ExitRequest,
             AssetAssignment, PurchaseRequest
         )
@@ -159,7 +165,7 @@ def test_services():
     print_section("4. SERVICE FUNCTIONS")
     
     try:
-from app.services import asset_request_service
+        from app.services import asset_request_service
         
         # Check for new service functions
         service_functions = [
@@ -192,7 +198,7 @@ def test_schemas():
     print_section("5. SCHEMAS")
     
     try:
-from app.schemas.asset_request_schema import (
+        from app.schemas.asset_request_schema import (
             ProcurementApprovalRequest,
             ProcurementRejectionRequest,
             QCPerformRequest,
@@ -233,7 +239,7 @@ def test_routers():
     print_section("6. ROUTER ENDPOINTS")
     
     try:
-from app.routers import asset_requests, auth
+        from app.routers import asset_requests, auth
         
         # Count routes
         ar_routes = len(asset_requests.router.routes)
@@ -288,7 +294,7 @@ def test_database_connectivity():
     print_section("7. DATABASE CONNECTIVITY")
     
     try:
-from app.database.database import SessionLocal, engine
+        from app.database.database import SessionLocal, engine
         from sqlalchemy import text
         
         # Test connection
@@ -299,7 +305,7 @@ from app.database.database import SessionLocal, engine
         
         # Test models
         db = SessionLocal()
-from app.models.models import User, AssetRequest, Asset
+        from app.models.models import User, AssetRequest, Asset
         
         try:
             user_count = db.query(User).count()
@@ -360,12 +366,12 @@ def main():
     print(f"{Colors.BLUE}{'='*70}{Colors.END}\n")
     
     if passed == total:
-        print(f"{Colors.GREEN}✓ All backend validation tests PASSED!{Colors.END}\n")
+        print(f"{Colors.GREEN}[OK] All backend validation tests PASSED!{Colors.END}\n")
         print(f"{Colors.CYAN}Backend is ready for use.{Colors.END}")
         print(f"{Colors.CYAN}Note: Restart server to see all endpoints in /docs{Colors.END}\n")
         return 0
     else:
-        print(f"{Colors.RED}✗ Some validation tests failed.{Colors.END}\n")
+        print(f"{Colors.RED}[FAIL] Some validation tests failed.{Colors.END}\n")
         return 1
 
 if __name__ == "__main__":

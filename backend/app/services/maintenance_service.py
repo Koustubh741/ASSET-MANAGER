@@ -5,6 +5,7 @@ from ..models.models import MaintenanceRecord
 from ..schemas.maintenance_schema import MaintenanceRecordCreate, MaintenanceRecordUpdate
 from uuid import UUID
 import uuid
+from ..utils.uuid_gen import get_uuid
 
 async def get_maintenance_by_asset(db: AsyncSession, asset_id: UUID):
     result = await db.execute(select(MaintenanceRecord).filter(MaintenanceRecord.asset_id == asset_id))
@@ -12,7 +13,7 @@ async def get_maintenance_by_asset(db: AsyncSession, asset_id: UUID):
 
 async def create_maintenance_record(db: AsyncSession, record: MaintenanceRecordCreate, technician: Optional[str] = None):
     db_record = MaintenanceRecord(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         technician=technician,
         **record.model_dump()
     )

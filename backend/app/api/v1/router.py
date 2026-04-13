@@ -32,13 +32,11 @@ from ...routers import (
     ai_configs,
     chat,
     notifications,
-    analytics_executive,
 )
 
 api_router = APIRouter()
 
 # routers already define their own prefixes
-api_router.include_router(analytics_executive.router)
 api_router.include_router(upload.router)
 api_router.include_router(workflows.router)
 api_router.include_router(disposal.router)

@@ -2,41 +2,25 @@ import { API_URL, API_BASE_URL } from './apiConfig';
 
 class ApiClient {
     constructor() {
-        this.baseURL = API_URL;
-        this.token = null;
-        this.refreshToken = null;
+        this.baseURL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1`;
         this.isRefreshing = false;
         this.refreshSubscribers = [];
-
-        // Load tokens from localStorage if available
-        if (typeof window !== 'undefined') {
-            this.token = localStorage.getItem('accessToken');
-            this.refreshToken = localStorage.getItem('refreshToken');
-        }
+        this.hasInitialized = false;
     }
 
     setToken(token) {
-        this.token = token;
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('accessToken', token);
-        }
+        // No-op for backward compatibility if needed, but not used.
     }
 
     setRefreshToken(token) {
-        this.refreshToken = token;
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('refreshToken', token);
-        }
+        // Managed via httpOnly cookies now
     }
 
     clearToken() {
-        this.token = null;
-        this.refreshToken = null;
+        // Silently clear local state without triggering a recursive network-based logout.
+        // The cookies will be cleared if/when the user explicitly logs out or handles a refresh failure.
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('user');
-            localStorage.removeItem('auth_session');
+            console.log('ApiClient: Silently clearing local session state.');
         }
     }
 
@@ -53,35 +37,34 @@ class ApiClient {
 
     // Attempt to refresh the access token
     async attemptTokenRefresh() {
-        if (!this.refreshToken) {
-            throw new Error('No refresh token available');
-        }
-
         try {
             const response = await fetch(`${this.baseURL}/auth/refresh`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ refresh_token: this.refreshToken }),
+                credentials: 'include', // Important: Browser sends the refresh_token cookie
+                body: JSON.stringify({}), 
             });
 
             if (!response.ok) {
                 throw new Error('Token refresh failed');
             }
 
-            const data = await response.json();
-            this.setToken(data.access_token);
-            return data.access_token;
+            // The backend sets the new cookies automatically.
+            // We don't need to read the JSON response.
+            return true;
         } catch (error) {
-            // Clear tokens on refresh failure
             this.clearToken();
             throw error;
         }
     }
 
     async request(endpoint, options = {}, retryOnUnauthorized = true) {
-        // Root Fix: Strip redundant /api/v1 prefix if present in the endpoint string
+        const isAuthEndpoint = endpoint.includes('/auth/login') || 
+                              endpoint.includes('/auth/refresh') || 
+                              endpoint.includes('/auth/logout');
+                              
         const cleanEndpoint = endpoint.startsWith('/api/v1') 
             ? endpoint.replace('/api/v1', '') 
             : endpoint;
@@ -92,14 +75,17 @@ class ApiClient {
             ...options.headers,
         };
 
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
-        }
-
         const config = {
             ...options,
             headers,
+            credentials: 'include', // Important: Browser sends access_token cookie
         };
+
+        // ROOT FIX: Implement request timeout (Default 10s)
+        const timeout = options.timeout || 10000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        config.signal = controller.signal;
 
         // Handle body serialization
         if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
@@ -112,22 +98,24 @@ class ApiClient {
 
         try {
             const response = await fetch(url, config);
+            clearTimeout(timeoutId);
 
-            // Handle 401 Unauthorized - attempt token refresh
-            if (response.status === 401 && retryOnUnauthorized && this.refreshToken) {
+            // Handle 401 Unauthorized - attempt token refresh (using cookies)
+            // ROOT FIX: Never attempt to refresh for auth-critical endpoints to prevent infinite loops
+            if (response.status === 401 && retryOnUnauthorized && !isAuthEndpoint) {
                 if (!this.isRefreshing) {
                     this.isRefreshing = true;
                     try {
-                        const newToken = await this.attemptTokenRefresh();
+                        await this.attemptTokenRefresh();
                         this.isRefreshing = false;
-                        this.onTokenRefreshed(newToken);
-                        // Retry the original request with new token
+                        this.onTokenRefreshed();
+                        // Retry the original request
                         return this.request(endpoint, options, false);
                     } catch (refreshError) {
                         this.isRefreshing = false;
                         this.clearToken();
-                        if (typeof window !== 'undefined') {
-                            // Redirect to login if token refresh fails
+                        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+                            // Only redirect if we AREN'T already on the login page
                             window.location.href = `/login?message=${encodeURIComponent('Session expired. Please log in again.')}`;
                         }
                         throw refreshError;
@@ -215,6 +203,7 @@ class ApiClient {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
+            credentials: 'include', // Important: Save the httpOnly cookie
             body: formData,
         });
 
@@ -225,9 +214,7 @@ class ApiClient {
         }
 
         this.setToken(data.access_token);
-        if (data.refresh_token) {
-            this.setRefreshToken(data.refresh_token);
-        }
+        
         if (typeof window !== 'undefined') {
             localStorage.setItem('user', JSON.stringify(data.user));
         }
@@ -573,8 +560,8 @@ class ApiClient {
 
     getPOViewUrl(requestId) {
         // Returns the static download/view URL for the PO PDF
-        const token = localStorage.getItem('token');
-        return `${this.baseUrl}/upload/po/${requestId}/view?token=${token}`;
+        const token = this.token; // Use in-memory token
+        return `${this.baseURL}/upload/po/${requestId}/view?token=${token}`;
     }
 
     async updatePODetails(poId, data) {
@@ -663,7 +650,10 @@ class ApiClient {
 
     // Tickets
     async getTickets(skip = 0, limit = 100, department = null, search = null, isInternal = null) {
-        const queryParams = { skip, limit };
+        // Map skip/limit to backend page/size format
+        const page = limit > 0 ? Math.floor(skip / limit) + 1 : 1;
+        const size = limit;
+        const queryParams = { page, size };
         if (department) queryParams.department = department;
         if (search) queryParams.search = search;
         if (isInternal !== null) queryParams.is_internal = isInternal;
@@ -761,27 +751,6 @@ class ApiClient {
     async getTicketSolverStats(days = null) {
         const query = days ? `?range_days=${days}` : '';
         return this.request(`/tickets/stats/solvers${query}`);
-    }
-
-    async getTicketExecutiveSummary(days = 30, options = {}) {
-        let url = `/tickets/analytics/summary?range_days=${days}`;
-        if (options.periodStart) url += `&period_mode=calendar&period_start=${options.periodStart}&period_end=${options.periodEnd}`;
-        if (options.fiscal_year) url += `&fiscal_year=${options.fiscal_year}`;
-        return this.request(url);
-    }
-
-    async getTicketTrendSeries(granularity = 'monthly', year = new Date().getFullYear()) {
-        return this.request(`/tickets/analytics/trend?granularity=${granularity}&year=${year}`);
-    }
-
-    async getTicketComparison(periodAStart, periodAEnd, periodBStart, periodBEnd) {
-        const params = new URLSearchParams({
-            period_a_start: periodAStart,
-            period_a_end: periodAEnd,
-            period_b_start: periodBStart,
-            period_b_end: periodBEnd
-        });
-        return this.request(`/tickets/analytics/compare?${params.toString()}`);
     }
 
     async getSolverPortfolio(userId) {
@@ -1326,10 +1295,6 @@ class ApiClient {
 
     async markAllNotificationsRead() {
         return this.post('/notifications/read-all', {});
-    }
-
-    async getExecutiveSummary() {
-        return this.get('/analytics/executive/summary');
     }
 }
 

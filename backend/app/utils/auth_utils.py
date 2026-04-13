@@ -3,7 +3,7 @@ from typing import Optional
 from jose import JWTError, jwt
 import os
 import uuid
-from fastapi import Depends, HTTPException, status, Query
+from fastapi import Depends, HTTPException, status, Query, Cookie
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..database.database import AsyncSessionLocal
@@ -12,7 +12,7 @@ from ..services import user_service
 # Configuration from environment variables
 SECRET_KEY = os.getenv("SECRET_KEY", "bc7Fz2VSGbGBPKb5lsLooQmSVY0f6rbYrfEtEWzP8L8")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 1440)) # Default to 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15)) # Default to 15 minutes (Security Hardening)
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))  # Default to 7 days
 
 # Centralized Role-Based Access Control Constants (ROOT FIX PHASE 2)
@@ -77,11 +77,12 @@ def verify_token(token: str):
 
 async def get_current_user(
     token: Optional[str] = Depends(oauth2_scheme),
+    access_token: Optional[str] = Cookie(None),
     query_token: Optional[str] = Query(None, alias="token"),
 ):
     """
     Dependency to get current user from JWT token (Asynchronous).
-    Supports both Authorization header and 'token' query parameter.
+    Supports Authorization header, 'access_token' cookie, and 'token' query parameter.
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,8 +90,8 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    # Prefer header-based token, fallback to query param
-    final_token = token or query_token
+    # Priority: Header > Cookie > Query Param
+    final_token = token or access_token or query_token
     
     if not final_token:
         raise credentials_exception

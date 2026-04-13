@@ -3,18 +3,7 @@ import { useRouter } from 'next/router';
 import { useRole } from '@/contexts/RoleContext';
 import apiClient from '@/lib/apiClient';
 
-const ROLE_DASHBOARD_MAP = {
-    'ADMIN': '/dashboard/system-admin',
-    'ASSET_MANAGER': '/dashboard/asset-inventory-manager',
-    'PROCUREMENT': '/procurement',
-    'FINANCE': '/finance',
-    'IT_MANAGEMENT': '/executive-dashboard',
-    'CEO': '/executive-dashboard',
-    'CFO': '/executive-dashboard',
-    'END_USER': '/',
-    'MANAGER': '/',
-    'IT_SUPPORT': '/executive-dashboard'
-};
+import { ROLE_DASHBOARD_MAP } from '../config/navigation';
 
 export default function AuthGuard({ children }) {
     const { isAuthenticated, currentRole, isAdmin, isFinanceStaff, isProcurementStaff, isLoading, isVerified } = useRole();

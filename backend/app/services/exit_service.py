@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 import uuid
 from uuid import UUID
+from ..utils.uuid_gen import get_uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from ..models.models import User, Asset, AssetAssignment, AssetInventory, ByodDevice, AuditLog
@@ -69,7 +70,7 @@ async def handle_user_exit(db: AsyncSession, user_id: UUID, actor_id: Optional[U
             inventory_item = inv_result.scalars().first()
             if not inventory_item:
                 inventory_item = AssetInventory(
-                    id=uuid.uuid4(),
+                    id=get_uuid(),
                     asset_id=asset.id,
                     location=asset.location,
                 )
@@ -82,7 +83,7 @@ async def handle_user_exit(db: AsyncSession, user_id: UUID, actor_id: Optional[U
             
             # Audit Log
             audit = AuditLog(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 entity_type="Asset",
                 entity_id=asset.id,
                 action="ASSET_RETURNED_ON_EXIT",
@@ -105,7 +106,7 @@ async def handle_user_exit(db: AsyncSession, user_id: UUID, actor_id: Optional[U
             
             # Audit Log
             audit = AuditLog(
-                id=uuid.uuid4(),
+                id=get_uuid(),
                 entity_type="ByodDevice",
                 entity_id=byod.id,
                 action="BYOD_DECOMMISSIONED_ON_EXIT",

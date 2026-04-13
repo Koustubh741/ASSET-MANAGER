@@ -107,7 +107,7 @@ async def validate_byod_compliance(
         os_version = request.os_version or "Unknown OS"
         serial_number = request.serial_number or f"BYOD-{request.id}"
         device = ByodDevice(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             request_id=request.id,
             owner_id=request.requester_id,
             device_model=device_model,

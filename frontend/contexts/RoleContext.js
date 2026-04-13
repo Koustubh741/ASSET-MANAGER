@@ -62,43 +62,42 @@ export function RoleProvider({ children }) {
     }, []);
 
     useEffect(() => {
-        const initAuth = () => {
+        const initAuth = async () => {
             if (typeof window !== 'undefined') {
-                const session = localStorage.getItem('auth_session');
-                console.log('RoleContext: Initializing from localStorage, session found:', !!session);
+                console.log('RoleContext: Checking for secure session handshake...');
+                
+                // Root Fix: Instead of trusting localStorage, we verify with the backend
+                try {
+                    const freshUser = await apiClient.getCurrentUser();
+                    
+                    setUser({
+                        id: freshUser.id,
+                        name: freshUser.full_name,
+                        email: freshUser.email,
+                        location: freshUser.location,
+                        position: freshUser.position || 'EMPLOYEE',
+                        domain: freshUser.domain,
+                        department: freshUser.department,
+                        department_id: freshUser.department_id,
+                        dept_obj: freshUser.dept_obj,
+                        company: freshUser.company,
+                        createdAt: freshUser.created_at,
+                        plan: freshUser.plan || 'STARTER',
+                        persona: freshUser.persona
+                    });
 
-                if (session) {
-                    try {
-                        const parsed = JSON.parse(session);
-                        if (parsed && parsed.isAuthenticated) {
-                            setUser({
-                                id: parsed.id,
-                                name: parsed.userName,
-                                email: parsed.email,
-                                location: parsed.location,
-                                position: parsed.position || 'EMPLOYEE',
-                                domain: parsed.domain,
-                                department: parsed.department,
-                                department_id: parsed.department_id,
-                                dept_obj: parsed.dept_obj,
-                                company: parsed.company,
-                                createdAt: parsed.createdAt,
-                                plan: parsed.plan || 'STARTER',
-                                persona: parsed.persona
-                            });
-
-                            const normalizedSlug = normalizeBackendRole(parsed.role);
-                            const savedRole = ROLES.find(r => r.slug === normalizedSlug) || ROLES.find(r => r.slug === 'END_USER') || ROLES[0];
-                            setCurrentRole(savedRole);
-                            setIsAuthenticated(true);
-                            console.log('RoleContext: Auth restored successfully for', parsed.userName);
-                        }
-                    } catch (e) {
-                        console.error("RoleContext: Failed to parse auth session", e);
-                    }
+                    const normalizedSlug = normalizeBackendRole(freshUser.role);
+                    const savedRole = ROLES.find(r => r.slug === normalizedSlug) || ROLES.find(r => r.slug === 'END_USER') || ROLES[0];
+                    setCurrentRole(savedRole);
+                    setIsAuthenticated(true);
+                    console.log('RoleContext: Secure session established for', freshUser.full_name);
+                } catch (e) {
+                    console.log('RoleContext: No active secure session found or backend unreachable.', e);
+                } finally {
+                    setIsLoading(false);
+                    setIsVerified(true);
                 }
             }
-            setIsLoading(false);
         };
 
         initAuth();
@@ -177,27 +176,11 @@ export function RoleProvider({ children }) {
         fetchPreferences();
     }, [isAuthenticated, applyTheme]);
 
-    // Persist role changes to localStorage automatically - ONLY for session auth
+    // Persist non-sensitive settings ONLY (Theme, etc.)
+    // Session state is now strictly server-side managed via cookies
     useEffect(() => {
         if (!isLoading && isAuthenticated && user && currentRole) {
-            const session = {
-                isAuthenticated: true,
-                id: user.id,
-                userName: user.name,
-                email: user.email,
-                location: user.location,
-                position: user.position,
-                domain: user.domain,
-                department: user.department,
-                department_id: user.department_id,
-                dept_obj: user.dept_obj,
-                company: user.company,
-                createdAt: user.createdAt,
-                plan: user.plan || 'STARTER',
-                persona: user.persona,
-                role: currentRole.slug
-            };
-            localStorage.setItem('auth_session', JSON.stringify(session));
+            // We no longer persist the full session to localStorage for security
         }
     }, [currentRole, isAuthenticated, user, isLoading]);
 
@@ -221,24 +204,7 @@ export function RoleProvider({ children }) {
         const normalizedSlug = normalizeBackendRole(userData.role);
         const roleObj = ROLES.find(r => r.slug === normalizedSlug) || ROLES.find(r => r.slug === 'END_USER') || ROLES[0];
         setCurrentRole(roleObj);
-
-        localStorage.setItem('auth_session', JSON.stringify({
-            isAuthenticated: true,
-            id: userData.id,
-            userName: userData.userName,
-            email: userData.email,
-            role: roleObj.slug,
-            location: userData.location,
-            position: userData.position,
-            domain: userData.domain,
-            department: userData.department,
-            department_id: userData.department_id,
-            dept_obj: userData.dept_obj,
-            company: userData.company,
-            createdAt: userData.createdAt,
-            plan: userData.plan || 'STARTER',
-            persona: userData.persona
-        }));
+        // localStorage persistence removed for security
     };
 
     const logout = () => {

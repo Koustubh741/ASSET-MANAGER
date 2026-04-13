@@ -4,6 +4,7 @@ from sqlalchemy import func
 from datetime import datetime, timezone
 from uuid import UUID
 import uuid
+from ..utils.uuid_gen import get_uuid
 
 from ..models.models import Company, Location
 from ..schemas.company_schema import CompanyCreate, CompanyUpdate
@@ -23,7 +24,7 @@ async def get_company_by_id(db: AsyncSession, company_id: UUID):
 
 async def create_company(db: AsyncSession, company: CompanyCreate, setup_completed: bool = False):
     db_company = Company(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         name=company.name,
         legal_name=company.legal_name,
         tax_id=company.tax_id,
@@ -103,7 +104,7 @@ async def complete_setup(
     created_locations = []
     for loc in locations_data:
         db_loc = Location(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             name=loc.get("name", "Unnamed"),
             address=loc.get("address"),
             timezone=loc.get("timezone", "UTC"),

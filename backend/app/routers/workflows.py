@@ -19,7 +19,7 @@ router = APIRouter(
     tags=["workflows"]
 )
 
-STAFF_ROLES = {"ADMIN", "IT_MANAGEMENT", "ASSET_MANAGER", "PROCUREMENT", "FINANCE"}
+STAFF_ROLES = {"ADMIN", "IT_MANAGEMENT", "ASSET_MANAGER", "PROCUREMENT", "FINANCE", "MANAGER"}
 
 
 class WorkflowAssetResponse(BaseModel):
@@ -32,6 +32,9 @@ class WorkflowAssetResponse(BaseModel):
     cost: Optional[float] = None
     renewal_cost: Optional[float] = None
     renewal_urgency: Optional[str] = None
+    requester_name: Optional[str] = None
+    justification: Optional[str] = None
+    business_justification: Optional[str] = None
 
 
 class WorkflowAction(BaseModel):
@@ -47,23 +50,20 @@ async def get_renewal_workflow(
 ):
     """
     Get assets due for renewal (warranty expiring in 90 days).
-    Scoped to user domain/department.
+    Scoped to user department via Root Fix.
     """
     user_role = (current_user.role or "").strip().upper()
     if user_role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    user_domain = current_user.domain or ""
-    user_dept = current_user.dept_obj.name if current_user.dept_obj else ""
-
+    user_dept_id = current_user.department_id
     today = date.today()
     ninety_days = today + timedelta(days=90)
 
     if user_role == "ADMIN":
         query = select(Asset).where(and_(Asset.warranty_expiry <= ninety_days, Asset.warranty_expiry >= today))
     else:
-        # Join with User for scoping, but allow unassigned assets
-        # For staff roles, we show their domain/dept assigned assets OR any unassigned assets
+        # ROOT FIX: Scoping by department_id or unassigned
         query = (
             select(Asset)
             .outerjoin(User, Asset.assigned_to_id == User.id)
@@ -73,7 +73,7 @@ async def get_renewal_workflow(
                     Asset.warranty_expiry >= today,
                     or_(
                         Asset.assigned_to_id == None,
-                        or_(User.domain.ilike(f"%{user_domain}%"), User.department_id.in_(select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))))
+                        User.department_id == user_dept_id if user_dept_id else False
                     )
                 )
             )
@@ -84,7 +84,6 @@ async def get_renewal_workflow(
     today = date.today()
     renewal_list = []
     for a in assets:
-        # 1. Calculate and update urgency if not set
         urgency = a.renewal_urgency
         if a.warranty_expiry:
             days_left = (a.warranty_expiry - today).days
@@ -93,10 +92,8 @@ async def get_renewal_workflow(
             elif days_left <= 60: urgency = "Medium"
             elif not urgency: urgency = "Low"
         
-        # 2. Final sanitization for display
         display_name = a.name
         if "@" in display_name or ".com" in display_name:
-            # Attempt to hide email-based machine names
             display_name = f"Node-{str(a.id)[:6].upper()}"
 
         display_type = a.type or "Unknown"
@@ -112,7 +109,7 @@ async def get_renewal_workflow(
                 serial_number=a.serial_number,
                 warranty_expiry=a.warranty_expiry.isoformat() if a.warranty_expiry else None,
                 cost=a.cost,
-                renewal_cost=a.cost if (a.cost and a.cost > 0) else 15000.0, # Provide a base estimate if 0/null
+                renewal_cost=a.cost if (a.cost and a.cost > 0) else 15000.0,
                 renewal_urgency=urgency or "Low"
             )
         )
@@ -126,19 +123,18 @@ async def get_procurement_workflow(
 ):
     """
     Get pending procurement orders (Purchase Orders).
-    Scoped to user domain/department.
+    Scoped to user department via Root Fix.
     """
     user_role = (current_user.role or "").strip().upper()
     if user_role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    user_domain = current_user.domain or ""
-    user_dept = current_user.dept_obj.name if current_user.dept_obj else ""
+    user_dept_id = current_user.department_id
 
     if user_role == "ADMIN":
         query = select(PurchaseOrder).where(PurchaseOrder.status.in_(["UPLOADED", "PENDING"]))
     else:
-        # Join via AssetRequest -> User
+        # ROOT FIX: Join via AssetRequest -> User and filter by department_id
         query = (
             select(PurchaseOrder)
             .join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id)
@@ -146,12 +142,7 @@ async def get_procurement_workflow(
             .where(
                 and_(
                     PurchaseOrder.status.in_(["UPLOADED", "PENDING"]),
-                    or_(
-                        User.domain.ilike(f"%{user_domain}%"),
-                        User.department_id.in_(
-                            select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))
-                        )
-                    )
+                    User.department_id == user_dept_id if user_dept_id else False
                 )
             )
         )
@@ -181,19 +172,18 @@ async def get_disposal_workflow(
 ):
     """
     Get assets pending disposal or retired.
-    Scoped to user domain/department.
+    Scoped to user department via Root Fix.
     """
     user_role = (current_user.role or "").strip().upper()
     if user_role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    user_domain = current_user.domain or ""
-    user_dept = current_user.dept_obj.name if current_user.dept_obj else ""
+    user_dept_id = current_user.department_id
 
     if user_role == "ADMIN":
         query = select(Asset).where(Asset.status.in_(["Retired", "Disposed"]))
     else:
-        # Join with User for scoping, but allow unassigned assets
+        # ROOT FIX: Scoping by department_id or unassigned
         query = (
             select(Asset)
             .outerjoin(User, Asset.assigned_to_id == User.id)
@@ -202,7 +192,7 @@ async def get_disposal_workflow(
                     Asset.status.in_(["Retired", "Disposed"]),
                     or_(
                         Asset.assigned_to_id == None,
-                        or_(User.domain.ilike(f"%{user_domain}%"), User.department_id.in_(select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))))
+                        User.department_id == user_dept_id if user_dept_id else False
                     )
                 )
             )
@@ -226,6 +216,52 @@ async def get_disposal_workflow(
     ]
 
 
+@router.get("/approvals", response_model=List[WorkflowAssetResponse])
+async def get_approvals_workflow(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    Get pending asset requests awaiting manager approval.
+    Scoped to user department via Root Fix.
+    """
+    user_role = (current_user.role or "").strip().upper()
+    
+    if user_role not in STAFF_ROLES and user_role != "MANAGER":
+        raise HTTPException(status_code=403, detail="Unauthorized")
+
+    user_dept_id = current_user.department_id
+
+    # ROOT FIX: Filter by department_id
+    query = select(AssetRequest).join(User, AssetRequest.requester_id == User.id).where(AssetRequest.status == "SUBMITTED")
+
+    if user_role != "ADMIN":
+        query = query.filter(
+            User.department_id == user_dept_id if user_dept_id else False
+        )
+
+    result = await db.execute(query)
+    requests = result.scalars().all()
+    
+    return [
+        WorkflowAssetResponse(
+            id=str(r.id),
+            name=r.asset_name,
+            type=r.asset_type,
+            status=r.status,
+            serial_number=None,
+            warranty_expiry=None,
+            cost=r.cost_estimate,
+            renewal_cost=r.cost_estimate,
+            renewal_urgency="Pending Approval",
+            requester_name=r.requester.full_name if r.requester else "Unknown",
+            justification=r.justification,
+            business_justification=r.business_justification
+        )
+        for r in requests
+    ]
+
+
 @router.post("/action")
 async def process_workflow_action(
     action: WorkflowAction,
@@ -234,37 +270,29 @@ async def process_workflow_action(
 ):
     """
     Process a workflow action (Approve/Reject/Defer).
-    Verifies authority and scope.
+    Verifies authority and scope via Root Fix.
     """
     user_role = (current_user.role or "").strip().upper()
     if user_role not in STAFF_ROLES:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    user_domain = current_user.domain or ""
-    user_dept = current_user.dept_obj.name if current_user.dept_obj else (current_user.department or "")
+    user_dept_id = current_user.department_id
 
-    # Check if asset/PO exists and is in scope
-    # First check Asset table
+    # 1. Check Asset table
     result = await db.execute(select(Asset).where(Asset.id == action.asset_id))
     asset = result.scalars().first()
     
     if asset:
-        # Verify scope if not admin
         if user_role != "ADMIN":
-             # Use a subquery or join-based check for the single asset
+             # ROOT FIX: Verify user_dept_id for scoped authority
              scope_check = await db.execute(
                  select(User).where(and_(
                      User.id == asset.assigned_to_id, 
-                     or_(
-                         User.domain.ilike(f"%{user_domain}%"),
-                         User.department_id.in_(
-                             select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))
-                         )
-                     )
+                     User.department_id == user_dept_id if user_dept_id else False
                  ))
              )
              if not scope_check.scalars().first():
-                 raise HTTPException(status_code=404, detail="Asset not found or unauthorized")
+                  raise HTTPException(status_code=404, detail="Asset not found or unauthorized")
 
         if action.action == "APPROVE":
             asset.status = "Active"
@@ -273,39 +301,28 @@ async def process_workflow_action(
         
         await db.commit()
         
-        # Add Audit Log
         audit = AuditLog(
             entity_type="Asset",
             entity_id=str(action.asset_id),
             action=f"WORKFLOW_{action.action}",
             performed_by=current_user.id,
-            details={
-                "notes": action.notes,
-                "previous_status": "Reserved",
-                "new_status": asset.status
-            }
+            details={"notes": action.notes, "new_status": asset.status}
         )
         db.add(audit)
         await db.commit()
-
         return {"status": "success", "message": f"Asset {action.asset_id} updated to {asset.status}"}
 
-    # If not in Asset, check PurchaseOrder
+    # 2. Check PurchaseOrder
     result = await db.execute(select(PurchaseOrder).where(PurchaseOrder.id == action.asset_id))
     po = result.scalars().first()
     if po:
-        # Verify PO scope
         if user_role != "ADMIN":
+            # ROOT FIX: Scoping via AssetRequest requester's department_id
             scope_check = await db.execute(
                 select(User).join(AssetRequest, AssetRequest.requester_id == User.id)
                 .where(and_(
                     AssetRequest.id == po.asset_request_id,
-                    or_(
-                        User.domain.ilike(f"%{user_domain}%"),
-                        User.department_id.in_(
-                            select(Department.id).filter(Department.name.ilike(f"%{user_dept}%"))
-                        )
-                    )
+                    User.department_id == user_dept_id if user_dept_id else False
                 ))
             )
             if not scope_check.scalars().first():
@@ -317,22 +334,48 @@ async def process_workflow_action(
             po.status = "REJECTED"
         
         await db.commit()
-
-        # Add Audit Log
         audit = AuditLog(
             entity_type="PurchaseOrder",
             entity_id=str(action.asset_id),
             action=f"WORKFLOW_{action.action}",
             performed_by=current_user.id,
-            details={
-                "notes": action.notes,
-                "previous_status": "UPLOADED",
-                "new_status": po.status
-            }
+            details={"notes": action.notes, "new_status": po.status}
         )
         db.add(audit)
         await db.commit()
-
         return {"status": "success", "message": f"PO {action.asset_id} updated to {po.status}"}
+
+    # 3. Check AssetRequest
+    result = await db.execute(select(AssetRequest).where(AssetRequest.id == action.asset_id))
+    areq = result.scalars().first()
+    if areq:
+        if user_role != "ADMIN" and user_role != "MANAGER":
+             raise HTTPException(status_code=403, detail="Insufficient authority to action asset requests")
+        
+        # ROOT FIX: Scoping check for manager
+        if user_role == "MANAGER":
+             result = await db.execute(select(User).where(User.id == areq.requester_id))
+             requester = result.scalars().first()
+             if not requester or requester.department_id != user_dept_id:
+                  raise HTTPException(status_code=403, detail="Unauthorized: Request is in a different department")
+
+        if action.action == "APPROVE":
+            areq.status = "MANAGER_APPROVED"
+            areq.current_owner_role = "IT_MANAGEMENT"
+        elif action.action == "REJECT":
+            areq.status = "MANAGER_REJECTED"
+            areq.current_owner_role = "END_USER"
+        
+        await db.commit()
+        audit = AuditLog(
+            entity_type="AssetRequest",
+            entity_id=str(action.asset_id),
+            action=f"WORKFLOW_{action.action}",
+            performed_by=current_user.id,
+            details={"notes": action.notes, "new_status": areq.status}
+        )
+        db.add(audit)
+        await db.commit()
+        return {"status": "success", "message": f"Asset Request {action.asset_id} updated to {areq.status}"}
 
     raise HTTPException(status_code=404, detail="Resource not found")

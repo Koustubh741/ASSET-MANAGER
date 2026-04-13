@@ -6,6 +6,7 @@ from ..utils.auth_utils import get_current_user
 from ..models.models import UserPreference
 from ..schemas.user_preferences_schema import UserPreferenceResponse, UserPreferenceUpdate
 import uuid
+from ..utils.uuid_gen import get_uuid
 
 router = APIRouter(prefix="/preferences", tags=["preferences"])
 
@@ -19,7 +20,7 @@ async def get_my_preferences(
     prefs = result.scalars().first()
     if not prefs:
         prefs = UserPreference(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             user_id=current_user.id,
             saved_views={},
             notification_settings={},
@@ -40,7 +41,7 @@ async def update_my_preferences(
     result = await db.execute(select(UserPreference).filter(UserPreference.user_id == current_user.id))
     prefs = result.scalars().first()
     if not prefs:
-        prefs = UserPreference(id=uuid.uuid4(), user_id=current_user.id)
+        prefs = UserPreference(id=get_uuid(), user_id=current_user.id)
         db.add(prefs)
     
     if update_data.saved_views is not None:

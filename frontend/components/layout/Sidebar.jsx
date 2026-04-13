@@ -34,7 +34,7 @@ const Sidebar = ({
                     <div className="flex flex-col gap-6 mt-4 items-center">
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = router.asPath === item.href || (item.href !== '/' && router.asPath.startsWith(item.href));
+                            const isActive = router.asPath === item.href || (item.href !== '/' && (router.asPath === item.href || router.asPath.startsWith(item.href + '/')));
                             return (
                                 <div key={item.href} className={`p-2 rounded-none transition-all ${isActive ? 'text-primary bg-primary/10 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'text-app-text-muted opacity-60'}`}>
                                     <Icon size={20} />
@@ -58,7 +58,7 @@ const Sidebar = ({
                     <nav className="p-5 space-y-1 flex-1 overflow-y-auto custom-scrollbar">
                         {navItems.map((item) => {
                             const Icon = item.icon;
-                            const isActive = router.asPath === item.href || (item.href !== '/' && router.asPath.startsWith(item.href));
+                            const isActive = router.asPath === item.href || (item.href !== '/' && (router.asPath === item.href || router.asPath.startsWith(item.href + '/')));
                             return (
                                 <Link
                                     key={item.href}

@@ -4,6 +4,7 @@ from ..schemas.discovery_schema import BarcodeScanPayload
 import uuid
 import logging
 from datetime import datetime
+from ..utils.uuid_gen import get_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ async def process_barcode_scan(db: AsyncSession, payload: BarcodeScanPayload) ->
         action = "registered"
         # Create Skeleton Asset
         asset = Asset(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             name=f"New Asset (SN: {payload.serial_number})",
             type="Unknown",
             model="Pending Identification",
@@ -59,7 +60,7 @@ async def process_barcode_scan(db: AsyncSession, payload: BarcodeScanPayload) ->
     
     # Audit Log
     audit = AuditLog(
-        id=str(uuid.uuid4()),
+        id=str(get_uuid()),
         action=f"barcode_{action}",
         entity_type="Asset",
         entity_id=str(asset.id) if asset.id else "NEW",

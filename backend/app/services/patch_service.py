@@ -6,6 +6,7 @@ from ..models.models import SystemPatch, PatchDeployment, Asset, PatchSchedule, 
 from ..schemas.patch_schema import SystemPatchCreate, PatchDeploymentCreate
 from uuid import UUID
 import uuid
+from ..utils.uuid_gen import get_uuid
 
 PLATFORM_MAP = {
     # Windows variants
@@ -51,7 +52,7 @@ async def get_all_patches(db: AsyncSession):
 async def create_patch(db: AsyncSession, patch: SystemPatchCreate):
     """Create a new system patch, including optional CVE fields."""
     db_patch = SystemPatch(
-        id=uuid.uuid4(),
+        id=get_uuid(),
         patch_id=patch.patch_id,
         title=patch.title,
         description=patch.description,
@@ -93,7 +94,7 @@ async def update_patch_status(db: AsyncSession, asset_id: UUID, patch_id: UUID, 
     
     if not deployment:
         deployment = PatchDeployment(
-            id=uuid.uuid4(),
+            id=get_uuid(),
             asset_id=asset_id,
             patch_id=patch_id,
             status=status,

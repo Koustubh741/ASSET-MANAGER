@@ -66,7 +66,9 @@ async def get_alerts(
                 Asset.warranty_expiry >= today,
                 Asset.warranty_expiry <= cutoff,
             )
-        ).order_by(Asset.warranty_expiry).limit(10)
+        ).order_by(Asset.warranty_expiry)
+        if limit > 0:
+            q = q.limit(limit)
         result = await db.execute(q)
         assets = result.scalars().all()
         for asset in assets:
@@ -85,7 +87,7 @@ async def get_alerts(
     # --- New / pending asset requests (SUBMITTED or early pending) ---
     if requested_types is None or "request" in requested_types:
         requests_pending = await asset_request_service.get_all_asset_requests(
-            db, skip=0, limit=10, status="SUBMITTED",
+            db, skip=0, limit=limit, status="SUBMITTED",
             department=department, user_role=user_role
         )
         for req in requests_pending:
@@ -110,7 +112,9 @@ async def get_alerts(
                 AssetRequest.procurement_finance_status.in_(["APPROVED"]),  # Finance-approved; no combined role
                 AssetRequest.procurement_finance_reviewed_at >= cutoff_dt,
             )
-        ).order_by(desc(AssetRequest.procurement_finance_reviewed_at)).limit(10)
+        ).order_by(desc(AssetRequest.procurement_finance_reviewed_at))
+        if limit > 0:
+            q = q.limit(limit)
         result = await db.execute(q)
         approved = result.scalars().all()
         for req in approved:
@@ -127,4 +131,6 @@ async def get_alerts(
 
     # Sort by created_at descending (newest first) and limit
     alerts.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return alerts[:limit]
+    if limit > 0:
+        return alerts[:limit]
+    return alerts
