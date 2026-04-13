@@ -8,47 +8,47 @@
    CSS Custom Properties
    ============================================= */
 :root {
-  /* Brand Colors */
-  --color-primary: #6366f1;
-  --color-secondary: #0ea5e9;
+  /* Retail Brand Colors (v2retail) */
+  --color-primary: #f59e0b; /* Amber 500 - Warm Retail */
+  --color-secondary: #0f172a; /* Slate 900 - Professional */
   --color-success: #10b981;
   --color-warning: #f59e0b;
-  --color-danger: #f43f5e;
+  --color-danger: #ef4444;
 
-  /* App Theme (Light - Default) */
-  --bg-app: #f8fafc;
+  /* App Theme (Light - Retail Focus) */
+  --bg-app: #fdfcfb; /* Warmer Paper White */
   --bg-surface: #ffffff;
-  --bg-surface-soft: #f1f5f9;
-  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-surface-soft: #fcf8f1;
+  --bg-glass: rgba(255, 255, 255, 0.85);
   
-  --radius-tactical: 0px;
-  --radius-pill: 0px;
-  --text-muted: #475569;
+  --radius-tactical: 12px; /* Softer, retail-friendly corners */
+  --radius-pill: 9999px;
+  --text-muted: #64748b;
   --text-on-dark: #ffffff;
   
-  --border-main: #e2e8f0;
-  --border-soft: #f1f5f9;
+  --border-main: #e5e7eb;
+  --border-soft: #f3f4f6;
 
-  --glow-soft: 0 0 15px rgba(99, 102, 241, 0.1);
-  --glow-medium: 0 0 25px rgba(99, 102, 241, 0.15);
-  --glow-strong: 0 0 40px rgba(99, 102, 241, 0.25);
+  --glow-soft: 0 0 15px rgba(245, 158, 11, 0.1);
+  --glow-medium: 0 0 25px rgba(245, 158, 11, 0.15);
+  --glow-strong: 0 0 40px rgba(245, 158, 11, 0.2);
 
-  /* Kinetic Ops Master Tokens (Light Theme Mapping) */
-  --bg-app-void: #f8fafc;
+  /* Kinetic Ops Retail Mapping */
+  --bg-app-void: #f9fafb;
   --bg-surface-obsidian: #ffffff;
-  --bg-surface-panel: #f1f5f9;
+  --bg-surface-panel: #f3f4f6;
   --bg-surface-card: #ffffff;
   
-  --color-kinetic-primary: #3b82f6;
-  --color-kinetic-primary-rgb: 59, 130, 246;
-  --color-kinetic-secondary: #059669; /* Emerald 600 */
-  --color-kinetic-secondary-rgb: 5, 150, 105;
-  --color-kinetic-cyan: #0891b2; /* Cyan 600 */
-  --color-kinetic-cyan-rgb: 8, 145, 178;
-  --color-kinetic-rose: #ef4444; /* Red 500 */
-  --color-kinetic-rose-rgb: 239, 68, 68;
-  --color-kinetic-gold: #d97706; /* Amber 600 */
-  --color-kinetic-gold-rgb: 217, 119, 6;
+  --color-kinetic-primary: #f59e0b;
+  --color-kinetic-primary-rgb: 245, 158, 11;
+  --color-kinetic-secondary: #0369a1; /* Sky 700 */
+  --color-kinetic-secondary-rgb: 3, 105, 161;
+  --color-kinetic-cyan: #0d9488; /* Teal 600 */
+  --color-kinetic-cyan-rgb: 13, 148, 136;
+  --color-kinetic-rose: #be123c; 
+  --color-kinetic-rose-rgb: 190, 18, 60;
+  --color-kinetic-gold: #b45309; 
+  --color-kinetic-gold-rgb: 180, 83, 9;
 }
 
 .dark {
@@ -118,13 +118,18 @@
    ============================================= */
 @layer components {
 
+  /* ----- Scanline Opacity Tweak (Retail is cleaner) ----- */
+  .app-shell::after {
+    opacity: 0.03 !important; /* Barely visible */
+  }
+
   /* ----- Glass Panel ----- */
   .glass-panel {
-    @apply backdrop-blur-2xl transition-all duration-300;
+    @apply backdrop-blur-xl transition-all duration-300;
     background-color: var(--bg-glass);
     border: 1px solid var(--border-main);
     border-radius: var(--radius-tactical);
-    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
   }
 
   .dark .glass-panel {
@@ -165,7 +170,7 @@
 
   /* ----- Text Gradient ----- */
   .text-gradient-primary {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-amber-600 to-slate-800;
   }
 
   .dark .text-gradient-primary {

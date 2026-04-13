@@ -8,8 +8,8 @@ import { Bell, Menu, X } from 'lucide-react';
 const MobileHeader = ({ unreadCount, onOpenMenu, isOpen, onOpenNotifications }) => {
     return (
         <header className="md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-app-surface/90 backdrop-blur-xl border-b border-app-border flex items-center justify-between px-4">
-            <h1 className="text-lg font-['Outfit'] font-black bg-gradient-to-r from-primary to-indigo-500 bg-clip-text text-transparent truncate uppercase tracking-tighter">
-                ITSM Cloud
+            <h1 className="text-lg font-['Outfit'] font-black bg-gradient-to-r from-primary to-amber-700 bg-clip-text text-transparent truncate uppercase tracking-tighter">
+                Retail Pulse
             </h1>
             <div className="flex items-center gap-2">
                 <button

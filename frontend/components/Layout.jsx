@@ -68,8 +68,8 @@ export default function Layout({ children }) {
                 className="flex-1 min-h-0 md:ml-32 pt-20 md:pt-0 p-6 md:p-10 transition-all duration-500 overflow-y-auto custom-scrollbar relative"
             >
                 {/* Visual Polish: Ambient HUD Grid */}
-                <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05]" 
-                    style={{ backgroundImage: 'radial-gradient(var(--text-muted) 1px, transparent 1px)', backgroundSize: '32px 32px' }} 
+                <div className="absolute inset-0 pointer-events-none opacity-[0.01] dark:opacity-[0.02]" 
+                    style={{ backgroundImage: 'radial-gradient(var(--text-muted) 0.5px, transparent 0.5px)', backgroundSize: '48px 48px' }} 
                 />
                 
 
@@ -80,13 +80,13 @@ export default function Layout({ children }) {
 
                 {/* Unified Footer */}
                 <footer className="mt-16 pt-8 border-t border-app-border/40 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.3em] text-app-text-muted opacity-40">
-                    <span>Enterprise Asset Ecosystem v1.2</span>
+                    <span>v2 Retail Lifecycle Platform</span>
                     <div className="flex items-center gap-4">
                         <span className="flex items-center gap-2">
                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
                              Gateway: Stable
                         </span>
-                        <span>© 2026 Antigravity Systems</span>
+                        <span>© 2026 Retail Pulse Ecosystem</span>
                     </div>
                 </footer>
             </main>

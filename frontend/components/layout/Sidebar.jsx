@@ -24,12 +24,12 @@ const Sidebar = ({
                 
                 {/* Background Ambient Glows */}
                 <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/20 blur-[80px] rounded-full pointer-events-none" />
-                <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
+                <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
 
                 {/* Collapsed State: Static Icons */}
                 <div className="absolute inset-0 flex flex-col items-center pt-10 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none z-10">
                     <div className="w-12 h-12 flex items-center justify-center mb-6 animate-float">
-                        <img src="/assets/itsm-logo.png" alt="Logo" className="w-8 h-8 object-contain filter drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" />
+                        <img src="/assets/itsm-logo.png" alt="Logo" className="w-8 h-8 object-contain filter drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                     </div>
                     <div className="flex flex-col gap-6 mt-4 items-center">
                         {navItems.map((item) => {
@@ -49,8 +49,8 @@ const Sidebar = ({
                     <div className="p-8 border-b border-app-border/40 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                             <img src="/assets/itsm-logo.png" alt="Logo" className="w-8 h-8 shrink-0" />
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-app-text via-primary to-indigo-500 bg-clip-text text-transparent truncate uppercase tracking-tighter">
-                                {currentRole?.label || 'Cache Serve'}
+                            <h1 className="text-xl font-bold bg-gradient-to-r from-app-text via-amber-500 to-amber-700 bg-clip-text text-transparent truncate uppercase tracking-tighter">
+                                {currentRole?.label || 'Retail Manager'}
                             </h1>
                         </div>
                     </div>
@@ -84,7 +84,7 @@ const Sidebar = ({
                                 className="flex items-center gap-3 p-4 hover:bg-indigo-500/10 transition-all duration-200 group/profile border-b border-white/5"
                                 title="View Profile"
                             >
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center border-2 border-white/10 shrink-0 shadow-lg group-hover/profile:ring-2 group-hover/profile:ring-indigo-500/40 transition-all">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center border-2 border-white/10 shrink-0 shadow-lg group-hover/profile:ring-2 group-hover/profile:ring-amber-500/40 transition-all">
                                     <span className="text-xs font-black text-white">
                                         {(user?.full_name || user?.name || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                     </span>
