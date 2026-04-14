@@ -38,6 +38,13 @@ class UserBase(BaseModel):
     company_id: Optional[UUID] = None
     manager_id: Optional[UUID] = None
     persona: Optional[str] = None
+    protocol_id: Optional[str] = None
+    
+    # Retail Structural Data
+    loc_type: Optional[str] = None
+    sub_dept: Optional[str] = None
+    designation: Optional[str] = None
+
     plan: str = "STARTER"  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
 
     @field_validator("department", "domain", mode="before")
@@ -61,6 +68,10 @@ class UserUpdate(BaseModel):
     company_id: Optional[UUID] = None
     manager_id: Optional[UUID] = None
     persona: Optional[str] = None
+    protocol_id: Optional[str] = None
+    loc_type: Optional[str] = None
+    sub_dept: Optional[str] = None
+    designation: Optional[str] = None
     plan: Optional[str] = None
     password: Optional[str] = None # In real app, handle password change securely
 

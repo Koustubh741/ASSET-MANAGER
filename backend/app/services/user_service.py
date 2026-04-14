@@ -52,6 +52,18 @@ async def create_user(db: AsyncSession, user: UserCreate):
     raw_role = (user.role or "END_USER").strip().upper()
     role_value = "ADMIN" if is_first_user else raw_role
 
+        # Resolve Department ID if name provided but ID missing
+    dept_id = user.department_id
+    if not dept_id and user.department:
+        from ..models.models import Department as DeptModel
+        # Case-insensitive match for the department name
+        dept_result = await db.execute(
+            select(DeptModel).filter(func.lower(DeptModel.name) == user.department.lower())
+        )
+        matched_dept = dept_result.scalars().first()
+        if matched_dept:
+            dept_id = matched_dept.id
+
     db_user = User(
         id=get_uuid(),
         email=normalized_email,
@@ -60,14 +72,17 @@ async def create_user(db: AsyncSession, user: UserCreate):
         role=role_value,
         status="ACTIVE", # Auto-approve all new accounts
         position=user.position,
-
         domain=user.domain,
-        department_id=user.department_id if hasattr(user, 'department_id') else None,
+        department_id=dept_id,
         location=user.location,
         phone=user.phone,
         company=user.company,
         manager_id=user.manager_id,
-        persona=user.persona
+        persona=user.persona,
+        loc_type=user.loc_type,
+        sub_dept=user.sub_dept,
+        designation=user.designation,
+        protocol_id=user.protocol_id
     )
     db.add(db_user)
     await db.commit()

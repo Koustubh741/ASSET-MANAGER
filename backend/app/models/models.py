@@ -200,6 +200,12 @@ class User(Base):
     company_obj = relationship("Company", foreign_keys=[company_id], lazy='selectin')
     manager_id = Column(UUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="SET NULL"), nullable=True)
     persona = Column(String(100), nullable=True) # Functional Persona (e.g. IT_GOVERNANCE)
+    protocol_id = Column(String(100), nullable=True, unique=True) # Staff Unique ID (Retail Pulse)
+
+    # Retail Structural Data (v2retail Build)
+    loc_type = Column(String(50), nullable=True) # STORE | WAREHOUSE | HQ
+    sub_dept = Column(String(50), nullable=True) # L_BACK | L_FRONT | R_FLOOR
+    designation = Column(String(50), nullable=True) # WH_MGR | STORE_ASSOC | RETAIL_DIR
 
     # Subscription / Plan (AI Assistant access)
     plan = Column(String(50), nullable=False, default="STARTER")  # STARTER | PROFESSIONAL | BUSINESS | ENTERPRISE
