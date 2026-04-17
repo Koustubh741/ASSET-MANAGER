@@ -28,43 +28,16 @@ class LocationResponse(BaseModel):
     count: Optional[int] = None
 
 
-# Static department list (can be replaced with database table later)
-DEPARTMENTS = [
-    "IT Department",
-    "Finance",
-    "Human Resources",
-    "Engineering",
-    "Sales",
-    "Marketing",
-    "Operations",
-    "Legal",
-    "Customer Support",
-    "Research & Development",
-    "Administration",
-    "Procurement",
-    "Quality Assurance",
-    "DATA_AI",
-    "Cloud Infrastructure",
-    "Security",
-    "Development",
-]
-
 # Static location list (can be replaced with database table later)
 LOCATIONS = [
-    "New York HQ",
-    "London Office",
-    "San Francisco",
-    "Singapore",
-    "Tokyo",
-    "Mumbai",
-    "Berlin",
-    "Sydney",
-    "Toronto",
-    "Dubai",
+    "Head Office",
+    "Regional Office",
+    "Warehouse A",
+    "Warehouse B",
+    "Store - Standard",
+    "Store - Flagship",
+    "IT Hub",
     "Remote",
-    "IT Warehouse",
-    "Data Center 1",
-    "Data Center 2",
 ]
 
 
@@ -79,7 +52,9 @@ async def get_departments(
     Optionally include user counts per department.
     """
     from ..models.models import Department
-    result = await db.execute(select(Department))
+    result = await db.execute(
+        select(Department).filter(~Department.name.like('[DEPRECATED]%'))
+    )
     db_depts = result.scalars().all()
     
     if include_counts:
@@ -87,6 +62,7 @@ async def get_departments(
         counts_res = await db.execute(
             select(Department.name, func.count(User.id))
             .outerjoin(User, User.department_id == Department.id)
+            .where(~Department.name.like('[DEPRECATED]%'))
             .group_by(Department.name)
         )
         counts_dict = {row[0]: row[1] for row in counts_res.all()}

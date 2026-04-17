@@ -40,8 +40,8 @@ async def get_groups(db: AsyncSession = Depends(get_db), current_user = Depends(
     for g in groups:
         if g.dept_obj:
             g.department_name = g.dept_obj.name
-        elif g.department:
-            g.department_name = g.department # Fallback
+        elif hasattr(g, 'department') and getattr(g, 'department'):
+            g.department_name = getattr(g, 'department') # Fallback
         else:
             g.department_name = "General" # Ultimate fallback
             
@@ -89,6 +89,24 @@ async def add_group_member(
     db.add(member)
     await db.commit()
     return {"status": "member added"}
+
+@router.get("/{group_id}/members", response_model=List[UserResponse])
+async def get_group_members(
+    group_id: UUID, 
+    db: AsyncSession = Depends(get_db), 
+    current_user = Depends(get_current_user)
+):
+    """
+    Retrieve all users who are members of a specific assignment group.
+    """
+    result = await db.execute(
+        select(User)
+        .join(AssignmentGroupMember)
+        .where(AssignmentGroupMember.group_id == group_id)
+        .options(selectinload(User.dept_obj))
+    )
+    members = result.scalars().all()
+    return members
 
 @router.delete("/{group_id}/members/{user_id}")
 async def remove_group_member(

@@ -8,6 +8,21 @@ import { getStatusLabel } from '@/lib/statusLabels';
 import AuthGuard from '@/components/AuthGuard';
 import ProcurementManagerDashboard from '@/components/dashboards/ProcurementManagerDashboard';
 
+const NeuralMatrix = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+            <div className="absolute inset-0 pixel-grid-overlay opacity-30" />
+            <div className="flex flex-wrap gap-1 p-2">
+                {Array.from({ length: 150 }).map((_, i) => (
+                    <span key={i} className="matrix-text-ambient" style={{ animationDelay: `${Math.random() * 5}s` }}>
+                        {Math.random() > 0.5 ? '0' : '1'}
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 function ProcurementUpdatesContent() {
     const router = useRouter();
     const { requests } = useAssetContext();
@@ -40,24 +55,11 @@ function ProcurementUpdatesContent() {
 
     return (
         <AuthGuard>
-            <div className="min-h-screen bg-app-bg text-app-text font-['Space_Grotesk'] overflow-hidden relative selection:bg-primary/30">
+            <div className="min-h-screen zenith-vacuum text-app-text font-['Space_Grotesk'] overflow-hidden relative selection:bg-primary/30">
+                <NeuralMatrix />
                 
-                {/* BACKGROUND TELEMETRY LAYERS */}
-                <div className="absolute inset-0 pointer-events-none opacity-20 select-none">
-                    <div className="absolute top-10 left-10 text-[10px] space-y-1 text-primary/50 uppercase tracking-tight font-mono">
-                        <div>LAT: 40.7128° N</div>
-                        <div>LNG: 74.0060° W</div>
-                        <div>ALT: 42.0m</div>
-                    </div>
-                    <div className="absolute top-10 right-10 text-[10px] text-success/50 uppercase tracking-tight font-mono text-right">
-                        <div>SYSTEM: AEGIS-V4</div>
-                        <div>ENCRYPTION: AES-256-GCM</div>
-                        <div>STATUS: OPERATIONAL</div>
-                    </div>
-                </div>
-
-                {/* SCANNING LINE */}
-                <div className="absolute top-0 left-0 w-full h-[2px] bg-primary/20 shadow-[0_0_15px_rgba(var(--color-primary),0.3)] animate-scan z-50 pointer-events-none"></div>
+                {/* Visual Header / Scanline */}
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-primary/40 shadow-[0_0_15px_var(--primary)] z-50 pointer-events-none opacity-50"></div>
 
                 <div className="w-full px-4 md:px-12 flex flex-col min-h-screen relative z-10 pt-8">
                     

@@ -35,6 +35,8 @@ class Asset(Base):
     vendor = Column(String(255), nullable=False, default="Unknown Vendor")
     serial_number = Column(String(255), nullable=True, unique=True, index=True)
     segment = Column(String(50), nullable=False, default="IT")
+    department_id = Column(UUID(as_uuid=True), ForeignKey("auth.departments.id", ondelete="SET NULL"), nullable=True, index=True)
+    dept_obj = relationship("Department", foreign_keys=[department_id], lazy='selectin')
 
     # Dates
     purchase_date = Column(Date, nullable=True)

@@ -1,44 +1,115 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
-import { LayoutDashboard, DollarSign, PieChart, Settings, Menu, X, User, ShoppingBag, Truck, FileText, LifeBuoy, Bell } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import * as LucideIcons from 'lucide-react';
+import { 
+    LayoutDashboard, DollarSign, PieChart, Settings, Menu, X, User, 
+    ShoppingBag, Truck, FileText, LifeBuoy, Bell, Shield, Eye, Monitor,
+    Wallet, Store, ShoppingBasket, Users, TrendingUp, Megaphone, Rocket,
+    Target, Building, HardHat, Package, Scissors, Crown
+} from 'lucide-react';
 import { useRole } from '@/contexts/RoleContext';
 import { useNotifications } from '@/contexts/NotificationContext';
 import NotificationToast from '@/components/NotificationToast';
 import NotificationDrawer from '@/components/NotificationDrawer';
+import ExperienceCinematic from './ExperienceCinematic';
 
-const FINANCE_NAV = [
-    { label: 'Dashboard', href: '/finance', icon: LayoutDashboard, exactMatch: true },
-    { label: 'Budget Queue', href: '/finance/budget-queue', icon: DollarSign },
-    { label: 'Analytics', href: '/finance/analytics', icon: PieChart },
-    { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
-    // Root fix: keep Finance users inside the Finance hub for settings
-    { label: 'Settings', href: '/finance/settings', icon: Settings },
-];
-
-const PROCUREMENT_NAV = [
-    { label: 'Dashboard', href: '/procurement', icon: LayoutDashboard, exactMatch: true },
-    { label: 'Purchase Orders', href: '/procurement/purchase-orders', icon: FileText },
-    { label: 'Deliveries', href: '/procurement/deliveries', icon: Truck },
-    { label: 'Analytics', href: '/procurement/analytics', icon: PieChart },
-    { label: 'Support & Tickets', href: '/tickets', icon: LifeBuoy },
-    // Root fix: keep Procurement users inside the Procurement hub for settings
-    { label: 'Settings', href: '/procurement/settings', icon: Settings },
-];
+const PORTAL_CONFIGS = {
+    finance: {
+        name: 'Finance Portal',
+        subtitle: 'Financial Governance',
+        nav: [
+            { label: 'Dashboard', href: '/finance', icon: 'LayoutDashboard', exactMatch: true },
+            { label: 'Budget Queue', href: '/finance/budget-queue', icon: 'DollarSign' },
+            { label: 'Analytics', href: '/finance/analytics', icon: 'PieChart' },
+            { label: 'Support & Tickets', href: '/tickets', icon: 'LifeBuoy' },
+            { label: 'Settings', href: '/finance/settings', icon: 'Settings' },
+        ]
+    },
+    procurement: {
+        name: 'Procurement Portal',
+        subtitle: 'Supply Chain Operations',
+        nav: [
+            { label: 'Dashboard', href: '/procurement', icon: 'LayoutDashboard', exactMatch: true },
+            { label: 'Purchase Orders', href: '/procurement/purchase-orders', icon: 'FileText' },
+            { label: 'Deliveries', href: '/procurement/deliveries', icon: 'Truck' },
+            { label: 'Analytics', href: '/procurement/analytics', icon: 'PieChart' },
+            { label: 'Support & Tickets', href: '/tickets', icon: 'LifeBuoy' },
+            { label: 'Settings', href: '/procurement/settings', icon: 'Settings' },
+        ]
+    },
+    it: {
+        name: 'IT Command Hub',
+        subtitle: 'Enterprise Infrastructure',
+        nav: [
+            { label: 'System Dashboard', href: '/dashboard/system-admin', icon: 'LayoutDashboard', exactMatch: true },
+            { label: 'Assets', href: '/assets', icon: 'Monitor' },
+            { label: 'Topology', href: '/network-topology', icon: 'Shield' },
+            { label: 'Automation', href: '/tickets/automation', icon: 'Settings' },
+            { label: 'Support', href: '/support-dashboard', icon: 'LifeBuoy' },
+        ]
+    },
+    security: {
+        name: 'LP & Audit Matrix',
+        subtitle: 'Loss Prevention & Security',
+        nav: [
+            { label: 'LP Dashboard', href: '/dashboard/audit-officer', icon: 'LayoutDashboard', exactMatch: true },
+            { label: 'Port Policies', href: '/security/port-policies', icon: 'Shield' },
+            { label: 'Access Control', href: '/settings', icon: 'Settings' },
+            { label: 'Support', href: '/tickets', icon: 'LifeBuoy' },
+        ]
+    },
+    operations: {
+        name: 'Operation Portal',
+        subtitle: 'Business Support Units',
+        nav: [
+            { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard', exactMatch: true },
+            { label: 'My Requests', href: '/tickets', icon: 'FileText' },
+            { label: 'Resources', href: '/assets', icon: 'Package' },
+            { label: 'Support', href: '/tickets/new', icon: 'LifeBuoy' },
+        ]
+    }
+};
 
 export default function PortalLayout({ children, variant }) {
     const router = useRouter();
-    const { logout, user, currentRole } = useRole();
+    const { logout, user, currentRole, theme, isFinance, isProcurement, isLossPrevention, isAdmin, preferences, setHasSeenExperience, isLoading: isRoleLoading } = useRole();
     const { unreadCount } = useNotifications();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
-    const isFinance = variant === 'finance';
-    const navItems = isFinance ? FINANCE_NAV : PROCUREMENT_NAV;
-    const portalName = isFinance ? 'Finance Portal' : 'Procurement Portal';
-    const accentClass = isFinance
-        ? 'from-emerald-500 to-teal-500'
-        : 'from-blue-500 to-indigo-500';
+    // Dynamic configuration based on RoleContext theme and variant
+    const activeConfig = useMemo(() => {
+        if (variant) return PORTAL_CONFIGS[variant] || PORTAL_CONFIGS.operations;
+        if (isFinance) return PORTAL_CONFIGS.finance;
+        if (isProcurement) return PORTAL_CONFIGS.procurement;
+        if (isLossPrevention) return PORTAL_CONFIGS.security;
+        if (isAdmin) return PORTAL_CONFIGS.it;
+        return PORTAL_CONFIGS.operations;
+    }, [variant, isFinance, isProcurement, isLossPrevention, isAdmin]);
+
+    const accentClass = theme?.accent || 'from-slate-500 to-slate-700';
+    const colorName = theme?.color || 'slate';
+    const PortalIcon = LucideIcons[theme?.icon] || Monitor;
+
+    const navItems = activeConfig.nav.map(item => ({
+        ...item,
+        IconComponent: LucideIcons[item.icon] || LayoutDashboard
+    }));
+
+    // Helper for reactive colors
+    const getActiveStyles = (isActive) => {
+        if (!isActive) return 'text-app-text-muted hover:bg-app-surface-soft hover:text-app-text';
+        
+        switch(colorName) {
+            case 'emerald': return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-sm';
+            case 'blue': return 'bg-blue-500/10 text-blue-500 border-blue-500/20 shadow-sm';
+            case 'rose': return 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-sm';
+            case 'violet': return 'bg-violet-500/10 text-violet-500 border-violet-500/20 shadow-sm';
+            case 'amber': return 'bg-amber-500/10 text-amber-500 border-amber-500/20 shadow-sm';
+            default: return 'bg-primary/10 text-primary border-primary/20 shadow-sm';
+        }
+    };
 
     return (
         <div className="app-shell min-h-screen flex text-app-text font-sans font-normal bg-app-bg">
@@ -49,7 +120,7 @@ export default function PortalLayout({ children, variant }) {
             {/* Mobile header */}
             <header className={`md:hidden fixed top-0 left-0 right-0 z-30 h-14 bg-app-surface/95 backdrop-blur-xl border-b border-app-border flex items-center justify-between px-4`}>
                 <h1 className={`text-lg font-bold bg-gradient-to-r ${accentClass} bg-clip-text text-transparent truncate`}>
-                    {portalName}
+                    {activeConfig.name}
                 </h1>
                 <div className="flex items-center gap-2">
                     <button
@@ -76,10 +147,10 @@ export default function PortalLayout({ children, variant }) {
             {/* Mobile drawer */}
             <div className={`md:hidden fixed inset-0 z-20 transition-opacity duration-200 ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} aria-hidden="true" />
-                <aside className={`absolute top-14 left-0 right-0 bottom-0 bg-white dark:bg-slate-900/98 backdrop-blur-xl border-r border-app-border bg-white/98 border-slate-200 transform transition-transform duration-200 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <aside className={`absolute top-14 left-0 right-0 bottom-0 bg-app-surface/98 backdrop-blur-xl border-r border-app-border transform transition-transform duration-200 ease-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                     <nav className="p-4 space-y-1 overflow-y-auto pt-6">
                         {navItems.map((item) => {
-                            const Icon = item.icon;
+                            const Icon = item.IconComponent;
                             const isActive = item.exactMatch
                                 ? (router.asPath === item.href || router.asPath === item.href + '/')
                                 : (router.asPath === item.href || (item.href !== '/' && router.asPath.startsWith(item.href)));
@@ -88,7 +159,7 @@ export default function PortalLayout({ children, variant }) {
                                     key={item.label}
                                     href={item.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 px-4 py-3 rounded-none min-h-[44px] transition-all ${isActive ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' : 'text-app-text-muted hover:bg-app-surface-soft hover:text-app-text'}`}
+                                    className={`flex items-center gap-3 px-4 py-3 rounded-none min-h-[44px] transition-all ${getActiveStyles(isActive)}`}
                                 >
                                     <Icon size={20} />
                                     <span className="font-medium">{item.label}</span>
@@ -98,7 +169,7 @@ export default function PortalLayout({ children, variant }) {
                         <div className="mt-6 pt-4 border-t border-app-border">
                             <button
                                 onClick={() => { logout(); window.location.href = '/login'; }}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-none min-h-[44px] border border-rose-500/20 text-rose-400 hover:bg-rose-500/10 border-rose-200 text-rose-600 hover:bg-rose-50 font-medium"
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-none min-h-[44px] bg-rose-500/10 border border-rose-500/20 text-rose-500 hover:bg-rose-500/20 font-medium"
                             >
                                 Log Out
                             </button>
@@ -109,24 +180,24 @@ export default function PortalLayout({ children, variant }) {
 
             {/* Desktop sidebar */}
             <aside className="fixed h-full z-20 hidden md:block group w-24 hover:w-72 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]">
-                <div className={`h-full m-4 rounded-[2.5rem] glass-panel dark:group-hover:bg-app-surface/95 flex flex-col shadow-[0_0_50px_-12px_rgba(0,0,0,0.15)] relative overflow-hidden transition-all duration-500`}>
+                <div className={`h-full m-4 rounded-[2.5rem] glass-panel bg-app-surface/80 group-hover:bg-app-surface/95 flex flex-col shadow-[0_0_50px_-12px_rgba(0,0,0,0.15)] relative overflow-hidden transition-all duration-500`}>
 
-                    {/* Background Glows */}
-                    <div className={`absolute -top-24 -left-24 w-48 h-48 ${isFinance ? 'bg-emerald-500/10' : 'bg-blue-500/10'} blur-[80px] rounded-full pointer-events-none`}></div>
-                    <div className={`absolute -bottom-24 -right-24 w-48 h-48 ${isFinance ? 'bg-teal-500/10' : 'bg-indigo-500/10'} blur-[80px] rounded-full pointer-events-none`}></div>
+                    {/* Background Glows shifted to use theme color */}
+                    <div className={`absolute -top-24 -left-24 w-48 h-48 opacity-20 blur-[80px] rounded-full pointer-events-none bg-${colorName}-500/20`}></div>
+                    <div className={`absolute -bottom-24 -right-24 w-48 h-48 opacity-10 blur-[80px] rounded-full pointer-events-none bg-${colorName}-500/10`}></div>
 
                     <div className="absolute inset-0 flex flex-col items-center pt-10 opacity-100 group-hover:opacity-0 transition-all duration-300 pointer-events-none z-10 scale-100 group-hover:scale-90">
                         <div className={`w-12 h-12 rounded-none bg-gradient-to-r ${accentClass} opacity-90 flex items-center justify-center mb-6 animate-float shadow-lg`}>
-                            {isFinance ? <DollarSign size={22} className="text-white" /> : <ShoppingBag size={22} className="text-white" />}
+                            <PortalIcon size={22} className="text-white" />
                         </div>
                         <div className="flex flex-col gap-5 mt-4 flex-1">
                             {navItems.map((item) => {
-                                const Icon = item.icon;
+                                const Icon = item.IconComponent;
                                 const isActive = item.exactMatch
                                     ? (router.asPath === item.href || router.asPath === item.href + '/')
                                     : (router.asPath === item.href || (item.href !== '/' && router.asPath.startsWith(item.href)));
                                 return (
-                                    <div key={item.label} className={`p-2.5 rounded-none ${isActive ? (isFinance ? 'text-emerald-500 bg-emerald-500/10' : 'text-blue-500 bg-blue-500/10') : 'text-app-text-muted'}`}>
+                                    <div key={item.label} className={`p-2.5 rounded-none ${isActive ? `text-${colorName}-500 bg-${colorName}-500/10` : 'text-app-text-muted'}`}>
                                         <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
                                     </div>
                                 );
@@ -137,7 +208,7 @@ export default function PortalLayout({ children, variant }) {
                         <div className="pb-8 mt-auto flex flex-col items-center">
                             <button 
                                 onClick={() => setIsNotificationOpen(true)}
-                                className={`p-2.5 rounded-none transition-all relative pointer-events-auto ${isFinance ? 'hover:bg-emerald-500/10 hover:text-emerald-500' : 'hover:bg-blue-500/10 hover:text-blue-500'} text-app-text-muted`}
+                                className={`p-2.5 rounded-none transition-all relative pointer-events-auto hover:bg-${colorName}-500/10 hover:text-${colorName}-500 text-app-text-muted`}
                             >
                                 <Bell size={22} className={unreadCount > 0 ? "animate-swing" : ""} />
                                 {unreadCount > 0 && (
@@ -151,14 +222,14 @@ export default function PortalLayout({ children, variant }) {
 
                     <div className="opacity-0 group-hover:opacity-100 transition-all duration-500 delay-100 flex flex-col h-full min-w-[17rem] pointer-events-none group-hover:pointer-events-auto">
                         <div className={`p-8 border-b border-app-border`}>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-app-text via-app-text-muted to-app-text/60 bg-clip-text text-transparent">{portalName}</h1>
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-app-text via-app-text-muted to-app-text/60 bg-clip-text text-transparent">{activeConfig.name}</h1>
                             <p className="text-xs text-app-text-muted mt-2 font-medium tracking-wide uppercase opacity-70">
-                                {isFinance ? 'Financial Governance' : 'Supply Chain Operations'}
+                                {activeConfig.subtitle}
                             </p>
                         </div>
                         <nav className="p-5 space-y-1.5 flex-1 overflow-y-auto custom-scrollbar">
                             {navItems.map((item) => {
-                                const Icon = item.icon;
+                                const Icon = item.IconComponent;
                                 const isActive = item.exactMatch
                                     ? (router.asPath === item.href || router.asPath === item.href + '/')
                                     : (router.asPath === item.href || (item.href !== '/' && router.asPath.startsWith(item.href)));
@@ -167,13 +238,13 @@ export default function PortalLayout({ children, variant }) {
                                         key={item.label}
                                         href={item.href}
                                         className={`flex items-center gap-3 px-4 py-3.5 rounded-none transition-all duration-300 whitespace-nowrap group/nav ${isActive
-                                            ? `${isFinance ? 'bg-emerald-500/15 text-emerald-600 border-emerald-400/30' : 'bg-blue-500/15 text-blue-600 border-blue-400/30'} border shadow-lg`
+                                            ? `bg-${colorName}-500/10 text-${colorName}-600 border-${colorName}-500/30 border shadow-lg`
                                             : 'text-app-text-muted hover:bg-app-surface-soft hover:text-app-text hover:pl-6'}`}
                                     >
-                                        <div className={`p-1.5 rounded-none transition-colors ${isActive ? (isFinance ? 'bg-emerald-500/20' : 'bg-blue-500/20') : 'group-hover/nav:bg-app-surface'}`}>
-                                            <Icon size={20} className={isActive ? (isFinance ? 'text-emerald-600' : 'text-blue-600') : 'text-app-text-muted group-hover/nav:text-app-text'} />
+                                        <div className={`p-1.5 rounded-none transition-colors ${isActive ? `bg-${colorName}-500/20` : 'group-hover/nav:bg-app-surface'}`}>
+                                            <Icon size={20} className={isActive ? `text-${colorName}-600` : 'text-app-text-muted group-hover/nav:text-app-text'} />
                                         </div>
-                                        <span className={`font-medium tracking-tight ${isActive ? (isFinance ? 'text-emerald-700' : 'text-blue-700') : 'text-app-text-muted group-hover/nav:text-app-text'}`}>{item.label}</span>
+                                        <span className={`font-medium tracking-tight ${isActive ? `text-${colorName}-700` : 'text-app-text-muted group-hover/nav:text-app-text'}`}>{item.label}</span>
                                     </Link>
                                 );
                             })}
@@ -181,7 +252,7 @@ export default function PortalLayout({ children, variant }) {
                         <div className="p-4 mt-auto">
                             <div className="p-4 rounded-none bg-app-surface-soft border border-app-border backdrop-blur-md">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center border-2 border-primary/20 shrink-0 shadow-lg">
+                                    <div className={`w-10 h-10 rounded-full bg-${colorName}-500 flex items-center justify-center border-2 border-${colorName}-500/20 shrink-0 shadow-lg`}>
                                         <User size={20} className="text-white" />
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -190,7 +261,7 @@ export default function PortalLayout({ children, variant }) {
                                     </div>
                                     <button 
                                         onClick={() => setIsNotificationOpen(true)}
-                                        className="p-2 rounded-none text-app-text-muted hover:text-primary hover:bg-primary/10 transition-all relative"
+                                        className={`p-2 rounded-none text-app-text-muted hover:text-${colorName}-500 hover:bg-${colorName}-500/10 transition-all relative`}
                                     >
                                         <Bell size={20} className={unreadCount > 0 ? "animate-swing" : ""} />
                                         {unreadCount > 0 && (
@@ -219,6 +290,15 @@ export default function PortalLayout({ children, variant }) {
             {/* Notifications */}
             <NotificationToast />
             <NotificationDrawer isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
+
+            {/* Role-Based Experience Cinematic */}
+            {!preferences?.hasSeenExperience && !isRoleLoading && user && (
+                <ExperienceCinematic 
+                    user={user} 
+                    theme={theme} 
+                    onComplete={() => setHasSeenExperience(true)} 
+                />
+            )}
 
             <style jsx global>{`
                 @keyframes swing {

@@ -473,3 +473,32 @@ async def get_asset_stats(db: AsyncSession):
         "policy_compliance": min(100, int((active / total_non_zero) * 100)),
         "cloud_sync_active": "Connected" if metrics.policies_count > 0 else "Standby"
     }
+
+
+async def get_asset_events(db: AsyncSession, asset_id: UUID) -> List[Dict]:
+    """
+    Get audit events for a specific asset.
+    """
+    from ..models.models import AuditLog, User
+    
+    query = select(AuditLog, User.full_name).outerjoin(
+        User, AuditLog.performed_by == User.id
+    ).filter(
+        AuditLog.entity_type == "Asset",
+        AuditLog.entity_id == str(asset_id)
+    ).order_by(AuditLog.timestamp.desc())
+    
+    result = await db.execute(query)
+    
+    events = []
+    for log, user_name in result.all():
+        events.append({
+            "id": str(log.id),
+            "action": log.action,
+            "details": log.details or {},
+            "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+            "performed_by_id": str(log.performed_by) if log.performed_by else None,
+            "performed_by_name": user_name or "System"
+        })
+        
+    return events

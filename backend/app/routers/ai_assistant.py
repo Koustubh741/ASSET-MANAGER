@@ -143,7 +143,7 @@ async def chat(
     if current_user.role in privileged_roles:
         assets = await asset_service.get_all_assets(db)
     elif is_manager:
-        department = current_user.department or current_user.domain
+        department = (current_user.dept_obj.name if current_user.dept_obj else None) or current_user.domain
         assets = await asset_service.get_all_assets_scoped(db, department=department or "")
     else:
         # END_USER and others: only their assigned assets

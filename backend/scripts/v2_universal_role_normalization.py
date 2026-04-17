@@ -14,90 +14,73 @@ async def migrate_roles_v2():
     async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
     
     async with async_session() as session:
-        print("🚀 Starting PHASE 2: Universal Role & Department Decoupling...")
+        print("Starting PHASE 2: Universal Role Normalization...")
         
-        # 1. Broad Normalization Mapping (Hard Scoped)
-        # We map legacy slug strings to (Base Role, Base Department)
+        # 1. Broad Role Normalization Mapping
+        # We focus on stabilizing ROLES since hierarchical department_id should be handled by seeding/UI
         normalization_map = {
-            "SYSTEM_ADMIN": ("ADMIN", None),
-            "ADMIN": ("ADMIN", None),
+            "SYSTEM_ADMIN": "ADMIN",
+            "ADMIN": "ADMIN",
             
             # Support Roles
-            "IT_SUPPORT": ("SUPPORT", "IT"),
-            "IT_MANAGEMENT": ("SUPPORT", "IT"),
-            "SUPPORT_SPECIALIST": ("SUPPORT", "IT"),
-            "ASSET_MANAGER": ("SUPPORT", "IT"),
-            "INVENTORY_MANAGER": ("SUPPORT", "IT"),
-            "ASSET_INVENTORY_MANAGER": ("SUPPORT", "IT"),
-            "FINANCE_SUPPORT": ("SUPPORT", "Finance"),
-            "PROCUREMENT_SUPPORT": ("SUPPORT", "Procurement"),
-            "HR_SUPPORT": ("SUPPORT", "Human Resources"),
-            "LEGAL_SUPPORT": ("SUPPORT", "Legal"),
+            "IT_SUPPORT": "SUPPORT",
+            "IT_MANAGEMENT": "SUPPORT",
+            "SUPPORT_SPECIALIST": "SUPPORT",
+            "ASSET_MANAGER": "SUPPORT",
+            "INVENTORY_MANAGER": "SUPPORT",
+            "ASSET_INVENTORY_MANAGER": "SUPPORT",
+            "FINANCE_SUPPORT": "SUPPORT",
+            "PROCUREMENT_SUPPORT": "SUPPORT",
+            "HR_SUPPORT": "SUPPORT",
+            "LEGAL_SUPPORT": "SUPPORT",
             
-            # Management Roles (Legacy Slugs)
-            "FINANCE": ("SUPPORT", "Finance"), # Often was staff
-            "PROCUREMENT": ("SUPPORT", "Procurement"),
-            "FINANCE_MANAGER": ("MANAGER", "Finance"),
-            "PROCUREMENT_MANAGER": ("MANAGER", "Procurement"),
-            "IT_MANAGER": ("MANAGER", "IT"),
+            # Management Roles
+            "FINANCE": "SUPPORT", # Often staff in our system
+            "PROCUREMENT": "SUPPORT",
+            "FINANCE_MANAGER": "MANAGER",
+            "PROCUREMENT_MANAGER": "MANAGER",
+            "IT_MANAGER": "MANAGER",
             
-            # Executives -> Manager + Dept
-            "CEO": ("MANAGER", "Executive"),
-            "CFO": ("MANAGER", "Executive"),
-            "CTO": ("MANAGER", "Executive"),
+            # Executives
+            "CEO": "MANAGER",
+            "CFO": "MANAGER",
+            "CTO": "MANAGER",
             
             # End Users
-            "END_USER": ("END_USER", None),
-            "EMPLOYEE": ("END_USER", None),
-            "USER": ("END_USER", None),
+            "END_USER": "END_USER",
+            "EMPLOYEE": "END_USER",
+            "USER": "END_USER",
         }
         
         # 1. Perform Updates for mapped roles
-        for slug, (base_role, base_dept) in normalization_map.items():
-            if base_dept:
-                # Update both role and department
-                result = await session.execute(
-                    text("UPDATE auth.users SET role = :new_role, department = :new_dept WHERE role ILIKE :old_slug"),
-                    {"new_role": base_role, "new_dept": base_dept, "old_slug": slug}
-                )
-            else:
-                # Update only role (for ADMIN/END_USER)
-                result = await session.execute(
-                    text("UPDATE auth.users SET role = :new_role WHERE role ILIKE :old_slug"),
-                    {"new_role": base_role, "old_slug": slug}
-                )
+        for old_slug, base_role in normalization_map.items():
+            result = await session.execute(
+                text("UPDATE auth.users SET role = :new_role WHERE role ILIKE :old_slug"),
+                {"new_role": base_role, "old_slug": old_slug}
+            )
             if result.rowcount > 0:
-                print(f"✅ Normalized {slug} -> Role: {base_role}, Dept: {base_dept or 'Unchanged'} ({result.rowcount} rows)")
+                print(f"Normalized {old_slug} -> {base_role} ({result.rowcount} users)")
 
         # 2. Fix MANAGER legacy position mismatch
-        # Ensure anyone with position=MANAGER has role=MANAGER if they aren't ADMIN
         result = await session.execute(
             text("UPDATE auth.users SET role = 'MANAGER' WHERE position = 'MANAGER' AND role NOT IN ('ADMIN', 'SUPPORT')")
         )
-        print(f"✅ Harmonized legacy MANAGER positions: {result.rowcount} rows")
+        print(f"Harmonized legacy MANAGER positions: {result.rowcount} rows")
 
-        # 3. Handle specific department strings based on domain if department is empty
-        # This is a fallback for data integrity
-        result = await session.execute(
-            text("UPDATE auth.users SET department = INITCAP(domain) WHERE (department IS NULL OR department = '') AND domain IS NOT NULL")
-        )
-        print(f"✅ Backfilled departments from domains: {result.rowcount} rows")
-
-        # 4. Final Cleanup (Trim and Case)
+        # 3. Final Cleanup (Trim and Case)
         await session.execute(text("UPDATE auth.users SET role = UPPER(TRIM(role))"))
-        await session.execute(text("UPDATE auth.users SET department = INITCAP(TRIM(department)) WHERE department IS NOT NULL"))
 
-        # 5. Review Result
-        result = await session.execute(text("SELECT role, department, COUNT(*) FROM auth.users GROUP BY role, department ORDER BY role"))
+        # 4. Review Result
+        result = await session.execute(text("SELECT role, COUNT(*) FROM auth.users GROUP BY role ORDER BY role"))
         rows = result.fetchall()
-        print("\n--- FINAL DB IDENTITY STATE ---")
-        for r, d, c in rows:
-            print(f"Role: {r:<10} | Dept: {str(d):<15} | Count: {c}")
+        print("\n--- FINAL DB ROLE STATE ---")
+        for r, c in rows:
+            print(f"Role: {r:<15} | Count: {c}")
             
         await session.commit()
     
     await engine.dispose()
-    print("\n🎉 PHASE 2 Migration Complete. System is now decoupled.")
+    print("\nPHASE 2 Role Normalization Complete.")
 
 if __name__ == "__main__":
     asyncio.run(migrate_roles_v2())

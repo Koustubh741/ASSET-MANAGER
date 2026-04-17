@@ -10,7 +10,6 @@ import traceback
 import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
-from .routers import upload, workflows, disposal, audit, assets, auth, tickets, asset_requests, users, reference, financials
 from .scheduler import scheduler, setup_patch_scheduler_jobs
 from .config.settings import settings
 from contextlib import asynccontextmanager

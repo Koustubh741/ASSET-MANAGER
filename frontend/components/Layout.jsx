@@ -10,6 +10,7 @@ import { useNavigation } from '../hooks/useNavigation';
 // Components
 import Sidebar from './layout/Sidebar';
 import MobileHeader from './layout/MobileHeader';
+import CommandBar from './layout/CommandBar';
 import AIAssistantSidebar from './AIAssistantSidebar';
 import NotificationToast from './NotificationToast';
 import NotificationDrawer from './NotificationDrawer';
@@ -37,11 +38,15 @@ export default function Layout({ children }) {
     };
 
     return (
-        <div className="app-shell h-screen flex flex-col sm:flex-row text-app-text font-inter font-normal bg-app-bg overflow-hidden">
+        <div className="app-shell h-screen flex flex-col md:flex-row text-app-text font-inter font-normal bg-app-bg overflow-hidden transition-colors duration-700">
             {/* Accessibility: Skip Link */}
             <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-primary focus:text-white">
                 Skip to main content
             </a>
+
+            {/* Global Utilities */}
+            <CommandBar />
+            <NotificationToast />
 
             {/* Premium Modular Sidebar (Desktop) */}
             <Sidebar 
@@ -65,11 +70,14 @@ export default function Layout({ children }) {
             {/* Main Content Area */}
             <main 
                 id="main-content" 
-                className="flex-1 min-h-0 md:ml-32 pt-20 md:pt-0 p-6 md:p-10 transition-all duration-500 overflow-y-auto custom-scrollbar relative"
+                className="flex-1 min-h-0 md:ml-24 pt-20 md:pt-0 p-6 md:p-10 transition-all duration-500 overflow-y-auto custom-scrollbar relative"
             >
-                {/* Visual Polish: Ambient HUD Grid */}
-                <div className="absolute inset-0 pointer-events-none opacity-[0.01] dark:opacity-[0.02]" 
-                    style={{ backgroundImage: 'radial-gradient(var(--text-muted) 0.5px, transparent 0.5px)', backgroundSize: '48px 48px' }} 
+                {/* Visual Polish: Ambient Retail Pulse Grid */}
+                <div className="absolute inset-0 pointer-events-none opacity-[0.03] dark:opacity-[0.05]" 
+                    style={{ 
+                        backgroundImage: 'radial-gradient(var(--primary) 0.5px, transparent 0.5px)', 
+                        backgroundSize: '32px 32px' 
+                    }} 
                 />
                 
 
@@ -78,61 +86,46 @@ export default function Layout({ children }) {
                     {children}
                 </div>
 
-                {/* Unified Footer */}
-                <footer className="mt-16 pt-8 border-t border-app-border/40 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.3em] text-app-text-muted opacity-40">
-                    <span>v2 Retail Lifecycle Platform</span>
-                    <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-2">
-                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/50" />
-                             Gateway: Stable
-                        </span>
-                        <span>© 2026 Retail Pulse Ecosystem</span>
+                {/* Unified Zenith Footer */}
+                <footer className="mt-24 pt-12 border-t border-app-border/40 flex flex-col md:flex-row items-center justify-between gap-6 pb-12">
+                    <div className="flex flex-col items-center md:items-start gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-app-text-muted opacity-40">Retail Pulse Zenith System</span>
+                        <div className="flex items-center gap-3">
+                            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : 'bg-amber-500 shadow-[0_0_8px_#f59e0b]'} animate-pulse`} />
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-app-text-muted">Node Status: Operational</span>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-8 text-[10px] font-black uppercase tracking-widest text-app-text-muted/60">
+                        <span className="hover:text-primary transition-colors cursor-help">SLA Architecture</span>
+                        <span className="hover:text-primary transition-colors cursor-help">Global Inventory</span>
+                        <span>© 2026 Zenith Ecosystem</span>
                     </div>
                 </footer>
             </main>
 
-            {/* Global Utility Overlays */}
-            <button
-                onClick={() => setIsAIOpen(true)}
-                className="fixed bottom-8 right-8 z-40 p-4 rounded-none bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-2xl shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:-translate-y-1 transition-all group scale-100 active:scale-95"
-                title="Open AI Assistant"
-            >
-                <div className="absolute inset-0 bg-white/20 animate-pulse rounded-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Bot size={24} className="relative z-10" />
-            </button>
-
+            {/* Side Drawers */}
             <AIAssistantSidebar isOpen={isAIOpen} onClose={() => setIsAIOpen(false)} />
-            <NotificationToast />
             <NotificationDrawer isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} />
 
-            {/* Global Theme Overrides & HUD Animations */}
+            {/* AI Assistant Floating Trigger */}
+            <button
+                onClick={() => setIsAIOpen(true)}
+                className="fixed bottom-10 right-10 z-[60] p-5 glass-zenith shadow-2xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-2 transition-all group scale-100 active:scale-95 border-primary/30"
+                title="Open AI Assistant"
+            >
+                <div className="absolute inset-0 bg-primary/10 animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Bot size={28} className="relative z-10 text-primary group-hover:scale-110 transition-transform" />
+            </button>
+
             <style jsx global>{`
-                @keyframes swing {
-                    0%, 100% { transform: rotate(0deg); }
-                    20% { transform: rotate(15deg); }
-                    40% { transform: rotate(-10deg); }
-                    60% { transform: rotate(5deg); }
-                    80% { transform: rotate(-5deg); }
+                @keyframes scan {
+                    from { transform: translateY(-100%); opacity: 0; }
+                    50% { opacity: 1; }
+                    to { transform: translateY(1000%); opacity: 0; }
                 }
-                .animate-swing {
-                    animation: swing 3s ease-in-out infinite;
-                    transform-origin: top center;
-                }
-                @keyframes borderPulse {
-                    0%, 100% { opacity: 0.5; }
-                    50% { opacity: 0.9; }
-                }
-                /* Digital Scanline Effect */
-                .app-shell::after {
-                    content: "";
-                    position: fixed;
-                    top: 0; left: 0; width: 100%; height: 100%;
-                    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), 
-                                linear-gradient(90deg, rgba(255, 0, 0, 0.01), rgba(0, 255, 0, 0.005), rgba(0, 0, 255, 0.01));
-                    background-size: 100% 2px, 3px 100%;
-                    pointer-events: none;
-                    z-index: 100;
-                    opacity: 0.1;
+                .animate-scan {
+                    animation: scan 8s linear infinite;
                 }
             `}</style>
         </div>

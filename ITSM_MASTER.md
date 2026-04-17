@@ -1,87 +1,91 @@
-# ITSM Platform Master Documentation
+# V2 Retail ITSM Platform — Master Documentation
 
-## 1. Project Overview & Proposal
+## 1. Project Overview: The V2 Retail Build
 
-The ITSM (IT Service Management) Platform is a comprehensive solution designed to manage the full lifecycle of IT assets, support tickets, and employee transitions.
+The ITSM (IT Service Management) Platform for **V2 Retail** is a high-fidelity enterprise ecosystem designed to manage the full lifecycle of IT assets, retail infrastructure, and employee identities across 16 specialized departments.
 
 ### Key Capabilities
 
-- **Role-Based Security:** 6 distinct roles (System Admin, IT, Inventory, Finance, Manager, Employee).
-- **Asset Command Center:** Real-time inventory tracking and automated lifecycle management.
-- **Intelligent Procurement:** 5-stage approval pipeline (Employee -> Manager -> IT -> Finance -> Delivery).
-- **IT Support & Helpdesk:** Linked incident ticketing with mandatory diagnostics.
-- **Secure Offboarding:** Snapshot-based asset reclamation and account locking.
-- **Strategic Analytics:** Executive dashboards and operational reports.
+- **Deep RBAC (Role-Based Access Control):** Granular security permissions for 800+ functional designations (e.g., ASM, LPO, Basis Head, CIO).
+- **Multi-Departmental Integration:** Unified management across Corporate (HQ), Warehouse (SCM), and Store (Retail) environments.
+- **Retail Hardware Lifecycle:** Tracking specialized retail assets (Barcode Scanners, Thermal Printers, POS Units) alongside backend server infrastructure.
+- **Intelligent Financial Governance:** 5-stage procurement pipeline with CFO/Finance oversight.
+- **Security & Loss Prevention:** Specialized "Loss Prevention" (LP) protocols for asset reclamation and physical security verification.
 
-## 2. Feature Implementation Matrix
+---
 
-Current Status: **~68% Complete** (15/22 Features Active)
+## 2. Departmental Matrix (16 Core Verticals)
 
-| Module              | Feature                               | Status     |
-| :------------------ | :------------------------------------ | :--------- |
-| **Access Control**  | RBAC, User Onboarding                 | ✅ ACTIVE  |
-| **Asset Mgmt**      | Hardware Tracking, Inventory, History | ✅ ACTIVE  |
-| **Procurement**     | PR Workflow, Delivery Verification    | ✅ ACTIVE  |
-| **IT Support**      | Incident Ticketing, Checklists, BYOD  | ✅ ACTIVE  |
-| **HR Operations**   | Exit Workflow, Asset Reclamation      | ✅ ACTIVE  |
-| **Employee Portal** | "My Assets", Service Catalog          | ✅ ACTIVE  |
-| **Analytics**       | Executive Dashboards, Stock Alerts    | ✅ ACTIVE  |
-| **Roadmap**         | SSO, Software Mgmt, Barcode Scanning  | ❌ Roadmap |
+The platform is architected around these 16 core departments, each with dedicated workflows:
 
-## 3. Technical Infrastructure & Setup
+1.  **HR (Human Resources)**: Employee lifecycle and onboarding.
+2.  **BD (Business Development)**: Regional growth and site expansion.
+3.  **IT (Information Technology)**: Infrastructure, SAP/ERP, Security, and Support.
+4.  **LOSS PREVENTION (LP)**: Inventory security and audit compliance.
+5.  **MARKETING**: Digital signage and customer-facing technology.
+6.  **NSO (New Store Opening)**: Rapid deployment kits for new retail sites.
+7.  **PLANNING**: Resource allocation and strategic forecasting.
+8.  **ADMIN**: Facility management and office infrastructure.
+9.  **PROJECT**: Construction and site-build technical oversight.
+10. **INVENTORY**: Master stock control and asset distribution.
+11. **RETAIL OPERATION**: Day-to-day store-level technical support.
+12. **RETAIL**: Store-facing assets and associate management.
+13. **SCM (Supply Chain Management)**: Warehouse and logistics technology.
+14. **F&A (Finance & Accounts)**: Budgeting, PO validation, and CFO-level reporting.
+15. **B&M (Buying & Merchandising)**: Merchandising tools and vendor portals.
+16. **LEGAL & COMPANY SECRETARY**: Compliance, corporate governance, and secretarial functions.
 
-### Database Configuration (PostgreSQL)
+---
 
-The backend uses PostgreSQL with the `asset` schema.
+## 3. Role & Permission Infrastructure
 
-- **Connectivity:** Controlled via `.env` variables (`DATABASE_URL` or individual host/port settings).
-- **Setup:** Run `python setup_database.py` to initialize schemas and tables.
-- **Mock Data:** Use `python populate_mock_data.py` for testing.
+The V2 Retail build uses a specialized **Persona-Based** identity model:
 
-### Backend Workflow Engine
+| Role Level | Target Personas | Primary Dashboard |
+| :--- | :--- | :--- |
+| **EXECUTIVE** | CEO, CFO, CIO, CTO, Zonal Managers | `SystemAdminAnalytics` |
+| **SYSTEM ADMIN** | System Admin, Basis Head | `SystemAdminDashboard` |
+| **IT MANAGEMENT** | Head-IT Support, Infra Head, DBAs | `ITSupportDashboard` |
+| **FINANCE** | CFO, Finance Managers, Executives | `FinanceDashboard` |
+| **PROCUREMENT** | SCM Head, Procurement Managers | `ProcurementManagerDashboard` |
+| **LOSS PREVENTION** | Zonal LP, LPO, CCTV Technicians | `LossPreventionDashboard` |
+| **MANAGER** | Store Managers (SM), Warehouse Managers | `BusinessOpsDashboard` |
+| **EMPLOYEE** | Store Associates, Executives, Trainees | `EndUserDashboard` |
 
-A standardized state machine manages transitions:
-`SUBMITTED` -> `MANAGER_APPROVED` -> `IT_APPROVED` -> `PROCUREMENT_REQUESTED` -> `QC_PENDING` -> `USER_ACCEPTANCE_PENDING` -> `IN_USE` -> `CLOSED`.
+---
 
-### Integration Summary
+## 4. V2 Retail Workflows
 
-- **Frontend-Backend:** Fully integrated via `apiClient.js` and `AssetContext.jsx`.
-- **API Base:** `http://localhost:8000`
-- **Authentication:** JWT-based persistent sessions.
+### 4.1. Procurement Pipeline (V2 Logic)
+1. **Employee** (Any Dept) submits Purchase Request (PR) with justification.
+2. **Department Manager** (SM / ASM / Dept Head) approves business justification.
+3. **IT Management** (Head-IT / Infra Head / ERP Apps Head) approves technical specifications.
+4. **Department Manager** (Oversight) confirms the IT decision.
+5. **SCM** (Supply Chain Management) creates the Purchase Order (PO) with vendor details.
+6. **F&A** (Finance & Accounts) validates the PO against budget and gives final financial approval.
+7. **SCM** (Supply Chain Management) confirms physical delivery from vendor.
+8. **INVENTORY** (Inventory Dept) performs Quality Control (QC) and allocates the asset to the requestor.
+9. **Employee** verifies asset condition and accepts (or raises an issue).
+10. **Department Manager** (Final Oversight) confirms the completed assignment.
+11. **System** marks asset as `IN_USE`; workflow closed.
 
-## 4. Operational Workflows
+### 4.2. Loss Prevention & Incident Mgmt
+Specialized "Loss Prevention" (LP) dashboards track physical security assets. LP Officers (LPO) have authority to trigger "Asset Reclamation" workflows independently of HR.
 
-### Asset Request & Procurement
+### 4.3. NSO (New Store Opening) Kits
+Automated asset grouping for NSO kits, allowing rapid provisioning of POS, Scanners, and networking gear for new locations.
 
-1. **Employee** submits request (`SUBMITTED`).
-2. **First-line Manager** approves justification (`MANAGER_APPROVED`).
-3. **IT Management** performs technical spec verification (`IT_APPROVED`).
-4. **Manager** confirms IT decision to finalize technical scope (`MANAGER_CONFIRMED_IT`).
-5. **Inventory Manager** performs manual stock check:
-   - **Found in Inventory**: Reserves asset and routes directly to User Acceptance.
-   - **Needs Purchase**: Marks as "Not Available" to route to Procurement.
-6. **Procurement Manager** creates/uploads Purchase Order (`PO_UPLOADED`).
-7. **Finance** reviews budget and validates order (`PO_VALIDATED`).
-8. **Finance/Procurement** finalizes approval/payment (`PROCUREMENT_APPROVED`).
-9. **Procurement** confirms physical delivery from vendor (`DELIVERED`).
-10. **Inventory Manager** performs Quality Control (`QC_PENDING`) and final allocation.
-11. **Employee** accepts/rejects receipt of asset (`IN_USE`).
+---
 
-### IT Support (Ticketing)
+## 5. Technical Stack
 
-- Tickets are auto-linked to assets.
-- Technicians must complete diagnostic checklists before resolution notes can be submitted.
+- **Frontend**: Next.js 14, Tailwind CSS, Lucide Icons.
+- **Backend**: Python 3.11, FastAPI, SQLAlchemy 2.0.
+- **Database**: PostgreSQL (Schematized: `auth`, `asset`, `support`, `system`, `finance`, `security`).
+- **Identity**: `RoleContext.js` with integrated V2 Retail persona mapping.
 
-### Employee Exit (Offboarding)
+---
 
-1. **Admin** initiates exit.
-2. **System** freezes asset/BYOD snapshot.
-3. **Inventory Manager** reclaims physical assets.
-4. **IT** wipes/unenrolls BYOD devices.
-5. **Admin** finalizes and disables account.
+## 6. Verification & Auditing
 
-## 5. System Status & Verification
-
-- **Internal Docs:** Interactive API documentation available at `/docs`.
-- **Audit Logs:** All significant actions are recorded in `system.audit_logs`.
-- **Data Collection:** The `/api/v1/collect` endpoint allows external systems to auto-register assets via serial number detection.
+All actions are logged in the `system.audit_logs`. The **System Admin** can view the complete **Persona Matrix** to audit permission overlap across departments.

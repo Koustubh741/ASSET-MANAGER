@@ -132,9 +132,9 @@ export const NotificationProvider = ({ children }) => {
                 setIsConnected(false);
                 es.close();
                 
-                // Reconnect after 5 seconds
+                // Reconnect after 15 seconds
                 if (!reconnectTimerRef.current) {
-                    reconnectTimerRef.current = setTimeout(connect, 5000);
+                    reconnectTimerRef.current = setTimeout(connect, 15000);
                 }
             };
         };

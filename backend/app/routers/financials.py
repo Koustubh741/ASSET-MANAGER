@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from datetime import datetime, date, timedelta
 from uuid import UUID
 from ..database.database import get_db
-from ..models.models import Asset, PurchaseOrder, PurchaseInvoice, FinanceRecord, User, AssetRequest
+from ..models.models import Asset, PurchaseOrder, PurchaseInvoice, FinanceRecord, User, AssetRequest, Department
 from ..utils.auth_utils import get_current_user
 from fastapi import HTTPException, status
 from ..services.notification_service import send_notification
@@ -85,14 +85,15 @@ async def get_financial_summary(
     else:
         # Scope assets by owner's domain/department for IT_MANAGEMENT and ASSET_MANAGER
         user_domain = current_user.domain or ""
-        user_dept = current_user.department or ""
+        user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
         result = await db.execute(
             select(Asset).join(User, Asset.assigned_to_id == User.id)
-            .where(or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%")))
+            .outerjoin(Department, User.department_id == Department.id)
+            .where(or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%")))
         )
         # Scope POs via AssetRequest -> User
-        po_query = select(PurchaseOrder).join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        po_query = select(PurchaseOrder).join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
     
     assets = result.scalars().all()
@@ -172,10 +173,11 @@ async def get_costs_by_asset_type(
         result = await db.execute(select(Asset))
     else:
         user_domain = current_user.domain or ""
-        user_dept = current_user.department or ""
+        user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
         result = await db.execute(
             select(Asset).join(User, Asset.assigned_to_id == User.id)
-            .where(or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%")))
+            .outerjoin(Department, User.department_id == Department.id)
+            .where(or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%")))
         )
     assets = result.scalars().all()
     
@@ -219,9 +221,9 @@ async def get_monthly_spend(
         query = select(PurchaseOrder)
     else:
         user_domain = current_user.domain or ""
-        user_dept = current_user.department or ""
-        query = select(PurchaseOrder).join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
+        query = select(PurchaseOrder).join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
         
     result = await db.execute(query)
@@ -273,10 +275,11 @@ async def get_depreciation_data(
         result = await db.execute(select(Asset))
     else:
         user_domain = current_user.domain or ""
-        user_dept = current_user.department or ""
+        user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
         result = await db.execute(
             select(Asset).join(User, Asset.assigned_to_id == User.id)
-            .where(or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%")))
+            .outerjoin(Department, User.department_id == Department.id)
+            .where(or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%")))
         )
     assets = result.scalars().all()
     
@@ -345,14 +348,14 @@ async def get_procurement_summary(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     try:
         if user_role == "ADMIN":
             query = select(PurchaseOrder)
         else:
-            query = select(PurchaseOrder).join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-                or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+            query = select(PurchaseOrder).join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+                or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
             )
         result = await db.execute(query)
         pos = result.scalars().all()
@@ -419,7 +422,7 @@ async def list_purchase_orders(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     if user_role == "ADMIN":
         query = select(PurchaseOrder).order_by(PurchaseOrder.created_at.desc())
@@ -428,7 +431,8 @@ async def list_purchase_orders(
             select(PurchaseOrder)
             .join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id)
             .join(User, AssetRequest.requester_id == User.id)
-            .where(or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%")))
+            .outerjoin(Department, User.department_id == Department.id)
+            .where(or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%")))
             .order_by(PurchaseOrder.created_at.desc())
         )
         
@@ -462,13 +466,13 @@ async def get_purchase_order(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     # Validation check: scoped query
     query = select(PurchaseOrder).where(PurchaseOrder.id == str(po_id))
     if user_role != "ADMIN":
-        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
         
     result = await db.execute(query)
@@ -509,9 +513,9 @@ async def audit_purchase_order(
     query = select(PurchaseOrder).where(PurchaseOrder.id == str(po_id))
     if user_role != "ADMIN":
         user_domain = current_user.domain or ""
-        user_dept = current_user.department or ""
-        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
+        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
         
     result = await db.execute(query)
@@ -540,12 +544,12 @@ async def update_po_status(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     query = select(PurchaseOrder).where(PurchaseOrder.id == str(po_id))
     if user_role != "ADMIN":
-        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
         
     result = await db.execute(query)
@@ -573,7 +577,7 @@ async def list_deliveries(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     if user_role == "ADMIN":
         query = select(PurchaseOrder).order_by(PurchaseOrder.expected_delivery_date.asc())
@@ -582,7 +586,8 @@ async def list_deliveries(
             select(PurchaseOrder)
             .join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id)
             .join(User, AssetRequest.requester_id == User.id)
-            .where(or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%")))
+            .outerjoin(Department, User.department_id == Department.id)
+            .where(or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%")))
             .order_by(PurchaseOrder.expected_delivery_date.asc())
         )
         
@@ -616,12 +621,12 @@ async def mark_po_received(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     query = select(PurchaseOrder).where(PurchaseOrder.id == str(po_id))
     if user_role != "ADMIN":
-        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(AssetRequest, PurchaseOrder.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
         
     result = await db.execute(query)
@@ -664,7 +669,7 @@ async def list_budget_queue(
         raise HTTPException(status_code=403, detail="Unauthorized")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     if user_role == "ADMIN":
         query = select(FinanceRecord).order_by(FinanceRecord.created_at.desc())
@@ -674,7 +679,8 @@ async def list_budget_queue(
             select(FinanceRecord)
             .join(AssetRequest, FinanceRecord.asset_request_id == AssetRequest.id)
             .join(User, AssetRequest.requester_id == User.id)
-            .where(or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%")))
+            .outerjoin(Department, User.department_id == Department.id)
+            .where(or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%")))
             .order_by(FinanceRecord.created_at.desc())
         )
         
@@ -708,12 +714,12 @@ async def approve_budget_record(
         raise HTTPException(status_code=403, detail="Only Finance or Admin can approve")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     query = select(FinanceRecord).where(FinanceRecord.id == str(record_id))
     if user_role != "ADMIN":
-        query = query.join(AssetRequest, FinanceRecord.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(AssetRequest, FinanceRecord.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
         
     result = await db.execute(query)
@@ -752,12 +758,12 @@ async def reject_budget_record(
         raise HTTPException(status_code=403, detail="Only Finance or Admin can reject")
     
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
     
     query = select(FinanceRecord).where(FinanceRecord.id == str(record_id))
     if user_role != "ADMIN":
-        query = query.join(AssetRequest, FinanceRecord.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(AssetRequest, FinanceRecord.asset_request_id == AssetRequest.id).join(User, AssetRequest.requester_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
         
     result = await db.execute(query)

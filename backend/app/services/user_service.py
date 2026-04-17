@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from ..models.models import User
-from ..schemas.user_schema import UserCreate, UserUpdate
+from ..schemas.user_schema import UserCreate, UserUpdate, PERSONA_MAP, GENERIC_PERSONAS
 import uuid
 from uuid import UUID
 from ..utils.uuid_gen import get_uuid
@@ -64,6 +64,20 @@ async def create_user(db: AsyncSession, user: UserCreate):
         if matched_dept:
             dept_id = matched_dept.id
 
+    # Root Fix: Functional Persona Validation
+    persona = user.persona
+    if persona and dept_id:
+        from ..models.models import Department as DeptModel
+        dept_obj = await db.get(DeptModel, dept_id)
+        if dept_obj:
+            dept_name = dept_obj.name.upper()
+            if dept_name == "TECHNOLOGY": dept_name = "IT" # Normalization
+            
+            valid_options = PERSONA_MAP.get(dept_name, [])
+            if persona not in valid_options and persona not in GENERIC_PERSONAS:
+                # Fallback to generic if invalid
+                persona = "MANAGER" if (user.position or "").upper() == "MANAGER" else "EXECUTIVE"
+
     db_user = User(
         id=get_uuid(),
         email=normalized_email,
@@ -78,7 +92,7 @@ async def create_user(db: AsyncSession, user: UserCreate):
         phone=user.phone,
         company=user.company,
         manager_id=user.manager_id,
-        persona=user.persona,
+        persona=persona, # Use validated/fallback persona
         loc_type=user.loc_type,
         sub_dept=user.sub_dept,
         designation=user.designation,
@@ -276,7 +290,16 @@ async def update_user(db: AsyncSession, user_id: UUID, user_update: UserUpdate) 
         
     for field, value in update_data.items():
         setattr(user, field, value)
+
+    # Root Fix: Post-update persona validation
+    if user.persona and user.dept_obj:
+        dept_name = user.dept_obj.name.upper()
+        if dept_name == "TECHNOLOGY": dept_name = "IT"
         
+        valid_options = PERSONA_MAP.get(dept_name, [])
+        if user.persona not in valid_options and user.persona not in GENERIC_PERSONAS:
+            user.persona = "MANAGER" if (user.position or "").upper() == "MANAGER" else "EXECUTIVE"
+            
     await db.commit()
     await db.refresh(user)
     return user

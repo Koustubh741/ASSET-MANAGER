@@ -27,17 +27,24 @@ async def sync_hierarchy():
         print("\n--- SYNCING DEPARTMENTS ---")
         for dept_name in DEPARTMENTS:
             slug = dept_name.lower().replace(" ", "-").replace("&", "n")
-            # Upsert Department
-            stmt = insert(Department).values(
-                name=dept_name,
-                slug=slug,
-                description=f"Master Department: {dept_name}"
-            ).on_conflict_do_update(
-                index_elements=[Department.slug],
-                set_={"name": dept_name}
-            )
-            await db.execute(stmt)
-            print(f"Synced Dept: {dept_name} ({slug})")
+            
+            # Check by Name or Slug to avoid unique constraint violations
+            res = await db.execute(select(Department).filter((Department.name == dept_name) | (Department.slug == slug)))
+            existing = res.scalars().first()
+            
+            if existing:
+                print(f"Updating Existing Dept: {dept_name}")
+                existing.name = dept_name
+                existing.slug = slug
+            else:
+                print(f"Creating New Dept: {dept_name}")
+                new_dept = Department(
+                    id=get_uuid(),
+                    name=dept_name,
+                    slug=slug,
+                    description=f"Master Department: {dept_name}"
+                )
+                db.add(new_dept)
         
         await db.commit()
         

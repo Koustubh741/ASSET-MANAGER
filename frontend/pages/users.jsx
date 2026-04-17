@@ -1,8 +1,67 @@
+import { PERSONA_MAP } from '../config/v2_persona_map';
 import Link from 'next/link';
-import { ArrowLeft, User, Monitor, Disc, Ticket, Search, Mail, Check, X, ShieldAlert, Plus } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { ArrowLeft, User, Monitor, Disc, Ticket, Search, Mail, Check, X, ShieldAlert, Plus, Headphones, Crown, Building2, MapPin, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useRole } from '@/contexts/RoleContext';
+
+// ── V2 Retail Position Config ──────────────────────────────────────
+const POSITION_OPTIONS = [
+    {
+        value: 'TEAM_MEMBER',
+        role: 'END_USER',
+        label: 'Staff',
+        desc: 'Asset requests, ticket submission & personal asset view',
+        Icon: User,
+        color: 'border-blue-500/40 bg-blue-500/5 text-blue-400',
+        activeColor: 'border-blue-500 bg-blue-500/15 text-blue-300 shadow-lg shadow-blue-500/10',
+        badge: 'bg-blue-500/20 text-blue-300'
+    },
+    {
+        value: 'SUPPORT_STAFF',
+        role: 'SUPPORT',
+        label: 'Support Staff',
+        desc: 'Ticket management, IT support workflows & group assignments',
+        Icon: Headphones,
+        color: 'border-emerald-500/40 bg-emerald-500/5 text-emerald-400',
+        activeColor: 'border-emerald-500 bg-emerald-500/15 text-emerald-300 shadow-lg shadow-emerald-500/10',
+        badge: 'bg-emerald-500/20 text-emerald-300'
+    },
+    {
+        value: 'MANAGER',
+        role: 'MANAGER',
+        label: 'Manager',
+        desc: 'Departmental approvals, team oversight & full request control',
+        Icon: Crown,
+        color: 'border-amber-500/40 bg-amber-500/5 text-amber-400',
+        activeColor: 'border-amber-500 bg-amber-500/15 text-amber-300 shadow-lg shadow-amber-500/10',
+        badge: 'bg-amber-500/20 text-amber-300'
+    }
+];
+
+const V2_RETAIL_DEPTS = [
+    'ADMIN', 'B&M', 'BD', 'F&A', 'HR', 'INVENTORY', 'IT',
+    'LEGAL & COMPANY SECRETARY', 'LOSS PREVENTION', 'MARKETING',
+    'NSO', 'PLANNING', 'PROJECT', 'RETAIL', 'RETAIL OPERATION', 'SCM'
+];
+
+const LOC_TYPES = [
+    { value: '', label: '— Select Location Type —' },
+    { value: 'HQ', label: 'HQ (Head Office)' },
+    { value: 'STORE', label: 'Store' },
+    { value: 'WAREHOUSE', label: 'Warehouse' },
+];
+
+
+const GENERIC_PERSONAS = [
+    { value: 'SENIOR_EXECUTIVE', label: 'Senior Executive' },
+    { value: 'EXECUTIVE', label: 'Executive' },
+    { value: 'MANAGER', label: 'Manager' },
+    { value: 'ASSISTANT_MANAGER', label: 'Assistant Manager' },
+    { value: 'JUNIOR_EXECUTIVE', label: 'Junior Executive' },
+    { value: 'SUPPORT_LEAD', label: 'Support Lead' }
+];
+// ────────────────────────────────────────────────────────────────────
 
 export default function UsersPage() {
     const { isAdmin } = useRole();
@@ -12,6 +71,7 @@ export default function UsersPage() {
     const [search, setSearch] = useState('');
     const [selectedUser, setSelectedUser] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [retailDepts, setRetailDepts] = useState([]);
     const [createForm, setCreateForm] = useState({
         email: '',
         password: '',
@@ -19,10 +79,60 @@ export default function UsersPage() {
         role: 'END_USER',
         status: 'ACTIVE',
         position: 'TEAM_MEMBER',
-        department: ''
+        department_id: '',
+        loc_type: '',
+        persona: ''
     });
     const [creating, setCreating] = useState(false);
 
+    // Functional Persona Search State (for modal)
+    const [personaSearch, setPersonaSearch] = useState('');
+    const [isPersonaDropdownOpen, setIsPersonaDropdownOpen] = useState(false);
+    const personaDropdownRef = useRef(null);
+
+
+
+
+    // Fetch v2 retail departments when create modal is opened
+    useEffect(() => {
+        if (!showCreateModal) return;
+        const fetchDepts = async () => {
+            try {
+                const res = await apiClient.getDepartments();
+                const all = res?.data || res || [];
+                // Keep only v2 retail depts
+                const v2 = all.filter(d => V2_RETAIL_DEPTS.includes(d.name));
+                // Sort by canonical order
+                v2.sort((a, b) => V2_RETAIL_DEPTS.indexOf(a.name) - V2_RETAIL_DEPTS.indexOf(b.name));
+                setRetailDepts(v2);
+            } catch (e) {
+                console.error('Failed to load departments:', e);
+                // Fallback: build dummy objects from name list
+                setRetailDepts(V2_RETAIL_DEPTS.map(n => ({ id: n, name: n })));
+            }
+        };
+        fetchDepts();
+    }, [showCreateModal]);
+
+    // Click outside listener for searchable dropdowns
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (personaDropdownRef.current && !personaDropdownRef.current.contains(event.target)) {
+                setIsPersonaDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [personaDropdownRef]);
+
+    const filteredPersonas = useMemo(() => {
+        const list = PERSONA_MAP[createForm.department_id] || GENERIC_PERSONAS;
+        if (!personaSearch) return list;
+        return list.filter(p => 
+            p.label.toLowerCase().includes(personaSearch.toLowerCase()) ||
+            p.value.toLowerCase().includes(personaSearch.toLowerCase())
+        );
+    }, [createForm.department_id, personaSearch]);
 
 
     const fetchPendingUsers = async () => {
@@ -77,7 +187,9 @@ export default function UsersPage() {
                 role: 'END_USER',
                 status: 'ACTIVE',
                 position: 'TEAM_MEMBER',
-                department: ''
+                department_id: '',
+                loc_type: '',
+                persona: ''
             });
             window.location.reload();
         } catch (e) {
@@ -98,6 +210,7 @@ export default function UsersPage() {
                 ]);
                 const apiAssets = assetResponse.data || [];
                 const apiTickets = ticketResponse.data || [];
+                let apiUsers = [];
 
                 if (isAdmin) {
                     await fetchPendingUsers();
@@ -141,9 +254,9 @@ export default function UsersPage() {
                         // This identifies that asset.assigned_to might be a name or an email
                         let key = userName;
 
-                        // Check if it's already in the map (e.g. by email)
+                        // Check if it's already in the map (e.g. by email or id)
                         const existingKey = Object.keys(userMap).find(k =>
-                            k === userName || userMap[k].name === userName || userMap[k].email === userName
+                            k === userName || userMap[k].id === userName || userMap[k].name === userName || userMap[k].email === userName
                         );
 
                         if (existingKey) {
@@ -182,7 +295,7 @@ export default function UsersPage() {
                     const userName = ticket.requestor_id;
                     if (userName) {
                         const existingKey = Object.keys(userMap).find(k =>
-                            k === userName || userMap[k].name === userName || userMap[k].email === userName
+                            k === userName || userMap[k].id === userName || userMap[k].name === userName || userMap[k].email === userName
                         );
 
                         const key = existingKey || userName;
@@ -221,7 +334,9 @@ export default function UsersPage() {
     const filteredUsers = users.filter(u =>
         u.name?.toLowerCase().includes(search.toLowerCase()) ||
         u.role?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase())
+        u.email?.toLowerCase().includes(search.toLowerCase()) ||
+        u.persona?.toLowerCase().includes(search.toLowerCase()) ||
+        u.department?.toLowerCase().includes(search.toLowerCase())
     );
 
     if (loading) return <div className="min-h-screen bg-app-void flex items-center justify-center text-app-text-muted font-black uppercase tracking-[0.2em] animate-pulse italic">Scanning Neural Personnel Matrix...</div>;
@@ -380,8 +495,8 @@ export default function UsersPage() {
 
             {/* User Details Modal */}
             {selectedUser && (
-                <div className="fixed inset-0 bg-app-void/90 backdrop-blur-3xl z-150 flex items-center justify-center p-4 animate-in fade-in duration-500">
-                    <div className="w-full max-w-2xl bg-app-obsidian border border-app-border rounded-none shadow-[0_0_100px_rgba(0,0,0,0.8)] max-h-[90vh] overflow-hidden flex flex-col relative">
+                <div className="fixed inset-0 bg-slate-950/99 backdrop-blur-3xl z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-500">
+                    <div className="w-full max-w-4xl bg-app-obsidian border border-app-border rounded-none shadow-[0_0_150px_rgba(0,0,0,1)] max-h-[90vh] overflow-hidden flex flex-col relative">
                         <div className="kinetic-scan-line" />
 
                         {/* Modal Header */}
@@ -486,13 +601,15 @@ export default function UsersPage() {
 
             {/* Create User Modal */}
             {showCreateModal && (
-                <div className="fixed inset-0 bg-app-void/90 backdrop-blur-3xl z-150 flex items-center justify-center p-4 animate-in fade-in duration-500">
-                    <div className="w-full max-w-2xl bg-app-obsidian border border-app-border rounded-none shadow-[0_0_100px_rgba(0,0,0,0.8)] relative">
+                <div className="fixed inset-0 bg-slate-950/99 backdrop-blur-3xl z-[1000] flex items-center justify-center p-4 animate-in fade-in duration-500">
+                    <div className="w-full max-w-4xl bg-app-obsidian border border-app-border rounded-none shadow-[0_0_150px_rgba(0,0,0,1)] relative max-h-[95vh] flex flex-col">
                         <div className="kinetic-scan-line" />
-                        <div className="p-8 border-b border-app-border flex items-center justify-between bg-app-void">
+
+                        {/* Header */}
+                        <div className="p-6 border-b border-app-border flex items-center justify-between bg-app-void shrink-0">
                             <div>
-                                <h2 className="text-3xl font-black text-app-text uppercase italic tracking-tighter italic">Provision <span className="text-app-primary">Agent</span></h2>
-                                <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.3em] mt-1 opacity-40">Identity Genesis Protocol v4.0</p>
+                                <h2 className="text-2xl font-black text-app-text uppercase italic tracking-tighter">Create <span className="text-app-primary">Account</span></h2>
+                                <p className="text-[10px] text-app-text-muted font-black uppercase tracking-[0.3em] mt-1 opacity-40">v2 Retail — Identity Provisioning</p>
                             </div>
                             <button
                                 onClick={() => setShowCreateModal(false)}
@@ -501,120 +618,262 @@ export default function UsersPage() {
                                 <X size={20} />
                             </button>
                         </div>
-                        <form onSubmit={handleCreateUser} className="p-8 space-y-8">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                        {/* Scrollable form body */}
+                        <div className="overflow-y-auto flex-1">
+                        <form id="create-user-form" onSubmit={handleCreateUser} className="p-6 space-y-6">
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Neural_Link_Matrix (Email)</label>
+                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                        <Mail size={11} /> Credential Identity
+                                    </label>
                                     <input
+                                        id="create-user-email"
                                         type="email"
                                         required
                                         value={createForm.email}
                                         onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                                        className="w-full px-5 py-4 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-mono transition-all text-sm"
-                                        placeholder="agent_id@kinetic-ops.int"
+                                        className="w-full px-4 py-3.5 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-mono transition-all text-[12px] placeholder:opacity-20"
+                                        placeholder="user@system.terminal"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Encryption_Key (Password)</label>
+                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                        <ShieldAlert size={11} /> Encryption Key
+                                    </label>
                                     <input
+                                        id="create-user-password"
                                         type="password"
                                         required
                                         value={createForm.password}
                                         onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                                        className="w-full px-5 py-4 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-mono transition-all text-sm"
+                                        className="w-full px-4 py-3.5 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-mono transition-all text-[12px] placeholder:opacity-20"
                                         placeholder="••••••••••••"
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Personnel_Alias (Full Name)</label>
+                             <div className="space-y-2">
+                                <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                    <User size={11} /> Personnel Legal Alias
+                                </label>
                                 <input
+                                    id="create-user-name"
                                     type="text"
                                     required
                                     value={createForm.full_name}
                                     onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
-                                    className="w-full px-5 py-4 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase italic tracking-tight transition-all text-sm"
-                                    placeholder="DESIGNATION_REQUIRED"
+                                    className="w-full px-4 py-3.5 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase italic tracking-widest transition-all text-[12px] placeholder:opacity-20"
+                                    placeholder="Enter full legal name..."
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-8">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Clearance_Level (Role)</label>
-                                    <select
-                                        value={createForm.role}
-                                        onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                                        className="w-full px-5 py-4 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase tracking-widest text-xs transition-all appearance-none cursor-pointer"
+                            {/* ── Position Toggle (v2 Retail) ── */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em]">Position & Access Level</label>
+                                    <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-none"
+                                        style={{
+                                            background: POSITION_OPTIONS.find(p => p.value === createForm.position)?.value === 'TEAM_MEMBER' ? 'rgba(59,130,246,0.15)' :
+                                                        POSITION_OPTIONS.find(p => p.value === createForm.position)?.value === 'SUPPORT_STAFF' ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
+                                            color: POSITION_OPTIONS.find(p => p.value === createForm.position)?.value === 'TEAM_MEMBER' ? '#93c5fd' :
+                                                   POSITION_OPTIONS.find(p => p.value === createForm.position)?.value === 'SUPPORT_STAFF' ? '#6ee7b7' : '#fcd34d',
+                                        }}
                                     >
-                                        <option value="END_USER">End User</option>
-                                        <option value="MANAGER">Manager</option>
-                                        <option value="IT_MANAGEMENT">IT Management</option>
-                                        <option value="ASSET_MANAGER">Asset Manager</option>
-                                        <option value="ASSET_INVENTORY_MANAGER">Asset & Inventory Manager</option>
-                                        <option value="PROCUREMENT">Procurement Manager</option>
-                                        <option value="FINANCE">Finance</option>
-                                        <option value="ADMIN">Admin</option>
-                                        <option value="SYSTEM_ADMIN">System Admin</option>
-                                    </select>
+                                        Role: {createForm.role.replace('_', ' ')}
+                                    </span>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Deployment_Status</label>
-                                    <select
-                                        value={createForm.status}
-                                        onChange={(e) => setCreateForm({ ...createForm, status: e.target.value })}
-                                        className="w-full px-5 py-4 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase tracking-widest text-xs transition-all appearance-none cursor-pointer"
-                                    >
-                                        <option value="ACTIVE">Active</option>
-                                        <option value="PENDING">Pending</option>
-                                        <option value="DISABLED">Disabled</option>
-                                    </select>
+                                <div className="grid grid-cols-3 gap-3">
+                                    {POSITION_OPTIONS.map((opt) => {
+                                        const isActive = createForm.position === opt.value;
+                                        return (
+                                            <button
+                                                key={opt.value}
+                                                type="button"
+                                                id={`position-${opt.value}`}
+                                                onClick={() => setCreateForm({ ...createForm, position: opt.value, role: opt.role })}
+                                                className={`flex flex-col items-start p-4 border-2 rounded-none transition-all duration-200 text-left group relative overflow-hidden ${
+                                                    isActive ? opt.activeColor : 'border-app-border bg-app-void hover:border-app-border/60 text-app-text-muted'
+                                                }`}
+                                            >
+                                                {isActive && (
+                                                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full animate-pulse"
+                                                        style={{ background: opt.value === 'TEAM_MEMBER' ? '#3b82f6' : opt.value === 'SUPPORT_STAFF' ? '#10b981' : '#f59e0b' }}
+                                                    />
+                                                )}
+                                                <opt.Icon size={20} className={`mb-2.5 ${isActive ? '' : 'opacity-40 group-hover:opacity-70 transition-opacity'}`} />
+                                                <span className="text-[11px] font-black uppercase tracking-wider leading-none mb-1.5">{opt.label}</span>
+                                                <span className="text-[9px] leading-snug opacity-60">{opt.desc}</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-8">
+                            <div className="grid grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Operational_Rank</label>
-                                    <select
-                                        value={createForm.position}
-                                        onChange={(e) => setCreateForm({ ...createForm, position: e.target.value })}
-                                        className="w-full px-5 py-4 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase tracking-widest text-xs transition-all appearance-none cursor-pointer"
-                                    >
-                                        <option value="TEAM_MEMBER">Team Member</option>
-                                        <option value="MANAGER">Manager</option>
-                                    </select>
+                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                        <Building2 size={11} /> Dept Neural Link
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            id="create-user-department"
+                                            value={createForm.department_id}
+                                            onChange={(e) => setCreateForm({ ...createForm, department_id: e.target.value })}
+                                            className="w-full px-4 py-3.5 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase tracking-[0.2em] text-[11px] transition-all appearance-none cursor-pointer pr-9"
+                                        >
+                                            <option value="">— SELECT DEPT —</option>
+                                            {retailDepts.length > 0
+                                                ? retailDepts.map(d => (
+                                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                                ))
+                                                : V2_RETAIL_DEPTS.map(name => (
+                                                    <option key={name} value={name}>{name}</option>
+                                                ))
+                                            }
+                                        </select>
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-muted pointer-events-none" />
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Vector_Department</label>
-                                    <input
-                                        type="text"
-                                        value={createForm.department}
-                                        onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })}
-                                        className="w-full px-5 py-4 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase tracking-widest transition-all text-[11px]"
-                                        placeholder="e.g. PROCUREMENT"
-                                    />
+                                    <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.3em] flex items-center gap-2">
+                                        <MapPin size={11} /> Geo-Spatial Type
+                                    </label>
+                                    <div className="relative">
+                                        <select
+                                            id="create-user-loctype"
+                                            value={createForm.loc_type}
+                                            onChange={(e) => setCreateForm({ ...createForm, loc_type: e.target.value })}
+                                            className="w-full px-4 py-3.5 bg-app-void border border-app-border rounded-none text-app-text focus:outline-none focus:border-app-primary font-black uppercase tracking-[0.2em] text-[11px] transition-all appearance-none cursor-pointer pr-9"
+                                        >
+                                            {LOC_TYPES.map(lt => (
+                                                <option key={lt.value} value={lt.value}>{lt.label}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-app-text-muted pointer-events-none" />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-6 pt-8 border-t border-app-border">
+                            {/* Functional Persona */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-app-primary uppercase tracking-[0.2em] block">Functional Persona</label>
+                                <div className="relative" ref={personaDropdownRef}>
+                                    <div className="relative group">
+                                        <Search size={14} className={`absolute left-3 top-3.5 transition-all ${isPersonaDropdownOpen ? 'text-app-primary' : 'text-app-primary/40'}`} />
+                                        <input
+                                            type="text"
+                                            id="create-user-persona-search"
+                                            autoComplete="off"
+                                            placeholder={createForm.persona ? (PERSONA_MAP[createForm.department_id]?.find(p => p.value === createForm.persona)?.label || createForm.persona) : "Search Designations..."}
+                                            value={personaSearch}
+                                            onChange={(e) => {
+                                                setPersonaSearch(e.target.value);
+                                                setIsPersonaDropdownOpen(true);
+                                            }}
+                                            onFocus={() => setIsPersonaDropdownOpen(true)}
+                                            className="w-full bg-app-void border border-app-border rounded-none py-3 pl-10 pr-4 text-[11px] font-black uppercase tracking-widest text-app-text focus:outline-none focus:border-app-primary transition-all placeholder:text-app-text-muted/30"
+                                        />
+                                        {personaSearch && (
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    setPersonaSearch('');
+                                                    setCreateForm(prev => ({ ...prev, persona: '' }));
+                                                }}
+                                                className="absolute right-3 top-3.5 text-app-text-muted hover:text-app-primary transition-colors"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {isPersonaDropdownOpen && (
+                                        <div className="absolute z-50 left-0 right-0 mt-1 bg-app-obsidian border border-app-primary/30 shadow-2xl max-h-60 overflow-y-auto no-scrollbar animate-in fade-in zoom-in-95 duration-200">
+                                            <div className="p-2 border-b border-app-border/20 bg-app-primary/5">
+                                                <span className="text-[9px] font-black text-app-primary/60 uppercase tracking-tighter">Matches: {filteredPersonas.length} nodes found</span>
+                                            </div>
+                                            {filteredPersonas.length > 0 ? (
+                                                filteredPersonas.map(p => (
+                                                    <button
+                                                        key={p.value}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setCreateForm(prev => ({ ...prev, persona: p.value }));
+                                                            setPersonaSearch('');
+                                                            setIsPersonaDropdownOpen(false);
+                                                        }}
+                                                        className={`w-full text-left px-4 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all hover:bg-app-primary/10 border-l-2 ${createForm.persona === p.value ? 'border-app-primary bg-app-primary/5 text-app-primary' : 'border-transparent text-app-text-muted hover:text-app-text'}`}
+                                                    >
+                                                        <div className="flex justify-between items-center">
+                                                            <span>{p.label}</span>
+                                                            {createForm.persona === p.value && <Check size={12} />}
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="px-4 py-8 text-center">
+                                                    <span className="text-[10px] uppercase font-black text-app-rose/60 tracking-widest">Unauthorized: Designation Not Found</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Status */}
+                            {/* Status */}
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-app-primary uppercase italic tracking-[0.4em] flex items-center gap-2.5">
+                                    <ShieldAlert size={12} /> Account Authorization Status
+                                </label>
+                                <div className="flex gap-5">
+                                    {['ACTIVE', 'PENDING', 'DISABLED'].map(s => (
+                                        <button
+                                            key={s}
+                                            type="button"
+                                            onClick={() => setCreateForm({ ...createForm, status: s })}
+                                            className={`flex-1 py-4 px-6 text-[11px] font-black uppercase tracking-[0.2em] border rounded-none transition-all duration-300 flex items-center justify-center gap-3 ${
+                                                createForm.status === s
+                                                    ? s === 'ACTIVE' ? 'bg-emerald-500/10 border-emerald-500/60 text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.15)]'
+                                                    : s === 'PENDING' ? 'bg-amber-500/10 border-amber-500/60 text-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.15)]'
+                                                    : 'bg-rose-500/10 border-rose-500/60 text-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.15)]'
+                                                    : 'bg-app-void border-app-border text-app-text-muted hover:border-app-border/50 hover:bg-app-surface-soft/10'
+                                            }`}
+                                        >
+                                            {createForm.status === s && (
+                                                <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                                                    s === 'ACTIVE' ? 'bg-emerald-400' : s === 'PENDING' ? 'bg-amber-400' : 'bg-rose-400'
+                                                }`} />
+                                            )}
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex justify-end gap-4 pt-4 border-t border-app-border">
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
-                                    className="px-6 py-2 text-[10px] font-black text-app-text-muted hover:text-app-rose uppercase tracking-[0.3em] transition-all"
+                                    className="px-6 py-2.5 text-[10px] font-black text-app-text-muted hover:text-app-rose uppercase tracking-[0.3em] transition-all"
                                     disabled={creating}
                                 >
-                                    Abort_Provisioning
+                                    Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={creating}
-                                    className="px-10 py-4 bg-app-primary text-app-void hover:bg-app-primary-dark transition-all shadow-xl shadow-app-primary/20 font-black uppercase tracking-[0.2em] text-[12px] group relative overflow-hidden"
+                                    className="px-8 py-3 bg-app-primary text-app-void hover:bg-app-primary-dark transition-all shadow-xl shadow-app-primary/20 font-black uppercase tracking-[0.2em] text-[11px] group relative overflow-hidden"
                                 >
                                     <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                                    {creating ? 'PROVISIONING_ACTIVE...' : 'PROVISION_AGENT_IDENTITY'}
+                                    {creating ? 'Creating Account...' : 'Create Account'}
                                 </button>
                             </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             )}

@@ -58,13 +58,13 @@ export const ALL_NAV_ITEMS = [
 
 export const ROLE_DASHBOARD_MAP = {
     'ADMIN': '/dashboard/system-admin',
-    'ASSET_MANAGER': '/dashboard/asset-inventory-manager',
-    'PROCUREMENT': '/procurement',
+    'EXECUTIVE': '/analytics',
     'IT_MANAGEMENT': '/dashboard/system-admin',
-    'CEO': '/dashboard/system-admin',
-    'CFO': '/dashboard/system-admin',
     'FINANCE': '/finance',
-    'SUPPORT': '/',
-    'MANAGER': '/',
+    'PROCUREMENT': '/procurement',
+    'LOSS_PREVENTION': '/dashboard/audit-officer',
+    'ASSET_MANAGER': '/dashboard/asset-inventory-manager',
+    'SUPPORT': '/support-dashboard',
+    'MANAGER': '/dashboard/business-ops',
     'END_USER': '/'
 };

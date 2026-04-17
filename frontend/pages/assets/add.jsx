@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { ArrowLeft, Save, Download, Loader2, Plus, X as CloseIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -9,6 +9,7 @@ export default function AddAsset() {
     const [formData, setFormData] = useState({
         name: '',
         segment: 'IT',
+        department_id: '',
         type: 'Laptop',
         model: '',
         vendor: '',
@@ -23,7 +24,23 @@ export default function AddAsset() {
             { key: 'Storage', value: '' }
         ]
     })
+    const [departments, setDepartments] = useState([])
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    useEffect(() => {
+        const fetchDepts = async () => {
+            try {
+                const depts = await apiClient.getDepartments();
+                setDepartments(depts);
+                // Set default department_id for 'IT' if found
+                const itDept = depts.find(d => d.name === 'IT');
+                if (itDept) setFormData(prev => ({ ...prev, department_id: itDept.id }));
+            } catch (error) {
+                console.error('Failed to fetch departments:', error);
+            }
+        };
+        fetchDepts();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -284,16 +301,28 @@ export default function AddAsset() {
                             <input required name="name" value={formData.name} onChange={handleChange} className="input-field" placeholder="e.g. MacBook Pro 16" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-app-text-muted mb-2">Segment</label>
-                            <select name="segment" value={formData.segment} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
-                                <option className="bg-white dark:bg-slate-900">IT</option>
-                                <option className="bg-white dark:bg-slate-900">NON-IT</option>
+                            <label className="block text-sm font-medium text-app-text-muted mb-2">Department (Segment)</label>
+                            <select 
+                                name="department_id" 
+                                value={formData.department_id} 
+                                onChange={(e) => {
+                                    const dept = departments.find(d => d.id === e.target.value);
+                                    setFormData(prev => ({ ...prev, department_id: e.target.value, segment: dept?.name || prev.segment }));
+                                }} 
+                                className="input-field bg-white dark:bg-slate-900/50 premium-select"
+                            >
+                                <option value="">Select Department</option>
+                                {departments.map(dept => (
+                                    <option key={dept.id} value={dept.id} className="bg-white dark:bg-slate-900">
+                                        {dept.name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-app-text-muted mb-2">Type</label>
-                                <select name="type" value={formData.type} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
+                                <select name="type" value={formData.type} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50 premium-select">
                                     <option className="bg-white dark:bg-slate-900">Laptop</option>
                                     <option className="bg-white dark:bg-slate-900">Desktop</option>
                                     <option className="bg-white dark:bg-slate-900">Server</option>
@@ -303,7 +332,7 @@ export default function AddAsset() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-app-text-muted mb-2">Status</label>
-                                <select name="status" value={formData.status} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50">
+                                <select name="status" value={formData.status} onChange={handleChange} className="input-field bg-white dark:bg-slate-900/50 premium-select">
                                     <option className="bg-white dark:bg-slate-900">In Use</option>
                                     <option className="bg-white dark:bg-slate-900">In Stock</option>
                                     <option className="bg-white dark:bg-slate-900">Repair</option>

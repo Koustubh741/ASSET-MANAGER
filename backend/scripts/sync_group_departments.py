@@ -28,10 +28,15 @@ async def sync_data():
         for g in groups:
             if g.dept_obj:
                 official_name = g.dept_obj.name
-                if g.department != official_name:
-                    print(f"  Syncing Group '{g.name}': '{g.department}' -> '{official_name}'")
-                    g.department = official_name
-                    group_count += 1
+                if getattr(g, 'department', None) and getattr(g, 'department') != official_name:
+                    print(f"  Syncing Group '{g.name}': '{getattr(g, 'department')}' -> '{official_name}'")
+                    # Note: department DB column is gone, so assigning to it will not persist if the ORM ignores it, 
+                    # but we can try just in case it is dynamically mapped.
+                    try:
+                        g.department = official_name
+                        group_count += 1
+                    except AttributeError:
+                        pass
         
         # 2. Sync Users
         users_res = await db.execute(
@@ -43,10 +48,13 @@ async def sync_data():
         for u in users:
             if u.dept_obj:
                 official_name = u.dept_obj.name
-                if u.department != official_name:
-                    print(f"  Syncing User '{u.full_name}': '{u.department}' -> '{official_name}'")
-                    u.department = official_name
-                    user_count += 1
+                if getattr(u, 'department', None) and getattr(u, 'department') != official_name:
+                    print(f"  Syncing User '{u.full_name}': '{getattr(u, 'department')}' -> '{official_name}'")
+                    try:
+                        u.department = official_name
+                        user_count += 1
+                    except AttributeError:
+                        pass
         
         if group_count > 0 or user_count > 0:
             await db.commit()

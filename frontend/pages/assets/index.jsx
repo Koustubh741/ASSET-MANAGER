@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Plus, Search, Filter, RefreshCw } from 'lucide-react'
 import { useAssetContext } from '@/contexts/AssetContext'
 import AssetTable from '@/components/AssetTable'
+import apiClient from '@/lib/apiClient'
 
 export default function AssetsPage() {
     const { assets: contextAssets, refreshData } = useAssetContext()
@@ -23,6 +24,7 @@ export default function AssetsPage() {
     const [filterStatus, setFilterStatus] = useState('All')
     const [filterSegment, setFilterSegment] = useState('All')
     const [filterType, setFilterType] = useState('All')
+    const [departments, setDepartments] = useState([])
 
     // Derived unique types for filter dropdown
     const uniqueTypes = ['All', ...new Set((assets || []).map(a => a?.type).filter(Boolean))].sort()
@@ -33,6 +35,16 @@ export default function AssetsPage() {
         const parsed = Array.isArray(contextAssets) ? contextAssets : []
         setAssets(parsed)
         setFilteredAssets(parsed)
+
+        const fetchDepts = async () => {
+            try {
+                const depts = await apiClient.getDepartments();
+                setDepartments(depts);
+            } catch (error) {
+                console.error('Failed to fetch departments:', error);
+            }
+        };
+        fetchDepts();
     }, [contextAssets])
 
     const router = useRouter()
@@ -115,86 +127,94 @@ export default function AssetsPage() {
     }, [search, filterStatus, filterSegment, filterType, assets, router.query])
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-xl font-bold text-app-text tracking-tight">Asset Inventory</h2>
-                    <p className="text-app-text-muted mt-1">Manage and track all hardware and software assets</p>
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-primary/10 border border-primary/20 text-primary">
+                        <Search size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-app-text tracking-tight uppercase">Asset Inventory</h2>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-app-text-muted mt-1">Global Hardware & Software Log</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handleRefresh}
                         disabled={isRefreshing}
-                        title="Refresh inventory (picks up newly discovered assets)"
-                        className="px-4 py-2 rounded-none font-medium transition-all duration-200 active:scale-95 bg-app-surface hover:bg-white/20 text-app-text-muted hover:text-app-text border border-app-border backdrop-blur-sm flex items-center space-x-2 disabled:opacity-50"
+                        className="btn-zenith-outline px-6 py-2.5 text-[10px] disabled:opacity-50 flex items-center gap-2 border border-white/10 text-app-text-muted hover:bg-white/5 hover:text-white"
                     >
-                        <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
-                        <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+                        <RefreshCw size={14} className={isRefreshing ? 'animate-spin text-primary' : ''} />
+                        <span className="hidden sm:inline">{isRefreshing ? 'SYNCING...' : 'SYNC LEDGER'}</span>
                     </button>
-                    <Link href="/assets/add" className="px-4 py-2 rounded-none font-medium transition-all duration-200 active:scale-95 bg-blue-600/90 hover:bg-blue-600 text-app-text shadow-lg shadow-blue-500/30 backdrop-blur-sm flex items-center space-x-2">
-                        <Plus size={20} />
-                        <span>Add Asset</span>
+                    <Link href="/assets/add" className="btn-zenith">
+                        <Plus size={16} strokeWidth={3} />
+                        <span>Init Asset</span>
                     </Link>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="backdrop-blur-md bg-app-surface-soft border border-app-border-soft border-app-border shadow-xl rounded-none transition-all duration-300 hover:border-blue-500/30 p-5 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-app-text-muted" size={20} />
+            <div className="glass-panel p-6 border border-app-border flex flex-col md:flex-row gap-6 items-center justify-between relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-2 h-full bg-primary/10 group-hover:bg-primary/20 transition-colors duration-500"></div>
+                <div className="relative flex-1 w-full">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-primary/50" size={16} />
                     <input
                         type="text"
-                        placeholder="Search by anything (Name, Spec, Location, Cost...)"
-                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-app-border rounded-none py-3 pl-10 pr-4 text-app-text focus:outline-none focus:ring-2 focus:ring-blue-500/50 placeholder:text-app-text-muted"
+                        placeholder="Search By Keyword, Serial No., or Location..."
+                        className="w-full bg-app-surface-soft border border-app-border rounded-none py-3.5 pl-12 pr-4 text-xs font-medium text-app-text focus:outline-none focus:border-primary/50 placeholder:text-app-text-muted/50 transition-colors"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center space-x-4 w-full md:w-auto">
-                    <div className="flex items-center space-x-2 text-app-text-muted">
-                        <Filter size={20} />
-                        <span className="font-medium hidden md:inline">Filter:</span>
+                    <div className="flex items-center space-x-2 text-primary/70">
+                        <Filter size={16} />
+                        <span className="text-xs font-semibold uppercase tracking-wider hidden md:inline">Parameters:</span>
                     </div>
 
                     <select
-                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full md:w-40 px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-xs font-medium text-app-text focus:outline-none focus:border-primary/50 transition-colors appearance-none"
                         value={filterSegment}
                         onChange={(e) => setFilterSegment(e.target.value)}
                     >
-                        <option value="All" className="bg-white dark:bg-slate-900 text-app-text">All Segments</option>
-                        <option value="IT" className="bg-white dark:bg-slate-900 text-app-text">IT</option>
-                        <option value="NON-IT" className="bg-white dark:bg-slate-900 text-app-text">NON-IT</option>
-                    </select>
-
-                    <select
-                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-36 bg-slate-50 dark:bg-slate-800/50"
-                        value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
-                    >
-                        {uniqueTypes.map(t => (
-                            <option key={t} value={t} className="bg-white dark:bg-slate-900 text-app-text">
-                                {t === 'All' ? 'All Types' : t}
+                        <option value="All" className="bg-app-obsidian text-app-text">All Sectors</option>
+                        {departments.map(dept => (
+                            <option key={dept.id} value={dept.name} className="bg-app-obsidian text-app-text">
+                                {dept.name}
                             </option>
                         ))}
                     </select>
 
                     <select
-                        className="w-full px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-app-text placeholder:text-app-text-muted focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-sm transition-all w-40 bg-slate-50 dark:bg-slate-800/50"
+                        className="w-full md:w-36 px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-xs font-medium text-app-text focus:outline-none focus:border-primary/50 transition-colors appearance-none"
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                    >
+                        {uniqueTypes.map(t => (
+                            <option key={t} value={t} className="bg-app-obsidian text-app-text">
+                                {t === 'All' ? 'Class: All' : t}
+                            </option>
+                        ))}
+                    </select>
+
+                    <select
+                        className="w-full md:w-40 px-4 py-3 bg-app-surface-soft border border-app-border rounded-none text-xs font-medium text-app-text focus:outline-none focus:border-primary/50 transition-colors appearance-none"
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
-                        <option value="All" className="bg-white dark:bg-slate-900 text-app-text">All Status</option>
-                        <option value="In Use" className="bg-white dark:bg-slate-900 text-app-text">In Use</option>
-                        <option value="In Stock" className="bg-white dark:bg-slate-900 text-app-text">In Stock</option>
-                        <option value="Repair" className="bg-white dark:bg-slate-900 text-app-text">Repair</option>
-                        <option value="Maintenance" className="bg-white dark:bg-slate-900 text-app-text">Maintenance</option>
-                        <option value="Discovered" className="bg-white dark:bg-slate-900 text-app-text">Discovered</option>
-                        <option value="Retired" className="bg-white dark:bg-slate-900 text-app-text">Retired</option>
+                        <option value="All" className="bg-app-obsidian text-app-text">State: Global</option>
+                        <option value="In Use" className="bg-app-obsidian text-app-text">Active</option>
+                        <option value="In Stock" className="bg-app-obsidian text-app-text">Stock</option>
+                        <option value="Repair" className="bg-app-obsidian text-app-text">Repair</option>
+                        <option value="Maintenance" className="bg-app-obsidian text-app-text">Maint</option>
+                        <option value="Discovered" className="bg-app-obsidian text-app-text">Detected</option>
+                        <option value="Retired" className="bg-app-obsidian text-app-text">Disabled</option>
                     </select>
 
                     {/* Results Count */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-none border border-app-border text-xs text-app-text-muted text-app-text-muted font-medium">
-                        Showing <span className="text-app-text">{filteredAssets.length}</span> assets
+                    <div className="bg-primary/5 px-4 py-3 border border-primary/20 text-[10px] font-black uppercase tracking-widest text-primary shrink-0">
+                        Vol: <span className="text-app-text">{filteredAssets.length}</span>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,806 @@
+{
+    "HR": [
+        {
+            "value": "HR_HEAD",
+            "label": "HR HEAD"
+        },
+        {
+            "value": "ASSISTANT_HR_HEAD",
+            "label": "ASSISTANT HR HEAD"
+        },
+        {
+            "value": "TRAINER",
+            "label": "TRAINER"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        },
+        {
+            "value": "ASSISTANT_MANAGER",
+            "label": "ASSISTANT MANAGER"
+        },
+        {
+            "value": "MANAGEMENT_TRAINEE",
+            "label": "MANAGEMENT TRAINEE"
+        }
+    ],
+    "BD": [
+        {
+            "value": "BD_HEAD",
+            "label": "BD HEAD"
+        },
+        {
+            "value": "ASSISTANT_BD_HEAD",
+            "label": "ASSISTANT BD HEAD"
+        },
+        {
+            "value": "REGIONAL_MANAGER",
+            "label": "REGIONAL MANAGER"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        }
+    ],
+    "IT": [
+        {
+            "value": "ABAPER",
+            "label": "ABAPER"
+        },
+        {
+            "value": "DEVELOPER",
+            "label": "DEVELOPER"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "NSO-IT_SUPPORT_EXECUTIVE",
+            "label": "NSO-IT SUPPORT EXECUTIVE"
+        },
+        {
+            "value": "PMO-MT",
+            "label": "PMO-MT"
+        },
+        {
+            "value": "WM-FUNCTIONAL",
+            "label": "WM-FUNCTIONAL"
+        },
+        {
+            "value": "MM-FUNCTIONAL",
+            "label": "MM-FUNCTIONAL"
+        },
+        {
+            "value": "DATA_ANALYST",
+            "label": "DATA ANALYST"
+        },
+        {
+            "value": "BASIS_HEAD",
+            "label": "BASIS HEAD"
+        },
+        {
+            "value": "DBA",
+            "label": "DBA"
+        },
+        {
+            "value": "AI_ENGINEER",
+            "label": "AI ENGINEER"
+        },
+        {
+            "value": "ANALYTICS_LEAD",
+            "label": "ANALYTICS LEAD"
+        },
+        {
+            "value": "DIGITAL_TRANSFORMATION_-HEAD",
+            "label": "DIGITAL TRANSFORMATION -HEAD"
+        },
+        {
+            "value": "DT_ASSISTANT",
+            "label": "DT ASSISTANT"
+        },
+        {
+            "value": "INFRA_HEAD",
+            "label": "INFRA HEAD"
+        },
+        {
+            "value": "CIO",
+            "label": "CIO"
+        },
+        {
+            "value": "EA_TO_CIO",
+            "label": "EA TO CIO"
+        },
+        {
+            "value": "EA_TO_HEAD_ERP_APPS_-_SAP",
+            "label": "EA TO HEAD ERP APPS - SAP"
+        },
+        {
+            "value": "ASSISTANT_HEAD_ERP_APPS-NON-SAP",
+            "label": "ASSISTANT HEAD ERP APPS-NON-SAP"
+        },
+        {
+            "value": "HEAD_ERP_APPS_-_SAP",
+            "label": "HEAD ERP APPS - SAP"
+        },
+        {
+            "value": "HEAD_ERP_APPS-NON-SAP",
+            "label": "HEAD ERP APPS-NON-SAP"
+        },
+        {
+            "value": "HEAD_IT_PROCUREMENT_&_NEGOTIATIONS",
+            "label": "HEAD IT PROCUREMENT & NEGOTIATIONS"
+        },
+        {
+            "value": "PROCUREMENT_ASSISTANT",
+            "label": "PROCUREMENT ASSISTANT"
+        },
+        {
+            "value": "HEAD_IT_SECURITY_&_COMPLIANCE",
+            "label": "HEAD IT SECURITY & COMPLIANCE"
+        },
+        {
+            "value": "SECURITY_ENGINEER",
+            "label": "SECURITY ENGINEER"
+        },
+        {
+            "value": "AXAPTA-SUPPORT_MANAGER",
+            "label": "AXAPTA-SUPPORT MANAGER"
+        },
+        {
+            "value": "HEAD-IT_SUPPORT",
+            "label": "HEAD-IT SUPPORT"
+        },
+        {
+            "value": "PMO_HEAD",
+            "label": "PMO HEAD"
+        },
+        {
+            "value": "PM-SAP",
+            "label": "PM-SAP"
+        },
+        {
+            "value": "PM-NON_SAP",
+            "label": "PM-NON SAP"
+        },
+        {
+            "value": "ABAP-LEAD",
+            "label": "ABAP-LEAD"
+        },
+        {
+            "value": "JUNIOR_EXECUTIVE",
+            "label": "JUNIOR EXECUTIVE"
+        },
+        {
+            "value": "MANAGEMENT_TRAINEE",
+            "label": "MANAGEMENT TRAINEE"
+        },
+        {
+            "value": "FICO-FUNCTIONAL",
+            "label": "FICO-FUNCTIONAL"
+        },
+        {
+            "value": "PS-FUNCTIONAL",
+            "label": "PS-FUNCTIONAL"
+        }
+    ],
+    "LOSS PREVENTION": [
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        },
+        {
+            "value": "ASSISTANT_MANAGER",
+            "label": "ASSISTANT MANAGER"
+        },
+        {
+            "value": "ZONAL-LP",
+            "label": "ZONAL-LP"
+        },
+        {
+            "value": "REGIONAL-LP",
+            "label": "REGIONAL-LP"
+        },
+        {
+            "value": "CLUSTER-LP",
+            "label": "CLUSTER-LP"
+        },
+        {
+            "value": "MIS_EXECUTIVE",
+            "label": "MIS EXECUTIVE"
+        },
+        {
+            "value": "JUNIOR_EXECUTIVE",
+            "label": "JUNIOR EXECUTIVE"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "CCTV_TECHNICIAN",
+            "label": "CCTV TECHNICIAN"
+        },
+        {
+            "value": "LPO",
+            "label": "LPO"
+        }
+    ],
+    "MARKETING": [
+        {
+            "value": "NSO_VERTICAL_HEAD",
+            "label": "NSO VERTICAL HEAD"
+        },
+        {
+            "value": "GRAPHIC_DESIGNER",
+            "label": "GRAPHIC DESIGNER"
+        },
+        {
+            "value": "MANAGEMENT_TRAINEE",
+            "label": "MANAGEMENT TRAINEE"
+        },
+        {
+            "value": "CUSTOMER_CARE_EXECUTIVE",
+            "label": "CUSTOMER CARE EXECUTIVE"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "JUNIOR_EXECUTIVE",
+            "label": "JUNIOR EXECUTIVE"
+        }
+    ],
+    "NSO": [
+        {
+            "value": "HR_MANAGER",
+            "label": "HR MANAGER"
+        },
+        {
+            "value": "NSO_SUPPORT_HEAD",
+            "label": "NSO SUPPORT HEAD"
+        },
+        {
+            "value": "NSO_HEAD",
+            "label": "NSO HEAD"
+        },
+        {
+            "value": "NSO_AUDIT_HEAD",
+            "label": "NSO AUDIT HEAD"
+        },
+        {
+            "value": "NSO_MARKETING_HEAD",
+            "label": "NSO MARKETING HEAD"
+        },
+        {
+            "value": "ASSISTANT_NSO_HEAD",
+            "label": "ASSISTANT NSO HEAD"
+        },
+        {
+            "value": "NSO_HR_HEAD",
+            "label": "NSO HR HEAD"
+        },
+        {
+            "value": "NSO_PLANNING_HEAD",
+            "label": "NSO PLANNING HEAD"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "NSO_FINANCE_HEAD",
+            "label": "NSO FINANCE HEAD"
+        },
+        {
+            "value": "NSO_SCM_HEAD",
+            "label": "NSO SCM HEAD"
+        },
+        {
+            "value": "REGIONAL_MANAGER",
+            "label": "REGIONAL MANAGER"
+        },
+        {
+            "value": "CLUSTER_MANAGER",
+            "label": "CLUSTER MANAGER"
+        },
+        {
+            "value": "CLUSTER-LP",
+            "label": "CLUSTER-LP"
+        },
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        }
+    ],
+    "PLANNING": [
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        },
+        {
+            "value": "ASSISTANT_MANAGER",
+            "label": "ASSISTANT MANAGER"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        }
+    ],
+    "ADMIN": [
+        {
+            "value": "ADMIN_HEAD",
+            "label": "ADMIN HEAD"
+        },
+        {
+            "value": "FACILITY_MANAGER",
+            "label": "FACILITY MANAGER"
+        },
+        {
+            "value": "ADMIN_MANAGER",
+            "label": "ADMIN MANAGER"
+        },
+        {
+            "value": "RDC-_HUB_MANAGER",
+            "label": "RDC- HUB MANAGER"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "AC_TECHNICIAN",
+            "label": "AC TECHNICIAN"
+        },
+        {
+            "value": "ELECTRICIAN",
+            "label": "ELECTRICIAN"
+        },
+        {
+            "value": "MIS_EXECUTIVE",
+            "label": "MIS EXECUTIVE"
+        },
+        {
+            "value": "INTERNAL_SECURITY",
+            "label": "INTERNAL SECURITY"
+        },
+        {
+            "value": "HK",
+            "label": "HK"
+        },
+        {
+            "value": "RECEPTIONIST",
+            "label": "RECEPTIONIST"
+        },
+        {
+            "value": "OFFICE_BOY",
+            "label": "OFFICE BOY"
+        },
+        {
+            "value": "DRIVER",
+            "label": "DRIVER"
+        }
+    ],
+    "PROJECT": [
+        {
+            "value": "PROJECT_HEAD",
+            "label": "PROJECT HEAD"
+        },
+        {
+            "value": "ASSISTANT_PROJECT_HEAD",
+            "label": "ASSISTANT PROJECT HEAD"
+        },
+        {
+            "value": "SENIOR_MANAGER",
+            "label": "SENIOR MANAGER"
+        },
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        },
+        {
+            "value": "ASSISTANT_MANAGER",
+            "label": "ASSISTANT MANAGER"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "MIS_EXECUTIVE",
+            "label": "MIS EXECUTIVE"
+        },
+        {
+            "value": "SUPERVISOR",
+            "label": "SUPERVISOR"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        }
+    ],
+    "INVENTORY": [
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        },
+        {
+            "value": "ASSISTANT_MANAGER",
+            "label": "ASSISTANT MANAGER"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "JUNIOR_EXECUTIVE",
+            "label": "JUNIOR EXECUTIVE"
+        }
+    ],
+    "RETAIL": [
+        {
+            "value": "CLUSTER_MANAGER",
+            "label": "CLUSTER MANAGER"
+        },
+        {
+            "value": "REGIONAL_MANAGER",
+            "label": "REGIONAL MANAGER"
+        },
+        {
+            "value": "ZONAL_MANAGER",
+            "label": "ZONAL MANAGER"
+        },
+        {
+            "value": "ASSISTANT_ZONAL_MANAGER",
+            "label": "ASSISTANT ZONAL MANAGER"
+        },
+        {
+            "value": "MIS_EXECUTIVE",
+            "label": "MIS EXECUTIVE"
+        },
+        {
+            "value": "ASSISTANT_TO_RETAIL_HEAD",
+            "label": "ASSISTANT TO RETAIL HEAD"
+        },
+        {
+            "value": "RETAIL_HEAD",
+            "label": "RETAIL HEAD"
+        },
+        {
+            "value": "CLUSTER_PLANNER",
+            "label": "CLUSTER PLANNER"
+        },
+        {
+            "value": "REGIONAL_PLANNER",
+            "label": "REGIONAL PLANNER"
+        },
+        {
+            "value": "ZONAL_PLANNER",
+            "label": "ZONAL PLANNER"
+        },
+        {
+            "value": "RETAIL_PLANNING_HEAD",
+            "label": "RETAIL PLANNING HEAD"
+        },
+        {
+            "value": "ASSISTANT_RETAIL_PLANNING_HEAD",
+            "label": "ASSISTANT RETAIL PLANNING HEAD"
+        },
+        {
+            "value": "ASSISTANT_TO_ZONAL_SUPPORT_HEAD",
+            "label": "ASSISTANT TO ZONAL SUPPORT HEAD"
+        },
+        {
+            "value": "ZONAL_SUPPORT_HEAD",
+            "label": "ZONAL SUPPORT HEAD"
+        }
+    ],
+    "SCM": [
+        {
+            "value": "SCM_HEAD",
+            "label": "SCM HEAD"
+        },
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "MANAGEMENT_TRAINEE",
+            "label": "MANAGEMENT TRAINEE"
+        },
+        {
+            "value": "HUB-CORDINATOR",
+            "label": "HUB-CORDINATOR"
+        },
+        {
+            "value": "ASSISTANT_MANAGER",
+            "label": "ASSISTANT MANAGER"
+        },
+        {
+            "value": "TRANSPORT_MANAGER",
+            "label": "TRANSPORT MANAGER"
+        },
+        {
+            "value": "DEPT_HEAD",
+            "label": "DEPT HEAD"
+        },
+        {
+            "value": "ASST._DEPT._HEAD",
+            "label": "ASST. DEPT. HEAD"
+        },
+        {
+            "value": "TL",
+            "label": "TL"
+        },
+        {
+            "value": "DC_HEAD",
+            "label": "DC HEAD"
+        },
+        {
+            "value": "ASST.DC_HEAD",
+            "label": "ASST.DC HEAD"
+        },
+        {
+            "value": "LP",
+            "label": "LP"
+        },
+        {
+            "value": "ELECTRICIAN",
+            "label": "ELECTRICIAN"
+        },
+        {
+            "value": "DIV_HEAD",
+            "label": "DIV HEAD"
+        },
+        {
+            "value": "OPTR",
+            "label": "OPTR"
+        },
+        {
+            "value": "DRIVER",
+            "label": "DRIVER"
+        },
+        {
+            "value": "DRIVER_HELPER",
+            "label": "DRIVER HELPER"
+        },
+        {
+            "value": "RLPO",
+            "label": "RLPO"
+        },
+        {
+            "value": "SENIOR_LPO",
+            "label": "SENIOR LPO"
+        },
+        {
+            "value": "INTERNAL",
+            "label": "INTERNAL"
+        },
+        {
+            "value": "LADY_GUARD",
+            "label": "LADY GUARD"
+        },
+        {
+            "value": "SUPERVISOR",
+            "label": "SUPERVISOR"
+        },
+        {
+            "value": "HUB_INCHARGE",
+            "label": "HUB INCHARGE"
+        }
+    ],
+    "F&A": [
+        {
+            "value": "ASSISTANT_MANAGER",
+            "label": "ASSISTANT MANAGER"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "EXECUTIVE",
+            "label": "EXECUTIVE"
+        },
+        {
+            "value": "DGM",
+            "label": "DGM"
+        },
+        {
+            "value": "CFO",
+            "label": "CFO"
+        },
+        {
+            "value": "MANAGER",
+            "label": "MANAGER"
+        },
+        {
+            "value": "JUNIOR_EXECUTIVE",
+            "label": "JUNIOR EXECUTIVE"
+        }
+    ],
+    "B&M": [
+        {
+            "value": "DIV-HEAD",
+            "label": "DIV-HEAD"
+        },
+        {
+            "value": "ASST_DIV-HEAD",
+            "label": "ASST DIV-HEAD"
+        },
+        {
+            "value": "SUB-DIV",
+            "label": "SUB-DIV"
+        },
+        {
+            "value": "BUYER",
+            "label": "BUYER"
+        },
+        {
+            "value": "PO-OFFICER",
+            "label": "PO-OFFICER"
+        },
+        {
+            "value": "T&A",
+            "label": "T&A"
+        },
+        {
+            "value": "JUNIOR_EXECUTIVE",
+            "label": "JUNIOR EXECUTIVE"
+        },
+        {
+            "value": "CAT-PLANNER",
+            "label": "CAT-PLANNER"
+        },
+        {
+            "value": "PD-HEAD",
+            "label": "PD-HEAD"
+        },
+        {
+            "value": "ASST_DIV-PD_HEAD",
+            "label": "ASST DIV-PD HEAD"
+        },
+        {
+            "value": "SUB-DIV_PD_DZNR_HEAD",
+            "label": "SUB-DIV PD DZNR HEAD"
+        },
+        {
+            "value": "JR-DZNR",
+            "label": "JR-DZNR"
+        },
+        {
+            "value": "PRD-HEAD",
+            "label": "PRD-HEAD"
+        },
+        {
+            "value": "MERCHANT",
+            "label": "MERCHANT"
+        },
+        {
+            "value": "FAB-HEAD",
+            "label": "FAB-HEAD"
+        },
+        {
+            "value": "FAB-DIV-HEAD",
+            "label": "FAB-DIV-HEAD"
+        },
+        {
+            "value": "FAB-JR.EXECUTIVE",
+            "label": "FAB-JR.EXECUTIVE"
+        },
+        {
+            "value": "OB-HEAD",
+            "label": "OB-HEAD"
+        },
+        {
+            "value": "OB_JR.EXECUTIVE",
+            "label": "OB JR.EXECUTIVE"
+        },
+        {
+            "value": "QC-HEAD",
+            "label": "QC-HEAD"
+        },
+        {
+            "value": "QC-DIV_HEAD",
+            "label": "QC-DIV HEAD"
+        },
+        {
+            "value": "PATTERN_MASTER",
+            "label": "PATTERN MASTER"
+        },
+        {
+            "value": "CAD-PATTERN_MASTER",
+            "label": "CAD-PATTERN MASTER"
+        },
+        {
+            "value": "CAD-JR.EXECUTIVE",
+            "label": "CAD-JR.EXECUTIVE"
+        },
+        {
+            "value": "MDM-HEAD",
+            "label": "MDM-HEAD"
+        },
+        {
+            "value": "MDM-SR.EXECUTIVE",
+            "label": "MDM-SR.EXECUTIVE"
+        },
+        {
+            "value": "MDM-JR.EXECUTIVE",
+            "label": "MDM-JR.EXECUTIVE"
+        },
+        {
+            "value": "PC-HEAD",
+            "label": "PC-HEAD"
+        },
+        {
+            "value": "PC-ASST_HEAD",
+            "label": "PC-ASST HEAD"
+        },
+        {
+            "value": "SENIOR_EXECUTIVE",
+            "label": "SENIOR EXECUTIVE"
+        },
+        {
+            "value": "HELPER",
+            "label": "HELPER"
+        },
+        {
+            "value": "MARKET_BUYER",
+            "label": "MARKET BUYER"
+        },
+        {
+            "value": "LOCATION_HEAD",
+            "label": "LOCATION HEAD"
+        },
+        {
+            "value": "LOCATION_QC/BUYER/EDP",
+            "label": "LOCATION QC/BUYER/EDP"
+        },
+        {
+            "value": "SAMPLING_HEAD",
+            "label": "SAMPLING HEAD"
+        },
+        {
+            "value": "TAILOR",
+            "label": "TAILOR"
+        },
+        {
+            "value": "DEPT_HEAD",
+            "label": "DEPT HEAD"
+        }
+    ]
+}

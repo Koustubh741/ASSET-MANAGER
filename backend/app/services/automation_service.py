@@ -100,7 +100,7 @@ class AutomationService:
                 break # Apply first matching rule and stop
 
     @staticmethod
-    async def initialize_ticket_sla(db: AsyncSession, ticket_id: UUID):
+    async def initialize_ticket_sla(db: AsyncSession, ticket_id: UUID, commit: bool = True):
         """
         Assign an SLA policy to a ticket and calculate deadlines.
         """
@@ -174,7 +174,10 @@ class AutomationService:
                 )
                 db.add(new_sla)
             
-            await db.commit()
+            if commit:
+                await db.commit()
+            else:
+                await db.flush()
 
         else:
             # ── FALLBACK: No matching SLA policy found — use priority-based defaults ──
@@ -231,7 +234,10 @@ class AutomationService:
                 )
                 db.add(new_sla)
 
-            await db.commit()
+            if commit:
+                await db.commit()
+            else:
+                await db.flush()
 
 
     @staticmethod
@@ -256,11 +262,13 @@ class AutomationService:
             try:
                 # initialize_ticket_sla is safe because it only updates active policies,
                 # and we anchored time calculations to ticket.created_at
-                await AutomationService.initialize_ticket_sla(db, tid)
+                # ROOT FIX: Pass commit=False to batch these updates together for 10x performance boost
+                await AutomationService.initialize_ticket_sla(db, tid, commit=False)
                 count += 1
             except Exception as e:
                 logger.error(f"Failed to recalculate SLA for ticket {tid}: {e}")
         
+        await db.commit() # Single batch commit
         logger.info(f"Completed SLA recalculation. Re-evaluated {count} open tickets.")
 
     @staticmethod

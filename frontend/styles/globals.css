@@ -8,83 +8,73 @@
    CSS Custom Properties
    ============================================= */
 :root {
-  /* Retail Brand Colors (v2retail) */
-  --color-primary: #f59e0b; /* Amber 500 - Warm Retail */
-  --color-secondary: #0f172a; /* Slate 900 - Professional */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-
-  /* App Theme (Light - Retail Focus) */
-  --bg-app: #fdfcfb; /* Warmer Paper White */
-  --bg-surface: #ffffff;
-  --bg-surface-soft: #fcf8f1;
-  --bg-glass: rgba(255, 255, 255, 0.85);
+  /* Retail Prism — Main Brand (Warm & High-Growth) */
+  --primary: #f59e0b; /* Amber 500 */
+  --primary-rgb: 245, 158, 11;
+  --color-primary: var(--primary);
+  --primary-glow: rgba(var(--primary-rgb), 0.4);
+  --secondary: #6366f1; /* Indigo 500 */
+  --secondary-rgb: 99, 102, 241;
+  --color-secondary: var(--secondary);
+  --secondary-glow: rgba(var(--secondary-rgb), 0.4);
   
-  --radius-tactical: 12px; /* Softer, retail-friendly corners */
-  --radius-pill: 9999px;
+  /* Status Colors of Excellence */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #0ea5e9;
+
+  /* App Surfaces (Light Mode) */
+  --bg-app: #ffffff;
+  --bg-app-rgb: 255, 255, 255;
+  --bg-surface: #f8fafc; /* Slate 50 */
+  --bg-surface-soft: #f1f5f9; /* Slate 100 */
+  --bg-glass: rgba(255, 255, 255, 0.7);
+  --bg-glass-heavy: rgba(255, 255, 255, 0.95);
+  
+  --border-main: rgba(15, 23, 42, 0.08);
+  --border-soft: rgba(15, 23, 42, 0.04);
+  
+  --text-main: #0f172a;
+  --text-main-rgb: 15, 23, 42;
   --text-muted: #64748b;
   --text-on-dark: #ffffff;
-  
-  --border-main: #e5e7eb;
-  --border-soft: #f3f4f6;
 
-  --glow-soft: 0 0 15px rgba(245, 158, 11, 0.1);
-  --glow-medium: 0 0 25px rgba(245, 158, 11, 0.15);
-  --glow-strong: 0 0 40px rgba(245, 158, 11, 0.2);
+  --radius-zenith: 16px;
+  --radius-pill: 9999px;
 
-  /* Kinetic Ops Retail Mapping */
-  --bg-app-void: #f9fafb;
-  --bg-surface-obsidian: #ffffff;
-  --bg-surface-panel: #f3f4f6;
-  --bg-surface-card: #ffffff;
-  
-  --color-kinetic-primary: #f59e0b;
-  --color-kinetic-primary-rgb: 245, 158, 11;
-  --color-kinetic-secondary: #0369a1; /* Sky 700 */
-  --color-kinetic-secondary-rgb: 3, 105, 161;
-  --color-kinetic-cyan: #0d9488; /* Teal 600 */
-  --color-kinetic-cyan-rgb: 13, 148, 136;
-  --color-kinetic-rose: #be123c; 
-  --color-kinetic-rose-rgb: 190, 18, 60;
-  --color-kinetic-gold: #b45309; 
-  --color-kinetic-gold-rgb: 180, 83, 9;
+  /* Zenith Premium Tokens */
+  --zenith-glass: rgba(15, 23, 42, 0.4);
+  --zenith-glow: rgba(var(--primary-rgb), 0.15);
+  --zenith-border: rgba(255, 255, 255, 0.08);
+  --zenith-neon: #fbbf24;
+
+  /* Kinetic Mapping */
+  --color-kinetic-primary: var(--primary);
+  --color-kinetic-secondary: var(--secondary);
 }
 
 .dark {
-  /* App Theme (Dark) */
-  --bg-app: #020617;
-  --bg-surface: #0f172a;
+  /* Retail Prism — Dark Mode (Deep Tech Retail) */
+  --bg-app: #030712; /* Slate 950 */
+  --bg-app-rgb: 3, 7, 18;
+  --bg-surface: #0f172a; /* Slate 900 */
   --bg-surface-soft: rgba(255, 255, 255, 0.03);
-  --bg-glass: rgba(15, 23, 42, 0.7);
-  
-  --text-main: #f1f5f9;
-  --text-muted: #94a3b8;
-  --text-on-dark: #ffffff;
+  --bg-glass: rgba(3, 7, 18, 0.75);
+  --bg-glass-heavy: rgba(3, 7, 18, 0.95);
   
   --border-main: rgba(255, 255, 255, 0.08);
   --border-soft: rgba(255, 255, 255, 0.04);
 
-  /* Kinetic Ops Master Tokens */
-  --bg-app-void: #020617;
-  --bg-surface-obsidian: #131314;
-  --bg-surface-panel: #0d1117;
-  --bg-surface-card: #1c1b1c;
-  
-  --color-kinetic-primary: #adc6ff;
-  --color-kinetic-primary-rgb: 173, 198, 255;
-  --color-kinetic-secondary: #4edea3;
-  --color-kinetic-secondary-rgb: 78, 222, 163;
-  --color-kinetic-cyan: #00daf3;
-  --color-kinetic-cyan-rgb: 0, 218, 243;
-  --color-kinetic-rose: #f87171;
-  --color-kinetic-rose-rgb: 248, 113, 113;
-  --color-kinetic-gold: #fbbf24;
-  --color-kinetic-gold-rgb: 251, 191, 36;
+  --text-main: #f8fafc;
+  --text-main-rgb: 248, 250, 252;
+  --text-muted: #94a3b8;
+  --text-on-dark: #ffffff;
 
-  --glow-soft: 0 0 15px rgba(173, 198, 255, 0.15);
-  --glow-medium: 0 0 25px rgba(173, 198, 255, 0.25);
-  --glow-strong: 0 0 40px rgba(173, 198, 255, 0.4);
+  --primary: #fbbf24; /* Amber 400 - Thicker Glow */
+  --primary-glow: rgba(245, 158, 11, 0.3);
+  --secondary: #818cf8; /* Indigo 400 */
+  --secondary-glow: rgba(99, 102, 241, 0.3);
 }
 
 /* =============================================
@@ -123,49 +113,29 @@
     opacity: 0.03 !important; /* Barely visible */
   }
 
-  /* ----- Glass Panel ----- */
-  .glass-panel {
-    @apply backdrop-blur-xl transition-all duration-300;
-    background-color: var(--bg-glass);
+  /* ----- Zenith Glass Surface ----- */
+  .glass-zenith {
+    @apply backdrop-blur-2xl transition-all duration-500 relative overflow-hidden;
+    background: var(--bg-glass);
     border: 1px solid var(--border-main);
-    border-radius: var(--radius-tactical);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+    border-radius: var(--radius-zenith);
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+      0 2px 4px -1px rgba(0, 0, 0, 0.06),
+      inset 0 1px 1px rgba(255, 255, 255, 0.05);
   }
 
-  .dark .glass-panel {
-    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
-    background-image: radial-gradient(at 0% 0%, rgba(255, 255, 255, 0.03) 0px, transparent 50%);
+  .dark .glass-zenith {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+    box-shadow: 
+      0 20px 50px -12px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px rgba(255, 255, 255, 0.03);
   }
 
-  /* ----- Glass Card ----- */
-  .glass-card {
-    @apply relative overflow-hidden transition-all duration-500;
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius-tactical);
-  }
-
-  /* Hover states */
-  .glass-card:hover {
-    @apply -translate-y-1;
-    border-color: var(--color-primary);
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1), var(--glow-soft);
-  }
-
-  .dark .glass-card:hover {
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), var(--glow-soft);
-  }
-
-  /* ----- Glass Interactive ----- */
-  .glass-interactive {
-    @apply transition-all duration-300;
-    background-color: var(--bg-surface-soft);
-    border: 1px solid var(--border-soft);
-  }
-
-  .glass-interactive:hover {
-    border-color: var(--color-primary);
-    background-color: var(--bg-surface);
+  .glass-zenith-hover:hover {
+    @apply -translate-y-1 scale-[1.01];
+    border-color: var(--primary);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2), 0 0 20px var(--primary-glow);
   }
 
   /* ----- Text Gradient ----- */
@@ -188,64 +158,81 @@
     @apply border-amber-500/30;
   }
 
-  /* ----- Premium Button ----- */
-  .btn-premium {
-    @apply relative overflow-hidden px-6 py-2.5 rounded-none font-bold transition-all duration-300 flex items-center gap-2;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-    box-shadow: 0 4px 15px -5px rgba(99, 102, 241, 0.4);
+  /* ----- Kinetic Action Button ----- */
+  .btn-zenith {
+    @apply relative overflow-hidden px-8 py-3 rounded-none font-black text-xs uppercase tracking-widest transition-all duration-500 
+           flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     color: var(--text-on-dark);
+    box-shadow: 0 10px 20px -10px var(--primary-glow);
   }
 
-  .btn-premium:hover {
-    @apply scale-[1.02] brightness-110;
-    box-shadow: 0 8px 25px -5px rgba(99, 102, 241, 0.5);
+  .btn-zenith:hover {
+    @apply translate-x-1;
+    box-shadow: 0 15px 30px -10px var(--primary-glow), 0 0 10px var(--secondary-glow);
   }
 
-  /* ----- Neural Compact Root Fix ----- */
-  /* ----- High-Fidelity Glass Utility ----- */
-  .glass {
-    @apply backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-500;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  .btn-zenith-outline {
+    @apply border-2 border-primary/30 bg-transparent text-primary hover:bg-primary/5 hover:border-primary transition-all duration-300;
   }
 
-  .dark .glass {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(0, 0, 0, 0.2) 100%);
-    border-color: rgba(255, 255, 255, 0.05);
+  /* ----- Prism Badge ----- */
+  .badge-prism {
+    @apply px-3 py-1 rounded-none text-[10px] font-black uppercase tracking-tighter border transition-all;
+    background: var(--bg-surface-soft);
+    border-color: var(--border-main);
+    color: var(--text-muted);
   }
 
-  .glass-hover:hover {
-    @apply -translate-y-1 brightness-110;
-    border-color: var(--color-primary);
-    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.3), var(--glow-soft);
+  .badge-prism-active {
+    @apply border-primary/40 text-primary;
+    background: var(--primary-glow);
+    box-shadow: 0 0 10px var(--primary-glow);
   }
 
-  .neural-compact {
-    --compact-padding-panel: 1.25rem;
-    --compact-padding-card: 1rem;
-    --compact-gap: 1rem;
-    --compact-margin: 1.25rem;
+  /* ----- Page Transition ----- */
+  .page-zenith-entry {
+    @apply animate-digitize;
   }
 
-  .neural-compact .grid { gap: var(--compact-gap) !important; }
-  .neural-compact .glass-panel { padding: var(--compact-padding-panel) !important; }
-  .neural-compact .glass-card { padding: var(--compact-padding-card) !important; }
+  /* ----- Zenith Command UI ----- */
+  .command-panel {
+    @apply glass-zenith border-white/5 shadow-[0_0_80px_-20px_rgba(0,0,0,0.5)] relative overflow-hidden;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+  }
+
+  .command-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  }
+
+  .zenith-input {
+    @apply w-full bg-white/[0.02] border border-white/10 rounded-none py-4 px-6 text-sm text-app-text 
+           focus:outline-none focus:border-primary/50 focus:bg-white/[0.04] transition-all duration-300 
+           font-bold uppercase tracking-tight;
+  }
+  .zenith-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.3;
+  }
+
+  .zenith-node-active {
+    @apply border-primary bg-primary/20 shadow-[0_0_30px_rgba(var(--primary-rgb),0.3)];
+  }
 }
 
 /* =============================================
    Animations
    ============================================= */
 @keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-
-  100% {
-    transform: translateY(0px);
-  }
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
 }
 
 .animate-float {
@@ -253,15 +240,8 @@
 }
 
 @keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 5px 0 rgba(99, 102, 241, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 0 20px 5px rgba(99, 102, 241, 0.5);
-  }
+  0%, 100% { box-shadow: 0 0 5px 0 var(--secondary-glow); }
+  50% { box-shadow: 0 0 20px 5px var(--secondary-glow); }
 }
 
 .glow-pulse {
@@ -506,3 +486,175 @@
 .telemetry-text {
   @apply font-mono text-[10px] font-bold tracking-tighter uppercase opacity-60 hover:opacity-100 transition-opacity;
 }
+
+/* =============================================
+   ROOT FIX: Premium Dropdowns
+   ============================================= */
+.premium-select-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.premium-select {
+  @apply appearance-none cursor-pointer;
+  padding-right: 2.5rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+}
+
+.premium-select:focus {
+  @apply border-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.2)];
+}
+
+.dark .premium-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* Light mode override for chevrons if needed */
+[data-theme='light'] .premium-select,
+:root:not(.dark) .premium-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* =============================================
+   Zenith UI Overhaul — High-Fidelity Animations
+   ============================================= */
+
+@keyframes datapacket {
+  0% { stroke-dashoffset: 1000; opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes holographic-pulse {
+  0%, 100% { backdrop-filter: blur(16px) brightness(1); }
+  50% { backdrop-filter: blur(24px) brightness(1.2); }
+}
+
+@keyframes scan-matrix {
+  0% { transform: translateY(-10px); opacity: 0; }
+  50% { opacity: 0.15; }
+  100% { transform: translateY(10px); opacity: 0; }
+}
+
+.holographic-panel {
+  @apply relative overflow-hidden backdrop-blur-2xl border border-white/10;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+  box-shadow: 
+    inset 0 0 1px 1px rgba(255,255,255,0.05),
+    0 10px 40px -10px rgba(0,0,0,0.5);
+  animation: holographic-pulse 8s ease-in-out infinite;
+}
+
+.holographic-panel::after {
+  content: '';
+  @apply absolute inset-0 pointer-events-none;
+  background: linear-gradient(
+    45deg,
+    transparent 45%,
+    rgba(255,255,255,0.1) 50%,
+    transparent 55%
+  );
+  background-size: 200% 200%;
+  animation: holographic-shimmer 10s infinite linear;
+}
+
+.scanning-corner {
+  @apply absolute w-3 h-3 border-primary/50 opacity-40;
+}
+
+.scanning-corner-tl { @apply top-1 left-1 border-t-2 border-l-2; }
+.scanning-corner-tr { @apply top-1 right-1 border-t-2 border-r-2; }
+.scanning-corner-bl { @apply bottom-1 left-1 border-b-2 border-l-2; }
+.scanning-corner-br { @apply bottom-1 right-1 border-b-2 border-r-2; }
+
+.animate-datapacket {
+  stroke-dasharray: 40 40;
+  animation: datapacket 4s linear infinite;
+}
+
+.matrix-text-ambient {
+  @apply font-mono text-[8px] leading-none text-primary/20 select-none pointer-events-none uppercase;
+  animation: scan-matrix 2s ease-in-out infinite;
+
+}
+
+/* =============================================
+   Zenith UI — Advanced FUI (Futuristic UI)
+   ============================================= */
+
+.zenith-vacuum {
+  background: radial-gradient(circle at center, var(--bg-app) 0%, var(--bg-surface) 100%);
+  position: relative;
+}
+
+.dark .zenith-vacuum {
+  background: radial-gradient(circle at center, #050811 0%, #000000 100%);
+}
+
+.zenith-vacuum::before {
+  content: '';
+  @apply absolute inset-0 pointer-events-none;
+  background-image: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%),
+    linear-gradient(90deg, rgba(var(--primary-rgb), 0.06), rgba(var(--primary-rgb), 0.02), rgba(var(--primary-rgb), 0.06));
+  background-size: 100% 2px, 3px 100%;
+  z-index: 100;
+  opacity: 0.1;
+}
+
+.chromatic-noise {
+  animation: chromatic-flicker 0.15s infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes chromatic-flicker {
+  0% { transform: translate(1px, 0); }
+  50% { transform: translate(-1px, 1px); }
+  100% { transform: translate(0, -1px); }
+}
+
+.neural-thread-matrix {
+  mask-image: radial-gradient(circle at center, white 0%, transparent 80%);
+}
+
+.pixel-grid-overlay {
+  background-image: radial-gradient(rgba(var(--primary-rgb), 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.glow-text-primary {
+  text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5), 0 0 20px rgba(var(--primary-rgb), 0.3);
+}
+
+.fui-status-card {
+  @apply border transition-all duration-300 backdrop-blur-md;
+  background: var(--bg-glass); /* Changed from heavy to regular glass */
+  border-color: var(--border-main);
+  box-shadow: 
+    inset 0 0 20px rgba(var(--primary-rgb), 0.05),
+    0 10px 30px -10px rgba(0,0,0,0.1);
+}
+
+.dark .fui-status-card,
+.zen-immersive .fui-status-card {
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    inset 0 0 20px rgba(255,255,255,0.02),
+    0 0 40px rgba(0,0,0,0.4);
+}
+
+.zen-immersive {
+  --bg-app: #030712;
+  --bg-surface: #0f172a;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-main: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+}
+

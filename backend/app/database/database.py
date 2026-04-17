@@ -9,7 +9,7 @@ from typing import AsyncGenerator
 from contextlib import asynccontextmanager
 
 # DATABASE_URL configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/itsm")
+DATABASE_URL = os.environ["DATABASE_URL"]
 SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
 
 # 1. Asynchronous Configuration (for FastAPI)
@@ -17,8 +17,8 @@ SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://
 async_engine = create_async_engine(
     DATABASE_URL, 
     echo=False,
-    pool_size=20,          # Standard connections
-    max_overflow=10,       # Burst capacity
+    pool_size=50,          # Increased from 20 to handle concurrent dashboard auth + data sessions
+    max_overflow=20,       # Increased from 10 for burst capacity during heavy navigation
     pool_recycle=3600,     # Cycle every hour
     pool_pre_ping=True     # Check connections before use
 )

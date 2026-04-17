@@ -81,10 +81,28 @@ class ApiClient {
             credentials: 'include', // Important: Browser sends access_token cookie
         };
 
-        // ROOT FIX: Implement request timeout (Default 10s)
-        const timeout = options.timeout || 10000;
+        // ROOT FIX: Implement request timeout and merge with caller-provided signals
+        const timeout = options.timeout || 30000; // Increased from 10s to 30s to handle concurrent system load
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        const timeoutId = setTimeout(() => {
+            try {
+                controller.abort('TIMEOUT');
+            } catch (e) {
+                controller.abort(); // Fallback for browsers that don't support abort reasons
+            }
+        }, timeout);
+
+        // If an external signal is provided, link it to our internal controller
+        if (options.signal) {
+            if (options.signal.aborted) {
+                controller.abort(options.signal.reason);
+            } else {
+                options.signal.addEventListener('abort', () => {
+                    controller.abort(options.signal.reason);
+                }, { once: true });
+            }
+        }
+        
         config.signal = controller.signal;
 
         // Handle body serialization
@@ -128,7 +146,15 @@ class ApiClient {
                                 const result = await this.request(endpoint, options, false);
                                 resolve(result);
                             } catch (error) {
-                                reject(error);
+                                clearTimeout(timeoutId); // ROOT FIX: Ensure timeout is cleared even on network error
+                                
+                                // Log full details for debugging performance issues
+                                console.error(`API Error on ${endpoint}:`, error);
+                                
+                                if (error.name === 'AbortError' || error === 'TIMEOUT') {
+                                    throw new Error('TIMEOUT');
+                                }
+                                throw error;
                             }
                         });
                     });
@@ -1168,6 +1194,10 @@ class ApiClient {
     // Assignment Groups
     async getAssignmentGroups() {
         return this.request('/groups/');
+    }
+
+    async getGroupMembers(groupId) {
+        return this.request(`/groups/${groupId}/members`);
     }
 
     async createAssignmentGroup(groupData) {

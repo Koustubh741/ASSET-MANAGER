@@ -11,7 +11,7 @@ from datetime import datetime
 from uuid import UUID
 
 from ..database.database import get_db
-from ..models.models import GatePass, Asset, User
+from ..models.models import GatePass, Asset, User, Department
 from ..utils.auth_utils import get_current_user
 
 router = APIRouter(
@@ -59,7 +59,7 @@ async def list_gate_passes(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
 
     if user_role == "ADMIN":
         query = select(GatePass).order_by(GatePass.created_at.desc())
@@ -69,7 +69,8 @@ async def list_gate_passes(
             select(GatePass)
             .join(Asset, GatePass.asset_id == Asset.id)
             .join(User, Asset.assigned_to_id == User.id)
-            .where(or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%")))
+            .outerjoin(Department, User.department_id == Department.id)
+            .where(or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%")))
             .order_by(GatePass.created_at.desc())
         )
 
@@ -114,13 +115,13 @@ async def create_gate_pass(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
 
     # Verify asset exists and is within scope
     query = select(Asset).where(Asset.id == payload.asset_id)
     if user_role != "ADMIN":
-        query = query.join(User, Asset.assigned_to_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(User, Asset.assigned_to_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
 
     ar = await db.execute(query)
@@ -168,12 +169,12 @@ async def approve_gate_pass(
         raise HTTPException(status_code=403, detail="Only IT Management or Admin can approve gate passes")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
 
     query = select(GatePass).where(GatePass.id == pass_id)
     if user_role != "ADMIN":
-        query = query.join(Asset, GatePass.asset_id == Asset.id).join(User, Asset.assigned_to_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(Asset, GatePass.asset_id == Asset.id).join(User, Asset.assigned_to_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
 
     result = await db.execute(query)
@@ -199,12 +200,12 @@ async def revoke_gate_pass(
         raise HTTPException(status_code=403, detail="Only IT Management or Admin can revoke gate passes")
 
     user_domain = current_user.domain or ""
-    user_dept = current_user.department or ""
+    user_dept = (current_user.dept_obj.name if current_user.dept_obj else "") or ""
 
     query = select(GatePass).where(GatePass.id == pass_id)
     if user_role != "ADMIN":
-        query = query.join(Asset, GatePass.asset_id == Asset.id).join(User, Asset.assigned_to_id == User.id).where(
-            or_(User.domain.ilike(f"%{user_domain}%"), User.department.ilike(f"%{user_dept}%"))
+        query = query.join(Asset, GatePass.asset_id == Asset.id).join(User, Asset.assigned_to_id == User.id).outerjoin(Department, User.department_id == Department.id).where(
+            or_(User.domain.ilike(f"%{user_domain}%"), Department.name.ilike(f"%{user_dept}%"))
         )
 
     result = await db.execute(query)

@@ -1,10 +1,55 @@
-import { useState, useEffect, useRef } from 'react';
+import { PERSONA_MAP } from '../config/v2_persona_map';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useRole } from '@/contexts/RoleContext';
 import { useToast } from '@/components/common/Toast';
 import apiClient from '@/lib/apiClient';
-import { User, Mail, Lock, Briefcase, MapPin, Phone, ArrowRight, Check, Building2, Disc, Eye, EyeOff, Search, X, ChevronDown } from 'lucide-react';
+import { User, Mail, Lock, Briefcase, MapPin, Phone, ArrowRight, Check, Building2, Disc, Eye, EyeOff, Search, X, ChevronDown, Headphones, Crown } from 'lucide-react';
 import Link from 'next/link';
+
+// ── V2 Retail Position Config ──────────────────────────────────────
+const POSITION_OPTIONS = [
+    {
+        value: 'TEAM_MEMBER',
+        role: 'END_USER',
+        label: 'Staff',
+        desc: 'Asset requests, ticket submission & personal asset view',
+        Icon: User,
+        color: 'border-blue-500/40 bg-blue-500/5 text-blue-400',
+        activeColor: 'border-blue-500 bg-blue-500/15 text-blue-300 shadow-lg shadow-blue-500/10',
+        badge: 'bg-blue-500/20 text-blue-300'
+    },
+    {
+        value: 'SUPPORT_STAFF',
+        role: 'SUPPORT',
+        label: 'Support Staff',
+        desc: 'Ticket management, IT support workflows & group assignments',
+        Icon: Headphones,
+        color: 'border-emerald-500/40 bg-emerald-500/5 text-emerald-400',
+        activeColor: 'border-emerald-500 bg-emerald-500/15 text-emerald-300 shadow-lg shadow-emerald-500/10',
+        badge: 'bg-emerald-500/20 text-emerald-300'
+    },
+    {
+        value: 'MANAGER',
+        role: 'MANAGER',
+        label: 'Manager',
+        desc: 'Departmental approvals, team oversight & full request control',
+        Icon: Crown,
+        color: 'border-amber-500/40 bg-amber-500/5 text-amber-400',
+        activeColor: 'border-amber-500 bg-amber-500/15 text-amber-300 shadow-lg shadow-amber-500/10',
+        badge: 'bg-amber-500/20 text-amber-300'
+    }
+];
+
+
+const GENERIC_PERSONAS = [
+    { value: 'SENIOR_EXECUTIVE', label: 'Senior Executive' },
+    { value: 'EXECUTIVE', label: 'Executive' },
+    { value: 'MANAGER', label: 'Manager' },
+    { value: 'ASSISTANT_MANAGER', label: 'Assistant Manager' },
+    { value: 'JUNIOR_EXECUTIVE', label: 'Junior Executive' },
+    { value: 'SUPPORT_LEAD', label: 'Support Lead' }
+];
 
 export default function Login() {
     const router = useRouter();
@@ -16,31 +61,6 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     
-    // Custom Dropdown & Telemetry States (Moved up to fix ReferenceError)
-    const [locSearch, setLocSearch] = useState('');
-    const [isLocDropdownOpen, setIsLocDropdownOpen] = useState(false);
-    const locDropdownRef = useRef(null);
-    const [currentTime, setCurrentTime] = useState('00:00:00');
-    const [isMounted, setIsMounted] = useState(false);
-
-    // SSO Callback Effect
-    useEffect(() => {
-        const { provider, code } = router.query;
-        if (code && provider) {
-            handleSSOCallback(provider, code);
-        }
-    }, [router.query]);
-
-    // Click outside listener for LOC dropdown
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (locDropdownRef.current && !locDropdownRef.current.contains(event.target)) {
-                setIsLocDropdownOpen(false);
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [locDropdownRef]);
 
     // Hydration Fix: Set time only on client
     useEffect(() => {
@@ -1255,7 +1275,52 @@ export default function Login() {
         protocol_id: '', // Staff ID
         phone: '',
         isManager: false,
+        position: 'TEAM_MEMBER',
     });
+
+    // Custom Dropdown & Telemetry States
+    const [locSearch, setLocSearch] = useState('');
+    const [isLocDropdownOpen, setIsLocDropdownOpen] = useState(false);
+    const locDropdownRef = useRef(null);
+
+    // Functional Persona Search State
+    const [personaSearch, setPersonaSearch] = useState('');
+    const [isPersonaDropdownOpen, setIsPersonaDropdownOpen] = useState(false);
+    const personaDropdownRef = useRef(null);
+    
+    const [currentTime, setCurrentTime] = useState('00:00:00');
+    const [isMounted, setIsMounted] = useState(false);
+
+    // SSO Callback Effect
+    useEffect(() => {
+        const { provider, code } = router.query;
+        if (code && provider) {
+            handleSSOCallback(provider, code);
+        }
+    }, [router.query]);
+
+    // Click outside listener for searchable dropdowns
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (locDropdownRef.current && !locDropdownRef.current.contains(event.target)) {
+                setIsLocDropdownOpen(false);
+            }
+            if (personaDropdownRef.current && !personaDropdownRef.current.contains(event.target)) {
+                setIsPersonaDropdownOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [locDropdownRef, personaDropdownRef]);
+
+    const filteredPersonas = useMemo(() => {
+        const list = PERSONA_MAP[formData.department] || GENERIC_PERSONAS;
+        if (!personaSearch) return list;
+        return list.filter(p => 
+            p.label.toLowerCase().includes(personaSearch.toLowerCase()) ||
+            p.value.toLowerCase().includes(personaSearch.toLowerCase())
+        );
+    }, [formData.department, personaSearch]);
 
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
@@ -1288,6 +1353,18 @@ export default function Login() {
 
         setFormData(next);
         setError('');
+    };
+
+    const handlePositionSelect = (pos) => {
+        const option = POSITION_OPTIONS.find(o => o.value === pos);
+        if (!option) return;
+        
+        setFormData(prev => ({
+            ...prev,
+            position: pos,
+            role: option.label,
+            isManager: pos === 'MANAGER'
+        }));
     };
 
     const filteredLocs = LOC_CODES.filter(code => 
@@ -1335,7 +1412,7 @@ export default function Login() {
                     designation: formData.designation,
                     persona: formData.persona,
                     protocol_id: formData.protocol_id,
-                    position: (formData.role === 'Department Manager' || formData.role === 'System Admin') ? 'MANAGER' : 'TEAM_MEMBER',
+                    position: formData.position,
                 };
 
                 try {
@@ -1548,7 +1625,44 @@ export default function Login() {
                                                 className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono placeholder:text-app-text-muted/30"
                                             />
                                         </div>
-                                    </div>                                    {/* Structural Scoping (Retail structural fields) */}
+                                    </div>
+
+                                    {/* ── Position Toggle (v2 Retail Onboarding) ── */}
+                                    <div className="space-y-4 relative">
+                                        <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-primary/20"></div>
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Position & Access Level</label>
+                                            <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-none ${POSITION_OPTIONS.find(p => p.value === formData.position)?.badge}`}>
+                                                System Role: {formData.role}
+                                            </span>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {POSITION_OPTIONS.map((opt) => (
+                                                <button
+                                                    key={opt.value}
+                                                    type="button"
+                                                    onClick={() => handlePositionSelect(opt.value)}
+                                                    className={`relative flex flex-col p-4 border transition-all duration-300 group text-left ${
+                                                        formData.position === opt.value ? opt.activeColor : 'border-app-border/40 bg-app-surface-soft hover:border-primary/40 text-app-text-muted hover:text-app-text'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <opt.Icon size={18} className={formData.position === opt.value ? 'text-inherit' : 'opacity-40 group-hover:opacity-100 transition-opacity'} />
+                                                        {formData.position === opt.value && (
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]"></div>
+                                                        )}
+                                                    </div>
+                                                    <div className="font-bold uppercase tracking-tight text-xs mb-1">{opt.label}</div>
+                                                    <div className="text-[10px] leading-relaxed opacity-60 font-medium">{opt.desc}</div>
+                                                    
+                                                    {/* Kinetic hover flash */}
+                                                    <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Structural Scoping (Retail structural fields) */}
                                     <div className="space-y-6 relative">
                                         <div className="absolute -left-4 top-0 bottom-0 w-[2px] bg-primary/20"></div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1619,98 +1733,139 @@ export default function Login() {
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-bold text-primary uppercase tracking-widest">LOC-TYPE</label>
-                                                <select
-                                                    name="loc_type"
-                                                    value={formData.loc_type}
-                                                    onChange={handleInputChange}
-                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer"
-                                                >
-                                                    <option value="">SELECT_TYPE</option>
-                                                    {LOC_TYPES.map(type => (
-                                                        <option key={type} value={type}>{type}</option>
-                                                    ))}
-                                                </select>
+                                                <div className="relative">
+                                                    <select
+                                                        name="loc_type"
+                                                        value={formData.loc_type}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer pr-10"
+                                                    >
+                                                        <option value="">SELECT_TYPE</option>
+                                                        {LOC_TYPES.map(type => (
+                                                            <option key={type} value={type}>{type}</option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none opacity-60" />
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Dept</label>
-                                                <select
-                                                    name="department"
-                                                    value={formData.department}
-                                                    onChange={handleInputChange}
-                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer"
-                                                >
-                                                    <option value="">SELECT_DEPT</option>
-                                                    {DEPARTMENTS.map(dept => (
-                                                        <option key={dept} value={dept}>{dept}</option>
-                                                    ))}
-                                                </select>
+                                                <div className="relative">
+                                                    <select
+                                                        name="department"
+                                                        value={formData.department}
+                                                        onChange={handleInputChange}
+                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer pr-10"
+                                                    >
+                                                        <option value="">SELECT_DEPT</option>
+                                                        {DEPARTMENTS.map(dept => (
+                                                            <option key={dept} value={dept}>{dept}</option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none opacity-60" />
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Sub-Dept.</label>
-                                                {RETAIL_HIERARCHY[formData.department] ? (
+                                                <div className="relative">
                                                     <select
                                                         name="sub_dept"
                                                         value={formData.sub_dept}
                                                         onChange={handleInputChange}
-                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer"
+                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer pr-10"
                                                     >
-                                                        <option value="">SELECT_SUB_DEPT</option>
-                                                        {Object.keys(RETAIL_HIERARCHY[formData.department]).map(sub => (
+                                                        <option value="">{formData.department ? "SELECT_SUB_DEPT" : "SELECT_DEPT_FIRST"}</option>
+                                                        {RETAIL_HIERARCHY[formData.department] && Object.keys(RETAIL_HIERARCHY[formData.department]).map(sub => (
                                                             <option key={sub} value={sub}>{sub}</option>
                                                         ))}
                                                     </select>
-                                                ) : (
-                                                    <input
-                                                        type="text"
-                                                        name="sub_dept"
-                                                        value={formData.sub_dept}
-                                                        onChange={handleInputChange}
-                                                        placeholder="L_BACK"
-                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase"
-                                                    />
-                                                )}
+                                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none opacity-60" />
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Designation</label>
-                                                {RETAIL_HIERARCHY[formData.department] && formData.sub_dept && RETAIL_HIERARCHY[formData.department][formData.sub_dept] ? (
+                                                <div className="relative">
                                                     <select
                                                         name="designation"
                                                         value={formData.designation}
                                                         onChange={handleInputChange}
-                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer"
+                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase appearance-none cursor-pointer pr-10"
                                                     >
-                                                        <option value="">SELECT_ROLE</option>
-                                                        {RETAIL_HIERARCHY[formData.department][formData.sub_dept].map(role => (
+                                                        <option value="">{formData.sub_dept ? "SELECT_ROLE" : (formData.department ? "SELECT_SUB_DEPT_FIRST" : "SELECT_DEPT_FIRST")}</option>
+                                                        {RETAIL_HIERARCHY[formData.department] && formData.sub_dept && RETAIL_HIERARCHY[formData.department][formData.sub_dept] && RETAIL_HIERARCHY[formData.department][formData.sub_dept].map(role => (
                                                             <option key={role} value={role}>{role}</option>
                                                         ))}
                                                     </select>
-                                                ) : (
-                                                    <input
-                                                        type="text"
-                                                        name="designation"
-                                                        value={formData.designation}
-                                                        onChange={handleInputChange}
-                                                        placeholder="WH_MGR"
-                                                        className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase"
-                                                    />
-                                                )}
+                                                    <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-primary pointer-events-none opacity-60" />
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Functional Persona</label>
-                                                <input
-                                                    type="text"
-                                                    name="persona"
-                                                    value={formData.persona}
-                                                    onChange={handleInputChange}
-                                                    placeholder="RETAIL_ADMIN"
-                                                    className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 px-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase"
-                                                />
+                                                <div className="relative" ref={personaDropdownRef}>
+                                                    <div className="relative group">
+                                                        <Search size={14} className={`absolute left-3 top-3.5 transition-all ${isPersonaDropdownOpen ? 'text-primary' : 'text-primary/40'}`} />
+                                                        <input
+                                                            type="text"
+                                                            placeholder={formData.persona ? (PERSONA_MAP[formData.department]?.find(p => p.value === formData.persona)?.label || formData.persona) : "SEARCH_ROLE..."}
+                                                            value={personaSearch}
+                                                            onChange={(e) => {
+                                                                setPersonaSearch(e.target.value);
+                                                                setIsPersonaDropdownOpen(true);
+                                                            }}
+                                                            onFocus={() => setIsPersonaDropdownOpen(true)}
+                                                            className="w-full bg-app-surface-soft border border-app-border/40 rounded-none py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-primary transition-all font-mono uppercase"
+                                                        />
+                                                        {personaSearch && (
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setPersonaSearch('');
+                                                                    setFormData(prev => ({ ...prev, persona: '' }));
+                                                                }}
+                                                                className="absolute right-3 top-3.5 text-app-text-muted hover:text-primary transition-colors"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {isPersonaDropdownOpen && (
+                                                        <div className="absolute z-50 left-0 right-0 mt-1 bg-app-surface border border-primary/30 shadow-2xl max-h-60 overflow-y-auto no-scrollbar backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
+                                                            <div className="p-2 border-b border-app-border/20 bg-primary/5">
+                                                                <span className="text-[9px] font-bold text-primary/60 uppercase tracking-tighter">Matches: {filteredPersonas.length} designations found</span>
+                                                            </div>
+                                                            {filteredPersonas.length > 0 ? (
+                                                                filteredPersonas.map(p => (
+                                                                    <button
+                                                                        key={p.value}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setFormData(prev => ({ ...prev, persona: p.value }));
+                                                                            setPersonaSearch('');
+                                                                            setIsPersonaDropdownOpen(false);
+                                                                        }}
+                                                                        className={`w-full text-left px-4 py-2.5 text-xs font-mono transition-all hover:bg-primary/10 border-l-2 ${formData.persona === p.value ? 'border-primary bg-primary/5 text-primary' : 'border-transparent text-app-text-muted hover:text-app-text'}`}
+                                                                    >
+                                                                        <div className="flex justify-between items-center">
+                                                                            <span>{p.label}</span>
+                                                                            {formData.persona === p.value && <Check size={12} />}
+                                                                        </div>
+                                                                    </button>
+                                                                ))
+                                                            ) : (
+                                                                <div className="px-4 py-8 text-center text-danger/60">
+                                                                    <span className="text-[10px] uppercase font-bold tracking-widest leading-none">Access Restricted: Role Not Found</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
 

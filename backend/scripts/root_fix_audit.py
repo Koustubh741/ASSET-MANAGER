@@ -1,5 +1,11 @@
 import asyncio
+import sys
+import os
 from sqlalchemy import select
+
+# Add parent directory to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app.database.database import AsyncSessionLocal
 from app.models.models import User, Department
 
@@ -11,7 +17,7 @@ async def audit():
         res = await db.execute(select(User).filter(User.email.in_(['it_mgr@enterprise.com', 'it_staff@itsm.com'])))
         users = res.scalars().all()
         for u in users:
-            print(f"USER: {u.email} | ROLE: {u.role} | DEPT_ID: {u.department_id} | DEPT_STR: {u.department}")
+            print(f"USER: {u.email} | ROLE: {u.role} | DEPT_ID: {u.department_id} | POSITION: {u.position}")
             
         # 2. List all departments
         res = await db.execute(select(Department))

@@ -288,7 +288,8 @@ async def create_ticket_v2(db: AsyncSession, ticket: TicketCreate, requestor_id:
             assignment_group_id=ticket.assignment_group_id,
             target_department_id=ticket.target_department_id,
             related_asset_id=ticket.related_asset_id,
-            status=override_status if override_status else "Open",
+            assigned_to_id=ticket.assigned_to_id,
+            status=override_status if override_status else ("Assigned" if ticket.assigned_to_id else "Open"),
             created_at=datetime.now(timezone.utc),
             tasks=[],
             timeline=[{

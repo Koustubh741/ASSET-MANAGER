@@ -143,62 +143,78 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
             )}
 
             {showDashboard && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                    <div className="glass-card p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-none bg-blue-500/20 text-blue-400">
-                                <ShoppingCart size={24} />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="fui-status-card p-6 relative group overflow-hidden border-primary/20">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-primary/40 group-hover:bg-primary transition-all" />
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="p-3 bg-primary/10 text-primary border border-primary/20">
+                                <ShoppingCart size={24} className="glow-text-primary" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-app-text">{awaitingPO.length}</h3>
-                                <p className="text-xs text-app-text-muted">Awaiting PO</p>
+                                <h3 className="text-3xl font-black text-white italic tracking-tighter">{awaitingPO.length}</h3>
+                                <p className="text-[9px] font-mono text-primary/60 uppercase tracking-[0.2em]">Awaiting_PO_Signal</p>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between text-[8px] font-mono text-white/20">
+                            <span>SIG_ID: 0x42F</span>
+                            <span>LATENCY: 12ms</span>
+                        </div>
+                    </div>
+
+                    <div className="fui-status-card p-6 relative group overflow-hidden border-amber-500/20">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-amber-500/40 group-hover:bg-amber-500 transition-all" />
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="p-3 bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                                <Truck size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-3xl font-black text-white italic tracking-tighter">{awaitingDelivery.length}</h3>
+                                <p className="text-[9px] font-mono text-amber-500/60 uppercase tracking-[0.2em]">In_Transit_Nodes</p>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex items-center justify-between text-[8px] font-mono text-white/20">
+                            <span>VEC: LOG_ROUTE_01</span>
+                            <span>STATUS: SYNCED</span>
+                        </div>
+                    </div>
+
+                    <div className="fui-status-card p-6 relative group overflow-hidden border-emerald-500/20 lg:col-span-2">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/40 group-hover:bg-emerald-500 transition-all" />
+                        <div className="flex items-center justify-between relative z-10">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                    <DollarSign size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-3xl font-black text-emerald-400 italic tracking-tighter">
+                                        {totalPendingPOValue > 0 ? `₹${(totalPendingPOValue / 100000).toFixed(1)}L` : '₹0'}
+                                    </h3>
+                                    <p className="text-[9px] font-mono text-emerald-500/60 uppercase tracking-[0.2em]">Fiscal_Exposure_Metric</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-[8px] font-mono text-emerald-500/40 uppercase mb-1">Budget_Handshake</div>
+                                <div className="w-24 h-1 bg-white/5 relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 h-full bg-emerald-500/40 animate-scanning-fast" />
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div className="glass-card p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-none bg-amber-500/20 text-amber-400">
-                                <FileText size={24} />
+
+                    <div className="fui-status-card p-6 relative group overflow-hidden border-rose-500/20">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-rose-500/40 group-hover:bg-rose-500 transition-all" />
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="p-3 bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                                <XCircle size={24} />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-app-text">{awaitingDelivery.length}</h3>
-                                <p className="text-xs text-app-text-muted">Awaiting Delivery</p>
+                                <h3 className="text-3xl font-black text-white italic tracking-tighter">0</h3>
+                                <p className="text-[9px] font-mono text-rose-500/60 uppercase tracking-[0.2em]">Discrepancy_Log</p>
                             </div>
                         </div>
-                    </div>
-                    <div className="glass-card p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-none bg-emerald-500/20 text-emerald-400">
-                                <DollarSign size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-app-text">
-                                    {totalPendingPOValue > 0 ? `₹${(totalPendingPOValue / 100000).toFixed(1)}L` : '₹0'}
-                                </h3>
-                                <p className="text-xs text-app-text-muted">Total Pending PO Value</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="glass-card p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-none bg-purple-500/20 text-purple-400">
-                                <Calendar size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-app-text">{awaitingDelivery.length}</h3>
-                                <p className="text-xs text-app-text-muted">Expected Deliveries</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="glass-card p-5">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-none bg-rose-500/20 text-rose-400">
-                                <CreditCard size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-app-text">0</h3>
-                                <p className="text-xs text-app-text-muted">Invoice Discrepancies</p>
-                            </div>
+                        <div className="mt-4 flex items-center justify-between text-[8px] font-mono text-white/20">
+                            <span>ERR_CODE: 0x0</span>
+                            <span>LEVEL: STABLE</span>
                         </div>
                     </div>
                 </div>
@@ -354,64 +370,67 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                         </h3>
 
                         {awaitingPO.length === 0 ? (
-                            <div className="p-8 text-center bg-app-surface-soft rounded-none border border-dashed border-app-border">
-                                <p className="text-app-text-muted font-medium">No requests awaiting PO creation</p>
-                                <p className="text-sm text-app-text-muted mt-1">Approved requests will appear here for purchase order creation.</p>
+                            <div className="p-8 text-center bg-white/5 border border-dashed border-white/10 relative overflow-hidden">
+                                <div className="absolute inset-0 pixel-grid-overlay opacity-10" />
+                                <p className="text-app-text-muted font-medium relative z-10 uppercase tracking-widest text-[10px]">No_Active_Signals</p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto -mx-2 md:mx-0">
-                                <table className="w-full text-sm text-left min-w-[640px] md:min-w-0">
-                                    <thead className="text-app-text-muted text-app-text-muted border-b border-app-border text-xs uppercase font-bold">
-                                        <tr>
-                                            <th className="pb-3">Request Details</th>
-                                            <th className="pb-3">Requested By</th>
-                                            <th className="pb-3">Justification</th>
-                                            <th className="pb-3">Status</th>
-                                            <th className="pb-3 text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-app-text-muted divide-y divide-white/5 divide-slate-200">
-                                        {awaitingPO.map(req => (
-                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50 transition-colors">
-                                                <td className="py-3">
-                                                    <div className="font-medium text-app-text">{req.assetType}</div>
-                                                    <div className="text-xs text-app-text-muted font-mono mt-0.5">{req.id}</div>
-                                                </td>
-                                                <td className="py-3">
-                                                    <div>{req.requestedBy?.name ?? '—'}</div>
-                                                    <div className="text-xs text-app-text-muted">{req.requestedBy?.role ?? req.requestedBy?.position ?? ''}</div>
-                                                </td>
-                                                <td className="py-3">
-                                                    <div className="text-xs text-app-text-muted text-app-text-muted max-w-xs truncate">{req.justification}</div>
-                                                </td>
-                                                <td className="py-3">
-                                                    <span className="px-2 py-1 text-xs rounded font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                                        PROCUREMENT REQUIRED
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => {
-                                                                const reason = prompt("Enter rejection reason:");
-                                                                if (reason && reason.trim()) procurementReject(req.id, reason.trim());
-                                                            }}
-                                                            className="bg-rose-600 hover:bg-rose-500 text-app-text text-xs px-3 py-2 rounded-none font-medium shadow-lg shadow-rose-500/10 transition-all flex items-center gap-2"
-                                                        >
-                                                            <XCircle size={14} /> Reject
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setSelectedRequest(req)}
-                                                            className="bg-blue-600 hover:bg-blue-500 text-app-text text-xs px-4 py-2 rounded-none font-medium shadow-lg shadow-blue-500/10 transition-all flex items-center gap-2"
-                                                        >
-                                                            <Eye size={14} /> Review & Approve
-                                                        </button>
+                            <div className="space-y-4">
+                                {awaitingPO.map(req => (
+                                    <div key={req.id} className="fui-status-card group relative overflow-hidden p-6 hover:border-primary/40 transition-all border-white/5">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-all" />
+                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-3 bg-primary/5 border border-primary/20">
+                                                    <FileText size={20} className="text-primary/60" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-lg font-bold text-white tracking-tight">{req.assetType}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[10px] font-mono text-primary/40 uppercase tracking-wider">{req.id}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                                                        <span className="text-[10px] font-mono text-white/40">{req.requestedBy?.name ?? 'ANONYMOUS_ACTOR'}</span>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 max-w-md hidden lg:block">
+                                                <div className="text-[9px] font-mono text-white/20 uppercase mb-1 tracking-widest">Justification_Protocol</div>
+                                                <p className="text-xs text-app-text-muted line-clamp-1 italic">"{req.justification}"</p>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                                                <button
+                                                    onClick={() => {
+                                                        const reason = prompt("Enter rejection reason:");
+                                                        if (reason && reason.trim()) procurementReject(req.id, reason.trim());
+                                                    }}
+                                                    className="px-4 py-2 border border-rose-500/20 bg-rose-500/5 text-rose-500 text-[10px] font-bold uppercase tracking-widest hover:bg-rose-500/20 active:scale-95 transition-all"
+                                                >
+                                                    Reject_Node
+                                                </button>
+                                                <button
+                                                    onClick={() => setSelectedRequest(req)}
+                                                    className="px-6 py-2 bg-primary/10 border border-primary/40 text-primary text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20 hover:border-primary active:scale-95 transition-all shadow-[0_0_15px_rgba(var(--color-primary),0.1)]"
+                                                >
+                                                    Review_&_Authorize
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Entry Telemetry */}
+                                        <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[8px] font-mono text-white/10 uppercase tracking-[0.2em]">
+                                            <div className="flex gap-4">
+                                                <span>VEC_ORIGIN: {req.requestedBy?.dept || 'ROOT'}</span>
+                                                <span>SIG_AUTH: AES_ENCRYPTED</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <span className="w-1 h-1 rounded-full bg-primary/40 animate-pulse" />
+                                                LIVE_SIGNAL
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -423,74 +442,75 @@ export default function ProcurementManagerDashboard({ activeView = 'dashboard' }
                 <>
                     <header className="flex justify-between items-end">
                         <div>
-                            <h1 className="text-2xl font-bold text-app-text flex items-center gap-2">
-                                <Truck className="text-emerald-400" />
-                                Deliveries
+                            <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase flex items-center gap-3">
+                                <Truck className="text-emerald-400 glow-text-emerald" />
+                                Delivery_Network
                             </h1>
-                            <p className="text-app-text-muted text-app-text-muted text-sm mt-1">Confirm delivery and send to inventory</p>
+                            <p className="text-emerald-500/40 text-[10px] font-mono uppercase tracking-[0.3em] mt-1">Confirm active transit nodes to inventory</p>
                         </div>
                     </header>
                     {awaitingDelivery.length > 0 && (
-                        <div className="glass-panel p-6">
-                            <h3 className="text-lg font-bold text-app-text mb-4 flex items-center gap-2">
-                                <Truck className="text-emerald-400" />
-                                Confirm Deliveries (Finance Approved)
-                                <span className="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded-full border border-emerald-500/20">{awaitingDelivery.length}</span>
-                            </h3>
-
-                            <div className="overflow-x-auto -mx-2 md:mx-0">
-                                <table className="w-full text-sm text-left min-w-[560px] md:min-w-0">
-                                    <thead className="text-app-text-muted text-app-text-muted border-b border-app-border text-xs uppercase font-bold">
-                                        <tr>
-                                            <th className="pb-3">Asset Type</th>
-                                            <th className="pb-3">For User</th>
-                                            <th className="pb-3">PO Stage</th>
-                                            <th className="pb-3 text-right">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-app-text-muted divide-y divide-white/5 divide-slate-200">
-                                        {awaitingDelivery.map(req => (
-                                            <tr key={req.id} className="hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-app-surface-soft hover:bg-slate-50 transition-colors">
-                                                <td className="py-3">
-                                                    <div className="font-medium text-app-text">{req.assetType}</div>
-                                                    <div className="text-xs text-app-text-muted font-mono">{req.id}</div>
-                                                </td>
-                                                <td className="py-3">{req.requestedBy?.name ?? '—'}</td>
-                                                <td className="py-3">
-                                                    <span className="px-2 py-1 text-xs rounded font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                                        FINANCE APPROVED
-                                                    </span>
-                                                </td>
-                                                <td className="py-3 text-right">
-                                                    <div className="flex justify-end gap-2">
-                                                        <button
-                                                            onClick={() => setSelectedRequest(req)}
-                                                            className="p-2 text-app-text-muted text-app-text-muted hover:text-app-text hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-app-surface rounded-none transition-all"
-                                                            title="View Details"
-                                                        >
-                                                            <Eye size={18} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setSelectedRequest(req)}
-                                                            className="bg-emerald-600 hover:bg-emerald-500 text-app-text text-xs px-4 py-2 rounded-none font-medium shadow-lg shadow-emerald-500/10 transition-all flex items-center gap-2"
-                                                        >
-                                                            <CheckCircle size={14} /> Confirm Delivery → Inventory
-                                                        </button>
+                        <div className="glass-panel p-6 border-emerald-500/10">
+                            <div className="space-y-4">
+                                {awaitingDelivery.map(req => (
+                                    <div key={req.id} className="fui-status-card group relative overflow-hidden p-6 hover:border-emerald-500/40 transition-all border-white/5">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/20 group-hover:bg-emerald-500 transition-all" />
+                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+                                            <div className="flex items-start gap-4">
+                                                <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 text-emerald-500">
+                                                    <ShoppingCart size={20} />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-lg font-bold text-white tracking-tight">{req.assetType}</h4>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className="text-[10px] font-mono text-emerald-500/40 uppercase tracking-wider">{req.id}</span>
+                                                        <span className="w-1 h-1 rounded-full bg-white/20" />
+                                                        <span className="text-[10px] font-mono text-white/40">Target: {req.requestedBy?.name ?? 'ROOT'}</span>
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                                                <button
+                                                    onClick={() => setSelectedRequest(req)}
+                                                    className="p-3 text-white/20 hover:text-white hover:bg-white/5 transition-all"
+                                                >
+                                                    <Eye size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setSelectedRequest(req)}
+                                                    className="px-6 py-2 bg-emerald-600/10 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600/20 hover:border-emerald-500 transition-all"
+                                                >
+                                                    Execute_Receipt → Inventory
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-[8px] font-mono text-white/10 uppercase tracking-[0.2em]">
+                                            <div className="flex gap-4">
+                                                <span>TRANSIT_ID: TXN_{req.id.slice(0, 6)}</span>
+                                                <span>BUDGET_CODE: FIN_SEC_01</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-emerald-500/60">
+                                                <div className="flex gap-0.5">
+                                                    <div className="w-1 h-1 bg-emerald-500 animate-pulse" />
+                                                    <div className="w-1 h-1 bg-emerald-500/40" />
+                                                    <div className="w-1 h-1 bg-emerald-500/20" />
+                                                </div>
+                                                IN_TRANSIT
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
                     {/* Deliveries view empty state */}
                     {awaitingDelivery.length === 0 && (
-                        <div className="glass-panel p-8 text-center">
-                            <Truck className="w-12 h-12 text-app-text-muted mx-auto mb-3" />
-                            <h3 className="text-lg font-bold text-app-text mb-1">Confirm Deliveries</h3>
-                            <p className="text-app-text-muted text-app-text-muted">No requests awaiting delivery confirmation. Finance-approved requests will appear here.</p>
+                        <div className="glass-panel p-12 text-center border-white/5">
+                            <Truck className="w-12 h-12 text-white/10 mx-auto mb-4" />
+                            <h3 className="text-white/40 font-black italic tracking-tighter uppercase">Transit_Grid_Empty</h3>
+                            <p className="text-[10px] font-mono text-white/20 uppercase tracking-widest mt-2">No active delivery signals detected in the sectors</p>
                         </div>
                     )}
                 </>

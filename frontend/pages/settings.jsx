@@ -245,7 +245,7 @@ export default function Settings() {
                             value={user?.plan || 'STARTER'}
                             onChange={handlePlanChange}
                             disabled={planLoading}
-                            className="w-full bg-app-void border border-app-border rounded-none px-4 py-3 text-app-text focus:ring-2 focus:ring-app-primary/50 outline-none uppercase font-black text-[10px] tracking-widest italic"
+                            className="w-full bg-app-void border border-app-border rounded-none px-4 py-3 text-app-text focus:ring-2 focus:ring-app-primary/50 outline-none uppercase font-black text-[10px] tracking-widest italic premium-select"
                         >
                             {PLANS.map(p => (
                                 <option key={p.value} value={p.value} className="bg-app-obsidian">{p.label}</option>

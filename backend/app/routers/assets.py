@@ -10,6 +10,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from ..schemas.asset_schema import AssetCreate, AssetUpdate, AssetResponse, AssetAssignmentRequest, AssetStatusUpdate, AssetVerificationRequest
 from ..schemas.common_schema import PaginatedResponse
+from ..services.asset_service import (
+    get_all_assets,
+    get_all_assets_scoped,
+    get_asset_by_id,
+    get_asset_by_serial_number,
+    get_asset_events,
+    get_asset_stats,
+    create_asset,
+    update_asset,
+    assign_asset,
+    verify_asset_assignment,
+    finalize_asset_assignment,
+    get_assets_by_assigned_to,
+    get_assets_by_agent,
+    get_user_by_id_db,
+)
 from ..services import asset_service
 from ..services import asset_request_service
 from ..database.database import get_db
@@ -45,7 +61,7 @@ async def get_all_assets(
     department = None
     assigned_to = None
     if current_user.role not in privileged_roles and current_user.position == "MANAGER":
-        department = (current_user.dept_obj.name if current_user.dept_obj else current_user.department) or current_user.domain
+        department = (current_user.dept_obj.name if current_user.dept_obj else current_user.domain)
         assigned_to = current_user.full_name
         
     skip = (page - 1) * size
@@ -386,7 +402,8 @@ async def get_asset_events(
         if asset.assigned_to_id != current_user.id:
             raise HTTPException(status_code=403, detail="Unauthorized to view this asset's events")
             
-    events = await asset_service.get_asset_events(db, asset_id)
+    from ..services.asset_service import get_asset_events as _get_asset_events
+    events = await _get_asset_events(db, asset_id)
     return events
 
 

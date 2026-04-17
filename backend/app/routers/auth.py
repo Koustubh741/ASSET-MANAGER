@@ -89,7 +89,7 @@ async def check_IT_MANAGEMENT(
     """
     is_admin = current_user.role == "ADMIN"
     is_it_staff = (
-        (current_user.dept_obj.name.upper() if current_user.dept_obj else str(current_user.department).upper()) == "IT" or 
+        (current_user.dept_obj.name.upper() if current_user.dept_obj else "") == "IT" or 
         str(current_user.domain).upper() == "IT"
     )
                      
@@ -116,7 +116,7 @@ async def get_users(
         
         # If not admin, force departmental filter if not already provided or if trying to see other departments
         if not is_admin:
-            user_dept = getattr(current_user, 'department', None) or getattr(current_user, 'domain', None)
+            user_dept = (current_user.dept_obj.name if current_user.dept_obj else None) or current_user.domain
             # If user provides a department, verify it matches theirs
             if department and str(department).lower() != str(user_dept).lower():
                 # For non-admins, they can only request their own department
@@ -282,7 +282,15 @@ async def refresh_token_endpoint(
         )
     
     try:
-        user_id = auth_utils.verify_refresh_token(refresh_token)
+        payload = auth_utils.verify_refresh_token(refresh_token)
+        if not payload:
+            raise ValueError("Token invalid")
+        user_id_raw = payload.get("user_id")
+        if not user_id_raw:
+            raise ValueError("ID missing from token")
+            
+        # Ensure user_id is a UUID object for database compatibility
+        user_id = uuid.UUID(str(user_id_raw)) if isinstance(user_id_raw, (str, bytes)) else user_id_raw
     except Exception:
         # ROOT FIX: Explicitly clear the invalid cookie on failure
         response.delete_cookie("refresh_token")
@@ -734,7 +742,7 @@ async def get_exit_requests(
                 "updated_at": exit_req.updated_at,
                 "user_name": user.full_name,
                 "user_email": user.email,
-                "user_department": user.dept_obj.name if user.dept_obj else user.department,
+                "user_department": user.dept_obj.name if user.dept_obj else user.domain,
             })
             
         print(f"DEBUG: Found {len(res)} exit requests")

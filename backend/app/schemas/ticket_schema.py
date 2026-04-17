@@ -16,6 +16,7 @@ class TicketBase(BaseModel):
     subcategory: Optional[str] = None
     target_department_id: Optional[UUID] = None
     assignment_group_id: Optional[UUID] = None
+    assigned_to_id: Optional[UUID] = None
 
     @field_validator("assignment_group_id", mode="before")
     @classmethod

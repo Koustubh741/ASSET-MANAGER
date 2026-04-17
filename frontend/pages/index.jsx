@@ -17,6 +17,14 @@ import LegalDashboard from '@/components/dashboards/LegalDashboard'
 import BusinessOpsDashboard from '@/components/dashboards/BusinessOpsDashboard'
 import SupportPortalDashboard from '@/components/dashboards/SupportPortalDashboard'
 
+// V2 RETAIL BESPOKE DASHBOARDS
+import NSODashboard from '@/components/dashboards/NSODashboard'
+import LossPreventionDashboard from '@/components/dashboards/LossPreventionDashboard'
+import StoreOpsDashboard from '@/components/dashboards/StoreOpsDashboard'
+import SCMDashboard from '@/components/dashboards/SCMDashboard'
+import BMDashboard from '@/components/dashboards/BMDashboard'
+import CorporateStrategyDashboard from '@/components/dashboards/CorporateStrategyDashboard'
+
 export default function Dashboard() {
     const { currentRole, user, isAuthenticated, isLoading, isAdmin, isFinanceStaff, isProcurementStaff, isAssetStaff, isITStaff, isManagerial } = useRole();
     const router = useRouter();
@@ -53,38 +61,68 @@ export default function Dashboard() {
     // This catches END_USER and MANAGER roles and directs them to their specialized portal
     const deptSlug = user?.dept_obj?.slug || (user?.department || '').toLowerCase();
 
-    // Engineering / Cloud / IT (Non-Support)
-    if (deptSlug === 'engineering' || deptSlug === 'security' || deptSlug.includes('eng') || deptSlug.includes('dev') || deptSlug.includes('cloud') || deptSlug.includes('tech')) {
+    // Engineering / Cloud / IT
+    if (deptSlug === 'engineering' || deptSlug === 'security' || deptSlug.includes('eng') || deptSlug.includes('dev') || deptSlug.includes('cloud') || deptSlug.includes('tech') || deptSlug === 'it') {
         return <EngineeringDashboard />;
     }
 
-    // Human Resources
+    // HR
     if (deptSlug === 'hr' || deptSlug.includes('hr') || deptSlug.includes('human')) {
         return <HRDashboard />;
     }
 
-    // Operations / Logistics / Facilities
-    if (deptSlug === 'operations' || deptSlug.includes('op') || deptSlug.includes('log') || deptSlug.includes('facil')) {
+    // V2 RETAIL: NSO
+    if (deptSlug === 'nso') {
+        return <NSODashboard />;
+    }
+
+    // V2 RETAIL: LOSS PREVENTION
+    if (deptSlug === 'loss prevention' || deptSlug.includes('cctv')) {
+        return <LossPreventionDashboard />;
+    }
+
+    // V2 RETAIL: RETAIL & RETAIL OPERATION
+    if (deptSlug === 'retail' || deptSlug === 'retail operation' || deptSlug.includes('store')) {
+        return <StoreOpsDashboard />;
+    }
+
+    // V2 RETAIL: SCM
+    if (deptSlug === 'scm' || deptSlug.includes('logistics') || deptSlug.includes('supply')) {
+        return <SCMDashboard />;
+    }
+
+    // V2 RETAIL: B&M
+    if (deptSlug === 'b&m' || deptSlug.includes('merchandis') || deptSlug.includes('buying')) {
+        return <BMDashboard />;
+    }
+
+    // V2 RETAIL: BD, PLANNING, MARKETING, PROJECT
+    if (deptSlug === 'bd' || deptSlug === 'planning' || deptSlug === 'marketing' || deptSlug === 'project') {
+        return <CorporateStrategyDashboard />;
+    }
+
+    // V2 RETAIL: ADMIN / FACILITY
+    if (deptSlug === 'admin' || deptSlug === 'operations' || deptSlug.includes('facil')) {
         return <OperationsDashboard />;
     }
 
-    // Legal / Compliance / Audit / GRC
-    if (deptSlug === 'legal' || deptSlug.includes('leg') || deptSlug.includes('comp') || deptSlug.includes('audit')) {
+    // V2 RETAIL: LEGAL & COMPANY SECRETARY
+    if (deptSlug === 'legal & company secretary' || deptSlug === 'legal' || deptSlug.includes('leg') || deptSlug.includes('comp') || deptSlug.includes('audit')) {
         return <LegalDashboard />;
     }
 
-    // Sales / Marketing / Product / Business
-    if (deptSlug === 'sales' || deptSlug === 'product' || deptSlug === 'customer_success' || deptSlug.includes('sale') || deptSlug.includes('mark') || deptSlug.includes('prod') || deptSlug.includes('biz')) {
-        return <BusinessOpsDashboard />;
-    }
-
-    // Procurement
+    // PROCUREMENT
     if (deptSlug === 'procurement') {
         return <ProcurementManagerDashboard />;
     }
 
-    // Finance
-    if (deptSlug === 'finance') {
+    // V2 RETAIL: INVENTORY
+    if (deptSlug === 'inventory') {
+        return <AssetInventoryDashboard />; // Maps natively to AssetInventory
+    }
+
+    // V2 RETAIL: F&A
+    if (deptSlug === 'f&a' || deptSlug === 'finance') {
         return <FinanceDashboard />;
     }
 

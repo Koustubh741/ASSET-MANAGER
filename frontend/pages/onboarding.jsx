@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import apiClient from '@/lib/apiClient';
+import { useRole } from '@/contexts/RoleContext';
 
 const STEPS = ['Welcome', 'Company Info', 'First Location', 'First Asset', 'All Done!'];
 
@@ -32,6 +33,7 @@ function StepIndicator({ current }) {
 
 export default function OnboardingPage() {
     const router = useRouter();
+    const { user } = useRole();
     const [step, setStep] = useState(0);
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
@@ -65,7 +67,13 @@ export default function OnboardingPage() {
     const saveAsset = async () => {
         setSaving(true);
         try {
-            const payload = { ...asset, segment: 'IT', cost: asset.cost ? Number(asset.cost) : 0 };
+            const segment = user?.dept_obj?.name || user?.department || 'IT';
+            const payload = { 
+                ...asset, 
+                segment, 
+                department_id: user?.department_id || null,
+                cost: asset.cost ? Number(asset.cost) : 0 
+            };
             await apiClient.createAsset(payload);
             next();
         } catch (e) { setErrors({ asset: e.message }); }
@@ -130,7 +138,7 @@ export default function OnboardingPage() {
                                     </div>
                                     <div>
                                         <label className="ob-label">Currency</label>
-                                        <select className="ob-input" value={company.currency} onChange={e => setCompany(c => ({ ...c, currency: e.target.value }))}>
+                                        <select className="ob-input premium-select" value={company.currency} onChange={e => setCompany(c => ({ ...c, currency: e.target.value }))}>
                                             {['INR', 'USD', 'EUR', 'GBP', 'AED'].map(c => <option key={c}>{c}</option>)}
                                         </select>
                                     </div>
@@ -182,7 +190,7 @@ export default function OnboardingPage() {
                                     </div>
                                     <div>
                                         <label className="ob-label">Type *</label>
-                                        <select className="ob-input" value={asset.type} onChange={e => setAsset(a => ({ ...a, type: e.target.value }))}>
+                                        <select className="ob-input premium-select" value={asset.type} onChange={e => setAsset(a => ({ ...a, type: e.target.value }))}>
                                             {['Laptop', 'Desktop', 'Server', 'Mobile', 'Network Device', 'Printer', 'Display', 'Other'].map(t => <option key={t}>{t}</option>)}
                                         </select>
                                     </div>

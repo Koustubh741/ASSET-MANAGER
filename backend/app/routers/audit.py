@@ -4,7 +4,7 @@ from sqlalchemy.future import select
 from sqlalchemy import func, and_
 from typing import List, Optional
 from ..database.database import get_db
-from ..models.models import AuditLog, Asset
+from ..models.models import AuditLog, Asset, User, Department
 from pydantic import BaseModel
 from uuid import UUID
 from ..routers.auth import check_ADMIN, check_user_list_access
@@ -63,10 +63,9 @@ async def get_audit_logs(
     # 1. Base scoping filters
     filter_clauses = []
     if current_user.role not in ["ADMIN", "SUPPORT"] and current_user.position == "MANAGER":
-        from ..models.models import User
-        manager_unit = current_user.department or current_user.domain
-        query = query.join(User, AuditLog.performed_by == User.id)
-        filter_clauses.append((User.department == manager_unit) | (User.domain == manager_unit))
+        manager_unit = (current_user.dept_obj.name if current_user.dept_obj else None) or current_user.domain
+        query = query.join(User, AuditLog.performed_by == User.id).outerjoin(Department, User.department_id == Department.id)
+        filter_clauses.append((Department.name == manager_unit) | (User.domain == manager_unit))
 
     if entity_type:
         filter_clauses.append(AuditLog.entity_type == entity_type)
@@ -83,8 +82,7 @@ async def get_audit_logs(
     # 2. Total Count
     count_query = select(func.count(AuditLog.id))
     if current_user.role not in ["ADMIN", "SUPPORT"] and current_user.position == "MANAGER":
-        from ..models.models import User
-        count_query = count_query.join(User, AuditLog.performed_by == User.id).filter(filter_clauses[0])
+        count_query = count_query.join(User, AuditLog.performed_by == User.id).outerjoin(Department, User.department_id == Department.id).filter(filter_clauses[0])
         if entity_type: count_query = count_query.filter(AuditLog.entity_type == entity_type)
     elif entity_type:
         count_query = count_query.filter(AuditLog.entity_type == entity_type)
@@ -118,10 +116,9 @@ async def get_audit_stats(
     
     # Apply manager scoping
     if current_user.role not in ["ADMIN", "SUPPORT"] and current_user.position == "MANAGER":
-        from ..models.models import User
-        manager_unit = current_user.department or current_user.domain
-        base_query = base_query.join(User, AuditLog.performed_by == User.id).filter(
-            (User.department == manager_unit) | (User.domain == manager_unit)
+        manager_unit = (current_user.dept_obj.name if current_user.dept_obj else None) or current_user.domain
+        base_query = base_query.join(User, AuditLog.performed_by == User.id).outerjoin(Department, User.department_id == Department.id).filter(
+            (Department.name == manager_unit) | (User.domain == manager_unit)
         )
 
     total_res = await db.execute(select(func.count()).select_from(base_query.subquery()))

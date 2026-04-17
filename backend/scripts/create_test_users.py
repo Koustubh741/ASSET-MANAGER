@@ -35,7 +35,6 @@ async def create_test_users():
                     password_hash=get_password_hash("testpass123"),
                     role="END_USER",
                     position="MANAGER",
-                    department=dept.name,
                     department_id=dept.id,
                     status="ACTIVE"
                 )
@@ -54,7 +53,6 @@ async def create_test_users():
                     password_hash=get_password_hash("testpass123"),
                     role="END_USER",
                     position="TEAM_MEMBER",
-                    department=dept.name,
                     department_id=dept.id,
                     status="ACTIVE"
                 )

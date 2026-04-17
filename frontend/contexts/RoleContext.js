@@ -1,26 +1,30 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import apiClient from '../lib/apiClient';
 
+import { mapDesignationToRole, V2_ROLES, getV2Theme } from '../config/v2_identity_map';
+
 const RoleContext = createContext();
 
-export const ROLES = [
-    { label: 'End User', slug: 'END_USER' },
-    { label: 'Support Unit', slug: 'SUPPORT' },
-    { label: 'Department Manager', slug: 'MANAGER' },
-    { label: 'System Admin', slug: 'ADMIN' }
-];
+export const ROLES = V2_ROLES;
 
 /** Map backend role strings to frontend base role slugs. */
-function normalizeBackendRole(backendRole) {
+function normalizeBackendRole(user) {
+    if (!user) return 'END_USER';
+    const backendRole = user.role;
+    const persona = user.persona;
+    const department = user.department;
+
     if (backendRole == null || backendRole === '') return 'END_USER';
     const r = String(backendRole).trim().toUpperCase();
 
-    // Map specialized/legacy slugs to base categories
+    // 1. Direct system roles
     if (r === 'ADMIN' || r === 'SYSTEM_ADMIN') return 'ADMIN';
-    if (r.includes('SUPPORT') || r === 'SUPPORT_SPECIALIST') return 'SUPPORT';
-    if (r === 'MANAGER' || r === 'CEO' || r === 'CFO' || r === 'FINANCE' || r === 'ASSET_MANAGER' || r === 'PROCUREMENT' || r === 'IT_MANAGEMENT') return 'MANAGER';
     
-    // Direct match if it's already a base role
+    // 2. Intelligent V2 Mapping (Designation + Dept)
+    const mappedRole = mapDesignationToRole(persona || backendRole, department);
+    if (mappedRole !== 'END_USER') return mappedRole;
+
+    // 3. Fallback direct match
     const match = ROLES.find(role => role.slug === r);
     return match ? match.slug : 'END_USER';
 }
@@ -38,8 +42,9 @@ export function RoleProvider({ children }) {
             system: true,
             reports: false
         },
-        ui_theme: 'dark',
-        onboarding_dismissed: false
+        ui_theme: 'system',
+        onboarding_dismissed: false,
+        hasSeenExperience: false
     });
     const [isLoading, setIsLoading] = useState(true);
     const [isVerified, setIsVerified] = useState(false);
@@ -86,7 +91,7 @@ export function RoleProvider({ children }) {
                         persona: freshUser.persona
                     });
 
-                    const normalizedSlug = normalizeBackendRole(freshUser.role);
+                    const normalizedSlug = normalizeBackendRole(freshUser);
                     const savedRole = ROLES.find(r => r.slug === normalizedSlug) || ROLES.find(r => r.slug === 'END_USER') || ROLES[0];
                     setCurrentRole(savedRole);
                     setIsAuthenticated(true);
@@ -132,8 +137,8 @@ export function RoleProvider({ children }) {
                         plan: freshUser.plan
                     }));
                     
-                    if (freshUser.role) {
-                        const normalizedSlug = normalizeBackendRole(freshUser.role);
+                    if (freshUser.role || freshUser.persona) {
+                        const normalizedSlug = normalizeBackendRole(freshUser);
                         const roleObj = ROLES.find(r => r.slug === normalizedSlug);
                         if (roleObj && roleObj.slug !== currentRole.slug) {
                             setCurrentRole(roleObj);
@@ -201,7 +206,7 @@ export function RoleProvider({ children }) {
             createdAt: userData.createdAt,
             persona: userData.persona
         });
-        const normalizedSlug = normalizeBackendRole(userData.role);
+        const normalizedSlug = normalizeBackendRole({ role: userData.role, persona: userData.persona, department: userData.department });
         const roleObj = ROLES.find(r => r.slug === normalizedSlug) || ROLES.find(r => r.slug === 'END_USER') || ROLES[0];
         setCurrentRole(roleObj);
         // localStorage persistence removed for security
@@ -240,8 +245,16 @@ export function RoleProvider({ children }) {
     };
 
     const isAdmin = currentRole?.slug === 'ADMIN';
-    const isStaff = isAdmin || currentRole?.slug === 'MANAGER' || currentRole?.slug === 'SUPPORT';
-    const isManagerial = isAdmin || currentRole?.slug === 'MANAGER' || user?.position === 'MANAGER';
+    const isExecutive = currentRole?.slug === 'EXECUTIVE' || user?.persona === 'CEO' || user?.persona === 'CFO';
+    const isFinance = currentRole?.slug === 'FINANCE' || user?.department?.toLowerCase().includes('finance') || user?.department?.includes('F&A');
+    const isProcurement = currentRole?.slug === 'PROCUREMENT' || user?.department?.toLowerCase().includes('procurement') || user?.department === 'SCM';
+    const isLossPrevention = currentRole?.slug === 'LOSS_PREVENTION' || user?.department === 'LOSS PREVENTION';
+    
+    const isStaff = isAdmin || currentRole?.slug === 'MANAGER' || currentRole?.slug === 'SUPPORT' || isFinance || isProcurement || isLossPrevention || currentRole?.slug === 'IT_MANAGEMENT';
+    const isManagerial = isAdmin || isExecutive || currentRole?.slug === 'MANAGER' || user?.position === 'MANAGER' || isFinance || isProcurement || String(user?.persona || '').toUpperCase().includes('MANAGER');
+    
+    // THEME Registry Integration
+    const theme = getV2Theme(user?.department, currentRole?.slug);
 
     // Helper to check if user is staff of a specific department
     const isDeptStaff = (deptName) => {
@@ -279,6 +292,14 @@ export function RoleProvider({ children }) {
         }
     };
 
+    const setHasSeenExperience = async (seen = true) => {
+        try {
+            await updatePreferences({ hasSeenExperience: seen });
+        } catch (e) {
+            console.error("Failed to sync experience status to backend", e);
+        }
+    };
+
     return (
         <RoleContext.Provider value={{ 
             currentRole, 
@@ -286,6 +307,7 @@ export function RoleProvider({ children }) {
             ROLES, 
             isAuthenticated, 
             user, 
+            setUser,
             login, 
             logout, 
             updatePlan, 
@@ -293,22 +315,29 @@ export function RoleProvider({ children }) {
             updatePreferences,
             setTheme,
             setOnboardingDismissed,
+            setHasSeenExperience,
             isLoading,
+            // V2 Theme Metadata
+            theme,
             // Permission Flags
             isAdmin,
-            isITStaff,
-            isAssetStaff,
-            isFinanceStaff,
-            isProcurementStaff,
-            isEngineeringStaff,
-            isHRStaff,
+            isExecutive,
+            isFinance,
+            isProcurement,
+            isLossPrevention,
+            isITStaff: isDeptStaff('IT'),
+            isAssetStaff: isDeptStaff('Asset Management') || isDeptStaff('Inventory'),
+            isFinanceStaff: isFinance || isDeptStaff('Finance'),
+            isProcurementStaff: isProcurement || isDeptStaff('Procurement') || isDeptStaff('SCM'),
+            isEngineeringStaff: isDeptStaff('Engineering'),
+            isHRStaff: isDeptStaff('HR'),
             isStaff,
             isManagerial,
             isVerified,
             // Action Aliases
-            canManageAutomation,
-            canManageSystem,
-            canManageAssets
+            canManageAutomation: isManagerial || isAdmin,
+            canManageSystem: isAdmin,
+            canManageAssets: isAssetStaff || isITStaff || isAdmin || currentRole?.slug === 'ASSET_MANAGER'
         }}>
             {children}
         </RoleContext.Provider>

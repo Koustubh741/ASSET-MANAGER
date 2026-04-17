@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database.database import engine, Base
 from sqlalchemy import text
-from app.models import models
+from app import models  # Importing the package triggers registration of all models
 
 def setup_database():
     """Create all necessary schemas and tables"""
@@ -15,7 +15,11 @@ def setup_database():
             print("\n=== CREATING DATABASE SCHEMAS ===\n")
             
             # Create all the necessary schemas
-            schemas = ["auth", "asset", "helpdesk", "system", "exit", "support", "procurement", "audit"]
+            # helpdesk is replaced by support in modern models
+            schemas = [
+                "auth", "asset", "support", "system", 
+                "exit", "procurement", "finance", "audit", "security"
+            ]
             for schema in schemas:
                 try:
                     connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
@@ -28,6 +32,37 @@ def setup_database():
             # Create all tables defined in models
             Base.metadata.create_all(bind=engine)
             print("[OK] All tables created successfully!")
+            
+            # Create Materialized Views (Root Fix)
+            print("\n=== CREATING MATERIALIZED VIEWS ===\n")
+            try:
+                # Dashboard Stats MV
+                connection.execute(text("DROP MATERIALIZED VIEW IF EXISTS asset.dashboard_stats_mv CASCADE"))
+                connection.execute(text("""
+                    CREATE MATERIALIZED VIEW asset.dashboard_stats_mv AS
+                    SELECT 
+                        'status'::text as grouping_type, 
+                        status as grouping_name, 
+                        count(*)::int as count 
+                    FROM asset.assets 
+                    GROUP BY status
+                    UNION ALL
+                    SELECT 
+                        'segment'::text as grouping_type, 
+                        segment as grouping_name, 
+                        count(*)::int as count 
+                    FROM asset.assets 
+                    GROUP BY segment;
+                """))
+                connection.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS ix_dashboard_stats_mv_unique 
+                    ON asset.dashboard_stats_mv (grouping_type, grouping_name);
+                """))
+                connection.commit()
+                print("[OK] Dashboard stats materialized view created.")
+            except Exception as e:
+                print(f"[WARNING] MV Creation failed: {e}")
+                connection.rollback()
             
             print("\n=== VERIFICATION ===\n")
             # Verify tables were created
